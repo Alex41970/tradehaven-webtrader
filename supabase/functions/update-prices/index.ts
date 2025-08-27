@@ -309,9 +309,19 @@ serve(async (req) => {
         if (asset) {
           const updatedPrice = priceUpdates.find(p => p.symbol === asset.symbol);
           if (updatedPrice) {
-            const pnl = trade.trade_type === 'BUY' 
-              ? trade.amount * (updatedPrice.price - trade.open_price)
-              : trade.amount * (trade.open_price - updatedPrice.price);
+            let pnl: number;
+            if (asset.category === 'forex') {
+              // For forex: P&L = lot_size * contract_size * price_difference
+              const priceDifference = trade.trade_type === 'BUY' 
+                ? (updatedPrice.price - trade.open_price)
+                : (trade.open_price - updatedPrice.price);
+              pnl = trade.amount * (asset.contract_size || 100000) * priceDifference;
+            } else {
+              // For other instruments: P&L = amount * price_difference
+              pnl = trade.trade_type === 'BUY' 
+                ? trade.amount * (updatedPrice.price - trade.open_price)
+                : trade.amount * (trade.open_price - updatedPrice.price);
+            }
 
             await supabase
               .from('trades')

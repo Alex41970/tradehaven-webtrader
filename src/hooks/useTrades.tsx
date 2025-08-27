@@ -151,9 +151,26 @@ export const useTrades = () => {
       const trade = trades.find(t => t.id === tradeId);
       if (!trade) return false;
 
-      const pnl = trade.trade_type === 'BUY' 
-        ? trade.amount * (closePrice - trade.open_price)
-        : trade.amount * (trade.open_price - closePrice);
+      // Get asset to check if it's forex and get contract size
+      const { data: asset } = await supabase
+        .from('assets')
+        .select('category, contract_size')
+        .eq('id', trade.asset_id)
+        .single();
+
+      let pnl: number;
+      if (asset?.category === 'forex') {
+        // For forex: P&L = lot_size * contract_size * price_difference
+        const priceDifference = trade.trade_type === 'BUY' 
+          ? (closePrice - trade.open_price)
+          : (trade.open_price - closePrice);
+        pnl = trade.amount * (asset.contract_size || 100000) * priceDifference;
+      } else {
+        // For other instruments: P&L = amount * price_difference
+        pnl = trade.trade_type === 'BUY' 
+          ? trade.amount * (closePrice - trade.open_price)
+          : trade.amount * (trade.open_price - closePrice);
+      }
 
       const { error } = await supabase
         .from('trades')
@@ -192,9 +209,26 @@ export const useTrades = () => {
     const trade = trades.find(t => t.id === tradeId);
     if (!trade || trade.status !== 'open') return;
 
-    const pnl = trade.trade_type === 'BUY' 
-      ? trade.amount * (currentPrice - trade.open_price)
-      : trade.amount * (trade.open_price - currentPrice);
+    // Get asset to check if it's forex and get contract size
+    const { data: asset } = await supabase
+      .from('assets')
+      .select('category, contract_size')
+      .eq('id', trade.asset_id)
+      .single();
+
+    let pnl: number;
+    if (asset?.category === 'forex') {
+      // For forex: P&L = lot_size * contract_size * price_difference
+      const priceDifference = trade.trade_type === 'BUY' 
+        ? (currentPrice - trade.open_price)
+        : (trade.open_price - currentPrice);
+      pnl = trade.amount * (asset.contract_size || 100000) * priceDifference;
+    } else {
+      // For other instruments: P&L = amount * price_difference
+      pnl = trade.trade_type === 'BUY' 
+        ? trade.amount * (currentPrice - trade.open_price)
+        : trade.amount * (trade.open_price - currentPrice);
+    }
 
     try {
       const { error } = await supabase
