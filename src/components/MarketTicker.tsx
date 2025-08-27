@@ -1,11 +1,14 @@
 import { TrendingUp, TrendingDown } from "lucide-react";
 import { useAssets } from "@/hooks/useAssets";
+import { useRealTimePrices } from "@/hooks/useRealTimePrices";
 
 export const MarketTicker = () => {
   const { assets } = useAssets();
+  const { getUpdatedAssets, isConnected, lastUpdate } = useRealTimePrices();
 
-  // Get the first 8 assets for ticker display
-  const tickerAssets = assets.slice(0, 8);
+  // Get real-time updated assets
+  const realtimeAssets = getUpdatedAssets(assets);
+  const tickerAssets = realtimeAssets.slice(0, 8);
 
   if (tickerAssets.length === 0) {
     return null; // Don't show ticker if no assets loaded

@@ -13,6 +13,7 @@ import { useAssets, Asset } from "@/hooks/useAssets";
 import { useTrades } from "@/hooks/useTrades";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { useFavorites } from "@/hooks/useFavorites";
+import { useRealTimePrices } from "@/hooks/useRealTimePrices";
 import { PulsingPriceIndicator } from "@/components/PulsingPriceIndicator";
 
 export const WebTrader = () => {
@@ -27,10 +28,14 @@ export const WebTrader = () => {
   const { openTrades, closeTrade, openTrade } = useTrades();
   const { profile } = useUserProfile();
   const { favorites, addFavorite, removeFavorite, isFavorite } = useFavorites();
+  const { getUpdatedAssets, isConnected, connectionStatus, lastUpdate } = useRealTimePrices();
 
-  // Filter assets based on search and category
+  // Get real-time updated assets for all operations
+  const realtimeAssets = useMemo(() => getUpdatedAssets(assets), [assets, getUpdatedAssets]);
+
+  // Filter assets based on search and category (using real-time data)
   const filteredAssets = useMemo(() => {
-    let filtered = assets;
+    let filtered = realtimeAssets;
     
     if (searchTerm) {
       filtered = filtered.filter(asset => 
@@ -44,31 +49,31 @@ export const WebTrader = () => {
     }
     
     return filtered;
-  }, [assets, searchTerm, selectedCategory]);
+  }, [realtimeAssets, searchTerm, selectedCategory]);
 
-  // Get favorite assets
+  // Get favorite assets (using real-time data)
   const favoriteAssets = useMemo(() => {
-    return assets.filter(asset => isFavorite(asset.id));
-  }, [assets, favorites]);
+    return realtimeAssets.filter(asset => isFavorite(asset.id));
+  }, [realtimeAssets, favorites]);
 
-  // Set default selected asset
+  // Set default selected asset (using real-time data)
   useEffect(() => {
-    if (assets.length > 0 && !selectedAsset) {
-      const btc = assets.find(asset => asset.symbol === 'BTCUSD');
-      setSelectedAsset(btc || assets[0]);
+    if (realtimeAssets.length > 0 && !selectedAsset) {
+      const btc = realtimeAssets.find(asset => asset.symbol === 'BTCUSD');
+      setSelectedAsset(btc || realtimeAssets[0]);
     }
-  }, [assets, selectedAsset]);
+  }, [realtimeAssets, selectedAsset]);
 
   // Update selectedAsset when underlying asset data changes (real-time price updates)
   useEffect(() => {
-    if (selectedAsset && assets.length > 0) {
-      const updatedAsset = assets.find(asset => asset.id === selectedAsset.id);
+    if (selectedAsset && realtimeAssets.length > 0) {
+      const updatedAsset = realtimeAssets.find(asset => asset.id === selectedAsset.id);
       if (updatedAsset) {
         // Always update to get the latest price and change data
         setSelectedAsset(updatedAsset);
       }
     }
-  }, [assets, selectedAsset?.id]); // Only depend on assets and selectedAsset.id to avoid infinite loops
+  }, [realtimeAssets, selectedAsset?.id]); // Only depend on realtimeAssets and selectedAsset.id to avoid infinite loops
 
   // Calculate trade details with memoization for performance
   const calculateMargin = useMemo(() => {
@@ -170,7 +175,7 @@ export const WebTrader = () => {
     const trade = openTrades.find(t => t.id === tradeId);
     if (!trade) return;
 
-    const asset = assets.find(a => a.id === trade.asset_id);
+    const asset = realtimeAssets.find(a => a.id === trade.asset_id);
     if (!asset) return;
 
     await closeTrade(tradeId, asset.price);
@@ -336,7 +341,7 @@ export const WebTrader = () => {
                   </div>
                 ) : (
                   openTrades.map((trade) => {
-                    const asset = assets.find(a => a.id === trade.asset_id);
+                    const asset = realtimeAssets.find(a => a.id === trade.asset_id);
                     if (!asset) return null;
                     
                     return (
@@ -403,8 +408,15 @@ export const WebTrader = () => {
           <Card>
             <CardHeader>
               <CardTitle>Place Trade</CardTitle>
-              <CardDescription>
-                Balance: ${profile.balance.toFixed(2)} | Available Margin: ${profile.available_margin.toFixed(2)}
+              <CardDescription className="flex items-center justify-between">
+                <span>Balance: ${profile.balance.toFixed(2)} | Available Margin: ${profile.available_margin.toFixed(2)}</span>
+                <div className="flex items-center gap-2">
+                  <div className={`h-2 w-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                  <span className="text-xs">
+                    {isConnected ? 'Live Updates' : 'Disconnected'}
+                    {lastUpdate && ` • ${lastUpdate.toLocaleTimeString()}`}
+                  </span>
+                </div>
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -466,13 +478,13 @@ export const WebTrader = () => {
               <div className="grid grid-cols-2 gap-4 p-4 bg-muted/20 rounded-lg border-l-4 border-l-primary/30 transition-all duration-300">
                 <div>
                   <div className="text-sm text-muted-foreground">Position Size</div>
-                  <div className="font-medium text-lg" key={`position-${selectedAsset?.id}-${selectedAsset?.price}`}>
+                  <div className="font-medium text-lg text-green-600" key={`position-${selectedAsset?.id}-${selectedAsset?.price}-${amount}-${leverage}`}>
                     ${calculatePositionSize.toFixed(2)}
                   </div>
                 </div>
                 <div>
                   <div className="text-sm text-muted-foreground">Margin Required</div>
-                  <div className="font-medium text-lg" key={`margin-${selectedAsset?.id}-${selectedAsset?.price}`}>
+                  <div className="font-medium text-lg text-blue-600" key={`margin-${selectedAsset?.id}-${selectedAsset?.price}-${amount}-${leverage}`}>
                     ${calculateMargin.toFixed(2)}
                   </div>
                 </div>

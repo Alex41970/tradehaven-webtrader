@@ -1,81 +1,38 @@
-import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { Asset } from "./useAssets";
+import { usePrices } from '@/contexts/PriceContext';
+import { Asset } from './useAssets';
 
 export const useRealTimePrices = () => {
-  const [isUpdating, setIsUpdating] = useState(false);
-  const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
+  const { prices, isConnected, lastUpdate, connectionStatus } = usePrices();
 
-  useEffect(() => {
-    // Set up real-time subscription for asset price updates
-    const channel = supabase
-      .channel('price-updates')
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'assets'
-        },
-        (payload) => {
-          setLastUpdate(new Date());
-          console.log('Price updated:', payload.new);
-        }
-      )
-      .subscribe();
+  const getPriceForAsset = (symbol: string) => {
+    return prices.get(symbol);
+  };
 
-    // Start periodic price updates
-    const updatePrices = async () => {      
-      setIsUpdating(true);
-      try {
-        const { data, error } = await supabase.functions.invoke('update-prices');
-        
-        if (error) {
-          console.error('Error updating prices:', error);
-        } else {
-          console.log('Prices updated:', data);
-        }
-      } catch (error) {
-        console.error('Price update error:', error);
-      } finally {
-        setIsUpdating(false);
-      }
-    };
-
-    // Update prices immediately and then every 30 seconds
-    updatePrices();
-    const interval = setInterval(updatePrices, 30000);
-
-    return () => {
-      supabase.removeChannel(channel);
-      clearInterval(interval);
-    };
-  }, []); // Remove isUpdating from dependencies to prevent infinite loop
-
-  const forceUpdate = async () => {
-    if (isUpdating) return false;
-    
-    setIsUpdating(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('update-prices');
-      
-      if (error) {
-        console.error('Error updating prices:', error);
-        return false;
-      }
-      
-      return true;
-    } catch (error) {
-      console.error('Price update error:', error);
-      return false;
-    } finally {
-      setIsUpdating(false);
+  const getUpdatedAsset = (asset: Asset): Asset => {
+    const priceUpdate = prices.get(asset.symbol);
+    if (priceUpdate) {
+      return {
+        ...asset,
+        price: priceUpdate.price,
+        change_24h: priceUpdate.change_24h,
+        updated_at: new Date(priceUpdate.timestamp).toISOString()
+      };
     }
+    return asset;
+  };
+
+  const getUpdatedAssets = (assets: Asset[]): Asset[] => {
+    return assets.map(asset => getUpdatedAsset(asset));
   };
 
   return {
-    isUpdating,
+    prices,
+    isConnected,
     lastUpdate,
-    forceUpdate,
+    connectionStatus,
+    getPriceForAsset,
+    getUpdatedAsset,
+    getUpdatedAssets,
+    isUpdating: connectionStatus === 'connecting'
   };
 };
