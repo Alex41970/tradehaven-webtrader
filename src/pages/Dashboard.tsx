@@ -10,8 +10,6 @@ import { LogOut, TrendingUp, DollarSign, Activity, ExternalLink } from "lucide-r
 import { useNavigate } from "react-router-dom";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { useTrades } from "@/hooks/useTrades";
-import { RealTimePriceService } from "@/services/RealTimePriceService";
-
 const Dashboard = () => {
   const { user, signOut } = useAuth();
   const { profile, loading: profileLoading } = useUserProfile();
@@ -37,7 +35,6 @@ const Dashboard = () => {
   }
 
   return (
-    <RealTimePriceService>
       <div className="min-h-screen bg-background">
         {/* Header */}
         <header className="border-b bg-card">
@@ -137,7 +134,6 @@ const Dashboard = () => {
           </Tabs>
         </div>
       </div>
-    </RealTimePriceService>
   );
 };
 

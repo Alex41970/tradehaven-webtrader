@@ -63,14 +63,12 @@ export const WebTrader = () => {
   useEffect(() => {
     if (selectedAsset && assets.length > 0) {
       const updatedAsset = assets.find(asset => asset.id === selectedAsset.id);
-      if (updatedAsset && (
-        updatedAsset.price !== selectedAsset.price || 
-        updatedAsset.change_24h !== selectedAsset.change_24h
-      )) {
+      if (updatedAsset) {
+        // Always update to get the latest price and change data
         setSelectedAsset(updatedAsset);
       }
     }
-  }, [assets, selectedAsset]);
+  }, [assets, selectedAsset?.id]); // Only depend on assets and selectedAsset.id to avoid infinite loops
 
   // Calculate trade details with memoization for performance
   const calculateMargin = useMemo(() => {
@@ -465,14 +463,18 @@ export const WebTrader = () => {
                 </Select>
               </div>
 
-              <div className="grid grid-cols-2 gap-4 p-4 bg-muted/20 rounded-lg border-l-4 border-l-primary/30">
+              <div className="grid grid-cols-2 gap-4 p-4 bg-muted/20 rounded-lg border-l-4 border-l-primary/30 transition-all duration-300">
                 <div>
                   <div className="text-sm text-muted-foreground">Position Size</div>
-                  <div className="font-medium animate-pulse-subtle">${calculatePositionSize.toFixed(2)}</div>
+                  <div className="font-medium text-lg" key={`position-${selectedAsset?.id}-${selectedAsset?.price}`}>
+                    ${calculatePositionSize.toFixed(2)}
+                  </div>
                 </div>
                 <div>
                   <div className="text-sm text-muted-foreground">Margin Required</div>
-                  <div className="font-medium animate-pulse-subtle">${calculateMargin.toFixed(2)}</div>
+                  <div className="font-medium text-lg" key={`margin-${selectedAsset?.id}-${selectedAsset?.price}`}>
+                    ${calculateMargin.toFixed(2)}
+                  </div>
                 </div>
               </div>
 
