@@ -7,6 +7,49 @@ interface TradingChartProps {
 export const TradingChart = ({ symbol }: TradingChartProps) => {
   const chartRef = useRef<HTMLDivElement>(null);
 
+  // Map asset symbols to proper TradingView symbols
+  const getProperSymbol = (symbol: string): string => {
+    const symbolMappings: Record<string, string> = {
+      // Crypto
+      'BTCUSD': 'BINANCE:BTCUSDT',
+      'ETHUSD': 'BINANCE:ETHUSDT', 
+      'XRPUSD': 'BINANCE:XRPUSDT',
+      'ADAUSD': 'BINANCE:ADAUSDT',
+      'DOTUSD': 'BINANCE:DOTUSDT',
+      
+      // Stocks
+      'AAPL': 'NASDAQ:AAPL',
+      'GOOGL': 'NASDAQ:GOOGL',
+      'TSLA': 'NASDAQ:TSLA',
+      'MSFT': 'NASDAQ:MSFT',
+      'AMZN': 'NASDAQ:AMZN',
+      
+      // Forex pairs
+      'EURUSD': 'FX:EURUSD',
+      'GBPUSD': 'FX:GBPUSD',
+      'USDJPY': 'FX:USDJPY',
+      'USDCHF': 'FX:USDCHF',
+      'AUDUSD': 'FX:AUDUSD',
+      'USDCAD': 'FX:USDCAD',
+      'NZDUSD': 'FX:NZDUSD',
+      
+      // Commodities
+      'XAUUSD': 'TVC:GOLD',
+      'XAGUSD': 'TVC:SILVER',
+      'WTIUSD': 'TVC:USOIL',
+      'BCOUSD': 'TVC:UKOIL',
+      
+      // Indices
+      'US30': 'TVC:DJI',
+      'SPX500': 'TVC:SPX',
+      'NAS100': 'TVC:NDX',
+      'UK100': 'TVC:UKX',
+      'GER40': 'TVC:DAX',
+    };
+    
+    return symbolMappings[symbol] || `FX:${symbol}`;
+  };
+
   useEffect(() => {
     if (!chartRef.current) return;
 
@@ -18,16 +61,13 @@ export const TradingChart = ({ symbol }: TradingChartProps) => {
       if (window.TradingView) {
         new window.TradingView.widget({
           autosize: true,
-          symbol: symbol === "BTCUSD" ? "BINANCE:BTCUSDT" : 
-                  symbol === "AAPL" ? "NASDAQ:AAPL" :
-                  symbol === "TSLA" ? "NASDAQ:TSLA" :
-                  `FX:${symbol}`,
-          interval: "15",
+          symbol: getProperSymbol(symbol),
+          interval: "1",
           timezone: "Etc/UTC",
-          theme: "light",
-          style: "1",
+          theme: document.documentElement.classList.contains('dark') ? "dark" : "light",
+          style: "1", 
           locale: "en",
-          toolbar_bg: "#f1f3f6",
+          toolbar_bg: document.documentElement.classList.contains('dark') ? "#1f2937" : "#f1f3f6",
           enable_publishing: false,
           withdateranges: true,
           hide_side_toolbar: false,
