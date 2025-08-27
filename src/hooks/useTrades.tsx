@@ -48,6 +48,7 @@ export const useTrades = () => {
             
             if (payload.eventType === 'INSERT') {
               const newTrade = payload.new as Trade;
+              console.log('New trade inserted:', newTrade.id, newTrade.status);
               setTrades(prev => {
                 // Prevent duplicates
                 if (prev.some(t => t.id === newTrade.id)) return prev;
@@ -55,6 +56,7 @@ export const useTrades = () => {
               });
             } else if (payload.eventType === 'UPDATE') {
               const updatedTrade = payload.new as Trade;
+              console.log('Trade updated via real-time:', updatedTrade.id, 'status:', updatedTrade.status);
               setTrades(prev => prev.map(trade => 
                 trade.id === updatedTrade.id ? updatedTrade : trade
               ));

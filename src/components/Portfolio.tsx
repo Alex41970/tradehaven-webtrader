@@ -1,19 +1,15 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { TrendingUp, TrendingDown } from "lucide-react";
 import { useTrades } from "@/hooks/useTrades";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { useAssets } from "@/hooks/useAssets";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
-import { useMemo, useEffect, useState } from "react";
-import { SimplePriceIndicator } from "@/components/SimplePriceIndicator";
+import { useMemo, useEffect, useState, useCallback } from "react";
 import { useRealTimePrices } from "@/hooks/useRealTimePrices";
-import { calculateRealTimePnL, formatPnL } from "@/utils/pnlCalculator";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { TradeRow } from "@/components/TradeRow";
 
 export const Portfolio = () => {
   // ALL HOOKS MUST BE CALLED FIRST - NO CONDITIONAL HOOK CALLS
@@ -85,7 +81,7 @@ export const Portfolio = () => {
     );
   }
 
-  const handleCloseTrade = async (tradeId: string, symbol: string) => {
+  const handleCloseTrade = useCallback(async (tradeId: string, symbol: string) => {
     // Prevent multiple close attempts
     if (closingTrades.has(tradeId)) {
       console.log('Trade already being closed:', tradeId);
@@ -143,7 +139,7 @@ export const Portfolio = () => {
         return newSet;
       });
     }
-  };
+  }, [updatedAssets, closeTrade, closingTrades, toast]);
 
   return (
     <div className="space-y-6">
@@ -191,104 +187,17 @@ export const Portfolio = () => {
           ) : (
             <div className="space-y-4">
               {openTrades.map((trade) => {
-                try {
-                  const asset = updatedAssets.find(a => a.symbol === trade.symbol);
-                  const currentPrice = asset?.price || trade.current_price || trade.open_price || 0;
-                  const change24h = asset?.change_24h || 0;
-                  
-                  return (
-                    <div key={trade.id} className="border rounded-lg p-4">
-                      <div className="grid md:grid-cols-8 gap-3 items-center text-sm">
-                        <div>
-                          <div className="text-xs text-muted-foreground mb-1">Symbol</div>
-                          <div className="font-medium">{trade.symbol}</div>
-                          <Badge variant={trade.trade_type === "BUY" ? "default" : "destructive"} className="text-xs mt-1">
-                            {trade.trade_type}
-                          </Badge>
-                        </div>
-                        
-                        <div>
-                          <div className="text-xs text-muted-foreground mb-1">Amount</div>
-                          <div className="font-medium">${Number(trade.amount).toFixed(2)}</div>
-                        </div>
-                        
-                        <div>
-                          <div className="text-xs text-muted-foreground mb-1">Open Price</div>
-                          <div className="font-mono">{Number(trade.open_price).toFixed(trade.symbol.includes('JPY') ? 2 : 4)}</div>
-                        </div>
-                        
-                        <div>
-                          <div className="text-xs text-muted-foreground mb-1">Current Price</div>
-                          {asset && asset.price ? (
-                            <SimplePriceIndicator 
-                              price={currentPrice}
-                              symbol={trade.symbol}
-                            />
-                          ) : (
-                            <div className="font-mono">
-                              {currentPrice.toFixed(trade.symbol.includes('JPY') ? 2 : 4)}
-                            </div>
-                          )}
-                        </div>
-
-                        <div>
-                          <div className="text-xs text-muted-foreground mb-1">24h Change</div>
-                          <div className={`flex items-center gap-1 ${change24h >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                            {change24h >= 0 ? (
-                              <TrendingUp className="h-3 w-3" />
-                            ) : (
-                              <TrendingDown className="h-3 w-3" />
-                            )}
-                            <span className="font-mono text-xs">
-                              {change24h >= 0 ? '+' : ''}{change24h.toFixed(trade.symbol.includes('JPY') ? 2 : 4)}
-                            </span>
-                          </div>
-                        </div>
-                        
-                        <div>
-                          <div className="text-xs text-muted-foreground mb-1">P&L</div>
-                          <div className={`font-medium flex items-center gap-1 transition-colors duration-300 ${(trade.pnl || 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                            {(trade.pnl || 0) >= 0 ? (
-                              <TrendingUp className="h-4 w-4" />
-                            ) : (
-                              <TrendingDown className="h-4 w-4" />
-                            )}
-                            <span className="animate-pulse-subtle">{formatPnL(trade.pnl || 0)}</span>
-                          </div>
-                        </div>
-                        
-                        <div className="col-span-2">
-                          <div className="text-xs text-muted-foreground mb-1">Action</div>
-                          <Button 
-                            size="sm" 
-                            variant="destructive"
-                            onClick={() => handleCloseTrade(trade.id, trade.symbol)}
-                            className="w-full"
-                            disabled={closingTrades.has(trade.id)}
-                          >
-                            {closingTrades.has(trade.id) ? (
-                              <>
-                                <Loader2 className="h-4 w-4 animate-spin mr-1" />
-                                Closing...
-                              </>
-                            ) : (
-                              'Close Position'
-                            )}
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                } catch (error) {
-                  console.error('Error rendering trade:', error, trade);
-                  return (
-                    <div key={trade.id} className="border rounded-lg p-4 bg-red-50 dark:bg-red-950/20">
-                      <div className="text-red-600 text-sm">
-                        Error loading trade data for {trade.symbol}
-                      </div>
-                    </div>
-                  );
-                }
+                const asset = updatedAssets.find(a => a.symbol === trade.symbol);
+                
+                return (
+                  <TradeRow
+                    key={trade.id}
+                    trade={trade}
+                    asset={asset}
+                    onCloseTrade={handleCloseTrade}
+                    isClosing={closingTrades.has(trade.id)}
+                  />
+                );
               })}
             </div>
           )}
