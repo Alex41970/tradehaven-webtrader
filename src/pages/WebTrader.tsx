@@ -15,7 +15,7 @@ const WebTrader = () => {
   const navigate = useNavigate();
   const { assets } = useAssets();
   const { trades, refetch: refetchTrades } = useTrades();
-  const { userProfile } = useUserProfile();
+  const { profile: userProfile } = useUserProfile();
   const [isExternalTraderOpen, setIsExternalTraderOpen] = useState(false);
 
   // Simulate external trading platform URL

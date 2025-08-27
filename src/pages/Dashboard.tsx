@@ -2,10 +2,12 @@ import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
 import { WebTrader } from "@/components/WebTrader";
 import { Portfolio } from "@/components/Portfolio";
 import { TradingHistory } from "@/components/TradingHistory";
-import { LogOut, TrendingUp, DollarSign, Activity } from "lucide-react";
+import { LogOut, TrendingUp, DollarSign, Activity, ExternalLink } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { useTrades } from "@/hooks/useTrades";
 import { RealTimePriceService } from "@/services/RealTimePriceService";
@@ -14,6 +16,7 @@ const Dashboard = () => {
   const { user, signOut } = useAuth();
   const { profile, loading: profileLoading } = useUserProfile();
   const { openTrades } = useTrades();
+  const navigate = useNavigate();
 
   const handleSignOut = async () => {
     await signOut();
@@ -44,6 +47,19 @@ const Dashboard = () => {
               <h1 className="text-2xl font-bold">TradeHaven</h1>
             </div>
             <div className="flex items-center space-x-4">
+              <Button 
+                onClick={() => navigate('/webtrader')}
+                variant="default"
+                size="sm"
+                className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
+              >
+                <ExternalLink className="w-4 h-4 mr-2" />
+                Launch WebTrader
+              </Button>
+              <Badge variant="outline" className="text-sm">
+                <Activity className="w-3 h-3 mr-1" />
+                Live Data
+              </Badge>
               <span className="text-sm text-muted-foreground">Welcome, {user?.email}</span>
               <Button variant="outline" size="sm" onClick={handleSignOut}>
                 <LogOut className="h-4 w-4 mr-2" />
