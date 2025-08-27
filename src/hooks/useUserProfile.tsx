@@ -91,7 +91,7 @@ export const useUserProfile = () => {
       // Set up real-time subscription for profile changes
       console.log('Setting up real-time subscription for user profile');
       const channel = supabase
-        .channel('user_profile_changes')
+        .channel(`user_profile_changes_${user.id}`)
         .on(
           'postgres_changes',
           {
@@ -119,7 +119,7 @@ export const useUserProfile = () => {
       setProfile(null);
       setLoading(false);
     }
-  }, [user, fetchProfile]);
+  }, [user?.id]); // Only depend on user.id to prevent unnecessary re-renders
 
   // Force refresh function for manual updates
   const forceRefresh = useCallback(async () => {

@@ -77,13 +77,13 @@ export const WebTrader = () => {
     }
   }, [realtimeAssets, selectedAsset?.id]); // Only depend on realtimeAssets and selectedAsset.id to avoid infinite loops
 
-  // Real-time profile synchronization for immediate updates
+  // Real-time profile synchronization - optimistic updates
   useEffect(() => {
     if (!profile?.user_id) return;
 
-    console.log('Setting up real-time profile subscription in WebTrader');
+    console.log('Setting up optimistic profile updates in WebTrader');
     const channel = supabase
-      .channel('webtrader_profile_updates')
+      .channel(`webtrader_profile_${profile.user_id}`)
       .on(
         'postgres_changes',
         {
@@ -93,9 +93,11 @@ export const WebTrader = () => {
           filter: `user_id=eq.${profile.user_id}`
         },
         (payload) => {
-          console.log('WebTrader: Profile update received:', payload);
-          // Force refresh to ensure we have the latest data
-          forceRefresh();
+          console.log('WebTrader: Optimistic profile update received:', payload);
+          // Force refresh only if we haven't already updated (avoid double updates)
+          if (payload.new && typeof payload.new === 'object') {
+            forceRefresh();
+          }
         }
       )
       .subscribe();
@@ -104,7 +106,7 @@ export const WebTrader = () => {
       console.log('Cleaning up WebTrader profile subscription');
       supabase.removeChannel(channel);
     };
-  }, [profile?.user_id, forceRefresh]);
+  }, [profile?.user_id]); // Remove forceRefresh dependency to prevent re-renders
 
   // Calculate trade details with memoization for performance
   const calculateMargin = useMemo(() => {
@@ -204,9 +206,10 @@ export const WebTrader = () => {
       if (trade) {
         console.log('Trade opened successfully:', trade.id);
         
-        // Immediate profile refresh - no timeout needed
+        // Force immediate profile refresh after trade
+        console.log('Forcing profile refresh after trade execution');
         await forceRefresh();
-        console.log('Profile refreshed after trade');
+        console.log('Profile refreshed successfully after trade');
 
         toast({
           title: "Trade Successful",
@@ -236,9 +239,10 @@ export const WebTrader = () => {
     const success = await closeTrade(tradeId, asset.price);
     
     if (success) {
-      // Immediate profile refresh after closing trade
+      // Force immediate profile refresh after closing trade
+      console.log('Forcing profile refresh after trade closure');
       await forceRefresh();
-      console.log('Profile refreshed after trade closure');
+      console.log('Profile refreshed successfully after trade closure');
     }
   };
 
@@ -470,7 +474,11 @@ export const WebTrader = () => {
             <CardHeader>
               <CardTitle>Place Trade</CardTitle>
               <CardDescription className="flex items-center justify-between">
-                <span className="block">Balance: ${profile.balance.toFixed(2)} | Available Margin: ${profile.available_margin.toFixed(2)}</span>
+                <span className="block">
+                  Balance: ${profile.balance.toFixed(2)} | 
+                  Available Margin: ${profile.available_margin.toFixed(2)} | 
+                  Used Margin: ${profile.used_margin.toFixed(2)}
+                </span>
                 <div className="flex items-center gap-2">
                   <div className={`h-2 w-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
                   <span className="text-xs">
