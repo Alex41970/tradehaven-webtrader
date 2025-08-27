@@ -13,6 +13,7 @@ import { useAssets, Asset } from "@/hooks/useAssets";
 import { useTrades } from "@/hooks/useTrades";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { useFavorites } from "@/hooks/useFavorites";
+import { LivePriceIndicator } from "@/components/LivePriceIndicator";
 
 export const WebTrader = () => {
   const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
@@ -181,21 +182,11 @@ export const WebTrader = () => {
           </div>
         </div>
       </div>
-      <div className="text-right">
-        <div className="font-medium text-sm">
-          {asset.price.toFixed(asset.category === 'forex' ? 5 : 2)}
-        </div>
-        <div className={`text-xs flex items-center gap-1 ${
-          asset.change_24h >= 0 ? 'text-green-500' : 'text-red-500'
-        }`}>
-          {asset.change_24h >= 0 ? (
-            <TrendingUp className="h-3 w-3" />
-          ) : (
-            <TrendingDown className="h-3 w-3" />
-          )}
-          {asset.change_24h >= 0 ? '+' : ''}{asset.change_24h.toFixed(2)}%
-        </div>
-      </div>
+      <LivePriceIndicator 
+        price={asset.price} 
+        change={asset.change_24h} 
+        symbol={asset.symbol}
+      />
     </div>
   );
 
@@ -351,27 +342,17 @@ export const WebTrader = () => {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
-                <div>
+                <div className="flex items-center gap-2">
                   {selectedAsset.name}
                   <Badge variant="secondary" className="ml-2">
                     {selectedAsset.category.toUpperCase()}
                   </Badge>
                 </div>
-                <div className="text-right">
-                  <div className="text-2xl font-bold">
-                    {selectedAsset.price.toFixed(selectedAsset.category === 'forex' ? 5 : 2)}
-                  </div>
-                  <div className={`text-sm flex items-center gap-1 ${
-                    selectedAsset.change_24h >= 0 ? 'text-green-500' : 'text-red-500'
-                  }`}>
-                    {selectedAsset.change_24h >= 0 ? (
-                      <TrendingUp className="h-4 w-4" />
-                    ) : (
-                      <TrendingDown className="h-4 w-4" />
-                    )}
-                    {selectedAsset.change_24h >= 0 ? '+' : ''}{selectedAsset.change_24h.toFixed(2)}%
-                  </div>
-                </div>
+                <LivePriceIndicator 
+                  price={selectedAsset.price} 
+                  change={selectedAsset.change_24h} 
+                  symbol={selectedAsset.symbol}
+                />
               </CardTitle>
             </CardHeader>
             <CardContent>
