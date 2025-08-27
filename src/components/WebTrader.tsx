@@ -89,7 +89,7 @@ export const WebTrader = () => {
       const tradeAmount = parseFloat(amount);
       return (tradeAmount * selectedAsset.price) / leverage;
     }
-  }, [selectedAsset, leverage, amount]);
+  }, [selectedAsset?.price, selectedAsset?.contract_size, selectedAsset?.category, leverage, amount]);
 
   const calculatePositionSize = useMemo(() => {
     if (!selectedAsset) return 0;
@@ -103,7 +103,7 @@ export const WebTrader = () => {
       const tradeAmount = parseFloat(amount);
       return tradeAmount * selectedAsset.price;
     }
-  }, [selectedAsset, amount]);
+  }, [selectedAsset?.price, selectedAsset?.contract_size, selectedAsset?.category, amount]);
 
   const handleTrade = async () => {
     if (!selectedAsset || !profile) {
