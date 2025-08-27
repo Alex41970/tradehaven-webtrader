@@ -215,6 +215,10 @@ export type Database = {
         }
         Returns: number
       }
+      recalculate_user_balance: {
+        Args: { user_uuid: string }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
