@@ -13,7 +13,7 @@ import { useAssets, Asset } from "@/hooks/useAssets";
 import { useTrades } from "@/hooks/useTrades";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { useFavorites } from "@/hooks/useFavorites";
-import { LivePriceIndicator } from "@/components/LivePriceIndicator";
+import { PulsingPriceIndicator } from "@/components/PulsingPriceIndicator";
 
 export const WebTrader = () => {
   const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
@@ -59,8 +59,21 @@ export const WebTrader = () => {
     }
   }, [assets, selectedAsset]);
 
-  // Calculate trade details
-  const calculateMargin = () => {
+  // Update selectedAsset when underlying asset data changes (real-time price updates)
+  useEffect(() => {
+    if (selectedAsset && assets.length > 0) {
+      const updatedAsset = assets.find(asset => asset.id === selectedAsset.id);
+      if (updatedAsset && (
+        updatedAsset.price !== selectedAsset.price || 
+        updatedAsset.change_24h !== selectedAsset.change_24h
+      )) {
+        setSelectedAsset(updatedAsset);
+      }
+    }
+  }, [assets, selectedAsset]);
+
+  // Calculate trade details with memoization for performance
+  const calculateMargin = useMemo(() => {
     if (!selectedAsset) return 0;
     
     if (selectedAsset.category === 'forex') {
@@ -73,9 +86,9 @@ export const WebTrader = () => {
       const tradeAmount = parseFloat(amount);
       return (tradeAmount * selectedAsset.price) / leverage;
     }
-  };
+  }, [selectedAsset, leverage, amount]);
 
-  const calculatePositionSize = () => {
+  const calculatePositionSize = useMemo(() => {
     if (!selectedAsset) return 0;
     
     if (selectedAsset.category === 'forex') {
@@ -87,7 +100,7 @@ export const WebTrader = () => {
       const tradeAmount = parseFloat(amount);
       return tradeAmount * selectedAsset.price;
     }
-  };
+  }, [selectedAsset, amount]);
 
   const handleTrade = async () => {
     if (!selectedAsset || !profile) {
@@ -126,7 +139,7 @@ export const WebTrader = () => {
       }
     }
 
-    const marginRequired = calculateMargin();
+    const marginRequired = calculateMargin;
     if (marginRequired > profile.available_margin) {
       toast({
         title: "Insufficient Margin",
@@ -208,7 +221,7 @@ export const WebTrader = () => {
           </div>
         </div>
       </div>
-      <LivePriceIndicator 
+      <PulsingPriceIndicator 
         price={asset.price} 
         change={asset.change_24h} 
         symbol={asset.symbol}
@@ -374,7 +387,7 @@ export const WebTrader = () => {
                     {selectedAsset.category.toUpperCase()}
                   </Badge>
                 </div>
-                <LivePriceIndicator 
+                <PulsingPriceIndicator 
                   price={selectedAsset.price} 
                   change={selectedAsset.change_24h} 
                   symbol={selectedAsset.symbol}
@@ -452,14 +465,14 @@ export const WebTrader = () => {
                 </Select>
               </div>
 
-              <div className="grid grid-cols-2 gap-4 p-4 bg-muted/20 rounded-lg">
+              <div className="grid grid-cols-2 gap-4 p-4 bg-muted/20 rounded-lg border-l-4 border-l-primary/30">
                 <div>
                   <div className="text-sm text-muted-foreground">Position Size</div>
-                  <div className="font-medium">${calculatePositionSize().toFixed(2)}</div>
+                  <div className="font-medium animate-pulse-subtle">${calculatePositionSize.toFixed(2)}</div>
                 </div>
                 <div>
                   <div className="text-sm text-muted-foreground">Margin Required</div>
-                  <div className="font-medium">${calculateMargin().toFixed(2)}</div>
+                  <div className="font-medium animate-pulse-subtle">${calculateMargin.toFixed(2)}</div>
                 </div>
               </div>
 
@@ -470,8 +483,10 @@ export const WebTrader = () => {
                 variant={tradeType === 'BUY' ? 'trading' : 'destructive'}
                 disabled={
                   selectedAsset.category === 'forex' 
-                    ? calculateMargin() > profile.available_margin
-                    : !amount || parseFloat(amount) <= 0 || calculateMargin() > profile.available_margin
+                    ? calculateMargin > profile.available_margin
+                    : calculateMargin > profile.available_margin ||
+                      (parseFloat(amount) || 0) < selectedAsset.min_trade_size ||
+                      !amount
                 }
               >
                 {tradeType} {selectedAsset.symbol}

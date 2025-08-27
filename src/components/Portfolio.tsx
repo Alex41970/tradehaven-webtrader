@@ -7,6 +7,8 @@ import { useUserProfile } from "@/hooks/useUserProfile";
 import { useAssets } from "@/hooks/useAssets";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
+import { useMemo } from "react";
+import { PulsingPriceIndicator } from "@/components/PulsingPriceIndicator";
 
 export const Portfolio = () => {
   const { openTrades, closeTrade, loading: tradesLoading } = useTrades();
@@ -22,7 +24,10 @@ export const Portfolio = () => {
     );
   }
 
-  const totalPnL = openTrades.reduce((sum, trade) => sum + (trade.pnl || 0), 0);
+  const totalPnL = useMemo(() => 
+    openTrades.reduce((sum, trade) => sum + (trade.pnl || 0), 0), 
+    [openTrades]
+  );
 
   const handleCloseTrade = async (tradeId: string, symbol: string) => {
     const asset = assets.find(a => a.symbol === symbol);
@@ -61,7 +66,7 @@ export const Portfolio = () => {
             <CardTitle className="text-lg">Total P&L</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className={`text-2xl font-bold ${totalPnL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+            <div className={`text-2xl font-bold animate-pulse-subtle ${totalPnL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
               {totalPnL >= 0 ? '+' : ''}${totalPnL.toFixed(2)}
             </div>
           </CardContent>
@@ -113,10 +118,15 @@ export const Portfolio = () => {
                         <div className="font-mono">{Number(trade.open_price).toFixed(trade.symbol.includes('JPY') ? 2 : 4)}</div>
                       </div>
                       
-                      <div>
-                        <div className="text-sm text-muted-foreground">Current Price</div>
-                        <div className="font-mono">{Number(currentPrice).toFixed(trade.symbol.includes('JPY') ? 2 : 4)}</div>
-                      </div>
+                       <div>
+                         <div className="text-sm text-muted-foreground">Current Price</div>
+                         <PulsingPriceIndicator 
+                           price={currentPrice}
+                           change={asset?.change_24h || 0}
+                           symbol={trade.symbol}
+                           className="text-sm"
+                         />
+                       </div>
                       
                       <div>
                         <div className="text-sm text-muted-foreground">P&L</div>
