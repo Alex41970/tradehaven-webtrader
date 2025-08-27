@@ -1,9 +1,9 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { TrendingUp, TrendingDown, Loader2 } from "lucide-react";
 import { SimplePriceIndicator } from "@/components/SimplePriceIndicator";
-import { formatPnL } from "@/utils/pnlCalculator";
+import { formatPnL, calculateRealTimePnL } from "@/utils/pnlCalculator";
 import { Trade } from "@/hooks/useTrades";
 
 interface TradeRowProps {
@@ -18,20 +18,40 @@ interface TradeRowProps {
 }
 
 export const TradeRow = ({ trade, asset, onCloseTrade, isClosing }: TradeRowProps) => {
-  const [localPnL, setLocalPnL] = useState(trade.pnl || 0);
   const [isLocalClosed, setIsLocalClosed] = useState(trade.status === 'closed');
+
+  // Calculate real-time P&L when trade is open and asset price is available
+  const realTimePnL = useMemo(() => {
+    // If trade is closed, use stored P&L
+    if (trade.status === 'closed' || isLocalClosed) {
+      return trade.pnl || 0;
+    }
+
+    // For open trades, calculate real-time P&L if current price is available
+    if (asset?.price) {
+      return calculateRealTimePnL(
+        {
+          trade_type: trade.trade_type,
+          amount: trade.amount,
+          open_price: trade.open_price,
+          leverage: trade.leverage
+        },
+        asset.price
+      );
+    }
+
+    // Fall back to stored P&L if no real-time price
+    return trade.pnl || 0;
+  }, [trade, asset?.price, isLocalClosed]);
 
   // Update local state when trade status changes
   useEffect(() => {
     if (trade.status === 'closed') {
       setIsLocalClosed(true);
-      // Stop any further PnL calculations
-      setLocalPnL(trade.pnl || 0);
     } else {
       setIsLocalClosed(false);
-      setLocalPnL(trade.pnl || 0);
     }
-  }, [trade.status, trade.pnl]);
+  }, [trade.status]);
 
   const handleCloseClick = useCallback(async () => {
     // Immediately mark as closing locally to prevent UI flickering
@@ -98,13 +118,13 @@ export const TradeRow = ({ trade, asset, onCloseTrade, isClosing }: TradeRowProp
         
         <div>
           <div className="text-xs text-muted-foreground mb-1">P&L</div>
-          <div className={`font-medium flex items-center gap-1 transition-colors duration-300 ${localPnL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-            {localPnL >= 0 ? (
+          <div className={`font-medium flex items-center gap-1 transition-colors duration-300 ${realTimePnL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+            {realTimePnL >= 0 ? (
               <TrendingUp className="h-4 w-4" />
             ) : (
               <TrendingDown className="h-4 w-4" />
             )}
-            <span className={!isLocalClosed ? "animate-pulse-subtle" : ""}>{formatPnL(localPnL)}</span>
+            <span className={!isLocalClosed ? "animate-pulse-subtle" : ""}>{formatPnL(realTimePnL)}</span>
           </div>
         </div>
         
