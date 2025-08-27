@@ -139,7 +139,7 @@ export const Portfolio = () => {
         return newSet;
       });
     }
-  }, [updatedAssets, closeTrade, closingTrades, toast]);
+  }, [updatedAssets, closeTrade, toast]);
 
   return (
     <div className="space-y-6">
