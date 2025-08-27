@@ -25,9 +25,7 @@ export const useRealTimePrices = () => {
       .subscribe();
 
     // Start periodic price updates
-    const updatePrices = async () => {
-      if (isUpdating) return;
-      
+    const updatePrices = async () => {      
       setIsUpdating(true);
       try {
         const { data, error } = await supabase.functions.invoke('update-prices');
@@ -44,15 +42,15 @@ export const useRealTimePrices = () => {
       }
     };
 
-    // Update prices immediately and then every 15 seconds
+    // Update prices immediately and then every 10 seconds for faster updates
     updatePrices();
-    const interval = setInterval(updatePrices, 15000);
+    const interval = setInterval(updatePrices, 10000);
 
     return () => {
       supabase.removeChannel(channel);
       clearInterval(interval);
     };
-  }, [isUpdating]);
+  }, []); // Remove isUpdating from dependencies to prevent infinite loop
 
   const forceUpdate = async () => {
     if (isUpdating) return false;
