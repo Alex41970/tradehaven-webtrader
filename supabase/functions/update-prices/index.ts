@@ -252,7 +252,7 @@ serve(async (req) => {
           console.log(`${asset.symbol}: Default variation $${newPrice.toFixed(2)} (${changePercent >= 0 ? '+' : ''}${(changePercent * 100).toFixed(2)}%)`);
         }
 
-        const decimals = asset.category === 'forex' ? 5 : 2;
+        const decimals = (asset.category === 'forex' || asset.category === 'crypto') ? 4 : 2;
         priceUpdates.push({
           symbol: asset.symbol,
           price: parseFloat(newPrice.toFixed(decimals)),
@@ -266,7 +266,7 @@ serve(async (req) => {
         const newPrice = asset.price * (1 + changePercent);
         const change24h = newPrice - asset.price;
         
-        const decimals = asset.category === 'forex' ? 5 : 2;
+        const decimals = (asset.category === 'forex' || asset.category === 'crypto') ? 4 : 2;
         priceUpdates.push({
           symbol: asset.symbol,
           price: parseFloat(newPrice.toFixed(decimals)),

@@ -21,7 +21,7 @@ export const LivePriceIndicator = ({ price, change, symbol, className }: LivePri
           <TrendingDown className="h-4 w-4 text-red-600" />
         )}
         <span className="font-mono text-sm font-medium">
-          {price.toFixed(symbol.includes('JPY') ? 3 : 5)}
+          {price.toFixed(4)}
         </span>
       </div>
       <div className={cn(
@@ -30,7 +30,7 @@ export const LivePriceIndicator = ({ price, change, symbol, className }: LivePri
           ? "bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400" 
           : "bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-400"
       )}>
-        <span>{isPositive ? '+' : ''}{change.toFixed(symbol.includes('JPY') ? 3 : 5)}</span>
+        <span>{isPositive ? '+' : ''}{change.toFixed(4)}</span>
         <span>({isPositive ? '+' : ''}{changePercent}%)</span>
       </div>
     </div>
