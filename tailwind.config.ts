@@ -61,6 +61,14 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
+				},
+				trading: {
+					primary: 'hsl(var(--trading-primary))',
+					secondary: 'hsl(var(--trading-secondary))',
+					accent: 'hsl(var(--trading-accent))',
+					success: 'hsl(var(--trading-success))',
+					danger: 'hsl(var(--trading-danger))',
+					neutral: 'hsl(var(--trading-neutral))'
 				}
 			},
 			borderRadius: {
