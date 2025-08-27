@@ -10,20 +10,41 @@ import { LogOut, TrendingUp, DollarSign, Activity, ExternalLink } from "lucide-r
 import { useNavigate } from "react-router-dom";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { useTrades } from "@/hooks/useTrades";
+import { useAssets } from "@/hooks/useAssets";
+import { useRealTimePrices } from "@/hooks/useRealTimePrices";
+import { calculateRealTimePnL } from "@/utils/pnlCalculator";
+import { useMemo } from "react";
 const Dashboard = () => {
   const { user, signOut } = useAuth();
   const { profile, loading: profileLoading } = useUserProfile();
   const { openTrades } = useTrades();
+  const { assets, loading: assetsLoading } = useAssets();
+  const { getUpdatedAssets } = useRealTimePrices();
   const navigate = useNavigate();
 
   const handleSignOut = async () => {
     await signOut();
   };
 
-  // Calculate total P&L from open trades
-  const totalUnrealizedPnL = openTrades.reduce((sum, trade) => sum + trade.pnl, 0);
+  // Create updated assets with real-time prices
+  const updatedAssets = useMemo(() => {
+    return getUpdatedAssets(assets);
+  }, [assets, getUpdatedAssets]);
 
-  if (profileLoading) {
+  // Calculate real-time P&L from open trades
+  const totalUnrealizedPnL = useMemo(() => {
+    if (!openTrades || openTrades.length === 0) {
+      return 0;
+    }
+    return openTrades.reduce((sum, trade) => {
+      const asset = updatedAssets.find(a => a.symbol === trade.symbol);
+      const currentPrice = asset?.price || trade.current_price || trade.open_price || 0;
+      const realTimePnL = calculateRealTimePnL(trade, currentPrice);
+      return sum + realTimePnL;
+    }, 0);
+  }, [openTrades, updatedAssets]);
+
+  if (profileLoading || assetsLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
@@ -97,15 +118,21 @@ const Dashboard = () => {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Unrealized P&L</CardTitle>
-                <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                <div className="flex items-center gap-1">
+                  <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                </div>
               </CardHeader>
               <CardContent>
-                <div className={`text-2xl font-bold ${
+                <div className={`text-2xl font-bold transition-all duration-300 ${
                   totalUnrealizedPnL >= 0 ? 'text-green-500' : 'text-red-500'
                 }`}>
-                  {totalUnrealizedPnL >= 0 ? '+' : ''}${totalUnrealizedPnL.toFixed(2)}
+                  <span className="animate-pulse-subtle">
+                    {totalUnrealizedPnL >= 0 ? '+' : ''}${totalUnrealizedPnL.toFixed(2)}
+                  </span>
                 </div>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-muted-foreground flex items-center gap-1">
+                  <Activity className="w-3 h-3" />
                   Live P&L Updates
                 </p>
               </CardContent>
