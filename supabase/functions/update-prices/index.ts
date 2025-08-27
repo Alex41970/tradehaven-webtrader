@@ -74,7 +74,7 @@ serve(async (req) => {
       if (cryptoSymbols.length === 0) return cryptoMap;
 
       const ids = cryptoSymbols.map(s => coinGeckoIds[s]).join(',');
-      const url = `https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd&include_24hr_change=true&x_cg_demo_api_key=CG-DEMO-API-KEY`;
+      const url = `https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd&include_24hr_change=true`;
       
       try {
         console.log(`Fetching crypto prices from CoinGecko for: ${cryptoSymbols.join(', ')}`);
@@ -104,14 +104,7 @@ serve(async (req) => {
         }
       } catch (error) {
         console.error('CoinGecko API error:', error);
-        // Fallback to smaller realistic variations on existing prices if API fails
-        for (const symbol of cryptoSymbols) {
-          const changePercent = (Math.random() - 0.5) * 0.06; // -3% to +3% change
-          cryptoMap.set(symbol, {
-            price: 0, // Will use existing price with variation
-            change: changePercent * 100
-          });
-        }
+        // Don't add fallback prices here - let the main logic handle it
       }
       
       return cryptoMap;

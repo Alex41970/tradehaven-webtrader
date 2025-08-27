@@ -42,9 +42,9 @@ export const useRealTimePrices = () => {
       }
     };
 
-    // Update prices immediately and then every 10 seconds for faster updates
+    // Update prices immediately and then every 30 seconds
     updatePrices();
-    const interval = setInterval(updatePrices, 10000);
+    const interval = setInterval(updatePrices, 30000);
 
     return () => {
       supabase.removeChannel(channel);

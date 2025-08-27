@@ -77,7 +77,7 @@ export const RealTimePriceService = ({ children }: RealTimePriceServiceProps) =>
       supabase.removeChannel(tradesChannel);
       supabase.removeChannel(profileChannel);
     };
-  }, [refetchAssets, refetchTrades, refetchProfile]);
+  }, []); // Empty dependency array to prevent multiple setups
 
   return <>{children}</>;
 };
