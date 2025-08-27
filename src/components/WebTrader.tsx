@@ -61,29 +61,30 @@ export const WebTrader = () => {
 
   // Calculate trade details
   const calculateMargin = () => {
-    if (!selectedAsset || !amount) return 0;
-    const tradeAmount = parseFloat(amount);
+    if (!selectedAsset) return 0;
     
     if (selectedAsset.category === 'forex') {
-      // For forex: margin = (lot_size * contract_size * price) / leverage
-      // Assuming USD account for simplicity (would need currency conversion in real implementation)
-      const notionalValue = tradeAmount * selectedAsset.contract_size * selectedAsset.price;
+      // For forex: always use 1 standard lot (100,000 units)
+      const notionalValue = 1 * selectedAsset.contract_size * selectedAsset.price;
       return notionalValue / leverage;
     } else {
       // For stocks, crypto, commodities, indices: trade in actual units
+      if (!amount) return 0;
+      const tradeAmount = parseFloat(amount);
       return (tradeAmount * selectedAsset.price) / leverage;
     }
   };
 
   const calculatePositionSize = () => {
-    if (!selectedAsset || !amount) return 0;
-    const tradeAmount = parseFloat(amount);
+    if (!selectedAsset) return 0;
     
     if (selectedAsset.category === 'forex') {
-      // For forex: show the notional value (lot_size * contract_size * price)
-      return tradeAmount * selectedAsset.contract_size * selectedAsset.price;
+      // For forex: always show 1 standard lot notional value
+      return 1 * selectedAsset.contract_size * selectedAsset.price;
     } else {
       // For other instruments: show the total value (amount * price)
+      if (!amount) return 0;
+      const tradeAmount = parseFloat(amount);
       return tradeAmount * selectedAsset.price;
     }
   };
@@ -98,23 +99,31 @@ export const WebTrader = () => {
       return;
     }
 
-    const tradeAmount = parseFloat(amount);
-    if (isNaN(tradeAmount) || tradeAmount <= 0) {
-      toast({
-        title: "Invalid Amount",
-        description: "Please enter a valid trade amount",
-        variant: "destructive",
-      });
-      return;
-    }
+    let tradeAmount: number;
+    
+    if (selectedAsset.category === 'forex') {
+      // For forex: always use 1 standard lot
+      tradeAmount = 1;
+    } else {
+      // For other instruments: use user input
+      tradeAmount = parseFloat(amount);
+      if (isNaN(tradeAmount) || tradeAmount <= 0) {
+        toast({
+          title: "Invalid Amount",
+          description: "Please enter a valid trade amount",
+          variant: "destructive",
+        });
+        return;
+      }
 
-    if (tradeAmount < selectedAsset.min_trade_size) {
-      toast({
-        title: "Minimum Trade Size",
-        description: `Minimum trade size for ${selectedAsset.symbol} is ${selectedAsset.min_trade_size}`,
-        variant: "destructive",
-      });
-      return;
+      if (tradeAmount < selectedAsset.min_trade_size) {
+        toast({
+          title: "Minimum Trade Size",
+          description: `Minimum trade size for ${selectedAsset.symbol} is ${selectedAsset.min_trade_size}`,
+          variant: "destructive",
+        });
+        return;
+      }
     }
 
     const marginRequired = calculateMargin();
@@ -406,15 +415,21 @@ export const WebTrader = () => {
                   <Label htmlFor="amount">
                     {selectedAsset.category === 'forex' ? 'Lot Size' : 'Amount'}
                   </Label>
-                  <Input
-                    id="amount"
-                    type="number"
-                    value={amount}
-                    onChange={(e) => setAmount(e.target.value)}
-                    placeholder={selectedAsset.category === 'forex' ? 'Enter lot size' : 'Enter amount'}
-                    step={selectedAsset.min_trade_size}
-                    min={selectedAsset.min_trade_size}
-                  />
+                  {selectedAsset.category === 'forex' ? (
+                    <div className="flex items-center h-10 px-3 py-2 border border-input bg-muted rounded-md">
+                      <span className="text-sm">1 Standard Lot</span>
+                    </div>
+                  ) : (
+                    <Input
+                      id="amount"
+                      type="number"
+                      value={amount}
+                      onChange={(e) => setAmount(e.target.value)}
+                      placeholder="Enter amount"
+                      step={selectedAsset.min_trade_size}
+                      min={selectedAsset.min_trade_size}
+                    />
+                  )}
                   {selectedAsset.category === 'forex' && (
                     <div className="text-xs text-muted-foreground mt-1">
                       1 lot = {selectedAsset.contract_size.toLocaleString()} units
@@ -455,7 +470,11 @@ export const WebTrader = () => {
                 className="w-full"
                 size="lg"
                 variant={tradeType === 'BUY' ? 'trading' : 'destructive'}
-                disabled={!amount || parseFloat(amount) <= 0 || calculateMargin() > profile.available_margin}
+                disabled={
+                  selectedAsset.category === 'forex' 
+                    ? calculateMargin() > profile.available_margin
+                    : !amount || parseFloat(amount) <= 0 || calculateMargin() > profile.available_margin
+                }
               >
                 {tradeType} {selectedAsset.symbol}
               </Button>
