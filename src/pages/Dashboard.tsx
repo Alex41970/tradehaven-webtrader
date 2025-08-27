@@ -6,9 +6,31 @@ import { WebTrader } from "@/components/WebTrader";
 import { Portfolio } from "@/components/Portfolio";
 import { TradingHistory } from "@/components/TradingHistory";
 import { LogOut, TrendingUp, DollarSign, Activity } from "lucide-react";
+import { useUserProfile } from "@/hooks/useUserProfile";
+import { useTrades } from "@/hooks/useTrades";
 
 const Dashboard = () => {
   const { user, signOut } = useAuth();
+  const { profile, loading: profileLoading } = useUserProfile();
+  const { openTrades } = useTrades();
+
+  const handleSignOut = async () => {
+    await signOut();
+  };
+
+  // Calculate total P&L from open trades
+  const totalUnrealizedPnL = openTrades.reduce((sum, trade) => sum + trade.pnl, 0);
+
+  if (profileLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+          <p className="mt-4 text-muted-foreground">Loading your trading dashboard...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -21,7 +43,7 @@ const Dashboard = () => {
           </div>
           <div className="flex items-center space-x-4">
             <span className="text-sm text-muted-foreground">Welcome, {user?.email}</span>
-            <Button variant="outline" size="sm" onClick={signOut}>
+            <Button variant="outline" size="sm" onClick={handleSignOut}>
               <LogOut className="h-4 w-4 mr-2" />
               Sign Out
             </Button>
@@ -35,32 +57,42 @@ const Dashboard = () => {
         <div className="grid md:grid-cols-3 gap-6 mb-6">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Balance</CardTitle>
+              <CardTitle className="text-sm font-medium">Account Balance</CardTitle>
               <DollarSign className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">$12,845.67</div>
-              <p className="text-xs text-muted-foreground">+2.5% from last month</p>
+              <div className="text-2xl font-bold">${profile?.balance.toFixed(2) || '0.00'}</div>
+              <p className="text-xs text-muted-foreground">
+                Available Margin: ${profile?.available_margin.toFixed(2) || '0.00'}
+              </p>
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Active Trades</CardTitle>
+              <CardTitle className="text-sm font-medium">Open Trades</CardTitle>
               <Activity className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">7</div>
-              <p className="text-xs text-muted-foreground">3 winning, 4 pending</p>
+              <div className="text-2xl font-bold">{openTrades.length}</div>
+              <p className="text-xs text-muted-foreground">
+                Used Margin: ${profile?.used_margin.toFixed(2) || '0.00'}
+              </p>
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Today's P&L</CardTitle>
+              <CardTitle className="text-sm font-medium">Unrealized P&L</CardTitle>
               <TrendingUp className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-green-600">+$234.56</div>
-              <p className="text-xs text-muted-foreground">+1.8% today</p>
+              <div className={`text-2xl font-bold ${
+                totalUnrealizedPnL >= 0 ? 'text-green-500' : 'text-red-500'
+              }`}>
+                {totalUnrealizedPnL >= 0 ? '+' : ''}${totalUnrealizedPnL.toFixed(2)}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Equity: ${profile?.equity.toFixed(2) || '0.00'}
+              </p>
             </CardContent>
           </Card>
         </div>
