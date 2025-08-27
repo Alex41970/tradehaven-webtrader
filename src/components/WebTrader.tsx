@@ -79,7 +79,7 @@ export const WebTrader = () => {
     if (!selectedAsset) return 0;
     
     if (selectedAsset.category === 'forex') {
-      // For forex: always show 1 standard lot notional value
+      // For forex: always show notional value of 1 standard lot
       return 1 * selectedAsset.contract_size * selectedAsset.price;
     } else {
       // For other instruments: show the total value (amount * price)
@@ -105,7 +105,7 @@ export const WebTrader = () => {
       // For forex: always use 1 standard lot
       tradeAmount = 1;
     } else {
-      // For other instruments: use user input
+      // For other instruments: validate user input
       tradeAmount = parseFloat(amount);
       if (isNaN(tradeAmount) || tradeAmount <= 0) {
         toast({
@@ -150,7 +150,7 @@ export const WebTrader = () => {
     if (trade) {
       toast({
         title: "Trade Successful",
-        description: `${tradeType} ${tradeAmount} ${selectedAsset.symbol} opened successfully!`,
+        description: `${tradeType} ${selectedAsset.category === 'forex' ? '1 lot' : tradeAmount} ${selectedAsset.symbol} opened successfully!`,
       });
     }
   };
@@ -336,7 +336,7 @@ export const WebTrader = () => {
                         <div>
                           <div className="font-medium text-sm">{trade.symbol}</div>
                           <div className="text-xs text-muted-foreground">
-                            {trade.trade_type} {trade.amount}{asset?.category === 'forex' ? ' lots' : ''} @ {trade.open_price}
+                            {trade.trade_type} {asset?.category === 'forex' ? '1 lot' : trade.amount} @ {trade.open_price}
                           </div>
                           <div className={`text-xs ${
                             trade.pnl >= 0 ? 'text-green-500' : 'text-red-500'
@@ -413,11 +413,14 @@ export const WebTrader = () => {
                 
                 <div>
                   <Label htmlFor="amount">
-                    {selectedAsset.category === 'forex' ? 'Lot Size' : 'Amount'}
+                    {selectedAsset.category === 'forex' ? 'Trade Size' : 'Amount'}
                   </Label>
                   {selectedAsset.category === 'forex' ? (
-                    <div className="flex items-center h-10 px-3 py-2 border border-input bg-muted rounded-md">
+                    <div className="flex items-center h-10 px-3 py-2 border border-input bg-muted/20 rounded-md">
                       <span className="text-sm">1 Standard Lot</span>
+                      <span className="text-xs text-muted-foreground ml-2">
+                        ({selectedAsset.contract_size.toLocaleString()} units)
+                      </span>
                     </div>
                   ) : (
                     <Input
@@ -429,11 +432,6 @@ export const WebTrader = () => {
                       step={selectedAsset.min_trade_size}
                       min={selectedAsset.min_trade_size}
                     />
-                  )}
-                  {selectedAsset.category === 'forex' && (
-                    <div className="text-xs text-muted-foreground mt-1">
-                      1 lot = {selectedAsset.contract_size.toLocaleString()} units
-                    </div>
                   )}
                 </div>
               </div>
