@@ -11,6 +11,19 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   const { user, loading } = useAuth();
   const { role, loading: roleLoading } = useUserRole();
 
+  // ALL HOOKS MUST BE CALLED FIRST - before any conditional returns
+  useEffect(() => {
+    // Only redirect if we have role info and user is authenticated
+    if (!loading && !roleLoading && user && role && window.location.pathname === '/dashboard') {
+      if (role === 'super_admin') {
+        window.location.href = '/super-admin';
+      } else if (role === 'admin') {
+        window.location.href = '/admin';
+      }
+    }
+  }, [loading, roleLoading, user, role]);
+
+  // Now we can have conditional returns
   if (loading || roleLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -22,17 +35,6 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   if (!user) {
     return <Navigate to="/auth" replace />;
   }
-
-  // Redirect admins and super admins to their respective dashboards
-  useEffect(() => {
-    if (role && window.location.pathname === '/dashboard') {
-      if (role === 'super_admin') {
-        window.location.href = '/super-admin';
-      } else if (role === 'admin') {
-        window.location.href = '/admin';
-      }
-    }
-  }, [role]);
 
   return <>{children}</>;
 };
