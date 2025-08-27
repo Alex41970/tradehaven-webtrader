@@ -14,13 +14,198 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      assets: {
+        Row: {
+          category: string
+          change_24h: number
+          created_at: string
+          id: string
+          is_active: boolean
+          max_leverage: number
+          min_trade_size: number
+          name: string
+          price: number
+          spread: number
+          symbol: string
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          change_24h?: number
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          max_leverage?: number
+          min_trade_size?: number
+          name: string
+          price: number
+          spread?: number
+          symbol: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          change_24h?: number
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          max_leverage?: number
+          min_trade_size?: number
+          name?: string
+          price?: number
+          spread?: number
+          symbol?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      trades: {
+        Row: {
+          amount: number
+          asset_id: string
+          close_price: number | null
+          closed_at: string | null
+          created_at: string
+          current_price: number | null
+          id: string
+          leverage: number
+          margin_used: number
+          open_price: number
+          opened_at: string
+          pnl: number | null
+          status: string
+          symbol: string
+          trade_type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          asset_id: string
+          close_price?: number | null
+          closed_at?: string | null
+          created_at?: string
+          current_price?: number | null
+          id?: string
+          leverage?: number
+          margin_used: number
+          open_price: number
+          opened_at?: string
+          pnl?: number | null
+          status?: string
+          symbol: string
+          trade_type: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          asset_id?: string
+          close_price?: number | null
+          closed_at?: string | null
+          created_at?: string
+          current_price?: number | null
+          id?: string
+          leverage?: number
+          margin_used?: number
+          open_price?: number
+          opened_at?: string
+          pnl?: number | null
+          status?: string
+          symbol?: string
+          trade_type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trades_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_favorites: {
+        Row: {
+          asset_id: string
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          asset_id: string
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          asset_id?: string
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_favorites_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_profiles: {
+        Row: {
+          available_margin: number
+          balance: number
+          created_at: string
+          email: string | null
+          equity: number
+          id: string
+          updated_at: string
+          used_margin: number
+          user_id: string
+        }
+        Insert: {
+          available_margin?: number
+          balance?: number
+          created_at?: string
+          email?: string | null
+          equity?: number
+          id?: string
+          updated_at?: string
+          used_margin?: number
+          user_id: string
+        }
+        Update: {
+          available_margin?: number
+          balance?: number
+          created_at?: string
+          email?: string | null
+          equity?: number
+          id?: string
+          updated_at?: string
+          used_margin?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      calculate_pnl: {
+        Args: {
+          amount: number
+          current_price: number
+          open_price: number
+          trade_type: string
+        }
+        Returns: number
+      }
     }
     Enums: {
       [_ in never]: never
