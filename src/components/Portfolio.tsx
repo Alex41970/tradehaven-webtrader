@@ -44,43 +44,7 @@ export const Portfolio = () => {
     }, 0);
   }, [openTrades]);
 
-  // Listen for real-time user profile updates
-  useEffect(() => {
-    if (!user) return;
-
-    const channel = supabase
-      .channel('portfolio-profile-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'user_profiles',
-          filter: `user_id=eq.${user.id}`
-        },
-        () => {
-          console.log('Profile updated in Portfolio, refreshing data...');
-          refetchProfile();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [user, refetchProfile]);
-
-  // NOW we can do conditional rendering AFTER all hooks are called
-  const isLoading = tradesLoading || profileLoading || assetsLoading;
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-32">
-        <Loader2 className="h-6 w-6 animate-spin" />
-      </div>
-    );
-  }
-
+  // ALL useCallback hooks must be called here, before any conditional logic
   const handleCloseTrade = useCallback(async (tradeId: string, symbol: string) => {
     // Prevent multiple close attempts
     if (closingTrades.has(tradeId)) {
@@ -140,6 +104,43 @@ export const Portfolio = () => {
       });
     }
   }, [updatedAssets, closeTrade, toast]);
+
+  // Listen for real-time user profile updates
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel('portfolio-profile-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'user_profiles',
+          filter: `user_id=eq.${user.id}`
+        },
+        () => {
+          console.log('Profile updated in Portfolio, refreshing data...');
+          refetchProfile();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, refetchProfile]);
+
+  // NOW we can do conditional rendering AFTER all hooks are called
+  const isLoading = tradesLoading || profileLoading || assetsLoading;
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-32">
+        <Loader2 className="h-6 w-6 animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
