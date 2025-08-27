@@ -1,3 +1,4 @@
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -12,19 +13,12 @@ import { PulsingPriceIndicator } from "@/components/PulsingPriceIndicator";
 import { useRealTimePrices } from "@/hooks/useRealTimePrices";
 
 export const Portfolio = () => {
+  // ALL HOOKS MUST BE CALLED FIRST, BEFORE ANY CONDITIONAL LOGIC
   const { openTrades, closeTrade, loading: tradesLoading } = useTrades();
   const { profile, loading: profileLoading } = useUserProfile();
   const { assets, loading: assetsLoading } = useAssets();
   const { toast } = useToast();
   const { getUpdatedAssets } = useRealTimePrices();
-
-  if (tradesLoading || profileLoading || assetsLoading) {
-    return (
-      <div className="flex items-center justify-center h-32">
-        <Loader2 className="h-6 w-6 animate-spin" />
-      </div>
-    );
-  }
 
   // Get updated assets with real-time prices with error handling
   const updatedAssets = useMemo(() => {
@@ -40,6 +34,15 @@ export const Portfolio = () => {
     openTrades.reduce((sum, trade) => sum + (trade.pnl || 0), 0), 
     [openTrades]
   );
+
+  // NOW we can do conditional rendering AFTER all hooks are called
+  if (tradesLoading || profileLoading || assetsLoading) {
+    return (
+      <div className="flex items-center justify-center h-32">
+        <Loader2 className="h-6 w-6 animate-spin" />
+      </div>
+    );
+  }
 
   const handleCloseTrade = async (tradeId: string, symbol: string) => {
     try {
