@@ -9,7 +9,7 @@ import { useAssets } from "@/hooks/useAssets";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 import { useMemo } from "react";
-import { PulsingPriceIndicator } from "@/components/PulsingPriceIndicator";
+import { SimplePriceIndicator } from "@/components/SimplePriceIndicator";
 import { useRealTimePrices } from "@/hooks/useRealTimePrices";
 
 export const Portfolio = () => {
@@ -150,59 +150,74 @@ export const Portfolio = () => {
                   
                   return (
                     <div key={trade.id} className="border rounded-lg p-4">
-                      <div className="grid md:grid-cols-6 gap-4 items-center">
+                      <div className="grid md:grid-cols-8 gap-3 items-center text-sm">
                         <div>
+                          <div className="text-xs text-muted-foreground mb-1">Symbol</div>
                           <div className="font-medium">{trade.symbol}</div>
-                          <Badge variant={trade.trade_type === "BUY" ? "default" : "destructive"}>
+                          <Badge variant={trade.trade_type === "BUY" ? "default" : "destructive"} className="text-xs mt-1">
                             {trade.trade_type}
                           </Badge>
                         </div>
                         
                         <div>
-                          <div className="text-sm text-muted-foreground">Amount</div>
+                          <div className="text-xs text-muted-foreground mb-1">Amount</div>
                           <div className="font-medium">${Number(trade.amount).toFixed(2)}</div>
                         </div>
                         
                         <div>
-                          <div className="text-sm text-muted-foreground">Open Price</div>
+                          <div className="text-xs text-muted-foreground mb-1">Open Price</div>
                           <div className="font-mono">{Number(trade.open_price).toFixed(trade.symbol.includes('JPY') ? 2 : 4)}</div>
                         </div>
                         
-                         <div>
-                           <div className="text-sm text-muted-foreground">Current Price</div>
-                           {asset && asset.price ? (
-                             <PulsingPriceIndicator 
-                               price={currentPrice}
-                               change={change24h}
-                               symbol={trade.symbol}
-                               className="text-sm"
-                             />
-                           ) : (
-                             <div className="font-mono text-sm">
-                               {currentPrice.toFixed(trade.symbol.includes('JPY') ? 2 : 4)}
-                             </div>
-                           )}
-                         </div>
-                        
                         <div>
-                          <div className="text-sm text-muted-foreground">P&L</div>
-                          <div className={`font-medium flex items-center ${(trade.pnl || 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                            {(trade.pnl || 0) >= 0 ? (
-                              <TrendingUp className="h-4 w-4 mr-1" />
+                          <div className="text-xs text-muted-foreground mb-1">Current Price</div>
+                          {asset && asset.price ? (
+                            <SimplePriceIndicator 
+                              price={currentPrice}
+                              symbol={trade.symbol}
+                            />
+                          ) : (
+                            <div className="font-mono">
+                              {currentPrice.toFixed(trade.symbol.includes('JPY') ? 2 : 4)}
+                            </div>
+                          )}
+                        </div>
+
+                        <div>
+                          <div className="text-xs text-muted-foreground mb-1">24h Change</div>
+                          <div className={`flex items-center gap-1 ${change24h >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                            {change24h >= 0 ? (
+                              <TrendingUp className="h-3 w-3" />
                             ) : (
-                              <TrendingDown className="h-4 w-4 mr-1" />
+                              <TrendingDown className="h-3 w-3" />
                             )}
-                            {(trade.pnl || 0) >= 0 ? '+' : ''}${(trade.pnl || 0).toFixed(2)}
+                            <span className="font-mono text-xs">
+                              {change24h >= 0 ? '+' : ''}{change24h.toFixed(trade.symbol.includes('JPY') ? 2 : 4)}
+                            </span>
                           </div>
                         </div>
                         
-                        <div className="flex space-x-2">
+                        <div>
+                          <div className="text-xs text-muted-foreground mb-1">P&L</div>
+                          <div className={`font-medium flex items-center gap-1 ${(trade.pnl || 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                            {(trade.pnl || 0) >= 0 ? (
+                              <TrendingUp className="h-4 w-4" />
+                            ) : (
+                              <TrendingDown className="h-4 w-4" />
+                            )}
+                            <span>{(trade.pnl || 0) >= 0 ? '+' : ''}${(trade.pnl || 0).toFixed(2)}</span>
+                          </div>
+                        </div>
+                        
+                        <div className="col-span-2">
+                          <div className="text-xs text-muted-foreground mb-1">Action</div>
                           <Button 
                             size="sm" 
                             variant="destructive"
                             onClick={() => handleCloseTrade(trade.id, trade.symbol)}
+                            className="w-full"
                           >
-                            Close
+                            Close Position
                           </Button>
                         </div>
                       </div>
