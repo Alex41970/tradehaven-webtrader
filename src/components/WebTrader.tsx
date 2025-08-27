@@ -1,4 +1,5 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -27,7 +28,7 @@ export const WebTrader = () => {
   
   const { assets, loading: assetsLoading } = useAssets();
   const { openTrades, closeTrade, openTrade } = useTrades();
-  const { profile, forceRefresh } = useUserProfile();
+  const { profile, forceRefresh, loading: profileLoading } = useUserProfile();
   const { favorites, addFavorite, removeFavorite, isFavorite } = useFavorites();
   const { getUpdatedAssets, isConnected, connectionStatus, lastUpdate } = useRealTimePrices();
 
@@ -75,6 +76,35 @@ export const WebTrader = () => {
       }
     }
   }, [realtimeAssets, selectedAsset?.id]); // Only depend on realtimeAssets and selectedAsset.id to avoid infinite loops
+
+  // Real-time profile synchronization for immediate updates
+  useEffect(() => {
+    if (!profile?.user_id) return;
+
+    console.log('Setting up real-time profile subscription in WebTrader');
+    const channel = supabase
+      .channel('webtrader_profile_updates')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'user_profiles',
+          filter: `user_id=eq.${profile.user_id}`
+        },
+        (payload) => {
+          console.log('WebTrader: Profile update received:', payload);
+          // Force refresh to ensure we have the latest data
+          forceRefresh();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      console.log('Cleaning up WebTrader profile subscription');
+      supabase.removeChannel(channel);
+    };
+  }, [profile?.user_id, forceRefresh]);
 
   // Calculate trade details with memoization for performance
   const calculateMargin = useMemo(() => {
@@ -158,6 +188,7 @@ export const WebTrader = () => {
     try {
       console.log('Executing trade with current profile:', profile);
       console.log('Margin required:', marginRequired);
+      console.log('Available margin before trade:', profile.available_margin);
       
       // Open the trade
       const trade = await openTrade(
@@ -171,12 +202,11 @@ export const WebTrader = () => {
       );
 
       if (trade) {
-        console.log('Trade opened successfully, forcing profile refresh...');
+        console.log('Trade opened successfully:', trade.id);
         
-        // Force refresh profile to get updated margin
-        setTimeout(() => {
-          forceRefresh();
-        }, 100);
+        // Immediate profile refresh - no timeout needed
+        await forceRefresh();
+        console.log('Profile refreshed after trade');
 
         toast({
           title: "Trade Successful",
@@ -185,6 +215,11 @@ export const WebTrader = () => {
       }
     } catch (error) {
       console.error('Trade execution error:', error);
+      toast({
+        title: "Trade Failed",
+        description: "Failed to open trade. Please try again.",
+        variant: "destructive",
+      });
     } finally {
       setIsExecutingTrade(false);
     }
@@ -197,7 +232,14 @@ export const WebTrader = () => {
     const asset = realtimeAssets.find(a => a.id === trade.asset_id);
     if (!asset) return;
 
-    await closeTrade(tradeId, asset.price);
+    console.log('Closing trade:', tradeId, 'at price:', asset.price);
+    const success = await closeTrade(tradeId, asset.price);
+    
+    if (success) {
+      // Immediate profile refresh after closing trade
+      await forceRefresh();
+      console.log('Profile refreshed after trade closure');
+    }
   };
 
   const toggleFavorite = async (asset: Asset) => {
@@ -251,7 +293,7 @@ export const WebTrader = () => {
     </div>
   );
 
-  if (assetsLoading) {
+  if (assetsLoading || profileLoading) {
     return (
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <Card>
@@ -428,7 +470,7 @@ export const WebTrader = () => {
             <CardHeader>
               <CardTitle>Place Trade</CardTitle>
               <CardDescription className="flex items-center justify-between">
-                <span>Balance: ${profile.balance.toFixed(2)} | Available Margin: ${profile.available_margin.toFixed(2)}</span>
+                <span className="block">Balance: ${profile.balance.toFixed(2)} | Available Margin: ${profile.available_margin.toFixed(2)}</span>
                 <div className="flex items-center gap-2">
                   <div className={`h-2 w-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
                   <span className="text-xs">
@@ -505,6 +547,14 @@ export const WebTrader = () => {
                   <div className="text-sm text-muted-foreground">Margin Required</div>
                   <div className="font-medium text-lg text-blue-600" key={`margin-${selectedAsset?.id}-${selectedAsset?.price}-${amount}-${leverage}`}>
                     ${calculateMargin.toFixed(2)}
+                  </div>
+                </div>
+                <div className="col-span-2">
+                  <div className="text-sm text-muted-foreground">Available After Trade</div>
+                  <div className={`font-medium text-lg ${
+                    profile.available_margin - calculateMargin >= 0 ? 'text-green-600' : 'text-red-600'
+                  }`}>
+                    ${Math.max(0, profile.available_margin - calculateMargin).toFixed(2)}
                   </div>
                 </div>
               </div>

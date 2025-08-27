@@ -146,11 +146,9 @@ export const useTrades = () => {
       }
 
       console.log('Trade opened successfully:', data);
-      toast({
-        title: "Trade Opened",
-        description: `${tradeType} ${amount} ${symbol} at ${openPrice}`,
-      });
-
+      console.log('New trade ID:', data.id, 'Margin used:', marginUsed);
+      
+      // Don't show toast here - let WebTrader handle it for better UX flow
       return data;
     } catch (error) {
       console.error('Error:', error);

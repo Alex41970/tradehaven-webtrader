@@ -125,7 +125,12 @@ export const useUserProfile = () => {
   const forceRefresh = useCallback(async () => {
     console.log('Force refreshing profile...');
     setLoading(true);
-    await fetchProfile();
+    try {
+      await fetchProfile();
+      console.log('Profile force refresh completed successfully');
+    } catch (error) {
+      console.error('Error during force refresh:', error);
+    }
   }, [fetchProfile]);
 
   const updateBalance = async (newBalance: number, newEquity: number, newUsedMargin: number, newAvailableMargin: number) => {
