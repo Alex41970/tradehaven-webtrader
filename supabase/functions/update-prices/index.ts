@@ -6,151 +6,127 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-// Mock price generation for demo - in production, use real financial API
-const generateRealisticPrice = (basePrice: number, volatility: number = 0.02): number => {
-  const change = (Math.random() - 0.5) * 2 * volatility
-  return basePrice * (1 + change)
-}
-
-const calculateChange24h = (currentPrice: number, previousPrice: number): number => {
-  return ((currentPrice - previousPrice) / previousPrice) * 100
+interface PriceData {
+  symbol: string;
+  price: number;
+  change_24h: number;
 }
 
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders })
+    return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const supabaseUrl = "https://stdfkfutgkmnaajixguz.supabase.co"
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
-    
-    if (!supabaseServiceKey) {
-      throw new Error('Missing SUPABASE_SERVICE_ROLE_KEY')
-    }
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    )
 
-    const supabase = createClient(supabaseUrl, supabaseServiceKey)
+    console.log('Starting price update process...');
 
-    // Fetch all active assets
-    const { data: assets, error: fetchError } = await supabase
+    // Get all active assets
+    const { data: assets, error: assetsError } = await supabase
       .from('assets')
       .select('*')
-      .eq('is_active', true)
+      .eq('is_active', true);
 
-    if (fetchError) {
-      throw fetchError
+    if (assetsError) {
+      console.error('Error fetching assets:', assetsError);
+      throw assetsError;
     }
 
-    if (!assets || assets.length === 0) {
-      return new Response(
-        JSON.stringify({ message: 'No assets found' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
+    console.log(`Found ${assets?.length || 0} assets to update`);
 
-    // Update prices for all assets
-    const updates = []
-    for (const asset of assets) {
-      const volatility = asset.category === 'forex' ? 0.005 : 
-                        asset.category === 'crypto' ? 0.03 :
-                        asset.category === 'stocks' ? 0.02 :
-                        asset.category === 'commodities' ? 0.015 : 0.01
+    // Simulate real-time price updates (in production, you'd fetch from Alpha Vantage or another API)
+    const priceUpdates: PriceData[] = assets?.map(asset => {
+      // Generate realistic price movements
+      const changePercent = (Math.random() - 0.5) * 0.1; // -5% to +5% change
+      const newPrice = asset.price * (1 + changePercent);
+      const change24h = newPrice - asset.price;
+      
+      return {
+        symbol: asset.symbol,
+        price: parseFloat(newPrice.toFixed(asset.category === 'forex' ? 5 : 2)),
+        change_24h: parseFloat(change24h.toFixed(asset.category === 'forex' ? 5 : 2))
+      };
+    }) || [];
 
-      const newPrice = generateRealisticPrice(asset.price, volatility)
-      const change24h = calculateChange24h(newPrice, asset.price)
+    console.log('Generated price updates:', priceUpdates.length);
 
-      updates.push({
-        id: asset.id,
-        price: Number(newPrice.toFixed(asset.category === 'forex' ? 5 : 2)),
-        change_24h: Number(change24h.toFixed(4))
-      })
-    }
+    // Update prices in database
+    for (const update of priceUpdates) {
+      const { error: updateError } = await supabase
+        .from('assets')
+        .update({
+          price: update.price,
+          change_24h: update.change_24h,
+          updated_at: new Date().toISOString()
+        })
+        .eq('symbol', update.symbol);
 
-    // Batch update all prices
-    const { error: updateError } = await supabase
-      .from('assets')
-      .upsert(updates)
-
-    if (updateError) {
-      throw updateError
+      if (updateError) {
+        console.error(`Error updating ${update.symbol}:`, updateError);
+      }
     }
 
     // Update P&L for all open trades
     const { data: openTrades, error: tradesError } = await supabase
       .from('trades')
-      .select(`
-        id, user_id, asset_id, trade_type, amount, open_price, leverage,
-        assets!inner(price)
-      `)
-      .eq('status', 'open')
+      .select('*')
+      .eq('status', 'open');
 
     if (tradesError) {
-      console.error('Error fetching trades:', tradesError)
-    } else if (openTrades && openTrades.length > 0) {
-      const tradeUpdates = openTrades.map(trade => {
-        const currentPrice = (trade as any).assets.price
-        const pnl = trade.trade_type === 'BUY' 
-          ? trade.amount * trade.leverage * (currentPrice - trade.open_price)
-          : trade.amount * trade.leverage * (trade.open_price - currentPrice)
+      console.error('Error fetching open trades:', tradesError);
+    } else {
+      console.log(`Updating P&L for ${openTrades?.length || 0} open trades`);
+      
+      for (const trade of openTrades || []) {
+        const asset = assets?.find(a => a.id === trade.asset_id);
+        if (asset) {
+          const updatedPrice = priceUpdates.find(p => p.symbol === asset.symbol);
+          if (updatedPrice) {
+            const pnl = trade.trade_type === 'BUY' 
+              ? trade.amount * (updatedPrice.price - trade.open_price)
+              : trade.amount * (trade.open_price - updatedPrice.price);
 
-        return {
-          id: trade.id,
-          current_price: currentPrice,
-          pnl: Number(pnl.toFixed(2))
-        }
-      })
-
-      const { error: tradeUpdateError } = await supabase
-        .from('trades')
-        .upsert(tradeUpdates)
-
-      if (tradeUpdateError) {
-        console.error('Error updating trades:', tradeUpdateError)
-      }
-
-      // Update user equity based on unrealized P&L
-      const userPnLMap = new Map()
-      openTrades.forEach(trade => {
-        const pnl = trade.trade_type === 'BUY' 
-          ? trade.amount * trade.leverage * ((trade as any).assets.price - trade.open_price)
-          : trade.amount * trade.leverage * (trade.open_price - (trade as any).assets.price)
-        
-        userPnLMap.set(trade.user_id, (userPnLMap.get(trade.user_id) || 0) + pnl)
-      })
-
-      // Update user profiles with new equity
-      for (const [userId, totalPnL] of userPnLMap.entries()) {
-        const { data: profile } = await supabase
-          .from('user_profiles')
-          .select('balance')
-          .eq('user_id', userId)
-          .single()
-
-        if (profile) {
-          await supabase
-            .from('user_profiles')
-            .update({ equity: profile.balance + totalPnL })
-            .eq('user_id', userId)
+            await supabase
+              .from('trades')
+              .update({
+                current_price: updatedPrice.price,
+                pnl: parseFloat(pnl.toFixed(2)),
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', trade.id);
+          }
         }
       }
     }
 
+    console.log('Price update completed successfully');
+
     return new Response(
       JSON.stringify({ 
-        message: 'Prices updated successfully', 
-        updated: updates.length,
-        trades_updated: openTrades?.length || 0
+        success: true, 
+        updated: priceUpdates.length,
+        message: 'Prices updated successfully' 
       }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
-
-  } catch (error) {
-    console.error('Error updating prices:', error)
-    return new Response(
-      JSON.stringify({ error: error.message }),
       { 
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200 
+      }
+    )
+  } catch (error) {
+    console.error('Price update failed:', error);
+    return new Response(
+      JSON.stringify({ 
+        success: false, 
+        error: error.message 
+      }),
+      { 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 500 
       }
     )
   }

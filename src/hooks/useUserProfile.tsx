@@ -40,12 +40,45 @@ export const useUserProfile = () => {
         .single();
 
       if (error) {
-        console.error('Error fetching profile:', error);
-        toast({
-          title: "Error",
-          description: "Failed to fetch profile data",
-          variant: "destructive",
-        });
+        if (error.code === 'PGRST116') {
+          // Profile doesn't exist, create one
+          console.log('Profile not found, creating new profile for user:', user.id);
+          const { data: newProfile, error: createError } = await supabase
+            .from('user_profiles')
+            .insert({
+              user_id: user.id,
+              email: user.email,
+              balance: 10000.00,
+              equity: 10000.00,
+              available_margin: 10000.00,
+              used_margin: 0.00
+            })
+            .select()
+            .single();
+
+          if (createError) {
+            console.error('Error creating profile:', createError);
+            toast({
+              title: "Error",
+              description: "Failed to create user profile",
+              variant: "destructive",
+            });
+            return;
+          }
+
+          setProfile(newProfile);
+          toast({
+            title: "Welcome!",
+            description: "Your trading account has been created with $10,000 balance",
+          });
+        } else {
+          console.error('Error fetching profile:', error);
+          toast({
+            title: "Error",
+            description: "Failed to fetch profile data",
+            variant: "destructive",
+          });
+        }
         return;
       }
 
