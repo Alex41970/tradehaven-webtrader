@@ -19,7 +19,7 @@ const Index = () => {
   }, [user, navigate]);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-trading-pattern">
       {/* Market Ticker */}
       <MarketTicker />
 
@@ -51,7 +51,8 @@ const Index = () => {
 
       {/* Hero Section */}
       <section className="relative py-20 lg:py-32 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-trading-primary/5 via-background to-trading-accent/5"></div>
+        <div className="absolute inset-0 bg-chart-lines opacity-30"></div>
+        <div className="absolute inset-0 bg-gradient-to-br from-trading-primary/10 via-transparent to-trading-accent/10"></div>
         <div className="container mx-auto px-4 relative">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div className="text-left">
@@ -89,7 +90,8 @@ const Index = () => {
       </section>
 
       {/* Features */}
-      <section className="py-20 bg-gradient-to-b from-background to-muted/20">
+      <section className="py-20 bg-gradient-to-b from-transparent to-muted/20 relative">
+        <div className="absolute inset-0 bg-chart-lines opacity-10"></div>
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className="text-3xl lg:text-4xl font-bold mb-4">
