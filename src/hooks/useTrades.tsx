@@ -116,6 +116,8 @@ export const useTrades = () => {
     if (!user) return null;
 
     try {
+      console.log('Opening trade:', { assetId, symbol, tradeType, amount, leverage, openPrice, marginUsed });
+      
       const { data, error } = await supabase
         .from('trades')
         .insert({
@@ -143,6 +145,7 @@ export const useTrades = () => {
         return null;
       }
 
+      console.log('Trade opened successfully:', data);
       toast({
         title: "Trade Opened",
         description: `${tradeType} ${amount} ${symbol} at ${openPrice}`,

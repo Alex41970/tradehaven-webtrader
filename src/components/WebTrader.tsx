@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TradingChart } from "./TradingChart";
 import { toast } from "@/hooks/use-toast";
-import { TrendingUp, TrendingDown, Star, StarOff, Search, X } from "lucide-react";
+import { TrendingUp, TrendingDown, Star, StarOff, Search, X, Loader2 } from "lucide-react";
 import { useAssets, Asset } from "@/hooks/useAssets";
 import { useTrades } from "@/hooks/useTrades";
 import { useUserProfile } from "@/hooks/useUserProfile";
@@ -23,10 +23,11 @@ export const WebTrader = () => {
   const [leverage, setLeverage] = useState<number>(1);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [isExecutingTrade, setIsExecutingTrade] = useState(false);
   
   const { assets, loading: assetsLoading } = useAssets();
   const { openTrades, closeTrade, openTrade } = useTrades();
-  const { profile } = useUserProfile();
+  const { profile, forceRefresh } = useUserProfile();
   const { favorites, addFavorite, removeFavorite, isFavorite } = useFavorites();
   const { getUpdatedAssets, isConnected, connectionStatus, lastUpdate } = useRealTimePrices();
 
@@ -152,22 +153,40 @@ export const WebTrader = () => {
       return;
     }
 
-    // Open the trade
-    const trade = await openTrade(
-      selectedAsset.id,
-      selectedAsset.symbol,
-      tradeType,
-      tradeAmount,
-      leverage,
-      selectedAsset.price,
-      marginRequired
-    );
+    setIsExecutingTrade(true);
+    
+    try {
+      console.log('Executing trade with current profile:', profile);
+      console.log('Margin required:', marginRequired);
+      
+      // Open the trade
+      const trade = await openTrade(
+        selectedAsset.id,
+        selectedAsset.symbol,
+        tradeType,
+        tradeAmount,
+        leverage,
+        selectedAsset.price,
+        marginRequired
+      );
 
-    if (trade) {
-      toast({
-        title: "Trade Successful",
-        description: `${tradeType} ${selectedAsset.category === 'forex' ? '1 lot' : tradeAmount} ${selectedAsset.symbol} opened successfully!`,
-      });
+      if (trade) {
+        console.log('Trade opened successfully, forcing profile refresh...');
+        
+        // Force refresh profile to get updated margin
+        setTimeout(() => {
+          forceRefresh();
+        }, 100);
+
+        toast({
+          title: "Trade Successful",
+          description: `${tradeType} ${selectedAsset.category === 'forex' ? '1 lot' : tradeAmount} ${selectedAsset.symbol} opened successfully!`,
+        });
+      }
+    } catch (error) {
+      console.error('Trade execution error:', error);
+    } finally {
+      setIsExecutingTrade(false);
     }
   };
 
@@ -496,14 +515,22 @@ export const WebTrader = () => {
                 size="lg"
                 variant={tradeType === 'BUY' ? 'trading' : 'destructive'}
                 disabled={
-                  selectedAsset.category === 'forex' 
+                  isExecutingTrade ||
+                  (selectedAsset.category === 'forex' 
                     ? calculateMargin > profile.available_margin
                     : calculateMargin > profile.available_margin ||
                       (parseFloat(amount) || 0) < selectedAsset.min_trade_size ||
-                      !amount
+                      !amount)
                 }
               >
-                {tradeType} {selectedAsset.symbol}
+                {isExecutingTrade ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    Executing...
+                  </>
+                ) : (
+                  `${tradeType} ${selectedAsset.symbol}`
+                )}
               </Button>
             </CardContent>
           </Card>
