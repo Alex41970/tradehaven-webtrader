@@ -5,10 +5,13 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import RoleBasedRoute from "@/components/RoleBasedRoute";
 import { PriceProvider } from "@/contexts/PriceContext";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
+import AdminDashboard from "./pages/AdminDashboard";
+import SuperAdminDashboard from "./pages/SuperAdminDashboard";
 import NotFound from "./pages/NotFound";
 import WebTrader from "./pages/WebTrader";
 
@@ -29,6 +32,16 @@ const App = () => (
                 <ProtectedRoute>
                   <Dashboard />
                 </ProtectedRoute>
+              } />
+              <Route path="/admin" element={
+                <RoleBasedRoute allowedRoles={['admin', 'super_admin']}>
+                  <AdminDashboard />
+                </RoleBasedRoute>
+              } />
+              <Route path="/super-admin" element={
+                <RoleBasedRoute allowedRoles={['super_admin']}>
+                  <SuperAdminDashboard />
+                </RoleBasedRoute>
               } />
               <Route path="/webtrader" element={
                 <ProtectedRoute>

@@ -11,6 +11,7 @@ import { toast } from "@/components/ui/use-toast";
 const Auth = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [promoCode, setPromoCode] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
@@ -28,24 +29,43 @@ const Auth = () => {
     e.preventDefault();
     setLoading(true);
 
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: `${window.location.origin}/dashboard`
-      }
-    });
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/dashboard`
+        }
+      });
 
-    if (error) {
+      if (error) throw error;
+
+      // If promo code is provided and user was created, assign to admin
+      if (data.user && promoCode.trim()) {
+        const { error: promoError } = await supabase.rpc('assign_user_to_admin_via_promo', {
+          _user_id: data.user.id,
+          _promo_code: promoCode.trim()
+        });
+        
+        if (promoError) {
+          console.error('Promo code assignment error:', promoError);
+          toast({
+            title: "Warning",
+            description: "Account created but promo code was invalid",
+            variant: "default"
+          });
+        }
+      }
+
+      toast({
+        title: "Success",
+        description: "Check your email for verification link"
+      });
+    } catch (error: any) {
       toast({
         title: "Error",
         description: error.message,
         variant: "destructive"
-      });
-    } else {
-      toast({
-        title: "Success",
-        description: "Check your email for verification link"
       });
     }
     setLoading(false);
@@ -135,6 +155,16 @@ const Auth = () => {
                     onChange={(e) => setPassword(e.target.value)}
                     required
                     minLength={6}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="promo-code">Promo Code (Optional)</Label>
+                  <Input
+                    id="promo-code"
+                    type="text"
+                    placeholder="Enter promo code"
+                    value={promoCode}
+                    onChange={(e) => setPromoCode(e.target.value)}
                   />
                 </div>
                 <Button type="submit" className="w-full" disabled={loading}>

@@ -14,6 +14,27 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_user_relationships: {
+        Row: {
+          admin_id: string
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          admin_id: string
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          admin_id?: string
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       assets: {
         Row: {
           base_currency: string | null
@@ -65,6 +86,39 @@ export type Database = {
           spread?: number
           symbol?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      promo_codes: {
+        Row: {
+          admin_id: string
+          code: string
+          created_at: string
+          current_uses: number
+          expires_at: string | null
+          id: string
+          is_active: boolean
+          max_uses: number | null
+        }
+        Insert: {
+          admin_id: string
+          code: string
+          created_at?: string
+          current_uses?: number
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          max_uses?: number | null
+        }
+        Update: {
+          admin_id?: string
+          code?: string
+          created_at?: string
+          current_uses?: number
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          max_uses?: number | null
         }
         Relationships: []
       }
@@ -167,36 +221,63 @@ export type Database = {
       }
       user_profiles: {
         Row: {
+          admin_id: string | null
           available_margin: number
           balance: number
           created_at: string
           email: string | null
           equity: number
           id: string
+          promo_code_used: string | null
           updated_at: string
           used_margin: number
           user_id: string
         }
         Insert: {
+          admin_id?: string | null
           available_margin?: number
           balance?: number
           created_at?: string
           email?: string | null
           equity?: number
           id?: string
+          promo_code_used?: string | null
           updated_at?: string
           used_margin?: number
           user_id: string
         }
         Update: {
+          admin_id?: string | null
           available_margin?: number
           balance?: number
           created_at?: string
           email?: string | null
           equity?: number
           id?: string
+          promo_code_used?: string | null
           updated_at?: string
           used_margin?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
         }
         Relationships: []
@@ -206,6 +287,23 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_modify_trade_open_price: {
+        Args: { _admin_id: string; _new_open_price: number; _trade_id: string }
+        Returns: boolean
+      }
+      admin_modify_user_balance: {
+        Args: {
+          _admin_id: string
+          _amount: number
+          _operation: string
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      assign_user_to_admin_via_promo: {
+        Args: { _promo_code: string; _user_id: string }
+        Returns: boolean
+      }
       calculate_pnl: {
         Args:
           | {
@@ -223,13 +321,24 @@ export type Database = {
             }
         Returns: number
       }
+      get_user_role: {
+        Args: { _user_id: string }
+        Returns: Database["public"]["Enums"]["app_role"]
+      }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
       recalculate_user_balance: {
         Args: { user_uuid: string }
         Returns: undefined
       }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "super_admin" | "admin" | "user"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -356,6 +465,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["super_admin", "admin", "user"],
+    },
   },
 } as const
