@@ -82,7 +82,7 @@ export const useUserProfile = () => {
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  }, [user?.id, user?.email]); // More specific dependencies
 
   useEffect(() => {
     if (user) {
@@ -119,19 +119,31 @@ export const useUserProfile = () => {
       setProfile(null);
       setLoading(false);
     }
-  }, [user?.id]); // Only depend on user.id to prevent unnecessary re-renders
+  }, [user?.id, fetchProfile]); // Fixed dependencies to prevent multiple fetches
 
   // Force refresh function for manual updates
   const forceRefresh = useCallback(async () => {
     console.log('Force refreshing profile...');
-    setLoading(true);
+    if (!user) return;
+    
     try {
-      await fetchProfile();
-      console.log('Profile force refresh completed successfully');
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+
+      if (error) {
+        console.error('Error force refreshing profile:', error);
+        return;
+      }
+
+      console.log('Profile force refresh completed:', data);
+      setProfile(data);
     } catch (error) {
       console.error('Error during force refresh:', error);
     }
-  }, [fetchProfile]);
+  }, [user?.id]); // Direct implementation to avoid circular dependencies
 
   const updateBalance = async (newBalance: number, newEquity: number, newUsedMargin: number, newAvailableMargin: number) => {
     if (!user || !profile) return;
