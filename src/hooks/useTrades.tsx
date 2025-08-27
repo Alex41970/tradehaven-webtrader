@@ -147,43 +147,60 @@ export const useTrades = () => {
 
   const closeTrade = async (tradeId: string, closePrice: number) => {
     try {
-      // Calculate P&L
-      const trade = trades.find(t => t.id === tradeId);
-      if (!trade) return false;
-
-      // Get asset to check if it's forex and get contract size
-      const { data: asset } = await supabase
-        .from('assets')
-        .select('category, contract_size')
-        .eq('id', trade.asset_id)
+      // Get the trade and asset information
+      const { data: tradeData, error: tradeError } = await supabase
+        .from('trades')
+        .select(`
+          *,
+          assets:asset_id (
+            category,
+            contract_size
+          )
+        `)
+        .eq('id', tradeId)
         .single();
 
-      let pnl: number;
-      if (asset?.category === 'forex') {
-        // For forex: P&L = lot_size * contract_size * price_difference
-        const priceDifference = trade.trade_type === 'BUY' 
-          ? (closePrice - trade.open_price)
-          : (trade.open_price - closePrice);
-        pnl = trade.amount * (asset.contract_size || 100000) * priceDifference;
-      } else {
-        // For other instruments: P&L = amount * price_difference
-        pnl = trade.trade_type === 'BUY' 
-          ? trade.amount * (closePrice - trade.open_price)
-          : trade.amount * (trade.open_price - closePrice);
+      if (tradeError || !tradeData) {
+        console.error('Error fetching trade for closure:', tradeError);
+        toast({
+          title: "Error",
+          description: "Failed to fetch trade details",
+          variant: "destructive",
+        });
+        return false;
       }
 
-      const { error } = await supabase
+      // Calculate P&L using the database function which handles forex lots correctly
+      const { data: pnlResult, error: pnlError } = await supabase
+        .rpc('calculate_pnl', {
+          trade_type: tradeData.trade_type,
+          amount: tradeData.amount,
+          open_price: tradeData.open_price,
+          current_price: closePrice
+        });
+
+      if (pnlError) {
+        console.error('Error calculating P&L:', pnlError);
+        toast({
+          title: "Error",
+          description: "Failed to calculate P&L",
+          variant: "destructive",
+        });
+        return false;
+      }
+
+      const { error: updateError } = await supabase
         .from('trades')
         .update({
           close_price: closePrice,
-          pnl,
+          pnl: pnlResult,
           status: 'closed',
           closed_at: new Date().toISOString(),
         })
         .eq('id', tradeId);
 
-      if (error) {
-        console.error('Error closing trade:', error);
+      if (updateError) {
+        console.error('Error closing trade:', updateError);
         toast({
           title: "Error",
           description: "Failed to close trade",
@@ -194,8 +211,8 @@ export const useTrades = () => {
 
       toast({
         title: "Trade Closed",
-        description: `P&L: ${pnl >= 0 ? '+' : ''}$${pnl.toFixed(2)}`,
-        variant: pnl >= 0 ? "default" : "destructive",
+        description: `P&L: ${pnlResult >= 0 ? '+' : ''}$${pnlResult.toFixed(2)}`,
+        variant: pnlResult >= 0 ? "default" : "destructive",
       });
 
       return true;
@@ -209,33 +226,26 @@ export const useTrades = () => {
     const trade = trades.find(t => t.id === tradeId);
     if (!trade || trade.status !== 'open') return;
 
-    // Get asset to check if it's forex and get contract size
-    const { data: asset } = await supabase
-      .from('assets')
-      .select('category, contract_size')
-      .eq('id', trade.asset_id)
-      .single();
-
-    let pnl: number;
-    if (asset?.category === 'forex') {
-      // For forex: P&L = lot_size * contract_size * price_difference
-      const priceDifference = trade.trade_type === 'BUY' 
-        ? (currentPrice - trade.open_price)
-        : (trade.open_price - currentPrice);
-      pnl = trade.amount * (asset.contract_size || 100000) * priceDifference;
-    } else {
-      // For other instruments: P&L = amount * price_difference
-      pnl = trade.trade_type === 'BUY' 
-        ? trade.amount * (currentPrice - trade.open_price)
-        : trade.amount * (trade.open_price - currentPrice);
-    }
-
     try {
+      // Use the database function to calculate P&L properly for all instrument types
+      const { data: pnlResult, error: pnlError } = await supabase
+        .rpc('calculate_pnl', {
+          trade_type: trade.trade_type,
+          amount: trade.amount,
+          open_price: trade.open_price,
+          current_price: currentPrice
+        });
+
+      if (pnlError) {
+        console.error('Error calculating P&L:', pnlError);
+        return;
+      }
+
       const { error } = await supabase
         .from('trades')
         .update({
           current_price: currentPrice,
-          pnl,
+          pnl: pnlResult,
         })
         .eq('id', tradeId);
 
