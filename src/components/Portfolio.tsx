@@ -8,7 +8,7 @@ import { useUserProfile } from "@/hooks/useUserProfile";
 import { useAssets } from "@/hooks/useAssets";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
-import { useMemo, useEffect } from "react";
+import { useMemo, useEffect, useState } from "react";
 import { SimplePriceIndicator } from "@/components/SimplePriceIndicator";
 import { useRealTimePrices } from "@/hooks/useRealTimePrices";
 import { calculateRealTimePnL, formatPnL } from "@/utils/pnlCalculator";
@@ -23,6 +23,7 @@ export const Portfolio = () => {
   const { assets, loading: assetsLoading } = useAssets();
   const { toast } = useToast();
   const { getUpdatedAssets } = useRealTimePrices();
+  const [closingTrades, setClosingTrades] = useState<Set<string>>(new Set());
 
   // ALL useMemo hooks must be called here, before any conditional logic
   const updatedAssets = useMemo(() => {
@@ -41,13 +42,11 @@ export const Portfolio = () => {
     if (!openTrades || openTrades.length === 0) {
       return 0;
     }
+    // Use the stored P&L from database instead of calculating real-time
     return openTrades.reduce((sum, trade) => {
-      const asset = updatedAssets.find(a => a.symbol === trade.symbol);
-      const currentPrice = asset?.price || trade.current_price || trade.open_price || 0;
-      const realTimePnL = calculateRealTimePnL(trade, currentPrice);
-      return sum + realTimePnL;
+      return sum + (trade.pnl || 0);
     }, 0);
-  }, [openTrades, updatedAssets]);
+  }, [openTrades]);
 
   // Listen for real-time user profile updates
   useEffect(() => {
@@ -58,13 +57,13 @@ export const Portfolio = () => {
       .on(
         'postgres_changes',
         {
-          event: '*',
+          event: 'UPDATE',
           schema: 'public',
           table: 'user_profiles',
           filter: `user_id=eq.${user.id}`
         },
         () => {
-          // Refetch profile when it's updated (balance, margin, etc.)
+          console.log('Profile updated in Portfolio, refreshing data...');
           refetchProfile();
         }
       )
@@ -87,6 +86,14 @@ export const Portfolio = () => {
   }
 
   const handleCloseTrade = async (tradeId: string, symbol: string) => {
+    // Prevent multiple close attempts
+    if (closingTrades.has(tradeId)) {
+      console.log('Trade already being closed:', tradeId);
+      return;
+    }
+
+    setClosingTrades(prev => new Set(prev).add(tradeId));
+
     try {
       const asset = updatedAssets.find(a => a.symbol === symbol);
       if (!asset) {
@@ -109,12 +116,12 @@ export const Portfolio = () => {
         return;
       }
 
+      console.log('Closing trade in Portfolio:', tradeId, 'at price:', asset.price);
       const success = await closeTrade(tradeId, asset.price);
+      
       if (success) {
-        toast({
-          title: "Success",
-          description: "Trade closed successfully",
-        });
+        console.log('Trade closed successfully from Portfolio');
+        // Trade will be removed from openTrades automatically via real-time updates
       } else {
         toast({
           title: "Error",
@@ -128,6 +135,12 @@ export const Portfolio = () => {
         title: "Error",
         description: "An error occurred while closing the trade",
         variant: "destructive",
+      });
+    } finally {
+      setClosingTrades(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(tradeId);
+        return newSet;
       });
     }
   };
@@ -234,19 +247,14 @@ export const Portfolio = () => {
                         
                         <div>
                           <div className="text-xs text-muted-foreground mb-1">P&L</div>
-                          {(() => {
-                            const realTimePnL = calculateRealTimePnL(trade, currentPrice);
-                            return (
-                              <div className={`font-medium flex items-center gap-1 transition-colors duration-300 ${realTimePnL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                {realTimePnL >= 0 ? (
-                                  <TrendingUp className="h-4 w-4" />
-                                ) : (
-                                  <TrendingDown className="h-4 w-4" />
-                                )}
-                                <span className="animate-pulse-subtle">{formatPnL(realTimePnL)}</span>
-                              </div>
-                            );
-                          })()}
+                          <div className={`font-medium flex items-center gap-1 transition-colors duration-300 ${(trade.pnl || 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                            {(trade.pnl || 0) >= 0 ? (
+                              <TrendingUp className="h-4 w-4" />
+                            ) : (
+                              <TrendingDown className="h-4 w-4" />
+                            )}
+                            <span className="animate-pulse-subtle">{formatPnL(trade.pnl || 0)}</span>
+                          </div>
                         </div>
                         
                         <div className="col-span-2">
@@ -256,8 +264,16 @@ export const Portfolio = () => {
                             variant="destructive"
                             onClick={() => handleCloseTrade(trade.id, trade.symbol)}
                             className="w-full"
+                            disabled={closingTrades.has(trade.id)}
                           >
-                            Close Position
+                            {closingTrades.has(trade.id) ? (
+                              <>
+                                <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                                Closing...
+                              </>
+                            ) : (
+                              'Close Position'
+                            )}
                           </Button>
                         </div>
                       </div>

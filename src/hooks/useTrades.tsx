@@ -32,9 +32,9 @@ export const useTrades = () => {
     if (user) {
       fetchTrades();
       
-      // Set up real-time subscription for trade updates
+      // Set up real-time subscription for trade updates with enhanced handling
       const channel = supabase
-        .channel('schema-db-changes')
+        .channel('trades-changes')
         .on(
           'postgres_changes',
           {
@@ -44,11 +44,19 @@ export const useTrades = () => {
             filter: `user_id=eq.${user.id}`
           },
           (payload) => {
+            console.log('Trade update received:', payload);
+            
             if (payload.eventType === 'INSERT') {
-              setTrades(prev => [...prev, payload.new as Trade]);
+              const newTrade = payload.new as Trade;
+              setTrades(prev => {
+                // Prevent duplicates
+                if (prev.some(t => t.id === newTrade.id)) return prev;
+                return [...prev, newTrade];
+              });
             } else if (payload.eventType === 'UPDATE') {
+              const updatedTrade = payload.new as Trade;
               setTrades(prev => prev.map(trade => 
-                trade.id === payload.new.id ? payload.new as Trade : trade
+                trade.id === updatedTrade.id ? updatedTrade : trade
               ));
             } else if (payload.eventType === 'DELETE') {
               setTrades(prev => prev.filter(trade => trade.id !== payload.old.id));
@@ -146,7 +154,16 @@ export const useTrades = () => {
   };
 
   const closeTrade = async (tradeId: string, closePrice: number) => {
+    console.log('Closing trade:', tradeId, 'at price:', closePrice);
+    
     try {
+      // Optimistically update local state to immediately remove from open trades
+      setTrades(prev => prev.map(trade => 
+        trade.id === tradeId 
+          ? { ...trade, status: 'closed' as const, close_price: closePrice, closed_at: new Date().toISOString() }
+          : trade
+      ));
+
       // Get the trade and asset information
       const { data: tradeData, error: tradeError } = await supabase
         .from('trades')
@@ -162,6 +179,12 @@ export const useTrades = () => {
 
       if (tradeError || !tradeData) {
         console.error('Error fetching trade for closure:', tradeError);
+        // Revert optimistic update
+        setTrades(prev => prev.map(trade => 
+          trade.id === tradeId 
+            ? { ...trade, status: 'open' as const, close_price: undefined, closed_at: undefined }
+            : trade
+        ));
         toast({
           title: "Error",
           description: "Failed to fetch trade details",
@@ -181,6 +204,12 @@ export const useTrades = () => {
 
       if (pnlError) {
         console.error('Error calculating P&L:', pnlError);
+        // Revert optimistic update
+        setTrades(prev => prev.map(trade => 
+          trade.id === tradeId 
+            ? { ...trade, status: 'open' as const, close_price: undefined, closed_at: undefined }
+            : trade
+        ));
         toast({
           title: "Error",
           description: "Failed to calculate P&L",
@@ -189,6 +218,7 @@ export const useTrades = () => {
         return false;
       }
 
+      // Update in database - triggers will handle balance/margin updates automatically
       const { error: updateError } = await supabase
         .from('trades')
         .update({
@@ -201,6 +231,12 @@ export const useTrades = () => {
 
       if (updateError) {
         console.error('Error closing trade:', updateError);
+        // Revert optimistic update
+        setTrades(prev => prev.map(trade => 
+          trade.id === tradeId 
+            ? { ...trade, status: 'open' as const, close_price: undefined, closed_at: undefined }
+            : trade
+        ));
         toast({
           title: "Error",
           description: "Failed to close trade",
@@ -209,6 +245,7 @@ export const useTrades = () => {
         return false;
       }
 
+      console.log('Trade closed successfully:', tradeId, 'P&L:', pnlResult);
       toast({
         title: "Trade Closed",
         description: `P&L: ${pnlResult >= 0 ? '+' : ''}$${pnlResult.toFixed(2)}`,
@@ -217,14 +254,23 @@ export const useTrades = () => {
 
       return true;
     } catch (error) {
-      console.error('Error:', error);
+      console.error('Error closing trade:', error);
+      // Revert optimistic update on any error
+      setTrades(prev => prev.map(trade => 
+        trade.id === tradeId 
+          ? { ...trade, status: 'open' as const, close_price: undefined, closed_at: undefined }
+          : trade
+      ));
       return false;
     }
   };
 
   const updateTradePnL = async (tradeId: string, currentPrice: number) => {
     const trade = trades.find(t => t.id === tradeId);
-    if (!trade || trade.status !== 'open') return;
+    if (!trade || trade.status !== 'open') {
+      console.log('Skipping P&L update for trade:', tradeId, 'Status:', trade?.status);
+      return;
+    }
 
     try {
       // Use the database function to calculate P&L properly for all instrument types
@@ -241,13 +287,21 @@ export const useTrades = () => {
         return;
       }
 
+      // Only update if trade is still open (prevent race conditions)
+      const currentTrade = trades.find(t => t.id === tradeId);
+      if (!currentTrade || currentTrade.status !== 'open') {
+        console.log('Trade status changed during P&L calculation, skipping update');
+        return;
+      }
+
       const { error } = await supabase
         .from('trades')
         .update({
           current_price: currentPrice,
           pnl: pnlResult,
         })
-        .eq('id', tradeId);
+        .eq('id', tradeId)
+        .eq('status', 'open'); // Only update if still open
 
       if (error) {
         console.error('Error updating trade P&L:', error);
