@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { WebTrader } from "@/components/WebTrader";
 import { Portfolio } from "@/components/Portfolio";
 import { TradingHistory } from "@/components/TradingHistory";
-import { LogOut, TrendingUp, DollarSign, Activity, ExternalLink } from "lucide-react";
+import { LogOut, TrendingUp, DollarSign, Activity, ExternalLink, Shield, AlertTriangle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { useTrades } from "@/hooks/useTrades";
@@ -31,18 +31,26 @@ const Dashboard = () => {
     return getUpdatedAssets(assets);
   }, [assets, getUpdatedAssets]);
 
-  // Calculate real-time P&L from open trades
-  const totalUnrealizedPnL = useMemo(() => {
-    if (!openTrades || openTrades.length === 0) {
-      return 0;
+  // Calculate risk metrics
+  const riskMetrics = useMemo(() => {
+    if (!profile || !openTrades) {
+      return { marginUtilization: 0, largestExposure: 0, riskLevel: 'Low' as const };
     }
-    return openTrades.reduce((sum, trade) => {
-      const asset = updatedAssets.find(a => a.symbol === trade.symbol);
-      const currentPrice = asset?.price || trade.current_price || trade.open_price || 0;
-      const realTimePnL = calculateRealTimePnL(trade, currentPrice);
-      return sum + realTimePnL;
+
+    const totalMargin = profile.available_margin + profile.used_margin;
+    const marginUtilization = totalMargin > 0 ? (profile.used_margin / totalMargin) * 100 : 0;
+    
+    const largestExposure = openTrades.reduce((max, trade) => {
+      const exposure = trade.amount * (trade.leverage || 1);
+      return Math.max(max, exposure);
     }, 0);
-  }, [openTrades, updatedAssets]);
+
+    let riskLevel: 'Low' | 'Medium' | 'High' = 'Low';
+    if (marginUtilization > 70) riskLevel = 'High';
+    else if (marginUtilization > 40) riskLevel = 'Medium';
+
+    return { marginUtilization, largestExposure, riskLevel };
+  }, [profile, openTrades]);
 
   if (profileLoading || assetsLoading) {
     return (
@@ -117,23 +125,27 @@ const Dashboard = () => {
             </Card>
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Unrealized P&L</CardTitle>
+                <CardTitle className="text-sm font-medium">Risk Metrics</CardTitle>
                 <div className="flex items-center gap-1">
-                  <TrendingUp className="h-4 w-4 text-muted-foreground" />
-                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                  {riskMetrics.riskLevel === 'High' ? (
+                    <AlertTriangle className="h-4 w-4 text-red-500" />
+                  ) : (
+                    <Shield className="h-4 w-4 text-muted-foreground" />
+                  )}
                 </div>
               </CardHeader>
               <CardContent>
-                <div className={`text-2xl font-bold transition-all duration-300 ${
-                  totalUnrealizedPnL >= 0 ? 'text-green-500' : 'text-red-500'
+                <div className={`text-2xl font-bold ${
+                  riskMetrics.riskLevel === 'High' ? 'text-red-500' : 
+                  riskMetrics.riskLevel === 'Medium' ? 'text-yellow-500' : 'text-green-500'
                 }`}>
-                  <span className="animate-pulse-subtle">
-                    {totalUnrealizedPnL >= 0 ? '+' : ''}${totalUnrealizedPnL.toFixed(2)}
-                  </span>
+                  {riskMetrics.marginUtilization.toFixed(1)}%
                 </div>
-                <p className="text-xs text-muted-foreground flex items-center gap-1">
-                  <Activity className="w-3 h-3" />
-                  Live P&L Updates
+                <p className="text-xs text-muted-foreground">
+                  Margin Used • Risk: {riskMetrics.riskLevel}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Max Exposure: ${riskMetrics.largestExposure.toFixed(2)}
                 </p>
               </CardContent>
             </Card>
