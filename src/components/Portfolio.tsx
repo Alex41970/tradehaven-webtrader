@@ -13,30 +13,37 @@ import { PulsingPriceIndicator } from "@/components/PulsingPriceIndicator";
 import { useRealTimePrices } from "@/hooks/useRealTimePrices";
 
 export const Portfolio = () => {
-  // ALL HOOKS MUST BE CALLED FIRST, BEFORE ANY CONDITIONAL LOGIC
+  // ALL HOOKS MUST BE CALLED FIRST - NO CONDITIONAL HOOK CALLS
   const { openTrades, closeTrade, loading: tradesLoading } = useTrades();
   const { profile, loading: profileLoading } = useUserProfile();
   const { assets, loading: assetsLoading } = useAssets();
   const { toast } = useToast();
   const { getUpdatedAssets } = useRealTimePrices();
 
-  // Get updated assets with real-time prices with error handling
+  // ALL useMemo hooks must be called here, before any conditional logic
   const updatedAssets = useMemo(() => {
+    if (!assets || assets.length === 0) {
+      return [];
+    }
     try {
-      return getUpdatedAssets(assets || []);
+      return getUpdatedAssets(assets);
     } catch (error) {
       console.error('Error getting updated assets:', error);
-      return assets || [];
+      return assets;
     }
   }, [assets, getUpdatedAssets]);
 
-  const totalPnL = useMemo(() => 
-    openTrades.reduce((sum, trade) => sum + (trade.pnl || 0), 0), 
-    [openTrades]
-  );
+  const totalPnL = useMemo(() => {
+    if (!openTrades || openTrades.length === 0) {
+      return 0;
+    }
+    return openTrades.reduce((sum, trade) => sum + (trade.pnl || 0), 0);
+  }, [openTrades]);
 
   // NOW we can do conditional rendering AFTER all hooks are called
-  if (tradesLoading || profileLoading || assetsLoading) {
+  const isLoading = tradesLoading || profileLoading || assetsLoading;
+
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center h-32">
         <Loader2 className="h-6 w-6 animate-spin" />
@@ -99,7 +106,7 @@ export const Portfolio = () => {
             <CardTitle className="text-lg">Open Positions</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{openTrades.length}</div>
+            <div className="text-2xl font-bold">{openTrades?.length || 0}</div>
           </CardContent>
         </Card>
         <Card>
@@ -129,7 +136,7 @@ export const Portfolio = () => {
           <CardDescription>Manage your active trades</CardDescription>
         </CardHeader>
         <CardContent>
-          {openTrades.length === 0 ? (
+          {!openTrades || openTrades.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               No open positions
             </div>
