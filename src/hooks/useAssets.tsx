@@ -13,6 +13,9 @@ export interface Asset {
   min_trade_size: number;
   max_leverage: number;
   spread: number;
+  contract_size: number;
+  base_currency: string | null;
+  quote_currency: string | null;
   created_at: string;
   updated_at: string;
 }

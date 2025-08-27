@@ -63,12 +63,29 @@ export const WebTrader = () => {
   const calculateMargin = () => {
     if (!selectedAsset || !amount) return 0;
     const tradeAmount = parseFloat(amount);
-    return (tradeAmount * selectedAsset.price) / leverage;
+    
+    if (selectedAsset.category === 'forex') {
+      // For forex: margin = (lot_size * contract_size * price) / leverage
+      // Assuming USD account for simplicity (would need currency conversion in real implementation)
+      const notionalValue = tradeAmount * selectedAsset.contract_size * selectedAsset.price;
+      return notionalValue / leverage;
+    } else {
+      // For stocks, crypto, commodities, indices: trade in actual units
+      return (tradeAmount * selectedAsset.price) / leverage;
+    }
   };
 
   const calculatePositionSize = () => {
     if (!selectedAsset || !amount) return 0;
-    return parseFloat(amount) * selectedAsset.price;
+    const tradeAmount = parseFloat(amount);
+    
+    if (selectedAsset.category === 'forex') {
+      // For forex: show the notional value (lot_size * contract_size * price)
+      return tradeAmount * selectedAsset.contract_size * selectedAsset.price;
+    } else {
+      // For other instruments: show the total value (amount * price)
+      return tradeAmount * selectedAsset.price;
+    }
   };
 
   const handleTrade = async () => {
@@ -310,7 +327,7 @@ export const WebTrader = () => {
                         <div>
                           <div className="font-medium text-sm">{trade.symbol}</div>
                           <div className="text-xs text-muted-foreground">
-                            {trade.trade_type} {trade.amount} @ {trade.open_price}
+                            {trade.trade_type} {trade.amount}{asset?.category === 'forex' ? ' lots' : ''} @ {trade.open_price}
                           </div>
                           <div className={`text-xs ${
                             trade.pnl >= 0 ? 'text-green-500' : 'text-red-500'
@@ -386,16 +403,23 @@ export const WebTrader = () => {
                 </div>
                 
                 <div>
-                  <Label htmlFor="amount">Amount</Label>
+                  <Label htmlFor="amount">
+                    {selectedAsset.category === 'forex' ? 'Lot Size' : 'Amount'}
+                  </Label>
                   <Input
                     id="amount"
                     type="number"
                     value={amount}
                     onChange={(e) => setAmount(e.target.value)}
-                    placeholder="Enter amount"
+                    placeholder={selectedAsset.category === 'forex' ? 'Enter lot size' : 'Enter amount'}
                     step={selectedAsset.min_trade_size}
                     min={selectedAsset.min_trade_size}
                   />
+                  {selectedAsset.category === 'forex' && (
+                    <div className="text-xs text-muted-foreground mt-1">
+                      1 lot = {selectedAsset.contract_size.toLocaleString()} units
+                    </div>
+                  )}
                 </div>
               </div>
 

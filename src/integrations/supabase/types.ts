@@ -16,8 +16,10 @@ export type Database = {
     Tables: {
       assets: {
         Row: {
+          base_currency: string | null
           category: string
           change_24h: number
+          contract_size: number | null
           created_at: string
           id: string
           is_active: boolean
@@ -25,13 +27,16 @@ export type Database = {
           min_trade_size: number
           name: string
           price: number
+          quote_currency: string | null
           spread: number
           symbol: string
           updated_at: string
         }
         Insert: {
+          base_currency?: string | null
           category: string
           change_24h?: number
+          contract_size?: number | null
           created_at?: string
           id?: string
           is_active?: boolean
@@ -39,13 +44,16 @@ export type Database = {
           min_trade_size?: number
           name: string
           price: number
+          quote_currency?: string | null
           spread?: number
           symbol: string
           updated_at?: string
         }
         Update: {
+          base_currency?: string | null
           category?: string
           change_24h?: number
+          contract_size?: number | null
           created_at?: string
           id?: string
           is_active?: boolean
@@ -53,6 +61,7 @@ export type Database = {
           min_trade_size?: number
           name?: string
           price?: number
+          quote_currency?: string | null
           spread?: number
           symbol?: string
           updated_at?: string
