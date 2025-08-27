@@ -11,6 +11,7 @@ import { Loader2 } from "lucide-react";
 import { useMemo } from "react";
 import { SimplePriceIndicator } from "@/components/SimplePriceIndicator";
 import { useRealTimePrices } from "@/hooks/useRealTimePrices";
+import { calculateRealTimePnL, formatPnL } from "@/utils/pnlCalculator";
 
 export const Portfolio = () => {
   // ALL HOOKS MUST BE CALLED FIRST - NO CONDITIONAL HOOK CALLS
@@ -37,8 +38,13 @@ export const Portfolio = () => {
     if (!openTrades || openTrades.length === 0) {
       return 0;
     }
-    return openTrades.reduce((sum, trade) => sum + (trade.pnl || 0), 0);
-  }, [openTrades]);
+    return openTrades.reduce((sum, trade) => {
+      const asset = updatedAssets.find(a => a.symbol === trade.symbol);
+      const currentPrice = asset?.price || trade.current_price || trade.open_price || 0;
+      const realTimePnL = calculateRealTimePnL(trade, currentPrice);
+      return sum + realTimePnL;
+    }, 0);
+  }, [openTrades, updatedAssets]);
 
   // NOW we can do conditional rendering AFTER all hooks are called
   const isLoading = tradesLoading || profileLoading || assetsLoading;
@@ -199,14 +205,19 @@ export const Portfolio = () => {
                         
                         <div>
                           <div className="text-xs text-muted-foreground mb-1">P&L</div>
-                          <div className={`font-medium flex items-center gap-1 ${(trade.pnl || 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                            {(trade.pnl || 0) >= 0 ? (
-                              <TrendingUp className="h-4 w-4" />
-                            ) : (
-                              <TrendingDown className="h-4 w-4" />
-                            )}
-                            <span>{(trade.pnl || 0) >= 0 ? '+' : ''}${(trade.pnl || 0).toFixed(2)}</span>
-                          </div>
+                          {(() => {
+                            const realTimePnL = calculateRealTimePnL(trade, currentPrice);
+                            return (
+                              <div className={`font-medium flex items-center gap-1 transition-colors duration-300 ${realTimePnL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                {realTimePnL >= 0 ? (
+                                  <TrendingUp className="h-4 w-4" />
+                                ) : (
+                                  <TrendingDown className="h-4 w-4" />
+                                )}
+                                <span className="animate-pulse-subtle">{formatPnL(realTimePnL)}</span>
+                              </div>
+                            );
+                          })()}
                         </div>
                         
                         <div className="col-span-2">
