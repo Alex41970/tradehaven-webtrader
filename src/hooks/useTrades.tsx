@@ -202,7 +202,8 @@ export const useTrades = () => {
           trade_type: tradeData.trade_type,
           amount: tradeData.amount,
           open_price: tradeData.open_price,
-          current_price: closePrice
+          current_price: closePrice,
+          leverage_param: tradeData.leverage || 1
         });
 
       if (pnlError) {
@@ -282,7 +283,8 @@ export const useTrades = () => {
           trade_type: trade.trade_type,
           amount: trade.amount,
           open_price: trade.open_price,
-          current_price: currentPrice
+          current_price: currentPrice,
+          leverage_param: trade.leverage || 1
         });
 
       if (pnlError) {

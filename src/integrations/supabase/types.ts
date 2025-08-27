@@ -207,12 +207,20 @@ export type Database = {
     }
     Functions: {
       calculate_pnl: {
-        Args: {
-          amount: number
-          current_price: number
-          open_price: number
-          trade_type: string
-        }
+        Args:
+          | {
+              amount: number
+              current_price: number
+              leverage_param?: number
+              open_price: number
+              trade_type: string
+            }
+          | {
+              amount: number
+              current_price: number
+              open_price: number
+              trade_type: string
+            }
         Returns: number
       }
       recalculate_user_balance: {
