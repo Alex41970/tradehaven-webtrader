@@ -9,14 +9,16 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 import { useMemo } from "react";
 import { PulsingPriceIndicator } from "@/components/PulsingPriceIndicator";
+import { useRealTimePrices } from "@/hooks/useRealTimePrices";
 
 export const Portfolio = () => {
   const { openTrades, closeTrade, loading: tradesLoading } = useTrades();
   const { profile, loading: profileLoading } = useUserProfile();
-  const { assets } = useAssets();
+  const { assets, loading: assetsLoading } = useAssets();
   const { toast } = useToast();
+  const { getUpdatedAssets } = useRealTimePrices();
 
-  if (tradesLoading || profileLoading) {
+  if (tradesLoading || profileLoading || assetsLoading) {
     return (
       <div className="flex items-center justify-center h-32">
         <Loader2 className="h-6 w-6 animate-spin" />
@@ -24,27 +26,45 @@ export const Portfolio = () => {
     );
   }
 
+  // Get updated assets with real-time prices
+  const updatedAssets = getUpdatedAssets(assets);
+
   const totalPnL = useMemo(() => 
     openTrades.reduce((sum, trade) => sum + (trade.pnl || 0), 0), 
     [openTrades]
   );
 
   const handleCloseTrade = async (tradeId: string, symbol: string) => {
-    const asset = assets.find(a => a.symbol === symbol);
-    if (!asset) {
+    try {
+      const asset = updatedAssets.find(a => a.symbol === symbol);
+      if (!asset) {
+        toast({
+          title: "Error",
+          description: "Asset not found for current price",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const success = await closeTrade(tradeId, asset.price);
+      if (success) {
+        toast({
+          title: "Success",
+          description: "Trade closed successfully",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to close trade",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Error closing trade:', error);
       toast({
         title: "Error",
-        description: "Asset not found for current price",
+        description: "An error occurred while closing the trade",
         variant: "destructive",
-      });
-      return;
-    }
-
-    const success = await closeTrade(tradeId, asset.price);
-    if (success) {
-      toast({
-        title: "Success",
-        description: "Trade closed successfully",
       });
     }
   };
@@ -95,8 +115,9 @@ export const Portfolio = () => {
           ) : (
             <div className="space-y-4">
               {openTrades.map((trade) => {
-                const asset = assets.find(a => a.symbol === trade.symbol);
-                const currentPrice = asset?.price || trade.current_price || trade.open_price;
+                const asset = updatedAssets.find(a => a.symbol === trade.symbol);
+                const currentPrice = asset?.price || trade.current_price || trade.open_price || 0;
+                const change24h = asset?.change_24h || 0;
                 
                 return (
                   <div key={trade.id} className="border rounded-lg p-4">
@@ -120,12 +141,18 @@ export const Portfolio = () => {
                       
                        <div>
                          <div className="text-sm text-muted-foreground">Current Price</div>
-                         <PulsingPriceIndicator 
-                           price={currentPrice}
-                           change={asset?.change_24h || 0}
-                           symbol={trade.symbol}
-                           className="text-sm"
-                         />
+                         {asset ? (
+                           <PulsingPriceIndicator 
+                             price={currentPrice}
+                             change={change24h}
+                             symbol={trade.symbol}
+                             className="text-sm"
+                           />
+                         ) : (
+                           <div className="font-mono text-sm text-muted-foreground">
+                             {currentPrice.toFixed(trade.symbol.includes('JPY') ? 2 : 4)}
+                           </div>
+                         )}
                        </div>
                       
                       <div>
