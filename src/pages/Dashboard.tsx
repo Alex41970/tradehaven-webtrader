@@ -13,10 +13,11 @@ import { useTrades } from "@/hooks/useTrades";
 import { useAssets } from "@/hooks/useAssets";
 import { useRealTimePrices } from "@/hooks/useRealTimePrices";
 import { calculateRealTimePnL } from "@/utils/pnlCalculator";
-import { useMemo } from "react";
+import { useMemo, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 const Dashboard = () => {
   const { user, signOut } = useAuth();
-  const { profile, loading: profileLoading } = useUserProfile();
+  const { profile, loading: profileLoading, refetch: refetchProfile } = useUserProfile();
   const { openTrades } = useTrades();
   const { assets, loading: assetsLoading } = useAssets();
   const { getUpdatedAssets } = useRealTimePrices();
@@ -25,6 +26,32 @@ const Dashboard = () => {
   const handleSignOut = async () => {
     await signOut();
   };
+
+  // Listen for real-time user profile updates
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel('user-profile-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'user_profiles',
+          filter: `user_id=eq.${user.id}`
+        },
+        () => {
+          // Refetch profile when it's updated
+          refetchProfile();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, refetchProfile]);
 
   // Create updated assets with real-time prices
   const updatedAssets = useMemo(() => {

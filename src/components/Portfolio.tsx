@@ -8,15 +8,18 @@ import { useUserProfile } from "@/hooks/useUserProfile";
 import { useAssets } from "@/hooks/useAssets";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
-import { useMemo } from "react";
+import { useMemo, useEffect } from "react";
 import { SimplePriceIndicator } from "@/components/SimplePriceIndicator";
 import { useRealTimePrices } from "@/hooks/useRealTimePrices";
 import { calculateRealTimePnL, formatPnL } from "@/utils/pnlCalculator";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 
 export const Portfolio = () => {
   // ALL HOOKS MUST BE CALLED FIRST - NO CONDITIONAL HOOK CALLS
+  const { user } = useAuth();
   const { openTrades, closeTrade, loading: tradesLoading } = useTrades();
-  const { profile, loading: profileLoading } = useUserProfile();
+  const { profile, loading: profileLoading, refetch: refetchProfile } = useUserProfile();
   const { assets, loading: assetsLoading } = useAssets();
   const { toast } = useToast();
   const { getUpdatedAssets } = useRealTimePrices();
@@ -45,6 +48,32 @@ export const Portfolio = () => {
       return sum + realTimePnL;
     }, 0);
   }, [openTrades, updatedAssets]);
+
+  // Listen for real-time user profile updates
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel('portfolio-profile-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'user_profiles',
+          filter: `user_id=eq.${user.id}`
+        },
+        () => {
+          // Refetch profile when it's updated (balance, margin, etc.)
+          refetchProfile();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, refetchProfile]);
 
   // NOW we can do conditional rendering AFTER all hooks are called
   const isLoading = tradesLoading || profileLoading || assetsLoading;
