@@ -10,6 +10,7 @@ import { useRealTimePrices } from "@/hooks/useRealTimePrices";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { TradeRow } from "@/components/TradeRow";
+import { calculateRealTimePnL } from "@/utils/pnlCalculator";
 
 export const Portfolio = () => {
   // ALL HOOKS MUST BE CALLED FIRST - NO CONDITIONAL HOOK CALLS
@@ -38,11 +39,33 @@ export const Portfolio = () => {
     if (!openTrades || openTrades.length === 0) {
       return 0;
     }
-    // Use the stored P&L from database instead of calculating real-time
+    
+    // Calculate real-time P&L for each open trade
     return openTrades.reduce((sum, trade) => {
+      // If trade is closed, use stored P&L
+      if (trade.status === 'closed') {
+        return sum + (trade.pnl || 0);
+      }
+
+      // For open trades, calculate real-time P&L if current price is available
+      const asset = updatedAssets.find(a => a.symbol === trade.symbol);
+      if (asset?.price) {
+        const realTimePnL = calculateRealTimePnL(
+          {
+            trade_type: trade.trade_type,
+            amount: trade.amount,
+            open_price: trade.open_price,
+            leverage: trade.leverage
+          },
+          asset.price
+        );
+        return sum + realTimePnL;
+      }
+
+      // Fall back to stored P&L if no real-time price
       return sum + (trade.pnl || 0);
     }, 0);
-  }, [openTrades]);
+  }, [openTrades, updatedAssets]);
 
   // ALL useCallback hooks must be called here, before any conditional logic
   const handleCloseTrade = useCallback(async (tradeId: string, symbol: string) => {
