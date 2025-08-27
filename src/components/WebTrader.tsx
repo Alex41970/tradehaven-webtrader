@@ -93,11 +93,9 @@ export const WebTrader = () => {
           filter: `user_id=eq.${profile.user_id}`
         },
         (payload) => {
-          console.log('WebTrader: Optimistic profile update received:', payload);
-          // Force refresh only if we haven't already updated (avoid double updates)
-          if (payload.new && typeof payload.new === 'object') {
-            forceRefresh();
-          }
+          console.log('WebTrader: Profile update received:', payload);
+          // The useUserProfile hook already handles real-time updates automatically
+          // No need to manually force refresh here
         }
       )
       .subscribe();
@@ -106,7 +104,7 @@ export const WebTrader = () => {
       console.log('Cleaning up WebTrader profile subscription');
       supabase.removeChannel(channel);
     };
-  }, [profile?.user_id]); // Remove forceRefresh dependency to prevent re-renders
+  }, [profile?.user_id]);
 
   // Calculate trade details with memoization for performance
   const calculateMargin = useMemo(() => {
