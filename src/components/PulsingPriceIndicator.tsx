@@ -14,7 +14,7 @@ export const PulsingPriceIndicator = ({ price, change, symbol, className }: Puls
   const [prevPrice, setPrevPrice] = useState(price);
 
   useEffect(() => {
-    if (price !== prevPrice) {
+    if (price !== prevPrice && !isNaN(price) && !isNaN(prevPrice)) {
       setIsPulsing(true);
       setPrevPrice(price);
       
@@ -26,8 +26,20 @@ export const PulsingPriceIndicator = ({ price, change, symbol, className }: Puls
     }
   }, [price, prevPrice]);
 
-  const isPositive = change >= 0;
-  const changePercent = ((change / (price - change)) * 100).toFixed(2);
+  // Add safety checks for price and change values
+  const safePrice = isNaN(price) ? 0 : price;
+  const safeChange = isNaN(change) ? 0 : change;
+  const isPositive = safeChange >= 0;
+  
+  let changePercent = '0.00';
+  try {
+    const basePrice = safePrice - safeChange;
+    if (basePrice !== 0) {
+      changePercent = ((safeChange / basePrice) * 100).toFixed(2);
+    }
+  } catch (error) {
+    console.error('Error calculating change percent:', error);
+  }
 
   return (
     <div className={cn("flex items-center gap-2", className)}>
@@ -41,7 +53,7 @@ export const PulsingPriceIndicator = ({ price, change, symbol, className }: Puls
           "font-mono text-sm font-medium transition-all duration-300",
           isPulsing ? "animate-pulse bg-primary/20 px-2 py-1 rounded" : ""
         )}>
-          {price.toFixed(4)}
+          {safePrice.toFixed(symbol.includes('JPY') ? 2 : 4)}
         </span>
       </div>
       <div className={cn(
@@ -51,7 +63,7 @@ export const PulsingPriceIndicator = ({ price, change, symbol, className }: Puls
           : "bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-400",
         isPulsing ? "ring-2 ring-primary/30" : ""
       )}>
-        <span>{isPositive ? '+' : ''}{change.toFixed(4)}</span>
+        <span>{isPositive ? '+' : ''}{safeChange.toFixed(symbol.includes('JPY') ? 2 : 4)}</span>
         <span>({isPositive ? '+' : ''}{changePercent}%)</span>
       </div>
     </div>

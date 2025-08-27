@@ -26,8 +26,15 @@ export const Portfolio = () => {
     );
   }
 
-  // Get updated assets with real-time prices
-  const updatedAssets = getUpdatedAssets(assets);
+  // Get updated assets with real-time prices with error handling
+  const updatedAssets = useMemo(() => {
+    try {
+      return getUpdatedAssets(assets || []);
+    } catch (error) {
+      console.error('Error getting updated assets:', error);
+      return assets || [];
+    }
+  }, [assets, getUpdatedAssets]);
 
   const totalPnL = useMemo(() => 
     openTrades.reduce((sum, trade) => sum + (trade.pnl || 0), 0), 
@@ -38,9 +45,20 @@ export const Portfolio = () => {
     try {
       const asset = updatedAssets.find(a => a.symbol === symbol);
       if (!asset) {
+        console.error(`Asset not found for symbol: ${symbol}`);
         toast({
           title: "Error",
           description: "Asset not found for current price",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (!asset.price || isNaN(asset.price)) {
+        console.error(`Invalid price for asset ${symbol}:`, asset.price);
+        toast({
+          title: "Error",
+          description: "Invalid asset price",
           variant: "destructive",
         });
         return;
@@ -115,70 +133,81 @@ export const Portfolio = () => {
           ) : (
             <div className="space-y-4">
               {openTrades.map((trade) => {
-                const asset = updatedAssets.find(a => a.symbol === trade.symbol);
-                const currentPrice = asset?.price || trade.current_price || trade.open_price || 0;
-                const change24h = asset?.change_24h || 0;
-                
-                return (
-                  <div key={trade.id} className="border rounded-lg p-4">
-                    <div className="grid md:grid-cols-6 gap-4 items-center">
-                      <div>
-                        <div className="font-medium">{trade.symbol}</div>
-                        <Badge variant={trade.trade_type === "BUY" ? "default" : "destructive"}>
-                          {trade.trade_type}
-                        </Badge>
-                      </div>
-                      
-                      <div>
-                        <div className="text-sm text-muted-foreground">Amount</div>
-                        <div className="font-medium">${trade.amount}</div>
-                      </div>
-                      
-                      <div>
-                        <div className="text-sm text-muted-foreground">Open Price</div>
-                        <div className="font-mono">{Number(trade.open_price).toFixed(trade.symbol.includes('JPY') ? 2 : 4)}</div>
-                      </div>
-                      
-                       <div>
-                         <div className="text-sm text-muted-foreground">Current Price</div>
-                         {asset ? (
-                           <PulsingPriceIndicator 
-                             price={currentPrice}
-                             change={change24h}
-                             symbol={trade.symbol}
-                             className="text-sm"
-                           />
-                         ) : (
-                           <div className="font-mono text-sm text-muted-foreground">
-                             {currentPrice.toFixed(trade.symbol.includes('JPY') ? 2 : 4)}
-                           </div>
-                         )}
-                       </div>
-                      
-                      <div>
-                        <div className="text-sm text-muted-foreground">P&L</div>
-                        <div className={`font-medium flex items-center ${(trade.pnl || 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                          {(trade.pnl || 0) >= 0 ? (
-                            <TrendingUp className="h-4 w-4 mr-1" />
-                          ) : (
-                            <TrendingDown className="h-4 w-4 mr-1" />
-                          )}
-                          {(trade.pnl || 0) >= 0 ? '+' : ''}${(trade.pnl || 0).toFixed(2)}
+                try {
+                  const asset = updatedAssets.find(a => a.symbol === trade.symbol);
+                  const currentPrice = asset?.price || trade.current_price || trade.open_price || 0;
+                  const change24h = asset?.change_24h || 0;
+                  
+                  return (
+                    <div key={trade.id} className="border rounded-lg p-4">
+                      <div className="grid md:grid-cols-6 gap-4 items-center">
+                        <div>
+                          <div className="font-medium">{trade.symbol}</div>
+                          <Badge variant={trade.trade_type === "BUY" ? "default" : "destructive"}>
+                            {trade.trade_type}
+                          </Badge>
+                        </div>
+                        
+                        <div>
+                          <div className="text-sm text-muted-foreground">Amount</div>
+                          <div className="font-medium">${Number(trade.amount).toFixed(2)}</div>
+                        </div>
+                        
+                        <div>
+                          <div className="text-sm text-muted-foreground">Open Price</div>
+                          <div className="font-mono">{Number(trade.open_price).toFixed(trade.symbol.includes('JPY') ? 2 : 4)}</div>
+                        </div>
+                        
+                         <div>
+                           <div className="text-sm text-muted-foreground">Current Price</div>
+                           {asset && asset.price ? (
+                             <PulsingPriceIndicator 
+                               price={currentPrice}
+                               change={change24h}
+                               symbol={trade.symbol}
+                               className="text-sm"
+                             />
+                           ) : (
+                             <div className="font-mono text-sm">
+                               {currentPrice.toFixed(trade.symbol.includes('JPY') ? 2 : 4)}
+                             </div>
+                           )}
+                         </div>
+                        
+                        <div>
+                          <div className="text-sm text-muted-foreground">P&L</div>
+                          <div className={`font-medium flex items-center ${(trade.pnl || 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                            {(trade.pnl || 0) >= 0 ? (
+                              <TrendingUp className="h-4 w-4 mr-1" />
+                            ) : (
+                              <TrendingDown className="h-4 w-4 mr-1" />
+                            )}
+                            {(trade.pnl || 0) >= 0 ? '+' : ''}${(trade.pnl || 0).toFixed(2)}
+                          </div>
+                        </div>
+                        
+                        <div className="flex space-x-2">
+                          <Button 
+                            size="sm" 
+                            variant="destructive"
+                            onClick={() => handleCloseTrade(trade.id, trade.symbol)}
+                          >
+                            Close
+                          </Button>
                         </div>
                       </div>
-                      
-                      <div className="flex space-x-2">
-                        <Button 
-                          size="sm" 
-                          variant="destructive"
-                          onClick={() => handleCloseTrade(trade.id, trade.symbol)}
-                        >
-                          Close
-                        </Button>
+                    </div>
+                  );
+                } catch (error) {
+                  console.error('Error rendering trade:', error, trade);
+                  return (
+                    <div key={trade.id} className="border rounded-lg p-4 bg-red-50 dark:bg-red-950/20">
+                      <div className="text-red-600 text-sm">
+                        Error loading trade data for {trade.symbol}
                       </div>
                     </div>
-                  </div>
-                );
+                  );
+                }
               })}
             </div>
           )}
