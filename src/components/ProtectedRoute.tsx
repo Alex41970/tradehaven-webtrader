@@ -1,7 +1,6 @@
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import { Navigate } from "react-router-dom";
-import { useEffect } from "react";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -11,19 +10,7 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   const { user, loading } = useAuth();
   const { role, loading: roleLoading } = useUserRole();
 
-  // ALL HOOKS MUST BE CALLED FIRST - before any conditional returns
-  useEffect(() => {
-    // Only redirect if we have role info and user is authenticated
-    if (!loading && !roleLoading && user && role && window.location.pathname === '/dashboard') {
-      if (role === 'super_admin') {
-        window.location.href = '/super-admin';
-      } else if (role === 'admin') {
-        window.location.href = '/admin';
-      }
-    }
-  }, [loading, roleLoading, user, role]);
-
-  // Now we can have conditional returns
+  // Handle loading states
   if (loading || roleLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -32,8 +19,19 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
     );
   }
 
+  // Handle unauthenticated users
   if (!user) {
     return <Navigate to="/auth" replace />;
+  }
+
+  // Handle role-based redirects from /dashboard
+  if (role && window.location.pathname === '/dashboard') {
+    if (role === 'super_admin') {
+      return <Navigate to="/super-admin" replace />;
+    }
+    if (role === 'admin') {
+      return <Navigate to="/admin" replace />;
+    }
   }
 
   return <>{children}</>;
