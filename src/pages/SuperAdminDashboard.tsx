@@ -23,6 +23,8 @@ interface UserWithRole {
   admin_id: string | null;
   admin_email: string | null;
   role: string;
+  assignment_method?: string;  
+  promo_code_used?: string | null;
   created_at: string;
 }
 
@@ -34,6 +36,19 @@ interface AdminUser {
   created_at: string;
 }
 
+interface PromoCode {
+  id: string;
+  code: string;
+  admin_id: string;
+  admin_email: string;
+  is_active: boolean;
+  max_uses: number | null;
+  current_uses: number;
+  expires_at: string | null;
+  created_at: string;
+  assigned_users_count: number;
+}
+
 const SuperAdminDashboard = () => {
   const { user, signOut } = useAuth();
   const { role, loading: roleLoading, isSuperAdmin } = useUserRole();
@@ -41,6 +56,7 @@ const SuperAdminDashboard = () => {
   
   const [users, setUsers] = useState<UserWithRole[]>([]);
   const [admins, setAdmins] = useState<AdminUser[]>([]);
+  const [promoCodes, setPromoCodes] = useState<PromoCode[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
@@ -50,6 +66,12 @@ const SuperAdminDashboard = () => {
   const [newAdminId, setNewAdminId] = useState("");
   const [newAdminEmail, setNewAdminEmail] = useState("");
   const [newUserRole, setNewUserRole] = useState<"admin" | "user">("admin");
+  
+  // Promo code form states
+  const [promoCodeValue, setPromoCodeValue] = useState("");
+  const [promoAdminId, setPromoAdminId] = useState("");
+  const [promoMaxUses, setPromoMaxUses] = useState("");
+  const [promoExpiresAt, setPromoExpiresAt] = useState("");
 
   useEffect(() => {
     if (user && !roleLoading && role === 'super_admin') {
@@ -104,6 +126,8 @@ const SuperAdminDashboard = () => {
           balance,
           equity,
           admin_id,
+          assignment_method,
+          promo_code_used,
           created_at
         `);
 
@@ -152,6 +176,8 @@ const SuperAdminDashboard = () => {
         admin_id: user.admin_id,
         admin_email: user.admin_id ? emailMap.get(user.admin_id) || null : null,
         role: rolesMap.get(user.user_id) || 'user',
+        assignment_method: user.assignment_method || 'manual',
+        promo_code_used: user.promo_code_used,
         created_at: user.created_at
       })) || [];
 
@@ -192,6 +218,19 @@ const SuperAdminDashboard = () => {
 
       setUsers(transformedUsers);
       setAdmins(Array.from(adminMap.values()));
+      
+      // Fetch promo codes with statistics
+      const { data: promoCodesData, error: promoError } = await supabase.rpc('get_promo_code_stats');
+      
+      if (promoError) {
+        console.error('SuperAdminDashboard: Error fetching promo codes:', promoError);
+        // Don't throw error for promo codes, just log it
+        setPromoCodes([]);
+      } else {
+        console.log('SuperAdminDashboard: Promo codes fetched successfully. Count:', promoCodesData?.length || 0);
+        setPromoCodes(promoCodesData || []);
+      }
+      
       setRetryCount(0); // Reset retry count on success
     } catch (error: any) {
       console.error('SuperAdminDashboard: Error fetching data:', error);
@@ -297,23 +336,13 @@ const SuperAdminDashboard = () => {
     if (!selectedUserId || !newAdminId) return;
 
     try {
-      // Update user's admin_id
-      const { error: profileError } = await supabase
-        .from('user_profiles')
-        .update({ admin_id: newAdminId })
-        .eq('user_id', selectedUserId);
+      // Use the database function for atomic transfer
+      const { data, error } = await supabase.rpc('transfer_user_to_admin', {
+        _user_id: selectedUserId,
+        _new_admin_id: newAdminId
+      });
 
-      if (profileError) throw profileError;
-
-      // Update admin_user_relationships
-      const { error: relationshipError } = await supabase
-        .from('admin_user_relationships')
-        .upsert({
-          admin_id: newAdminId,
-          user_id: selectedUserId
-        });
-
-      if (relationshipError) throw relationshipError;
+      if (error) throw error;
 
       toast({
         title: "Success",
@@ -322,11 +351,75 @@ const SuperAdminDashboard = () => {
       fetchSuperAdminData();
       setSelectedUserId("");
       setNewAdminId("");
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error transferring user:', error);
       toast({
         title: "Error",
-        description: "Failed to transfer user",
+        description: error.message || "Failed to transfer user",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleCreatePromoCode = async () => {
+    if (!promoCodeValue || !promoAdminId) return;
+
+    try {
+      const { error } = await supabase
+        .from('promo_codes')
+        .insert({
+          code: promoCodeValue,
+          admin_id: promoAdminId,
+          max_uses: promoMaxUses ? parseInt(promoMaxUses) : null,
+          expires_at: promoExpiresAt ? new Date(promoExpiresAt).toISOString() : null,
+          is_active: true
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Promo code created successfully"
+      });
+      
+      // Reset form
+      setPromoCodeValue("");
+      setPromoAdminId("");
+      setPromoMaxUses("");
+      setPromoExpiresAt("");
+      
+      // Refresh data
+      fetchSuperAdminData();
+    } catch (error: any) {
+      console.error('Error creating promo code:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create promo code",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleTogglePromoCode = async (promoId: string, currentStatus: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('promo_codes')
+        .update({ is_active: !currentStatus })
+        .eq('id', promoId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: `Promo code ${!currentStatus ? 'activated' : 'deactivated'} successfully`
+      });
+      
+      fetchSuperAdminData();
+    } catch (error: any) {
+      console.error('Error toggling promo code:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update promo code",
         variant: "destructive"
       });
     }
@@ -461,6 +554,7 @@ const SuperAdminDashboard = () => {
           <TabsList>
             <TabsTrigger value="users">All Users</TabsTrigger>
             <TabsTrigger value="admins">Admins</TabsTrigger>
+            <TabsTrigger value="promo-codes">Promo Codes</TabsTrigger>
             <TabsTrigger value="management">Management</TabsTrigger>
           </TabsList>
 
@@ -502,6 +596,7 @@ const SuperAdminDashboard = () => {
                         <TableHead>Role</TableHead>
                         <TableHead>Balance</TableHead>
                         <TableHead>Assigned Admin</TableHead>
+                        <TableHead>Assignment Method</TableHead>
                         <TableHead>Joined</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -523,6 +618,20 @@ const SuperAdminDashboard = () => {
                               <Badge variant="outline">{user.admin_email}</Badge>
                             ) : (
                               <span className="text-muted-foreground">None</span>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            {user.assignment_method === 'promo_code' ? (
+                              <div className="flex flex-col gap-1">
+                                <Badge variant="secondary">Promo Code</Badge>
+                                {user.promo_code_used && (
+                                  <code className="text-xs bg-muted px-1 py-0.5 rounded">
+                                    {user.promo_code_used}
+                                  </code>
+                                )}
+                              </div>
+                            ) : (
+                              <Badge variant="outline">Manual</Badge>
                             )}
                           </TableCell>
                           <TableCell>
@@ -599,6 +708,148 @@ const SuperAdminDashboard = () => {
                 )}
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="promo-codes" className="space-y-4">
+            <div className="grid gap-6">
+              {/* Create Promo Code Card */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Create Promo Code</CardTitle>
+                  <CardDescription>Generate promo codes for automatic user assignment to admins</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div>
+                      <Label htmlFor="promo-code">Promo Code</Label>
+                      <Input
+                        id="promo-code"
+                        placeholder="Enter code"
+                        value={promoCodeValue}
+                        onChange={(e) => setPromoCodeValue(e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="promo-admin">Assign to Admin</Label>
+                      <Select value={promoAdminId} onValueChange={setPromoAdminId}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Choose admin" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {admins.map((admin) => (
+                            <SelectItem key={admin.user_id} value={admin.user_id}>
+                              {admin.email}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label htmlFor="max-uses">Max Uses (Optional)</Label>
+                      <Input
+                        id="max-uses"
+                        type="number"
+                        placeholder="Unlimited"
+                        value={promoMaxUses}
+                        onChange={(e) => setPromoMaxUses(e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="expires-at">Expires At (Optional)</Label>
+                      <Input
+                        id="expires-at"
+                        type="datetime-local"
+                        value={promoExpiresAt}
+                        onChange={(e) => setPromoExpiresAt(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                  <div className="mt-4">
+                    <Button onClick={handleCreatePromoCode} className="w-full md:w-auto">
+                      Create Promo Code
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Promo Codes Table */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>All Promo Codes</CardTitle>
+                  <CardDescription>Manage existing promo codes and track their usage</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {loading ? (
+                    <div className="flex items-center justify-center p-8">
+                      <div className="text-center">
+                        <div className="text-lg">Loading promo codes...</div>
+                      </div>
+                    </div>
+                  ) : promoCodes.length === 0 ? (
+                    <div className="text-center p-8 text-muted-foreground">
+                      No promo codes found
+                    </div>
+                  ) : (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Code</TableHead>
+                          <TableHead>Admin</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead>Usage</TableHead>
+                          <TableHead>Assigned Users</TableHead>
+                          <TableHead>Expires</TableHead>
+                          <TableHead>Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {promoCodes.map((promo) => (
+                          <TableRow key={promo.id}>
+                            <TableCell>
+                              <code className="bg-muted px-2 py-1 rounded text-sm">
+                                {promo.code}
+                              </code>
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant="outline">{promo.admin_email}</Badge>
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant={promo.is_active ? 'default' : 'secondary'}>
+                                {promo.is_active ? 'Active' : 'Inactive'}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              {promo.current_uses}
+                              {promo.max_uses ? ` / ${promo.max_uses}` : ' / ∞'}
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant="secondary">
+                                {promo.assigned_users_count} users
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              {promo.expires_at ? 
+                                new Date(promo.expires_at).toLocaleDateString() : 
+                                'Never'
+                              }
+                            </TableCell>
+                            <TableCell>
+                              <Button
+                                variant={promo.is_active ? "outline" : "default"}
+                                size="sm"
+                                onClick={() => handleTogglePromoCode(promo.id, promo.is_active)}
+                              >
+                                {promo.is_active ? 'Deactivate' : 'Activate'}
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
 
           <TabsContent value="management" className="space-y-4">
