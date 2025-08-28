@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { WebTrader } from "@/components/WebTrader";
 import { Portfolio } from "@/components/Portfolio";
 import { TradingHistory } from "@/components/TradingHistory";
-import { LogOut, TrendingUp, DollarSign, Activity, ExternalLink, Plus, Minus } from "lucide-react";
+import { LogOut, TrendingUp, DollarSign, Activity, ExternalLink, Plus, Minus, BarChart3, Target, Trophy } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { useTrades } from "@/hooks/useTrades";
@@ -15,14 +15,19 @@ import { useRealTimePrices } from "@/hooks/useRealTimePrices";
 import { calculateRealTimePnL } from "@/utils/pnlCalculator";
 import { useMemo, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { usePerformanceMetrics, TimePeriod } from "@/hooks/usePerformanceMetrics";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 const Dashboard = () => {
   const { user, signOut } = useAuth();
   const { profile, loading: profileLoading, refetch: refetchProfile } = useUserProfile();
-  const { openTrades } = useTrades();
+  const { trades, openTrades } = useTrades();
   const { assets, loading: assetsLoading } = useAssets();
   const { getUpdatedAssets } = useRealTimePrices();
   const navigate = useNavigate();
   const [signingOut, setSigningOut] = useState(false);
+  
+  // Performance metrics
+  const { metrics, selectedPeriod, setSelectedPeriod } = usePerformanceMetrics(trades, profile?.balance || 10000);
 
   const handleSignOut = async () => {
     if (signingOut) return;
@@ -112,7 +117,7 @@ const Dashboard = () => {
         {/* Main Content */}
         <div className="container mx-auto px-4 py-6">
           {/* Quick Stats */}
-          <div className="grid md:grid-cols-2 gap-6 mb-6">
+          <div className="grid md:grid-cols-3 gap-6 mb-6">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Account Balance</CardTitle>
@@ -158,6 +163,72 @@ const Dashboard = () => {
                     <Minus className="h-4 w-4 mr-2" />
                     Withdraw
                   </Button>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Performance</CardTitle>
+                <BarChart3 className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <ToggleGroup 
+                  type="single" 
+                  value={selectedPeriod} 
+                  onValueChange={(value: TimePeriod) => value && setSelectedPeriod(value)}
+                  className="grid grid-cols-5 gap-1"
+                >
+                  <ToggleGroupItem value="daily" variant="outline" size="sm" className="text-xs">
+                    1D
+                  </ToggleGroupItem>
+                  <ToggleGroupItem value="weekly" variant="outline" size="sm" className="text-xs">
+                    7D
+                  </ToggleGroupItem>
+                  <ToggleGroupItem value="monthly" variant="outline" size="sm" className="text-xs">
+                    1M
+                  </ToggleGroupItem>
+                  <ToggleGroupItem value="yearly" variant="outline" size="sm" className="text-xs">
+                    1Y
+                  </ToggleGroupItem>
+                  <ToggleGroupItem value="all-time" variant="outline" size="sm" className="text-xs">
+                    All
+                  </ToggleGroupItem>
+                </ToggleGroup>
+                
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-muted-foreground">Total Return</span>
+                    <span className={`text-sm font-medium ${metrics.totalReturnPercent >= 0 ? 'text-trading-success' : 'text-trading-danger'}`}>
+                      {metrics.totalReturnPercent >= 0 ? '+' : ''}{metrics.totalReturnPercent.toFixed(2)}%
+                    </span>
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-muted-foreground">Period P&L</span>
+                    <span className={`text-sm font-medium ${metrics.periodPnL >= 0 ? 'text-trading-success' : 'text-trading-danger'}`}>
+                      {metrics.periodPnL >= 0 ? '+' : ''}${metrics.periodPnL.toFixed(2)}
+                    </span>
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-muted-foreground flex items-center">
+                      <Target className="w-3 h-3 mr-1" />
+                      Win Rate
+                    </span>
+                    <span className="text-sm font-medium text-muted-foreground">
+                      {metrics.winRate.toFixed(1)}%
+                    </span>
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-muted-foreground flex items-center">
+                      <Trophy className="w-3 h-3 mr-1" />
+                      Best Trade
+                    </span>
+                    <span className="text-sm font-medium text-trading-success">
+                      +${metrics.bestTrade.toFixed(2)}
+                    </span>
+                  </div>
                 </div>
               </CardContent>
             </Card>
