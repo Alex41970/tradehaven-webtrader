@@ -12,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Users, DollarSign, TrendingUp, Settings } from "lucide-react";
+import { Users, DollarSign, TrendingUp, Settings, LogOut } from "lucide-react";
 import { Navigate } from "react-router-dom";
 
 interface UserProfile {
@@ -51,7 +51,7 @@ interface PromoCode {
 }
 
 const AdminDashboard = () => {
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const { role, loading: roleLoading, isAdmin } = useUserRole();
   const { toast } = useToast();
   const [users, setUsers] = useState<UserProfile[]>([]);
@@ -224,6 +224,10 @@ const AdminDashboard = () => {
     }
   };
 
+  const handleSignOut = async () => {
+    await signOut();
+  };
+
   if (roleLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -249,9 +253,15 @@ const AdminDashboard = () => {
             <h1 className="text-3xl font-bold">Admin Dashboard</h1>
             <p className="text-muted-foreground">Manage your users and their trading activities</p>
           </div>
-          <Badge variant="secondary" className="text-lg px-4 py-2">
-            {role === 'super_admin' ? 'Super Admin' : 'Admin'}
-          </Badge>
+          <div className="flex items-center gap-3">
+            <Badge variant="secondary" className="text-lg px-4 py-2">
+              {role === 'super_admin' ? 'Super Admin' : 'Admin'}
+            </Badge>
+            <Button variant="outline" size="sm" onClick={handleSignOut}>
+              <LogOut className="h-4 w-4 mr-2" />
+              Sign Out
+            </Button>
+          </div>
         </div>
 
         {/* Stats Cards */}
