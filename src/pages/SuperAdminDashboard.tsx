@@ -42,6 +42,8 @@ const SuperAdminDashboard = () => {
   const [users, setUsers] = useState<UserWithRole[]>([]);
   const [admins, setAdmins] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
   
   // Form states
   const [selectedUserId, setSelectedUserId] = useState("");
@@ -51,16 +53,39 @@ const SuperAdminDashboard = () => {
 
   useEffect(() => {
     if (user && !roleLoading && isSuperAdmin()) {
+      console.log('SuperAdminDashboard: Initiating data fetch for user:', user.id, 'role:', role);
       fetchSuperAdminData();
+    } else {
+      console.log('SuperAdminDashboard: Not fetching data. User:', !!user, 'roleLoading:', roleLoading, 'isSuperAdmin:', isSuperAdmin());
     }
-  }, [user, roleLoading, isSuperAdmin]);
+  }, [user, roleLoading, isSuperAdmin, role]);
 
   const fetchSuperAdminData = async () => {
-    if (!user) return;
+    if (!user) {
+      console.log('SuperAdminDashboard: No user found, aborting fetch');
+      setError('User not authenticated');
+      setLoading(false);
+      return;
+    }
 
     try {
       setLoading(true);
+      setError(null);
+      
+      console.log('SuperAdminDashboard: Starting data fetch attempt', retryCount + 1);
+      
+      // Check if user has session
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      console.log('SuperAdminDashboard: Session check - session exists:', !!session, 'error:', sessionError);
+      
+      if (!session) {
+        console.error('SuperAdminDashboard: No session found, user may not be authenticated');
+        setError('Authentication session not found');
+        setLoading(false);
+        return;
+      }
 
+      console.log('SuperAdminDashboard: Fetching user profiles...');
       // Fetch user profiles separately
       const { data: usersData, error: usersError } = await supabase
         .from('user_profiles')
@@ -73,14 +98,25 @@ const SuperAdminDashboard = () => {
           created_at
         `);
 
-      if (usersError) throw usersError;
+      if (usersError) {
+        console.error('SuperAdminDashboard: Error fetching user profiles:', usersError);
+        throw new Error(`User profiles error: ${usersError.message} (Code: ${usersError.code})`);
+      }
 
+      console.log('SuperAdminDashboard: User profiles fetched successfully. Count:', usersData?.length || 0);
+
+      console.log('SuperAdminDashboard: Fetching user roles...');
       // Fetch user roles separately
       const { data: rolesData, error: rolesError } = await supabase
         .from('user_roles')
         .select('user_id, role');
 
-      if (rolesError) throw rolesError;
+      if (rolesError) {
+        console.error('SuperAdminDashboard: Error fetching user roles:', rolesError);
+        throw new Error(`User roles error: ${rolesError.message} (Code: ${rolesError.code})`);
+      }
+
+      console.log('SuperAdminDashboard: User roles fetched successfully. Count:', rolesData?.length || 0);
 
       // Create a map of user roles for quick lookup
       const rolesMap = new Map();
@@ -111,6 +147,8 @@ const SuperAdminDashboard = () => {
         .filter(([_, role]) => role === 'admin')
         .map(([userId, _]) => userId);
 
+      console.log('SuperAdminDashboard: Found admin IDs:', adminIds);
+
       // Count users for each admin
       const adminMap = new Map();
       
@@ -137,15 +175,30 @@ const SuperAdminDashboard = () => {
         }
       });
 
+      console.log('SuperAdminDashboard: Data processing complete. Users:', transformedUsers.length, 'Admins:', adminMap.size);
+
       setUsers(transformedUsers);
       setAdmins(Array.from(adminMap.values()));
-    } catch (error) {
-      console.error('Error fetching super admin data:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load data",
-        variant: "destructive"
-      });
+      setRetryCount(0); // Reset retry count on success
+    } catch (error: any) {
+      console.error('SuperAdminDashboard: Error fetching data:', error);
+      const errorMessage = error.message || 'Failed to load data';
+      setError(errorMessage);
+      
+      // Retry logic - if it's an auth issue and we haven't retried too many times
+      if (retryCount < 3 && (errorMessage.includes('auth') || errorMessage.includes('session'))) {
+        console.log('SuperAdminDashboard: Retrying in 2 seconds...');
+        setRetryCount(prev => prev + 1);
+        setTimeout(() => {
+          fetchSuperAdminData();
+        }, 2000);
+      } else {
+        toast({
+          title: "Error Loading Data",
+          description: errorMessage,
+          variant: "destructive"
+        });
+      }
     } finally {
       setLoading(false);
     }
@@ -376,7 +429,28 @@ const SuperAdminDashboard = () => {
               </CardHeader>
               <CardContent>
                 {loading ? (
-                  <div>Loading...</div>
+                  <div className="flex items-center justify-center p-8">
+                    <div className="text-center">
+                      <div className="text-lg">Loading users...</div>
+                      {retryCount > 0 && (
+                        <div className="text-sm text-muted-foreground mt-2">
+                          Retry attempt {retryCount}/3
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ) : error ? (
+                  <div className="flex flex-col items-center justify-center p-8 text-center">
+                    <div className="text-lg text-destructive mb-2">Failed to load users</div>
+                    <div className="text-sm text-muted-foreground mb-4">{error}</div>
+                    <Button onClick={fetchSuperAdminData} variant="outline">
+                      Try Again
+                    </Button>
+                  </div>
+                ) : users.length === 0 ? (
+                  <div className="text-center p-8 text-muted-foreground">
+                    No users found
+                  </div>
                 ) : (
                   <Table>
                     <TableHeader>
@@ -428,7 +502,28 @@ const SuperAdminDashboard = () => {
               </CardHeader>
               <CardContent>
                 {loading ? (
-                  <div>Loading...</div>
+                  <div className="flex items-center justify-center p-8">
+                    <div className="text-center">
+                      <div className="text-lg">Loading admins...</div>
+                      {retryCount > 0 && (
+                        <div className="text-sm text-muted-foreground mt-2">
+                          Retry attempt {retryCount}/3
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ) : error ? (
+                  <div className="flex flex-col items-center justify-center p-8 text-center">
+                    <div className="text-lg text-destructive mb-2">Failed to load admins</div>
+                    <div className="text-sm text-muted-foreground mb-4">{error}</div>
+                    <Button onClick={fetchSuperAdminData} variant="outline">
+                      Try Again
+                    </Button>
+                  </div>
+                ) : admins.length === 0 ? (
+                  <div className="text-center p-8 text-muted-foreground">
+                    No admins found
+                  </div>
                 ) : (
                   <Table>
                     <TableHeader>
