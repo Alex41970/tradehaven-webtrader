@@ -169,7 +169,7 @@ export const Portfolio = () => {
   return (
     <div className="space-y-6">
       {/* Portfolio Summary */}
-      <div className="grid md:grid-cols-3 gap-4">
+      <div className="grid md:grid-cols-2 gap-4">
         <Card>
           <CardHeader>
             <CardTitle className="text-lg">Open Positions</CardTitle>
@@ -185,34 +185,6 @@ export const Portfolio = () => {
           <CardContent>
             <div className={`text-2xl font-bold animate-pulse-subtle ${totalPnL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
               {totalPnL >= 0 ? '+' : ''}${totalPnL.toFixed(2)}
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Account Actions</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex gap-2">
-              <Button 
-                onClick={() => {
-                  // Placeholder for deposit functionality
-                  console.log('Deposit clicked');
-                }}
-                className="flex-1"
-              >
-                Deposit
-              </Button>
-              <Button 
-                onClick={() => {
-                  // Placeholder for withdraw functionality
-                  console.log('Withdraw clicked');
-                }}
-                variant="outline"
-                className="flex-1"
-              >
-                Withdraw
-              </Button>
             </div>
           </CardContent>
         </Card>

@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { WebTrader } from "@/components/WebTrader";
 import { Portfolio } from "@/components/Portfolio";
 import { TradingHistory } from "@/components/TradingHistory";
-import { LogOut, TrendingUp, DollarSign, Activity, ExternalLink, Shield, AlertTriangle } from "lucide-react";
+import { LogOut, TrendingUp, DollarSign, Activity, ExternalLink, Shield, AlertTriangle, Plus, Minus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { useTrades } from "@/hooks/useTrades";
@@ -149,15 +149,36 @@ const Dashboard = () => {
               </CardContent>
             </Card>
             <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Open Trades</CardTitle>
-                <Activity className="h-4 w-4 text-muted-foreground" />
+              <CardHeader>
+                <CardTitle className="text-sm font-medium">Account Actions</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{openTrades.length}</div>
-                <p className="text-xs text-muted-foreground">
-                  Active positions
-                </p>
+                <div className="space-y-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="w-full justify-start"
+                    onClick={() => {
+                      // TODO: Implement deposit functionality
+                      console.log('Deposit clicked');
+                    }}
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Deposit
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="w-full justify-start"
+                    onClick={() => {
+                      // TODO: Implement withdraw functionality
+                      console.log('Withdraw clicked');
+                    }}
+                  >
+                    <Minus className="h-4 w-4 mr-2" />
+                    Withdraw
+                  </Button>
+                </div>
               </CardContent>
             </Card>
             <Card>
