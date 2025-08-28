@@ -266,6 +266,15 @@ const AdminDashboard = () => {
     await signOut();
   };
 
+  // Memoize calculated stats to prevent unnecessary recalculations
+  // MUST be before any conditional returns to maintain hook order
+  const stats = useMemo(() => ({
+    totalBalance: users.reduce((sum, user) => sum + (user.balance || 0), 0),
+    totalUsers: users.length,
+    totalTrades: trades.length,
+    activeTrades: trades.filter(t => t.status === 'open').length
+  }), [users, trades]);
+
   if (roleLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -277,14 +286,6 @@ const AdminDashboard = () => {
   if (!isAdmin()) {
     return <Navigate to="/dashboard" replace />;
   }
-
-  // Memoize calculated stats to prevent unnecessary recalculations
-  const stats = useMemo(() => ({
-    totalBalance: users.reduce((sum, user) => sum + (user.balance || 0), 0),
-    totalUsers: users.length,
-    totalTrades: trades.length,
-    activeTrades: trades.filter(t => t.status === 'open').length
-  }), [users, trades]);
 
   return (
     <div className="min-h-screen bg-background">
