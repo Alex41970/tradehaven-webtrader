@@ -224,27 +224,56 @@ const SuperAdminDashboard = () => {
         return;
       }
 
-      // Update user role to admin
+      // Check current user role
+      const { data: currentRole, error: roleCheckError } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', userProfiles.user_id)
+        .single();
+
+      if (roleCheckError) {
+        toast({
+          title: "Error",
+          description: "Could not verify user's current role",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Check if user is already an admin
+      if (currentRole?.role === 'admin') {
+        toast({
+          title: "Info",
+          description: "User is already an admin",
+          variant: "default"
+        });
+        setNewAdminEmail("");
+        return;
+      }
+
+      // Update the user's role to admin (replace existing role)
       const { error: roleError } = await supabase
         .from('user_roles')
-        .upsert({
-          user_id: userProfiles.user_id,
-          role: 'admin'
-        });
+        .update({ role: 'admin' })
+        .eq('user_id', userProfiles.user_id);
 
       if (roleError) throw roleError;
 
       toast({
         title: "Success",
-        description: "Admin created successfully"
+        description: "User promoted to admin successfully"
       });
       fetchSuperAdminData();
       setNewAdminEmail("");
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating admin:', error);
+      const errorMessage = error.message?.includes('duplicate key') 
+        ? "User role conflict. Please try again." 
+        : "Failed to create admin";
+      
       toast({
         title: "Error",
-        description: "Failed to create admin",
+        description: errorMessage,
         variant: "destructive"
       });
     }
