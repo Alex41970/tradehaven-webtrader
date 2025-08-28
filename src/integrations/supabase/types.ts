@@ -222,6 +222,8 @@ export type Database = {
       user_profiles: {
         Row: {
           admin_id: string | null
+          assigned_at: string | null
+          assignment_method: string | null
           available_margin: number
           balance: number
           created_at: string
@@ -235,6 +237,8 @@ export type Database = {
         }
         Insert: {
           admin_id?: string | null
+          assigned_at?: string | null
+          assignment_method?: string | null
           available_margin?: number
           balance?: number
           created_at?: string
@@ -248,6 +252,8 @@ export type Database = {
         }
         Update: {
           admin_id?: string | null
+          assigned_at?: string | null
+          assignment_method?: string | null
           available_margin?: number
           balance?: number
           created_at?: string
@@ -302,7 +308,7 @@ export type Database = {
       }
       assign_user_to_admin_via_promo: {
         Args: { _promo_code: string; _user_id: string }
-        Returns: boolean
+        Returns: Json
       }
       calculate_pnl: {
         Args:
@@ -321,6 +327,21 @@ export type Database = {
             }
         Returns: number
       }
+      get_promo_code_stats: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          admin_email: string
+          admin_id: string
+          assigned_users_count: number
+          code: string
+          created_at: string
+          current_uses: number
+          expires_at: string
+          id: string
+          is_active: boolean
+          max_uses: number
+        }[]
+      }
       get_user_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
@@ -335,6 +356,14 @@ export type Database = {
       recalculate_user_balance: {
         Args: { user_uuid: string }
         Returns: undefined
+      }
+      sync_admin_user_relationships: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      transfer_user_to_admin: {
+        Args: { _new_admin_id: string; _user_id: string }
+        Returns: boolean
       }
     }
     Enums: {
