@@ -54,7 +54,11 @@ const SuperAdminDashboard = () => {
   useEffect(() => {
     if (user && !roleLoading && role === 'super_admin') {
       console.log('SuperAdminDashboard: Initiating data fetch for user:', user.id, 'role:', role);
-      fetchSuperAdminData();
+      // Add a small delay to ensure auth context is established
+      const timer = setTimeout(() => {
+        fetchSuperAdminData();
+      }, 100);
+      return () => clearTimeout(timer);
     } else {
       console.log('SuperAdminDashboard: Not fetching data. User:', !!user, 'roleLoading:', roleLoading, 'role:', role);
     }
@@ -74,15 +78,20 @@ const SuperAdminDashboard = () => {
       
       console.log('SuperAdminDashboard: Starting data fetch attempt', retryCount + 1);
       
-      // Check if user has session
+      // Verify auth session is active and valid
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      console.log('SuperAdminDashboard: Session check - session exists:', !!session, 'error:', sessionError);
+      console.log('SuperAdminDashboard: Session check - session exists:', !!session, 'session user:', session?.user?.id, 'error:', sessionError);
       
-      if (!session) {
-        console.error('SuperAdminDashboard: No session found, user may not be authenticated');
-        setError('Authentication session not found');
-        setLoading(false);
-        return;
+      if (!session || !session.user || session.user.id !== user.id) {
+        console.error('SuperAdminDashboard: Invalid session - session:', !!session, 'session user:', session?.user?.id, 'current user:', user.id);
+        // Try to refresh the session
+        const { data: { session: refreshedSession }, error: refreshError } = await supabase.auth.refreshSession();
+        if (refreshError || !refreshedSession) {
+          setError('Authentication session invalid. Please sign out and sign back in.');
+          setLoading(false);
+          return;
+        }
+        console.log('SuperAdminDashboard: Session refreshed successfully');
       }
 
       console.log('SuperAdminDashboard: Fetching user profiles...');
@@ -119,8 +128,12 @@ const SuperAdminDashboard = () => {
       console.log('SuperAdminDashboard: User roles fetched successfully. Count:', rolesData?.length || 0);
 
       // Create a map of user roles for quick lookup
+      // Since we now enforce unique roles per user, each user should have exactly one role
       const rolesMap = new Map();
       rolesData?.forEach((roleItem: any) => {
+        if (rolesMap.has(roleItem.user_id)) {
+          console.warn('SuperAdminDashboard: Multiple roles detected for user:', roleItem.user_id, 'existing:', rolesMap.get(roleItem.user_id), 'new:', roleItem.role);
+        }
         rolesMap.set(roleItem.user_id, roleItem.role);
       });
 
@@ -186,16 +199,17 @@ const SuperAdminDashboard = () => {
       setError(errorMessage);
       
       // Retry logic - if it's an auth issue and we haven't retried too many times
-      if (retryCount < 3 && (errorMessage.includes('auth') || errorMessage.includes('session'))) {
-        console.log('SuperAdminDashboard: Retrying in 2 seconds...');
+      if (retryCount < 2 && (errorMessage.includes('auth') || errorMessage.includes('session') || errorMessage.includes('JWT'))) {
+        console.log('SuperAdminDashboard: Auth error detected, retrying in 1.5 seconds...', errorMessage);
         setRetryCount(prev => prev + 1);
         setTimeout(() => {
           fetchSuperAdminData();
-        }, 2000);
+        }, 1500);
       } else {
+        console.error('SuperAdminDashboard: Max retries reached or non-auth error:', errorMessage);
         toast({
-          title: "Error Loading Data",
-          description: errorMessage,
+          title: "Error Loading Data", 
+          description: retryCount >= 2 ? "Authentication error. Please sign out and sign back in." : errorMessage,
           variant: "destructive"
         });
       }
