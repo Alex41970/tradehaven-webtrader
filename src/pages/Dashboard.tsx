@@ -143,6 +143,9 @@ const Dashboard = () => {
                 <p className="text-xs text-muted-foreground">
                   Available Margin: ${profile?.available_margin.toFixed(2) || '0.00'}
                 </p>
+                <p className="text-xs text-muted-foreground">
+                  Used Margin: ${profile?.used_margin.toFixed(2) || '0.00'}
+                </p>
               </CardContent>
             </Card>
             <Card>
@@ -153,7 +156,7 @@ const Dashboard = () => {
               <CardContent>
                 <div className="text-2xl font-bold">{openTrades.length}</div>
                 <p className="text-xs text-muted-foreground">
-                  Used Margin: ${profile?.used_margin.toFixed(2) || '0.00'}
+                  Active positions
                 </p>
               </CardContent>
             </Card>

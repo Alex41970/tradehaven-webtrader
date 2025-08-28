@@ -508,7 +508,7 @@ const AdminDashboard = () => {
                     <CardDescription>{selectedUser.email}</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                       <div>
                         <Label className="text-sm font-medium">Balance</Label>
                         <p className="text-2xl font-bold">${selectedUser.balance?.toFixed(2) || '0.00'}</p>
@@ -520,10 +520,9 @@ const AdminDashboard = () => {
                       <div>
                         <Label className="text-sm font-medium">Available Margin</Label>
                         <p className="text-2xl font-bold">${selectedUser.available_margin?.toFixed(2) || '0.00'}</p>
-                      </div>
-                      <div>
-                        <Label className="text-sm font-medium">Used Margin</Label>
-                        <p className="text-2xl font-bold">${selectedUser.used_margin?.toFixed(2) || '0.00'}</p>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          Used: ${selectedUser.used_margin?.toFixed(2) || '0.00'}
+                        </p>
                       </div>
                     </div>
                   </CardContent>

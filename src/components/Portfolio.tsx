@@ -1,5 +1,6 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { useTrades } from "@/hooks/useTrades";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { useAssets } from "@/hooks/useAssets";
@@ -189,10 +190,30 @@ export const Portfolio = () => {
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Used Margin</CardTitle>
+            <CardTitle className="text-lg">Account Actions</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${profile?.used_margin?.toFixed(2) || '0.00'}</div>
+            <div className="flex gap-2">
+              <Button 
+                onClick={() => {
+                  // Placeholder for deposit functionality
+                  console.log('Deposit clicked');
+                }}
+                className="flex-1"
+              >
+                Deposit
+              </Button>
+              <Button 
+                onClick={() => {
+                  // Placeholder for withdraw functionality
+                  console.log('Withdraw clicked');
+                }}
+                variant="outline"
+                className="flex-1"
+              >
+                Withdraw
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>
