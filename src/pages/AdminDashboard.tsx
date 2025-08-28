@@ -67,12 +67,9 @@ const AdminDashboard = () => {
   const [newOpenPrice, setNewOpenPrice] = useState("");
   const [newPromoCode, setNewPromoCode] = useState("");
 
-  // Memoize admin status to prevent unnecessary re-renders
-  const isUserAdmin = useMemo(() => isAdmin(), [role]);
-
   const fetchAdminData = useCallback(async () => {
-    if (!user || !isUserAdmin) {
-      console.log('AdminDashboard: Skipping fetchAdminData - user:', !!user, 'isAdmin:', isUserAdmin);
+    if (!user || !isAdmin()) {
+      console.log('AdminDashboard: Skipping fetchAdminData - user:', !!user, 'isAdmin:', isAdmin());
       return;
     }
 
@@ -146,18 +143,18 @@ const AdminDashboard = () => {
       setLoading(false);
       console.log('AdminDashboard: fetchAdminData completed');
     }
-  }, [user, isUserAdmin, toast]);
+  }, [user, toast]);
 
   useEffect(() => {
-    console.log('AdminDashboard: useEffect triggered - user:', !!user, 'roleLoading:', roleLoading, 'isAdmin:', isUserAdmin);
+    console.log('AdminDashboard: useEffect triggered - user:', !!user, 'roleLoading:', roleLoading, 'isAdmin:', isAdmin());
     
-    if (user && !roleLoading && isUserAdmin) {
+    if (user && !roleLoading && isAdmin()) {
       console.log('AdminDashboard: Conditions met, calling fetchAdminData');
       fetchAdminData();
     } else {
-      console.log('AdminDashboard: Conditions not met - user:', !!user, 'roleLoading:', roleLoading, 'isAdmin:', isUserAdmin);
+      console.log('AdminDashboard: Conditions not met - user:', !!user, 'roleLoading:', roleLoading, 'isAdmin:', isAdmin());
     }
-  }, [user, roleLoading, isUserAdmin, fetchAdminData]);
+  }, [user, roleLoading, fetchAdminData]);
 
 
   const handleModifyBalance = async () => {
@@ -277,7 +274,7 @@ const AdminDashboard = () => {
     );
   }
 
-  if (!isUserAdmin) {
+  if (!isAdmin()) {
     return <Navigate to="/dashboard" replace />;
   }
 
