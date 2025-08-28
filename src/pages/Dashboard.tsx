@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { WebTrader } from "@/components/WebTrader";
 import { Portfolio } from "@/components/Portfolio";
 import { TradingHistory } from "@/components/TradingHistory";
-import { LogOut, TrendingUp, DollarSign, Activity, ExternalLink, Shield, AlertTriangle, Plus, Minus } from "lucide-react";
+import { LogOut, TrendingUp, DollarSign, Activity, ExternalLink, Plus, Minus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { useTrades } from "@/hooks/useTrades";
@@ -65,26 +65,6 @@ const Dashboard = () => {
     return getUpdatedAssets(assets);
   }, [assets, getUpdatedAssets]);
 
-  // Calculate risk metrics
-  const riskMetrics = useMemo(() => {
-    if (!profile || !openTrades) {
-      return { marginUtilization: 0, largestExposure: 0, riskLevel: 'Low' as const };
-    }
-
-    const totalMargin = profile.available_margin + profile.used_margin;
-    const marginUtilization = totalMargin > 0 ? (profile.used_margin / totalMargin) * 100 : 0;
-    
-    const largestExposure = openTrades.reduce((max, trade) => {
-      const exposure = trade.amount * (trade.leverage || 1);
-      return Math.max(max, exposure);
-    }, 0);
-
-    let riskLevel: 'Low' | 'Medium' | 'High' = 'Low';
-    if (marginUtilization > 70) riskLevel = 'High';
-    else if (marginUtilization > 40) riskLevel = 'Medium';
-
-    return { marginUtilization, largestExposure, riskLevel };
-  }, [profile, openTrades]);
 
   if (profileLoading || assetsLoading) {
     return (
@@ -132,7 +112,7 @@ const Dashboard = () => {
         {/* Main Content */}
         <div className="container mx-auto px-4 py-6">
           {/* Quick Stats */}
-          <div className="grid md:grid-cols-3 gap-6 mb-6">
+          <div className="grid md:grid-cols-2 gap-6 mb-6">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Account Balance</CardTitle>
@@ -179,32 +159,6 @@ const Dashboard = () => {
                     Withdraw
                   </Button>
                 </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Risk Metrics</CardTitle>
-                <div className="flex items-center gap-1">
-                  {riskMetrics.riskLevel === 'High' ? (
-                    <AlertTriangle className="h-4 w-4 text-red-500" />
-                  ) : (
-                    <Shield className="h-4 w-4 text-muted-foreground" />
-                  )}
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className={`text-2xl font-bold ${
-                  riskMetrics.riskLevel === 'High' ? 'text-red-500' : 
-                  riskMetrics.riskLevel === 'Medium' ? 'text-yellow-500' : 'text-green-500'
-                }`}>
-                  {riskMetrics.marginUtilization.toFixed(1)}%
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Margin Used • Risk: {riskMetrics.riskLevel}
-                </p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Max Exposure: ${riskMetrics.largestExposure.toFixed(2)}
-                </p>
               </CardContent>
             </Card>
           </div>
