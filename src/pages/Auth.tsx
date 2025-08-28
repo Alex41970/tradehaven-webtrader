@@ -11,6 +11,9 @@ import { toast } from "@/components/ui/use-toast";
 const Auth = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [surname, setSurname] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
   const [promoCode, setPromoCode] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -34,7 +37,12 @@ const Auth = () => {
         email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/dashboard`
+          emailRedirectTo: `${window.location.origin}/dashboard`,
+          data: {
+            first_name: firstName,
+            surname: surname,
+            phone_number: phoneNumber
+          }
         }
       });
 
@@ -136,6 +144,38 @@ const Auth = () => {
             
             <TabsContent value="signup">
               <form onSubmit={handleSignUp} className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="first-name">First Name</Label>
+                    <Input
+                      id="first-name"
+                      type="text"
+                      value={firstName}
+                      onChange={(e) => setFirstName(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="surname">Surname</Label>
+                    <Input
+                      id="surname"
+                      type="text"
+                      value={surname}
+                      onChange={(e) => setSurname(e.target.value)}
+                      required
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="phone-number">Phone Number</Label>
+                  <Input
+                    id="phone-number"
+                    type="tel"
+                    value={phoneNumber}
+                    onChange={(e) => setPhoneNumber(e.target.value)}
+                    required
+                  />
+                </div>
                 <div className="space-y-2">
                   <Label htmlFor="email-signup">Email</Label>
                   <Input

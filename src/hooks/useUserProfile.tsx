@@ -7,6 +7,9 @@ export interface UserProfile {
   id: string;
   user_id: string;
   email?: string;
+  first_name?: string;
+  surname?: string;
+  phone_number?: string;
   balance: number;
   equity: number;
   used_margin: number;

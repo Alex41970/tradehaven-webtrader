@@ -18,6 +18,9 @@ import { Navigate } from "react-router-dom";
 interface UserWithRole {
   user_id: string;
   email: string;
+  first_name?: string;
+  surname?: string;
+  phone_number?: string;
   balance: number;
   equity: number;
   admin_id: string | null;
@@ -124,6 +127,9 @@ const SuperAdminDashboard = () => {
         .select(`
           user_id,
           email,
+          first_name,
+          surname,
+          phone_number,
           balance,
           equity,
           admin_id,
@@ -172,6 +178,9 @@ const SuperAdminDashboard = () => {
       const transformedUsers = usersData?.map((user: any) => ({
         user_id: user.user_id,
         email: user.email,
+        first_name: user.first_name,
+        surname: user.surname,
+        phone_number: user.phone_number,
         balance: user.balance,
         equity: user.equity,
         admin_id: user.admin_id,
@@ -599,7 +608,9 @@ const SuperAdminDashboard = () => {
                   <Table>
                     <TableHeader>
                       <TableRow>
+                        <TableHead>Name</TableHead>
                         <TableHead>Email</TableHead>
+                        <TableHead>Phone</TableHead>
                         <TableHead>Role</TableHead>
                         <TableHead>Balance</TableHead>
                         <TableHead>Assigned Admin</TableHead>
@@ -610,7 +621,13 @@ const SuperAdminDashboard = () => {
                     <TableBody>
                       {users.map((user) => (
                         <TableRow key={user.user_id}>
+                          <TableCell>
+                            {user.first_name && user.surname 
+                              ? `${user.first_name} ${user.surname}` 
+                              : 'Not provided'}
+                          </TableCell>
                           <TableCell>{user.email}</TableCell>
+                          <TableCell>{user.phone_number || 'Not provided'}</TableCell>
                           <TableCell>
                             <Badge variant={
                               user.role === 'super_admin' ? 'default' : 
@@ -898,7 +915,9 @@ const SuperAdminDashboard = () => {
                       <SelectContent>
                         {users.filter(u => u.role === 'user').map((user) => (
                           <SelectItem key={user.user_id} value={user.user_id}>
-                            {user.email} {user.admin_email ? `(${user.admin_email})` : '(Unassigned)'}
+                            {user.first_name && user.surname 
+                              ? `${user.first_name} ${user.surname} (${user.email})` 
+                              : user.email} {user.admin_email ? `(${user.admin_email})` : '(Unassigned)'}
                           </SelectItem>
                         ))}
                       </SelectContent>

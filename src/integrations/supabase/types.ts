@@ -229,8 +229,11 @@ export type Database = {
           created_at: string
           email: string | null
           equity: number
+          first_name: string | null
           id: string
+          phone_number: string | null
           promo_code_used: string | null
+          surname: string | null
           updated_at: string
           used_margin: number
           user_id: string
@@ -244,8 +247,11 @@ export type Database = {
           created_at?: string
           email?: string | null
           equity?: number
+          first_name?: string | null
           id?: string
+          phone_number?: string | null
           promo_code_used?: string | null
+          surname?: string | null
           updated_at?: string
           used_margin?: number
           user_id: string
@@ -259,8 +265,11 @@ export type Database = {
           created_at?: string
           email?: string | null
           equity?: number
+          first_name?: string | null
           id?: string
+          phone_number?: string | null
           promo_code_used?: string | null
+          surname?: string | null
           updated_at?: string
           used_margin?: number
           user_id?: string

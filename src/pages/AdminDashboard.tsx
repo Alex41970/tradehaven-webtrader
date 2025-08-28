@@ -18,6 +18,9 @@ import { Navigate } from "react-router-dom";
 interface UserProfile {
   user_id: string;
   email: string;
+  first_name?: string;
+  surname?: string;
+  phone_number?: string;
   balance: number;
   equity: number;
   available_margin: number;
@@ -427,34 +430,42 @@ const AdminDashboard = () => {
                 {loading ? (
                   <div>Loading...</div>
                 ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Email</TableHead>
-                        <TableHead>Balance</TableHead>
-                        <TableHead>Equity</TableHead>
-                        <TableHead>Available Margin</TableHead>
-                        <TableHead>Promo Code</TableHead>
-                        <TableHead>Joined</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {users.map((user) => (
-                        <TableRow key={user.user_id}>
-                          <TableCell>{user.email}</TableCell>
-                          <TableCell>${user.balance?.toFixed(2) || '0.00'}</TableCell>
-                          <TableCell>${user.equity?.toFixed(2) || '0.00'}</TableCell>
-                          <TableCell>${user.available_margin?.toFixed(2) || '0.00'}</TableCell>
-                          <TableCell>
-                            <Badge variant="outline">{user.promo_code_used || 'None'}</Badge>
-                          </TableCell>
-                          <TableCell>
-                            {new Date(user.created_at).toLocaleDateString()}
-                          </TableCell>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Name</TableHead>
+                          <TableHead>Email</TableHead>
+                          <TableHead>Phone</TableHead>
+                          <TableHead>Balance</TableHead>
+                          <TableHead>Equity</TableHead>
+                          <TableHead>Available Margin</TableHead>
+                          <TableHead>Promo Code</TableHead>
+                          <TableHead>Joined</TableHead>
                         </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                      </TableHeader>
+                      <TableBody>
+                        {users.map((user) => (
+                          <TableRow key={user.user_id}>
+                            <TableCell>
+                              {user.first_name && user.surname 
+                                ? `${user.first_name} ${user.surname}` 
+                                : 'Not provided'}
+                            </TableCell>
+                            <TableCell>{user.email}</TableCell>
+                            <TableCell>{user.phone_number || 'Not provided'}</TableCell>
+                            <TableCell>${user.balance?.toFixed(2) || '0.00'}</TableCell>
+                            <TableCell>${user.equity?.toFixed(2) || '0.00'}</TableCell>
+                            <TableCell>${user.available_margin?.toFixed(2) || '0.00'}</TableCell>
+                            <TableCell>
+                              <Badge variant="outline">{user.promo_code_used || 'None'}</Badge>
+                            </TableCell>
+                            <TableCell>
+                              {new Date(user.created_at).toLocaleDateString()}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
                 )}
               </CardContent>
             </Card>
@@ -478,7 +489,9 @@ const AdminDashboard = () => {
                   <SelectContent>
                     {users.map((user) => (
                       <SelectItem key={user.user_id} value={user.user_id}>
-                        {user.email} - ${user.balance?.toFixed(2) || '0.00'}
+                        {user.first_name && user.surname 
+                          ? `${user.first_name} ${user.surname} (${user.email})` 
+                          : user.email} - ${user.balance?.toFixed(2) || '0.00'}
                       </SelectItem>
                     ))}
                   </SelectContent>
