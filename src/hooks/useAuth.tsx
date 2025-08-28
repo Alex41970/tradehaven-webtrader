@@ -36,8 +36,53 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     return () => subscription.unsubscribe();
   }, []);
 
+  const cleanupAuthState = () => {
+    // Remove all Supabase auth keys from localStorage
+    Object.keys(localStorage).forEach((key) => {
+      if (key.startsWith('supabase.auth.') || key.includes('sb-')) {
+        localStorage.removeItem(key);
+      }
+    });
+    // Remove from sessionStorage if in use
+    Object.keys(sessionStorage || {}).forEach((key) => {
+      if (key.startsWith('supabase.auth.') || key.includes('sb-')) {
+        sessionStorage.removeItem(key);
+      }
+    });
+  };
+
   const signOut = async () => {
-    await supabase.auth.signOut();
+    try {
+      // Clean up auth state first
+      cleanupAuthState();
+      
+      // Attempt global sign out with retry logic
+      let attempts = 0;
+      const maxAttempts = 3;
+      
+      while (attempts < maxAttempts) {
+        try {
+          await supabase.auth.signOut({ scope: 'global' });
+          break;
+        } catch (error) {
+          attempts++;
+          if (attempts === maxAttempts) {
+            console.warn('Sign out failed after multiple attempts:', error);
+          } else {
+            // Wait a bit before retrying
+            await new Promise(resolve => setTimeout(resolve, 500));
+          }
+        }
+      }
+      
+      // Force page reload for clean state
+      window.location.href = '/auth';
+    } catch (error) {
+      console.error('Sign out error:', error);
+      // Even if sign out fails, clean up and redirect
+      cleanupAuthState();
+      window.location.href = '/auth';
+    }
   };
 
   return (

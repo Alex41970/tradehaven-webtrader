@@ -53,6 +53,7 @@ const SuperAdminDashboard = () => {
   const { user, signOut } = useAuth();
   const { role, loading: roleLoading, isSuperAdmin } = useUserRole();
   const { toast } = useToast();
+  const [signingOut, setSigningOut] = useState(false);
   
   const [users, setUsers] = useState<UserWithRole[]>([]);
   const [admins, setAdmins] = useState<AdminUser[]>([]);
@@ -470,7 +471,13 @@ const SuperAdminDashboard = () => {
   };
 
   const handleSignOut = async () => {
-    await signOut();
+    if (signingOut) return;
+    setSigningOut(true);
+    try {
+      await signOut();
+    } catch (error) {
+      setSigningOut(false);
+    }
   };
 
   if (roleLoading) {
@@ -503,9 +510,9 @@ const SuperAdminDashboard = () => {
               <Crown className="w-4 h-4 mr-2" />
               Super Admin
             </Badge>
-            <Button variant="outline" size="sm" onClick={handleSignOut}>
+            <Button variant="outline" size="sm" onClick={handleSignOut} disabled={signingOut}>
               <LogOut className="h-4 w-4 mr-2" />
-              Sign Out
+              {signingOut ? "Signing Out..." : "Sign Out"}
             </Button>
           </div>
         </div>

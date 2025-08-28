@@ -13,7 +13,7 @@ import { useTrades } from "@/hooks/useTrades";
 import { useAssets } from "@/hooks/useAssets";
 import { useRealTimePrices } from "@/hooks/useRealTimePrices";
 import { calculateRealTimePnL } from "@/utils/pnlCalculator";
-import { useMemo, useEffect } from "react";
+import { useMemo, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 const Dashboard = () => {
   const { user, signOut } = useAuth();
@@ -22,9 +22,16 @@ const Dashboard = () => {
   const { assets, loading: assetsLoading } = useAssets();
   const { getUpdatedAssets } = useRealTimePrices();
   const navigate = useNavigate();
+  const [signingOut, setSigningOut] = useState(false);
 
   const handleSignOut = async () => {
-    await signOut();
+    if (signingOut) return;
+    setSigningOut(true);
+    try {
+      await signOut();
+    } catch (error) {
+      setSigningOut(false);
+    }
   };
 
   // Listen for real-time user profile updates
@@ -114,9 +121,9 @@ const Dashboard = () => {
                 Live Data
               </Badge>
               <span className="text-sm text-muted-foreground">Welcome, {user?.email}</span>
-              <Button variant="outline" size="sm" onClick={handleSignOut}>
+              <Button variant="outline" size="sm" onClick={handleSignOut} disabled={signingOut}>
                 <LogOut className="h-4 w-4 mr-2" />
-                Sign Out
+                {signingOut ? "Signing Out..." : "Sign Out"}
               </Button>
             </div>
           </div>

@@ -54,6 +54,7 @@ const AdminDashboard = () => {
   const { user, signOut } = useAuth();
   const { role, loading: roleLoading, isAdmin } = useUserRole();
   const { toast } = useToast();
+  const [signingOut, setSigningOut] = useState(false);
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [trades, setTrades] = useState<UserTrade[]>([]);
   const [promoCodes, setPromoCodes] = useState<PromoCode[]>([]);
@@ -263,7 +264,13 @@ const AdminDashboard = () => {
   };
 
   const handleSignOut = async () => {
-    await signOut();
+    if (signingOut) return;
+    setSigningOut(true);
+    try {
+      await signOut();
+    } catch (error) {
+      setSigningOut(false);
+    }
   };
 
   // Memoize calculated stats to prevent unnecessary recalculations
@@ -299,9 +306,9 @@ const AdminDashboard = () => {
             <Badge variant="secondary" className="text-lg px-4 py-2">
               {role === 'super_admin' ? 'Super Admin' : 'Admin'}
             </Badge>
-            <Button variant="outline" size="sm" onClick={handleSignOut}>
+            <Button variant="outline" size="sm" onClick={handleSignOut} disabled={signingOut}>
               <LogOut className="h-4 w-4 mr-2" />
-              Sign Out
+              {signingOut ? "Signing Out..." : "Sign Out"}
             </Button>
           </div>
         </div>
