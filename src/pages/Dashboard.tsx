@@ -31,6 +31,7 @@ const Dashboard = () => {
   const [signingOut, setSigningOut] = useState(false);
   const [botModalOpen, setBotModalOpen] = useState(false);
   const [showPermissions, setShowPermissions] = useState(false);
+  const [showBotFullScreen, setShowBotFullScreen] = useState(true);
   
   // Performance metrics
   const { metrics, selectedPeriod, setSelectedPeriod } = useProfessionalMetrics(trades, profile?.balance || 10000);
@@ -64,6 +65,11 @@ const Dashboard = () => {
 
   const handleBotDelete = () => {
     disconnectBot();
+    setShowBotFullScreen(true); // Reset to full screen for next connection
+  };
+
+  const handleBackToDashboard = () => {
+    setShowBotFullScreen(false);
   };
 
   // Listen for real-time user profile updates
@@ -97,14 +103,15 @@ const Dashboard = () => {
     return getUpdatedAssets(assets);
   }, [assets, getUpdatedAssets]);
 
-  // Show bot interface if connected and not loading
-  if (botStatus.isConnected && !botStatus.loading) {
+  // Show bot interface if connected and in full screen mode
+  if (botStatus.isConnected && !botStatus.loading && showBotFullScreen) {
     return (
       <BotActiveView
         botStatus={botStatus.botStatus}
         onPause={pauseBot}
         onResume={resumeBot}
         onDelete={handleBotDelete}
+        onBackToDashboard={handleBackToDashboard}
       />
     );
   }
@@ -130,15 +137,28 @@ const Dashboard = () => {
               <h1 className="text-2xl font-bold">TradeHaven</h1>
             </div>
             <div className="flex items-center space-x-4">
-              <Button 
-                onClick={handleBotConnect}
-                variant="default"
-                size="sm"
-                className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
-              >
-                <Bot className="w-4 h-4 mr-2" />
-                Connect Your Trading Bot
-              </Button>
+              {botStatus.isConnected && !showBotFullScreen ? (
+                <Button 
+                  onClick={() => setShowBotFullScreen(true)}
+                  variant="outline"
+                  size="sm"
+                  className="border-primary text-primary hover:bg-primary hover:text-primary-foreground"
+                >
+                  <Bot className="w-4 h-4 mr-2" />
+                  <Activity className="w-3 h-3 mr-1" />
+                  Bot {botStatus.botStatus === 'active' ? 'Active' : 'Paused'}
+                </Button>
+              ) : !botStatus.isConnected ? (
+                <Button 
+                  onClick={handleBotConnect}
+                  variant="default"
+                  size="sm"
+                  className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
+                >
+                  <Bot className="w-4 h-4 mr-2" />
+                  Connect Your Trading Bot
+                </Button>
+              ) : null}
               <Badge variant="outline" className="text-sm">
                 <Activity className="w-3 h-3 mr-1" />
                 Live Data

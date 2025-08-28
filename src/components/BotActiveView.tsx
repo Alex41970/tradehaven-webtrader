@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Bot, Pause, Play, Trash2, Activity, Cpu, Zap } from "lucide-react";
+import { Bot, Pause, Play, Trash2, Activity, Cpu, Zap, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -9,6 +9,7 @@ interface BotActiveViewProps {
   onPause: () => void;
   onResume: () => void;
   onDelete: () => void;
+  onBackToDashboard: () => void;
 }
 
 export const BotActiveView: React.FC<BotActiveViewProps> = ({
@@ -16,6 +17,7 @@ export const BotActiveView: React.FC<BotActiveViewProps> = ({
   onPause,
   onResume,
   onDelete,
+  onBackToDashboard,
 }) => {
   const [terminalLines, setTerminalLines] = useState<string[]>([]);
 
@@ -88,13 +90,24 @@ export const BotActiveView: React.FC<BotActiveViewProps> = ({
                   </p>
                 </div>
               </div>
-              <Badge 
-                variant={botStatus === 'active' ? 'default' : 'secondary'}
-                className="px-3 py-1"
-              >
-                <Activity className="h-3 w-3 mr-1" />
-                {botStatus === 'active' ? 'ACTIVE' : 'PAUSED'}
-              </Badge>
+              <div className="flex items-center gap-3">
+                <Button 
+                  onClick={onBackToDashboard}
+                  variant="outline"
+                  size="sm"
+                  className="flex items-center gap-2"
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                  Back to Dashboard
+                </Button>
+                <Badge 
+                  variant={botStatus === 'active' ? 'default' : 'secondary'}
+                  className="px-3 py-1"
+                >
+                  <Activity className="h-3 w-3 mr-1" />
+                  {botStatus === 'active' ? 'ACTIVE' : 'PAUSED'}
+                </Badge>
+              </div>
             </CardTitle>
           </CardHeader>
         </Card>
