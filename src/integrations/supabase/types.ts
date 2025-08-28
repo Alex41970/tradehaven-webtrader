@@ -293,6 +293,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_close_trade: {
+        Args: { _admin_id: string; _close_price: number; _trade_id: string }
+        Returns: boolean
+      }
       admin_modify_trade_open_price: {
         Args: { _admin_id: string; _new_open_price: number; _trade_id: string }
         Returns: boolean
