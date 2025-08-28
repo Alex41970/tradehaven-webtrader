@@ -15,6 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import { BotLicenseManagement } from "@/components/BotLicenseManagement";
 import { useAssets } from "@/hooks/useAssets";
 import { useRealTimePrices } from "@/hooks/useRealTimePrices";
+import { calculateRealTimePnL } from "@/utils/pnlCalculator";
 import { Users, DollarSign, TrendingUp, Settings, LogOut, Bot, Loader2 } from "lucide-react";
 import { Navigate } from "react-router-dom";
 
@@ -442,6 +443,38 @@ const AdminDashboard = () => {
     activeTrades: trades.filter(t => t.status === 'open').length
   }), [users, trades]);
 
+  // Helper function to get real-time P&L and current price
+  const getTradeDisplayData = useCallback((trade: UserTrade) => {
+    const priceUpdate = getPriceForAsset(trade.symbol);
+    const currentPrice = priceUpdate?.price || trade.current_price || trade.open_price;
+    
+    // Calculate real-time P&L if stored P&L is 0 or we have a newer price
+    let displayPnL = trade.pnl || 0;
+    let isRealTime = false;
+    
+    if (trade.status === 'open' && currentPrice && trade.open_price) {
+      const calculatedPnL = calculateRealTimePnL({
+        trade_type: trade.trade_type as 'BUY' | 'SELL',
+        amount: trade.amount,
+        open_price: trade.open_price,
+        leverage: trade.leverage
+      }, currentPrice);
+      
+      // Use calculated P&L if stored P&L is 0 or if we have real-time data
+      if (trade.pnl === 0 || priceUpdate) {
+        displayPnL = calculatedPnL;
+        isRealTime = !!priceUpdate;
+      }
+    }
+    
+    return {
+      currentPrice,
+      displayPnL,
+      isRealTime,
+      hasRealTimePrice: !!priceUpdate
+    };
+  }, [getPriceForAsset]);
+
   // Filter trades for selected user
   const selectedUserTrades = useMemo(() => {
     if (!selectedUser) return [];
@@ -814,50 +847,66 @@ const AdminDashboard = () => {
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {selectedUserTrades.map((trade) => (
-                            <TableRow key={trade.id}>
-                              <TableCell>{trade.symbol}</TableCell>
-                              <TableCell>
-                                <Badge variant={trade.trade_type === 'BUY' ? 'default' : 'secondary'}>
-                                  {trade.trade_type}
-                                </Badge>
-                              </TableCell>
-                              <TableCell>{trade.amount}</TableCell>
-                              <TableCell>${trade.open_price?.toFixed(4)}</TableCell>
-                              <TableCell>${trade.current_price?.toFixed(4) || 'N/A'}</TableCell>
-                              <TableCell className={trade.pnl >= 0 ? 'text-green-600' : 'text-red-600'}>
-                                ${trade.pnl?.toFixed(2) || '0.00'}
-                              </TableCell>
-                              <TableCell>
-                                <Badge variant={trade.status === 'open' ? 'default' : 'outline'}>
-                                  {trade.status}
-                                </Badge>
-                              </TableCell>
-                              <TableCell>
-                                {new Date(trade.opened_at).toLocaleDateString()}
-                              </TableCell>
-                              <TableCell>
-                                <div className="flex gap-2">
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => setSelectedTradeForEdit(trade)}
-                                  >
-                                    Edit Price
-                                  </Button>
-                                  {trade.status === 'open' && (
+                          {selectedUserTrades.map((trade) => {
+                            const { currentPrice, displayPnL, isRealTime, hasRealTimePrice } = getTradeDisplayData(trade);
+                            
+                            return (
+                              <TableRow key={trade.id}>
+                                <TableCell>{trade.symbol}</TableCell>
+                                <TableCell>
+                                  <Badge variant={trade.trade_type === 'BUY' ? 'default' : 'secondary'}>
+                                    {trade.trade_type}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell>{trade.amount}</TableCell>
+                                <TableCell>${trade.open_price?.toFixed(4)}</TableCell>
+                                <TableCell>
+                                  <div className="flex items-center gap-1">
+                                    ${currentPrice?.toFixed(4) || 'N/A'}
+                                    {hasRealTimePrice && isConnected && (
+                                      <span className="text-xs text-green-600">●</span>
+                                    )}
+                                  </div>
+                                </TableCell>
+                                <TableCell className={displayPnL >= 0 ? 'text-green-600' : 'text-red-600'}>
+                                  <div className="flex items-center gap-1">
+                                    ${displayPnL.toFixed(2)}
+                                    {isRealTime && isConnected && (
+                                      <span className="text-xs text-green-600">●</span>
+                                    )}
+                                  </div>
+                                </TableCell>
+                                <TableCell>
+                                  <Badge variant={trade.status === 'open' ? 'default' : 'outline'}>
+                                    {trade.status}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell>
+                                  {new Date(trade.opened_at).toLocaleDateString()}
+                                </TableCell>
+                                <TableCell>
+                                  <div className="flex gap-2">
                                     <Button
                                       size="sm"
-                                      variant="destructive"
-                                      onClick={() => setSelectedTradeForClose(trade)}
+                                      variant="outline"
+                                      onClick={() => setSelectedTradeForEdit(trade)}
                                     >
-                                      Close
+                                      Edit Price
                                     </Button>
-                                  )}
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                          ))}
+                                    {trade.status === 'open' && (
+                                      <Button
+                                        size="sm"
+                                        variant="destructive"
+                                        onClick={() => setSelectedTradeForClose(trade)}
+                                      >
+                                        Close
+                                      </Button>
+                                    )}
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            );
+                          })}
                         </TableBody>
                       </Table>
                     )}
@@ -997,9 +1046,15 @@ const AdminDashboard = () => {
                   <p className="text-sm text-muted-foreground">
                     Open Price: ${selectedTradeForClose.open_price}
                   </p>
-                  <p className="text-sm text-muted-foreground">
-                    Current P&L: <span className={selectedTradeForClose.pnl >= 0 ? 'text-green-600' : 'text-red-600'}>
-                      ${selectedTradeForClose.pnl?.toFixed(2) || '0.00'}
+                                  <p className="text-sm text-muted-foreground">
+                    Current P&L: <span className={(() => {
+                      const { displayPnL } = getTradeDisplayData(selectedTradeForClose);
+                      return displayPnL >= 0 ? 'text-green-600' : 'text-red-600';
+                    })()}>
+                      ${(() => {
+                        const { displayPnL } = getTradeDisplayData(selectedTradeForClose);
+                        return displayPnL.toFixed(2);
+                      })()}
                     </span>
                   </p>
                 </div>
