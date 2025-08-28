@@ -21,6 +21,22 @@ export const usePerformanceMetrics = (trades: Trade[], balance: number) => {
   const [selectedPeriod, setSelectedPeriod] = useState<TimePeriod>('all-time');
 
   const metrics = useMemo(() => {
+    // Guard against undefined/null values
+    if (!trades || !Array.isArray(trades) || balance === undefined || balance === null) {
+      return {
+        allTimeReturn: 0,
+        allTimeReturnPercent: 0,
+        periodPnL: 0,
+        periodReturnPercent: 0,
+        winRate: 0,
+        totalTrades: 0,
+        bestTrade: 0,
+        worstTrade: 0,
+        averageTradeSize: 0,
+        profitableTrades: 0,
+        losingTrades: 0,
+      };
+    }
     const now = new Date();
     let periodStart: Date;
 
