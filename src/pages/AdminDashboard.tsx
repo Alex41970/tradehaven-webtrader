@@ -63,6 +63,7 @@ const AdminDashboard = () => {
   const [selectedTradeForEdit, setSelectedTradeForEdit] = useState<UserTrade | null>(null);
   const [selectedTradeForClose, setSelectedTradeForClose] = useState<UserTrade | null>(null);
   const [closingTrade, setClosingTrade] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
 
   // Form states
   const [selectedUserId, setSelectedUserId] = useState("");
@@ -332,6 +333,12 @@ const AdminDashboard = () => {
     activeTrades: trades.filter(t => t.status === 'open').length
   }), [users, trades]);
 
+  // Filter trades for selected user
+  const selectedUserTrades = useMemo(() => {
+    if (!selectedUser) return [];
+    return trades.filter(trade => trade.user_id === selectedUser.user_id);
+  }, [trades, selectedUser]);
+
   if (roleLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -406,9 +413,8 @@ const AdminDashboard = () => {
         <Tabs defaultValue="users" className="space-y-4">
           <TabsList>
             <TabsTrigger value="users">Users</TabsTrigger>
-            <TabsTrigger value="trades">Trades</TabsTrigger>
+            <TabsTrigger value="trade-management">Trade Management</TabsTrigger>
             <TabsTrigger value="promos">Promo Codes</TabsTrigger>
-            <TabsTrigger value="actions">Admin Actions</TabsTrigger>
           </TabsList>
 
           <TabsContent value="users" className="space-y-4">
@@ -454,80 +460,184 @@ const AdminDashboard = () => {
             </Card>
           </TabsContent>
 
-          <TabsContent value="trades" className="space-y-4">
+          <TabsContent value="trade-management" className="space-y-4">
+            {/* User Selection */}
             <Card>
               <CardHeader>
-                <CardTitle>User Trades</CardTitle>
-                <CardDescription>Monitor and manage your users' trading activities</CardDescription>
+                <CardTitle>Select User</CardTitle>
+                <CardDescription>Choose a user to manage their trades and account</CardDescription>
               </CardHeader>
               <CardContent>
-                {loading ? (
-                  <div>Loading...</div>
-                ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Symbol</TableHead>
-                        <TableHead>Type</TableHead>
-                        <TableHead>Amount</TableHead>
-                        <TableHead>Open Price</TableHead>
-                        <TableHead>Current Price</TableHead>
-                        <TableHead>P&L</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Opened</TableHead>
-                        <TableHead>Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {trades.map((trade) => (
-                        <TableRow key={trade.id}>
-                          <TableCell>{trade.symbol}</TableCell>
-                          <TableCell>
-                            <Badge variant={trade.trade_type === 'BUY' ? 'default' : 'secondary'}>
-                              {trade.trade_type}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>{trade.amount}</TableCell>
-                          <TableCell>${trade.open_price?.toFixed(4)}</TableCell>
-                          <TableCell>${trade.current_price?.toFixed(4) || 'N/A'}</TableCell>
-                          <TableCell className={trade.pnl >= 0 ? 'text-green-600' : 'text-red-600'}>
-                            ${trade.pnl?.toFixed(2) || '0.00'}
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant={trade.status === 'open' ? 'default' : 'outline'}>
-                              {trade.status}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            {new Date(trade.opened_at).toLocaleDateString()}
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex gap-2">
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => setSelectedTradeForEdit(trade)}
-                              >
-                                Edit Price
-                              </Button>
-                              {trade.status === 'open' && (
-                                <Button
-                                  size="sm"
-                                  variant="destructive"
-                                  onClick={() => setSelectedTradeForClose(trade)}
-                                >
-                                  Close
-                                </Button>
-                              )}
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                )}
+                <Select value={selectedUser?.user_id || ""} onValueChange={(userId) => {
+                  const user = users.find(u => u.user_id === userId);
+                  setSelectedUser(user || null);
+                }}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Choose a user to manage" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {users.map((user) => (
+                      <SelectItem key={user.user_id} value={user.user_id}>
+                        {user.email} - ${user.balance?.toFixed(2) || '0.00'}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </CardContent>
             </Card>
+
+            {selectedUser && (
+              <>
+                {/* User Details */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>User Account Details</CardTitle>
+                    <CardDescription>{selectedUser.email}</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div>
+                        <Label className="text-sm font-medium">Balance</Label>
+                        <p className="text-2xl font-bold">${selectedUser.balance?.toFixed(2) || '0.00'}</p>
+                      </div>
+                      <div>
+                        <Label className="text-sm font-medium">Equity</Label>
+                        <p className="text-2xl font-bold">${selectedUser.equity?.toFixed(2) || '0.00'}</p>
+                      </div>
+                      <div>
+                        <Label className="text-sm font-medium">Available Margin</Label>
+                        <p className="text-2xl font-bold">${selectedUser.available_margin?.toFixed(2) || '0.00'}</p>
+                      </div>
+                      <div>
+                        <Label className="text-sm font-medium">Used Margin</Label>
+                        <p className="text-2xl font-bold">${selectedUser.used_margin?.toFixed(2) || '0.00'}</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Account Management Actions */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Account Management</CardTitle>
+                    <CardDescription>Modify user account balance</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex gap-4 items-end">
+                      <div className="flex-1">
+                        <Label htmlFor="operation">Operation</Label>
+                        <Select value={balanceOperation} onValueChange={(value: "add" | "deduct") => setBalanceOperation(value)}>
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="add">Add Funds</SelectItem>
+                            <SelectItem value="deduct">Deduct Funds</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="flex-1">
+                        <Label htmlFor="amount">Amount</Label>
+                        <Input
+                          id="amount"
+                          type="number"
+                          placeholder="0.00"
+                          value={balanceAmount}
+                          onChange={(e) => setBalanceAmount(e.target.value)}
+                        />
+                      </div>
+                      <Button onClick={() => {
+                        if (selectedUser && balanceAmount) {
+                          setSelectedUserId(selectedUser.user_id);
+                          handleModifyBalance();
+                        }
+                      }}>
+                        {balanceOperation === 'add' ? 'Add' : 'Deduct'} Funds
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* User Trades */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>User Trades</CardTitle>
+                    <CardDescription>
+                      Trading activity for {selectedUser.email} ({selectedUserTrades.length} trades)
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {selectedUserTrades.length === 0 ? (
+                      <div className="text-center text-muted-foreground py-6">
+                        No trades found for this user
+                      </div>
+                    ) : (
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Symbol</TableHead>
+                            <TableHead>Type</TableHead>
+                            <TableHead>Amount</TableHead>
+                            <TableHead>Open Price</TableHead>
+                            <TableHead>Current Price</TableHead>
+                            <TableHead>P&L</TableHead>
+                            <TableHead>Status</TableHead>
+                            <TableHead>Opened</TableHead>
+                            <TableHead>Actions</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {selectedUserTrades.map((trade) => (
+                            <TableRow key={trade.id}>
+                              <TableCell>{trade.symbol}</TableCell>
+                              <TableCell>
+                                <Badge variant={trade.trade_type === 'BUY' ? 'default' : 'secondary'}>
+                                  {trade.trade_type}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>{trade.amount}</TableCell>
+                              <TableCell>${trade.open_price?.toFixed(4)}</TableCell>
+                              <TableCell>${trade.current_price?.toFixed(4) || 'N/A'}</TableCell>
+                              <TableCell className={trade.pnl >= 0 ? 'text-green-600' : 'text-red-600'}>
+                                ${trade.pnl?.toFixed(2) || '0.00'}
+                              </TableCell>
+                              <TableCell>
+                                <Badge variant={trade.status === 'open' ? 'default' : 'outline'}>
+                                  {trade.status}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                {new Date(trade.opened_at).toLocaleDateString()}
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex gap-2">
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => setSelectedTradeForEdit(trade)}
+                                  >
+                                    Edit Price
+                                  </Button>
+                                  {trade.status === 'open' && (
+                                    <Button
+                                      size="sm"
+                                      variant="destructive"
+                                      onClick={() => setSelectedTradeForClose(trade)}
+                                    >
+                                      Close
+                                    </Button>
+                                  )}
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    )}
+                  </CardContent>
+                </Card>
+              </>
+            )}
           </TabsContent>
 
           <TabsContent value="promos" className="space-y-4">
@@ -580,106 +690,6 @@ const AdminDashboard = () => {
             </Card>
           </TabsContent>
 
-          <TabsContent value="actions" className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Modify User Balance</CardTitle>
-                  <CardDescription>Add or deduct funds from user accounts</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <Label htmlFor="user-select">Select User</Label>
-                    <Select value={selectedUserId} onValueChange={setSelectedUserId}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Choose a user" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {users.map((user) => (
-                          <SelectItem key={user.user_id} value={user.user_id}>
-                            {user.email}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label htmlFor="operation">Operation</Label>
-                    <Select value={balanceOperation} onValueChange={(value: "add" | "deduct") => setBalanceOperation(value)}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="add">Add Funds</SelectItem>
-                        <SelectItem value="deduct">Deduct Funds</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label htmlFor="amount">Amount</Label>
-                    <Input
-                      id="amount"
-                      type="number"
-                      placeholder="0.00"
-                      value={balanceAmount}
-                      onChange={(e) => setBalanceAmount(e.target.value)}
-                    />
-                  </div>
-                  <Button onClick={handleModifyBalance} className="w-full">
-                    {balanceOperation === 'add' ? 'Add' : 'Deduct'} Funds
-                  </Button>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Modify Trade Open Price</CardTitle>
-                  <CardDescription>Adjust open prices for user trades</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <Label htmlFor="trade-select">Select Trade</Label>
-                    <Select value={selectedTradeId} onValueChange={(value) => {
-                      setSelectedTradeId(value);
-                      const trade = trades.find(t => t.id === value);
-                      if (trade) {
-                        setNewOpenPrice(trade.open_price?.toString() || "");
-                      }
-                    }}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Choose a trade" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {trades.filter(t => t.status === 'open').map((trade) => (
-                          <SelectItem key={trade.id} value={trade.id}>
-                            {trade.symbol} - {trade.trade_type} - ${trade.open_price?.toFixed(4)}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label htmlFor="new-price">New Open Price</Label>
-                    <Input
-                      id="new-price"
-                      type="number"
-                      step="0.0001"
-                      placeholder="0.0000"
-                      value={newOpenPrice}
-                      onChange={(e) => setNewOpenPrice(e.target.value)}
-                    />
-                  </div>
-                  <Button onClick={() => {
-                    if (selectedTradeId && newOpenPrice) {
-                      handleModifyTradePrice(selectedTradeId, parseFloat(newOpenPrice));
-                    }
-                  }} className="w-full">
-                    Update Open Price
-                  </Button>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
         </Tabs>
       </div>
 
