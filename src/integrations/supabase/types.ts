@@ -89,6 +89,39 @@ export type Database = {
         }
         Relationships: []
       }
+      bot_licenses: {
+        Row: {
+          admin_id: string
+          created_at: string
+          expires_at: string | null
+          id: string
+          is_active: boolean
+          license_key: string
+          updated_at: string
+          used_by_user_id: string | null
+        }
+        Insert: {
+          admin_id: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          license_key: string
+          updated_at?: string
+          used_by_user_id?: string | null
+        }
+        Update: {
+          admin_id?: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          license_key?: string
+          updated_at?: string
+          used_by_user_id?: string | null
+        }
+        Relationships: []
+      }
       promo_codes: {
         Row: {
           admin_id: string
@@ -189,6 +222,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      user_bot_status: {
+        Row: {
+          bot_status: string
+          connected_at: string
+          created_at: string
+          id: string
+          is_active: boolean
+          license_key: string
+          permissions: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          bot_status?: string
+          connected_at?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          license_key: string
+          permissions?: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          bot_status?: string
+          connected_at?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          license_key?: string
+          permissions?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       user_favorites: {
         Row: {
@@ -302,6 +371,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      activate_bot_license: {
+        Args: { _license_key: string; _user_id: string }
+        Returns: Json
+      }
       admin_close_trade: {
         Args: { _admin_id: string; _close_price: number; _trade_id: string }
         Returns: boolean
@@ -339,6 +412,10 @@ export type Database = {
               trade_type: string
             }
         Returns: number
+      }
+      generate_bot_license: {
+        Args: { _admin_id: string; _expires_at?: string }
+        Returns: string
       }
       get_promo_code_stats: {
         Args: Record<PropertyKey, never>

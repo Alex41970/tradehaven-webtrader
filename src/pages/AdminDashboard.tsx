@@ -12,7 +12,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Users, DollarSign, TrendingUp, Settings, LogOut } from "lucide-react";
+import { BotLicenseManagement } from "@/components/BotLicenseManagement";
+import { Users, DollarSign, TrendingUp, Settings, LogOut, Bot } from "lucide-react";
 import { Navigate } from "react-router-dom";
 
 interface UserProfile {
@@ -418,6 +419,7 @@ const AdminDashboard = () => {
             <TabsTrigger value="users">Users</TabsTrigger>
             <TabsTrigger value="trade-management">Trade Management</TabsTrigger>
             <TabsTrigger value="promos">Promo Codes</TabsTrigger>
+            <TabsTrigger value="bot-licenses">Bot Licenses</TabsTrigger>
           </TabsList>
 
           <TabsContent value="users" className="space-y-4">
@@ -700,6 +702,10 @@ const AdminDashboard = () => {
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="bot-licenses" className="space-y-4">
+            <BotLicenseManagement />
           </TabsContent>
 
         </Tabs>

@@ -6,7 +6,9 @@ import { Badge } from "@/components/ui/badge";
 import { WebTrader } from "@/components/WebTrader";
 import { Portfolio } from "@/components/Portfolio";
 import { TradingHistory } from "@/components/TradingHistory";
-import { LogOut, TrendingUp, DollarSign, Activity, ExternalLink, Plus, Minus, BarChart3, Target, Trophy, Shield, TrendingDown, Zap, Award } from "lucide-react";
+import { TradingBotModal } from "@/components/TradingBotModal";
+import { BotActiveView } from "@/components/BotActiveView";
+import { LogOut, TrendingUp, DollarSign, Activity, ExternalLink, Plus, Minus, BarChart3, Target, Trophy, Shield, TrendingDown, Zap, Award, Bot } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { useTrades } from "@/hooks/useTrades";
@@ -16,6 +18,7 @@ import { calculateRealTimePnL } from "@/utils/pnlCalculator";
 import { useMemo, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useProfessionalMetrics, TimePeriod } from "@/hooks/usePerformanceMetrics";
+import { useBotStatus } from "@/hooks/useBotStatus";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 const Dashboard = () => {
   const { user, signOut } = useAuth();
@@ -23,8 +26,11 @@ const Dashboard = () => {
   const { trades, openTrades } = useTrades();
   const { assets, loading: assetsLoading } = useAssets();
   const { getUpdatedAssets } = useRealTimePrices();
+  const { botStatus, activateLicense, pauseBot, resumeBot, disconnectBot } = useBotStatus();
   const navigate = useNavigate();
   const [signingOut, setSigningOut] = useState(false);
+  const [botModalOpen, setBotModalOpen] = useState(false);
+  const [showPermissions, setShowPermissions] = useState(false);
   
   // Performance metrics
   const { metrics, selectedPeriod, setSelectedPeriod } = useProfessionalMetrics(trades, profile?.balance || 10000);
@@ -37,6 +43,27 @@ const Dashboard = () => {
     } catch (error) {
       setSigningOut(false);
     }
+  };
+
+  const handleBotConnect = () => {
+    setBotModalOpen(true);
+  };
+
+  const handleLicenseActivate = async (licenseKey: string) => {
+    const success = await activateLicense(licenseKey);
+    if (success) {
+      setBotModalOpen(false);
+      setShowPermissions(true);
+    }
+    return success;
+  };
+
+  const handleAcceptPermissions = () => {
+    setShowPermissions(false);
+  };
+
+  const handleBotDelete = () => {
+    disconnectBot();
   };
 
   // Listen for real-time user profile updates
@@ -70,8 +97,19 @@ const Dashboard = () => {
     return getUpdatedAssets(assets);
   }, [assets, getUpdatedAssets]);
 
+  // Show bot interface if connected and not loading
+  if (botStatus.isConnected && !botStatus.loading) {
+    return (
+      <BotActiveView
+        botStatus={botStatus.botStatus}
+        onPause={pauseBot}
+        onResume={resumeBot}
+        onDelete={handleBotDelete}
+      />
+    );
+  }
 
-  if (profileLoading || assetsLoading) {
+  if (profileLoading || assetsLoading || botStatus.loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
@@ -93,13 +131,13 @@ const Dashboard = () => {
             </div>
             <div className="flex items-center space-x-4">
               <Button 
-                onClick={() => navigate('/webtrader')}
+                onClick={handleBotConnect}
                 variant="default"
                 size="sm"
                 className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
               >
-                <ExternalLink className="w-4 h-4 mr-2" />
-                Launch WebTrader
+                <Bot className="w-4 h-4 mr-2" />
+                Connect Your Trading Bot
               </Button>
               <Badge variant="outline" className="text-sm">
                 <Activity className="w-3 h-3 mr-1" />
@@ -281,6 +319,15 @@ const Dashboard = () => {
             </TabsContent>
           </Tabs>
         </div>
+
+        {/* Trading Bot Modal */}
+        <TradingBotModal
+          isOpen={botModalOpen}
+          onClose={() => setBotModalOpen(false)}
+          onActivate={handleLicenseActivate}
+          onAcceptPermissions={handleAcceptPermissions}
+          showPermissions={showPermissions}
+        />
       </div>
   );
 };
