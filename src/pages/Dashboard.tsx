@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { WebTrader } from "@/components/WebTrader";
 import { Portfolio } from "@/components/Portfolio";
 import { TradingHistory } from "@/components/TradingHistory";
-import { LogOut, TrendingUp, DollarSign, Activity, ExternalLink, Plus, Minus, BarChart3, Target, Trophy } from "lucide-react";
+import { LogOut, TrendingUp, DollarSign, Activity, ExternalLink, Plus, Minus, BarChart3, Target, Trophy, Shield, TrendingDown, Zap, Award } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { useTrades } from "@/hooks/useTrades";
@@ -15,7 +15,7 @@ import { useRealTimePrices } from "@/hooks/useRealTimePrices";
 import { calculateRealTimePnL } from "@/utils/pnlCalculator";
 import { useMemo, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { usePerformanceMetrics, TimePeriod } from "@/hooks/usePerformanceMetrics";
+import { useProfessionalMetrics, TimePeriod } from "@/hooks/usePerformanceMetrics";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 const Dashboard = () => {
   const { user, signOut } = useAuth();
@@ -27,7 +27,7 @@ const Dashboard = () => {
   const [signingOut, setSigningOut] = useState(false);
   
   // Performance metrics
-  const { metrics, selectedPeriod, setSelectedPeriod } = usePerformanceMetrics(trades, profile?.balance || 10000);
+  const { metrics, selectedPeriod, setSelectedPeriod } = useProfessionalMetrics(trades, profile?.balance || 10000);
 
   const handleSignOut = async () => {
     if (signingOut) return;
@@ -197,25 +197,32 @@ const Dashboard = () => {
                 
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs text-muted-foreground">
-                      {selectedPeriod === 'all-time' ? 'All-Time Return' : 'Period Return'}
+                    <span className="text-xs text-muted-foreground flex items-center">
+                      <BarChart3 className="w-3 h-3 mr-1" />
+                      Profit Factor
                     </span>
-                    <span className={`text-sm font-medium ${
-                      selectedPeriod === 'all-time' 
-                        ? (metrics.allTimeReturnPercent >= 0 ? 'text-trading-success' : 'text-trading-danger')
-                        : (metrics.periodReturnPercent >= 0 ? 'text-trading-success' : 'text-trading-danger')
-                    }`}>
-                      {selectedPeriod === 'all-time' 
-                        ? `${metrics.allTimeReturnPercent >= 0 ? '+' : ''}${metrics.allTimeReturnPercent.toFixed(2)}%`
-                        : `${metrics.periodReturnPercent >= 0 ? '+' : ''}${metrics.periodReturnPercent.toFixed(2)}%`
-                      }
+                    <span className={`text-sm font-medium ${metrics.profitFactor >= 1.5 ? 'text-trading-success' : metrics.profitFactor >= 1.0 ? 'text-yellow-500' : 'text-trading-danger'}`}>
+                      {metrics.profitFactor.toFixed(2)}
                     </span>
                   </div>
                   
                   <div className="flex items-center justify-between">
-                    <span className="text-xs text-muted-foreground">Period P&L</span>
-                    <span className={`text-sm font-medium ${metrics.periodPnL >= 0 ? 'text-trading-success' : 'text-trading-danger'}`}>
-                      {metrics.periodPnL >= 0 ? '+' : ''}${metrics.periodPnL.toFixed(2)}
+                    <span className="text-xs text-muted-foreground flex items-center">
+                      <Shield className="w-3 h-3 mr-1" />
+                      Sharpe Ratio
+                    </span>
+                    <span className={`text-sm font-medium ${metrics.sharpeRatio >= 1.0 ? 'text-trading-success' : metrics.sharpeRatio >= 0 ? 'text-yellow-500' : 'text-trading-danger'}`}>
+                      {metrics.sharpeRatio.toFixed(2)}
+                    </span>
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-muted-foreground flex items-center">
+                      <TrendingDown className="w-3 h-3 mr-1" />
+                      Max Drawdown
+                    </span>
+                    <span className="text-sm font-medium text-trading-danger">
+                      -{metrics.maximumDrawdownPercent.toFixed(1)}%
                     </span>
                   </div>
                   
@@ -231,11 +238,21 @@ const Dashboard = () => {
                   
                   <div className="flex items-center justify-between">
                     <span className="text-xs text-muted-foreground flex items-center">
-                      <Trophy className="w-3 h-3 mr-1" />
-                      Best Trade
+                      <Zap className="w-3 h-3 mr-1" />
+                      Expectancy
                     </span>
-                    <span className="text-sm font-medium text-trading-success">
-                      +${metrics.bestTrade.toFixed(2)}
+                    <span className={`text-sm font-medium ${metrics.expectancy >= 0 ? 'text-trading-success' : 'text-trading-danger'}`}>
+                      ${metrics.expectancy.toFixed(2)}
+                    </span>
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-muted-foreground flex items-center">
+                      <Award className="w-3 h-3 mr-1" />
+                      Recovery Factor
+                    </span>
+                    <span className={`text-sm font-medium ${metrics.recoveryFactor >= 2.0 ? 'text-trading-success' : metrics.recoveryFactor >= 1.0 ? 'text-yellow-500' : 'text-trading-danger'}`}>
+                      {metrics.recoveryFactor.toFixed(2)}
                     </span>
                   </div>
                 </div>

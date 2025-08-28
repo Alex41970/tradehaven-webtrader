@@ -3,40 +3,72 @@ import { Trade } from "./useTrades";
 
 export type TimePeriod = 'daily' | 'weekly' | 'monthly' | 'yearly' | 'all-time';
 
-export interface PerformanceMetrics {
-  allTimeReturn: number;
-  allTimeReturnPercent: number;
-  periodPnL: number;
-  periodReturnPercent: number;
+export interface ProfessionalMetrics {
+  // Core Performance
+  profitFactor: number;
+  sharpeRatio: number;
+  maximumDrawdown: number;
+  maximumDrawdownPercent: number;
+  recoveryFactor: number;
+  expectancy: number;
+  
+  // Current Status
+  currentDrawdown: number;
+  currentDrawdownPercent: number;
+  
+  // Risk Metrics
+  averageRMultiple: number;
   winRate: number;
+  
+  // Streaks
+  consecutiveWins: number;
+  consecutiveLosses: number;
+  longestWinStreak: number;
+  longestLossStreak: number;
+  
+  // Trade Stats
   totalTrades: number;
-  bestTrade: number;
-  worstTrade: number;
-  averageTradeSize: number;
   profitableTrades: number;
   losingTrades: number;
+  largestWin: number;
+  largestLoss: number;
+  
+  // Period specific
+  periodReturn: number;
+  periodReturnPercent: number;
 }
 
-export const usePerformanceMetrics = (trades: Trade[], balance: number) => {
+export const useProfessionalMetrics = (trades: Trade[], balance: number) => {
   const [selectedPeriod, setSelectedPeriod] = useState<TimePeriod>('all-time');
 
   const metrics = useMemo(() => {
     // Guard against undefined/null values
     if (!trades || !Array.isArray(trades) || balance === undefined || balance === null) {
       return {
-        allTimeReturn: 0,
-        allTimeReturnPercent: 0,
-        periodPnL: 0,
-        periodReturnPercent: 0,
+        profitFactor: 0,
+        sharpeRatio: 0,
+        maximumDrawdown: 0,
+        maximumDrawdownPercent: 0,
+        recoveryFactor: 0,
+        expectancy: 0,
+        currentDrawdown: 0,
+        currentDrawdownPercent: 0,
+        averageRMultiple: 0,
         winRate: 0,
+        consecutiveWins: 0,
+        consecutiveLosses: 0,
+        longestWinStreak: 0,
+        longestLossStreak: 0,
         totalTrades: 0,
-        bestTrade: 0,
-        worstTrade: 0,
-        averageTradeSize: 0,
         profitableTrades: 0,
         losingTrades: 0,
+        largestWin: 0,
+        largestLoss: 0,
+        periodReturn: 0,
+        periodReturnPercent: 0,
       };
     }
+
     const now = new Date();
     let periodStart: Date;
 
@@ -60,7 +92,7 @@ export const usePerformanceMetrics = (trades: Trade[], balance: number) => {
         break;
       case 'all-time':
       default:
-        periodStart = new Date(0); // Beginning of time
+        periodStart = new Date(0);
         break;
     }
 
@@ -72,44 +104,143 @@ export const usePerformanceMetrics = (trades: Trade[], balance: number) => {
 
     const closedTrades = periodTrades.filter(trade => trade.status === 'closed');
     
-    // Calculate all-time metrics (always based on total balance)
-    const initialBalance = 10000; // Starting balance
-    const allTimeReturn = balance - initialBalance;
-    const allTimeReturnPercent = ((balance - initialBalance) / initialBalance) * 100;
-    
-    // Calculate period metrics
-    const periodPnL = closedTrades.reduce((sum, trade) => sum + (trade.pnl || 0), 0);
-    const totalInvestedInPeriod = closedTrades.reduce((sum, trade) => sum + trade.amount, 0);
-    
-    // Calculate period return percentage based on amount invested in period
-    const periodReturnPercent = totalInvestedInPeriod > 0 
-      ? (periodPnL / totalInvestedInPeriod) * 100 
-      : 0;
-    
-    const profitableTrades = closedTrades.filter(trade => (trade.pnl || 0) > 0).length;
-    const losingTrades = closedTrades.filter(trade => (trade.pnl || 0) < 0).length;
-    const winRate = closedTrades.length > 0 ? (profitableTrades / closedTrades.length) * 100 : 0;
-    
+    if (closedTrades.length === 0) {
+      return {
+        profitFactor: 0,
+        sharpeRatio: 0,
+        maximumDrawdown: 0,
+        maximumDrawdownPercent: 0,
+        recoveryFactor: 0,
+        expectancy: 0,
+        currentDrawdown: 0,
+        currentDrawdownPercent: 0,
+        averageRMultiple: 0,
+        winRate: 0,
+        consecutiveWins: 0,
+        consecutiveLosses: 0,
+        longestWinStreak: 0,
+        longestLossStreak: 0,
+        totalTrades: closedTrades.length,
+        profitableTrades: 0,
+        losingTrades: 0,
+        largestWin: 0,
+        largestLoss: 0,
+        periodReturn: 0,
+        periodReturnPercent: 0,
+      };
+    }
+
+    // Basic trade metrics
     const pnlValues = closedTrades.map(trade => trade.pnl || 0);
-    const bestTrade = pnlValues.length > 0 ? Math.max(...pnlValues) : 0;
-    const worstTrade = pnlValues.length > 0 ? Math.min(...pnlValues) : 0;
+    const profitableTrades = closedTrades.filter(trade => (trade.pnl || 0) > 0);
+    const losingTrades = closedTrades.filter(trade => (trade.pnl || 0) < 0);
     
-    const averageTradeSize = closedTrades.length > 0 
-      ? closedTrades.reduce((sum, trade) => sum + trade.amount, 0) / closedTrades.length 
-      : 0;
+    const totalProfit = profitableTrades.reduce((sum, trade) => sum + (trade.pnl || 0), 0);
+    const totalLoss = Math.abs(losingTrades.reduce((sum, trade) => sum + (trade.pnl || 0), 0));
+    
+    const largestWin = pnlValues.length > 0 ? Math.max(...pnlValues) : 0;
+    const largestLoss = pnlValues.length > 0 ? Math.min(...pnlValues) : 0;
+    
+    const winRate = (profitableTrades.length / closedTrades.length) * 100;
+    
+    // Calculate Profit Factor
+    const profitFactor = totalLoss > 0 ? totalProfit / totalLoss : totalProfit > 0 ? totalProfit : 0;
+    
+    // Calculate Expectancy
+    const expectancy = pnlValues.reduce((sum, pnl) => sum + pnl, 0) / closedTrades.length;
+    
+    // Calculate Average R-Multiple (simplified - using average risk as trade amount / 10)
+    const avgRisk = closedTrades.reduce((sum, trade) => sum + trade.amount, 0) / closedTrades.length / 10;
+    const averageRMultiple = avgRisk > 0 ? expectancy / avgRisk : 0;
+    
+    // Calculate drawdown metrics
+    let runningBalance = selectedPeriod === 'all-time' ? 10000 : balance - closedTrades.reduce((sum, trade) => sum + (trade.pnl || 0), 0);
+    let peak = runningBalance;
+    let maxDrawdown = 0;
+    let maxDrawdownPercent = 0;
+    
+    const sortedTrades = [...closedTrades].sort((a, b) => new Date(a.opened_at).getTime() - new Date(b.opened_at).getTime());
+    
+    for (const trade of sortedTrades) {
+      runningBalance += (trade.pnl || 0);
+      if (runningBalance > peak) {
+        peak = runningBalance;
+      }
+      const drawdown = peak - runningBalance;
+      const drawdownPercent = peak > 0 ? (drawdown / peak) * 100 : 0;
+      
+      if (drawdown > maxDrawdown) {
+        maxDrawdown = drawdown;
+        maxDrawdownPercent = drawdownPercent;
+      }
+    }
+    
+    // Current drawdown (from current peak to current balance)
+    const currentPeak = Math.max(peak, balance);
+    const currentDrawdown = Math.max(0, currentPeak - balance);
+    const currentDrawdownPercent = currentPeak > 0 ? (currentDrawdown / currentPeak) * 100 : 0;
+    
+    // Calculate Recovery Factor
+    const totalReturn = pnlValues.reduce((sum, pnl) => sum + pnl, 0);
+    const recoveryFactor = maxDrawdown > 0 ? totalReturn / maxDrawdown : totalReturn > 0 ? totalReturn : 0;
+    
+    // Calculate Sharpe Ratio (simplified - using standard deviation of returns)
+    const avgReturn = expectancy;
+    const returnVariance = pnlValues.reduce((sum, pnl) => sum + Math.pow(pnl - avgReturn, 2), 0) / closedTrades.length;
+    const returnStdDev = Math.sqrt(returnVariance);
+    const sharpeRatio = returnStdDev > 0 ? avgReturn / returnStdDev : 0;
+    
+    // Calculate consecutive win/loss streaks
+    let currentWinStreak = 0;
+    let currentLossStreak = 0;
+    let longestWinStreak = 0;
+    let longestLossStreak = 0;
+    let consecutiveWins = 0;
+    let consecutiveLosses = 0;
+    
+    for (let i = sortedTrades.length - 1; i >= 0; i--) {
+      const pnl = sortedTrades[i].pnl || 0;
+      
+      if (pnl > 0) {
+        currentWinStreak++;
+        longestWinStreak = Math.max(longestWinStreak, currentWinStreak);
+        if (i === sortedTrades.length - 1) consecutiveWins = currentWinStreak;
+        currentLossStreak = 0;
+      } else if (pnl < 0) {
+        currentLossStreak++;
+        longestLossStreak = Math.max(longestLossStreak, currentLossStreak);
+        if (i === sortedTrades.length - 1) consecutiveLosses = currentLossStreak;
+        currentWinStreak = 0;
+      }
+    }
+    
+    // Period return
+    const periodReturn = pnlValues.reduce((sum, pnl) => sum + pnl, 0);
+    const totalInvested = closedTrades.reduce((sum, trade) => sum + trade.amount, 0);
+    const periodReturnPercent = totalInvested > 0 ? (periodReturn / totalInvested) * 100 : 0;
 
     return {
-      allTimeReturn,
-      allTimeReturnPercent,
-      periodPnL,
-      periodReturnPercent,
+      profitFactor,
+      sharpeRatio,
+      maximumDrawdown: maxDrawdown,
+      maximumDrawdownPercent: maxDrawdownPercent,
+      recoveryFactor,
+      expectancy,
+      currentDrawdown,
+      currentDrawdownPercent,
+      averageRMultiple,
       winRate,
-      totalTrades: periodTrades.length,
-      bestTrade,
-      worstTrade,
-      averageTradeSize,
-      profitableTrades,
-      losingTrades,
+      consecutiveWins,
+      consecutiveLosses,
+      longestWinStreak,
+      longestLossStreak,
+      totalTrades: closedTrades.length,
+      profitableTrades: profitableTrades.length,
+      losingTrades: losingTrades.length,
+      largestWin,
+      largestLoss,
+      periodReturn,
+      periodReturnPercent,
     };
   }, [trades, balance, selectedPeriod]);
 
@@ -119,3 +250,6 @@ export const usePerformanceMetrics = (trades: Trade[], balance: number) => {
     setSelectedPeriod,
   };
 };
+
+// Keep the old hook for backward compatibility during transition
+export const usePerformanceMetrics = useProfessionalMetrics;
