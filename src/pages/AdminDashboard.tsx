@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import { supabase } from "@/integrations/supabase/client";
@@ -67,48 +67,76 @@ const AdminDashboard = () => {
   const [newOpenPrice, setNewOpenPrice] = useState("");
   const [newPromoCode, setNewPromoCode] = useState("");
 
-  useEffect(() => {
-    if (user && !roleLoading && isAdmin()) {
-      fetchAdminData();
+  // Memoize admin status to prevent unnecessary re-renders
+  const isUserAdmin = useMemo(() => isAdmin(), [role]);
+
+  const fetchAdminData = useCallback(async () => {
+    if (!user || !isUserAdmin) {
+      console.log('AdminDashboard: Skipping fetchAdminData - user:', !!user, 'isAdmin:', isUserAdmin);
+      return;
     }
-  }, [user, roleLoading, isAdmin]);
 
-  const fetchAdminData = async () => {
-    if (!user) return;
-
+    console.log('AdminDashboard: Starting fetchAdminData for admin:', user.id);
+    
     try {
       setLoading(true);
 
       // Fetch users under this admin
+      console.log('AdminDashboard: Fetching users for admin:', user.id);
       const { data: usersData, error: usersError } = await supabase
         .from('user_profiles')
         .select('*')
         .eq('admin_id', user.id);
 
-      if (usersError) throw usersError;
+      if (usersError) {
+        console.error('AdminDashboard: Error fetching users:', usersError);
+        throw usersError;
+      }
+
+      console.log('AdminDashboard: Found users:', usersData?.length || 0);
 
       // Fetch trades for these users
       const userIds = usersData?.map(u => u.user_id) || [];
-      const { data: tradesData, error: tradesError } = await supabase
-        .from('trades')
-        .select('*')
-        .in('user_id', userIds);
+      let tradesData = [];
+      
+      if (userIds.length > 0) {
+        console.log('AdminDashboard: Fetching trades for user IDs:', userIds);
+        const { data: trades, error: tradesError } = await supabase
+          .from('trades')
+          .select('*')
+          .in('user_id', userIds);
 
-      if (tradesError) throw tradesError;
+        if (tradesError) {
+          console.error('AdminDashboard: Error fetching trades:', tradesError);
+          throw tradesError;
+        }
+        
+        tradesData = trades || [];
+        console.log('AdminDashboard: Found trades:', tradesData.length);
+      }
 
       // Fetch promo codes
+      console.log('AdminDashboard: Fetching promo codes for admin:', user.id);
       const { data: promoData, error: promoError } = await supabase
         .from('promo_codes')
         .select('*')
         .eq('admin_id', user.id);
 
-      if (promoError) throw promoError;
+      if (promoError) {
+        console.error('AdminDashboard: Error fetching promo codes:', promoError);
+        throw promoError;
+      }
 
+      console.log('AdminDashboard: Found promo codes:', promoData?.length || 0);
+
+      // Update state with fetched data
       setUsers(usersData || []);
       setTrades(tradesData || []);
       setPromoCodes(promoData || []);
+      
+      console.log('AdminDashboard: Successfully updated state with data');
     } catch (error) {
-      console.error('Error fetching admin data:', error);
+      console.error('AdminDashboard: Error in fetchAdminData:', error);
       toast({
         title: "Error",
         description: "Failed to load admin data",
@@ -116,8 +144,21 @@ const AdminDashboard = () => {
       });
     } finally {
       setLoading(false);
+      console.log('AdminDashboard: fetchAdminData completed');
     }
-  };
+  }, [user, isUserAdmin, toast]);
+
+  useEffect(() => {
+    console.log('AdminDashboard: useEffect triggered - user:', !!user, 'roleLoading:', roleLoading, 'isAdmin:', isUserAdmin);
+    
+    if (user && !roleLoading && isUserAdmin) {
+      console.log('AdminDashboard: Conditions met, calling fetchAdminData');
+      fetchAdminData();
+    } else {
+      console.log('AdminDashboard: Conditions not met - user:', !!user, 'roleLoading:', roleLoading, 'isAdmin:', isUserAdmin);
+    }
+  }, [user, roleLoading, isUserAdmin, fetchAdminData]);
+
 
   const handleModifyBalance = async () => {
     if (!user || !selectedUserId || !balanceAmount) return;
@@ -236,14 +277,17 @@ const AdminDashboard = () => {
     );
   }
 
-  if (!isAdmin()) {
+  if (!isUserAdmin) {
     return <Navigate to="/dashboard" replace />;
   }
 
-  const totalBalance = users.reduce((sum, user) => sum + (user.balance || 0), 0);
-  const totalUsers = users.length;
-  const totalTrades = trades.length;
-  const activeTrades = trades.filter(t => t.status === 'open').length;
+  // Memoize calculated stats to prevent unnecessary recalculations
+  const stats = useMemo(() => ({
+    totalBalance: users.reduce((sum, user) => sum + (user.balance || 0), 0),
+    totalUsers: users.length,
+    totalTrades: trades.length,
+    activeTrades: trades.filter(t => t.status === 'open').length
+  }), [users, trades]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -272,7 +316,7 @@ const AdminDashboard = () => {
               <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{totalUsers}</div>
+              <div className="text-2xl font-bold">{stats.totalUsers}</div>
             </CardContent>
           </Card>
           <Card>
@@ -281,7 +325,7 @@ const AdminDashboard = () => {
               <DollarSign className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">${totalBalance.toFixed(2)}</div>
+              <div className="text-2xl font-bold">${stats.totalBalance.toFixed(2)}</div>
             </CardContent>
           </Card>
           <Card>
@@ -290,7 +334,7 @@ const AdminDashboard = () => {
               <TrendingUp className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{activeTrades}</div>
+              <div className="text-2xl font-bold">{stats.activeTrades}</div>
             </CardContent>
           </Card>
           <Card>
@@ -299,7 +343,7 @@ const AdminDashboard = () => {
               <Settings className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{totalTrades}</div>
+              <div className="text-2xl font-bold">{stats.totalTrades}</div>
             </CardContent>
           </Card>
         </div>
