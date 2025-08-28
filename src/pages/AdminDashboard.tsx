@@ -13,7 +13,9 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { BotLicenseManagement } from "@/components/BotLicenseManagement";
-import { Users, DollarSign, TrendingUp, Settings, LogOut, Bot } from "lucide-react";
+import { useAssets } from "@/hooks/useAssets";
+import { useRealTimePrices } from "@/hooks/useRealTimePrices";
+import { Users, DollarSign, TrendingUp, Settings, LogOut, Bot, Loader2 } from "lucide-react";
 import { Navigate } from "react-router-dom";
 
 interface UserProfile {
@@ -76,6 +78,19 @@ const AdminDashboard = () => {
   const [selectedTradeId, setSelectedTradeId] = useState("");
   const [newOpenPrice, setNewOpenPrice] = useState("");
   const [newPromoCode, setNewPromoCode] = useState("");
+  
+  // Trade creation states
+  const [showCreateTrade, setShowCreateTrade] = useState(false);
+  const [selectedAsset, setSelectedAsset] = useState("");
+  const [tradeType, setTradeType] = useState<"BUY" | "SELL">("BUY");
+  const [tradeAmount, setTradeAmount] = useState("");
+  const [tradeLeverage, setTradeLeverage] = useState(1);
+  const [tradePrice, setTradePrice] = useState("");
+  const [creatingTrade, setCreatingTrade] = useState(false);
+  
+  // Hooks for assets and prices
+  const { assets, loading: assetsLoading } = useAssets();
+  const { getPriceForAsset, isConnected } = useRealTimePrices();
 
   const fetchAdminData = useCallback(async () => {
     if (!user) {
@@ -288,6 +303,85 @@ const AdminDashboard = () => {
     }
   };
 
+  const handleCreateTrade = async () => {
+    if (!selectedUser || !selectedAsset || !tradeAmount || !tradePrice) {
+      toast({
+        title: "Error",
+        description: "Please fill in all required fields",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setCreatingTrade(true);
+    
+    try {
+      const asset = assets.find(a => a.id === selectedAsset);
+      if (!asset) {
+        toast({
+          title: "Error",
+          description: "Selected asset not found",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const { data, error } = await supabase.rpc('admin_create_trade', {
+        _admin_id: user?.id,
+        _user_id: selectedUser.user_id,
+        _asset_id: selectedAsset,
+        _symbol: asset.symbol,
+        _trade_type: tradeType,
+        _amount: parseFloat(tradeAmount),
+        _leverage: tradeLeverage,
+        _open_price: parseFloat(tradePrice)
+      });
+
+      if (error) {
+        console.error('Error creating trade:', error);
+        toast({
+          title: "Error",
+          description: "Failed to create trade",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (!data || typeof data !== 'object' || !(data as any).success) {
+        toast({
+          title: "Error",
+          description: (data as any)?.error || "Failed to create trade",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      toast({
+        title: "Success",
+        description: "Trade created successfully",
+      });
+
+      // Reset form
+      setShowCreateTrade(false);
+      setSelectedAsset("");
+      setTradeAmount("");
+      setTradePrice("");
+      setTradeLeverage(1);
+      
+      // Refresh data
+      fetchAdminData();
+    } catch (error) {
+      console.error('Error:', error);
+      toast({
+        title: "Error",
+        description: "Failed to create trade",
+        variant: "destructive",
+      });
+    } finally {
+      setCreatingTrade(false);
+    }
+  };
+
   const handleCreatePromoCode = async () => {
     if (!user || !newPromoCode) return;
 
@@ -317,6 +411,17 @@ const AdminDashboard = () => {
       });
     }
   };
+
+  // Update trade price when asset changes
+  useEffect(() => {
+    if (selectedAsset && assets.length > 0) {
+      const asset = assets.find(a => a.id === selectedAsset);
+      if (asset) {
+        const priceUpdate = getPriceForAsset(asset.symbol);
+        setTradePrice((priceUpdate?.price || asset.price).toString());
+      }
+    }
+  }, [selectedAsset, assets, getPriceForAsset]);
 
   const handleSignOut = async () => {
     if (signingOut) return;
@@ -534,40 +639,148 @@ const AdminDashboard = () => {
                 <Card>
                   <CardHeader>
                     <CardTitle>Account Management</CardTitle>
-                    <CardDescription>Modify user account balance</CardDescription>
+                    <CardDescription>Modify user account balance and create trades</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <div className="flex gap-4 items-end">
-                      <div className="flex-1">
-                        <Label htmlFor="operation">Operation</Label>
-                        <Select value={balanceOperation} onValueChange={(value: "add" | "deduct") => setBalanceOperation(value)}>
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="add">Add Funds</SelectItem>
-                            <SelectItem value="deduct">Deduct Funds</SelectItem>
-                          </SelectContent>
-                        </Select>
+                    <div className="space-y-6">
+                      {/* Balance Management */}
+                      <div>
+                        <h4 className="font-medium mb-3">Balance Management</h4>
+                        <div className="flex gap-4 items-end">
+                          <div className="flex-1">
+                            <Label htmlFor="operation">Operation</Label>
+                            <Select value={balanceOperation} onValueChange={(value: "add" | "deduct") => setBalanceOperation(value)}>
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="add">Add Funds</SelectItem>
+                                <SelectItem value="deduct">Deduct Funds</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="flex-1">
+                            <Label htmlFor="amount">Amount</Label>
+                            <Input
+                              id="amount"
+                              type="number"
+                              placeholder="0.00"
+                              value={balanceAmount}
+                              onChange={(e) => setBalanceAmount(e.target.value)}
+                            />
+                          </div>
+                          <Button onClick={() => {
+                            if (selectedUser && balanceAmount) {
+                              setSelectedUserId(selectedUser.user_id);
+                              handleModifyBalance();
+                            }
+                          }}>
+                            {balanceOperation === 'add' ? 'Add' : 'Deduct'} Funds
+                          </Button>
+                        </div>
                       </div>
-                      <div className="flex-1">
-                        <Label htmlFor="amount">Amount</Label>
-                        <Input
-                          id="amount"
-                          type="number"
-                          placeholder="0.00"
-                          value={balanceAmount}
-                          onChange={(e) => setBalanceAmount(e.target.value)}
-                        />
+
+                      {/* Trade Creation */}
+                      <div className="pt-4 border-t">
+                        <div className="flex justify-between items-center mb-3">
+                          <h4 className="font-medium">Create New Trade</h4>
+                          <Button 
+                            onClick={() => setShowCreateTrade(!showCreateTrade)}
+                            variant="outline"
+                            size="sm"
+                          >
+                            {showCreateTrade ? "Cancel" : "New Trade"}
+                          </Button>
+                        </div>
+                        
+                        {showCreateTrade && (
+                          <div className="space-y-3 p-4 border rounded-lg bg-muted/50">
+                            <div className="grid grid-cols-2 gap-3">
+                              <div>
+                                <Label className="text-sm font-medium">Asset</Label>
+                                <Select value={selectedAsset} onValueChange={setSelectedAsset} disabled={assetsLoading}>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select Asset" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {assets.map((asset) => (
+                                      <SelectItem key={asset.id} value={asset.id}>
+                                        {asset.symbol} - {asset.name}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              
+                              <div>
+                                <Label className="text-sm font-medium">Trade Type</Label>
+                                <Select value={tradeType} onValueChange={(value: "BUY" | "SELL") => setTradeType(value)}>
+                                  <SelectTrigger>
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="BUY">BUY</SelectItem>
+                                    <SelectItem value="SELL">SELL</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            </div>
+                            
+                            <div className="grid grid-cols-3 gap-3">
+                              <div>
+                                <Label className="text-sm font-medium">Amount</Label>
+                                <Input
+                                  type="number"
+                                  step="0.01"
+                                  value={tradeAmount}
+                                  onChange={(e) => setTradeAmount(e.target.value)}
+                                  placeholder="0.00"
+                                />
+                              </div>
+                              
+                              <div>
+                                <Label className="text-sm font-medium">Leverage</Label>
+                                <Input
+                                  type="number"
+                                  min="1"
+                                  max="100"
+                                  value={tradeLeverage}
+                                  onChange={(e) => setTradeLeverage(parseInt(e.target.value) || 1)}
+                                />
+                              </div>
+                              
+                              <div>
+                                <Label className="text-sm font-medium">
+                                  Entry Price
+                                  {isConnected && <span className="text-xs text-green-600 ml-1">(Live)</span>}
+                                </Label>
+                                <Input
+                                  type="number"
+                                  step="0.00001"
+                                  value={tradePrice}
+                                  onChange={(e) => setTradePrice(e.target.value)}
+                                  placeholder="0.00000"
+                                />
+                              </div>
+                            </div>
+                            
+                            <Button 
+                              onClick={handleCreateTrade}
+                              disabled={creatingTrade || !selectedAsset || !tradeAmount || !tradePrice}
+                              className="w-full"
+                            >
+                              {creatingTrade ? (
+                                <>
+                                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                  Creating Trade...
+                                </>
+                              ) : (
+                                "Create Trade"
+                              )}
+                            </Button>
+                          </div>
+                        )}
                       </div>
-                      <Button onClick={() => {
-                        if (selectedUser && balanceAmount) {
-                          setSelectedUserId(selectedUser.user_id);
-                          handleModifyBalance();
-                        }
-                      }}>
-                        {balanceOperation === 'add' ? 'Add' : 'Deduct'} Funds
-                      </Button>
                     </div>
                   </CardContent>
                 </Card>

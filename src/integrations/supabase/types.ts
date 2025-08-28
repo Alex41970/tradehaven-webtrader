@@ -379,6 +379,19 @@ export type Database = {
         Args: { _admin_id: string; _close_price: number; _trade_id: string }
         Returns: boolean
       }
+      admin_create_trade: {
+        Args: {
+          _admin_id: string
+          _amount: number
+          _asset_id: string
+          _leverage: number
+          _open_price: number
+          _symbol: string
+          _trade_type: string
+          _user_id: string
+        }
+        Returns: Json
+      }
       admin_modify_trade_open_price: {
         Args: { _admin_id: string; _new_open_price: number; _trade_id: string }
         Returns: boolean
