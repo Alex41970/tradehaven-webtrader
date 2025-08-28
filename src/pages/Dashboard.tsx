@@ -197,9 +197,18 @@ const Dashboard = () => {
                 
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs text-muted-foreground">Total Return</span>
-                    <span className={`text-sm font-medium ${metrics.totalReturnPercent >= 0 ? 'text-trading-success' : 'text-trading-danger'}`}>
-                      {metrics.totalReturnPercent >= 0 ? '+' : ''}{metrics.totalReturnPercent.toFixed(2)}%
+                    <span className="text-xs text-muted-foreground">
+                      {selectedPeriod === 'all-time' ? 'All-Time Return' : 'Period Return'}
+                    </span>
+                    <span className={`text-sm font-medium ${
+                      selectedPeriod === 'all-time' 
+                        ? (metrics.allTimeReturnPercent >= 0 ? 'text-trading-success' : 'text-trading-danger')
+                        : (metrics.periodReturnPercent >= 0 ? 'text-trading-success' : 'text-trading-danger')
+                    }`}>
+                      {selectedPeriod === 'all-time' 
+                        ? `${metrics.allTimeReturnPercent >= 0 ? '+' : ''}${metrics.allTimeReturnPercent.toFixed(2)}%`
+                        : `${metrics.periodReturnPercent >= 0 ? '+' : ''}${metrics.periodReturnPercent.toFixed(2)}%`
+                      }
                     </span>
                   </div>
                   

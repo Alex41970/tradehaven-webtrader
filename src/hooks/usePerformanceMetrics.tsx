@@ -4,9 +4,10 @@ import { Trade } from "./useTrades";
 export type TimePeriod = 'daily' | 'weekly' | 'monthly' | 'yearly' | 'all-time';
 
 export interface PerformanceMetrics {
-  totalReturn: number;
-  totalReturnPercent: number;
+  allTimeReturn: number;
+  allTimeReturnPercent: number;
   periodPnL: number;
+  periodReturnPercent: number;
   winRate: number;
   totalTrades: number;
   bestTrade: number;
@@ -55,11 +56,19 @@ export const usePerformanceMetrics = (trades: Trade[], balance: number) => {
 
     const closedTrades = periodTrades.filter(trade => trade.status === 'closed');
     
-    // Calculate metrics
-    const totalPnL = closedTrades.reduce((sum, trade) => sum + (trade.pnl || 0), 0);
+    // Calculate all-time metrics (always based on total balance)
     const initialBalance = 10000; // Starting balance
-    const totalReturn = balance - initialBalance;
-    const totalReturnPercent = ((balance - initialBalance) / initialBalance) * 100;
+    const allTimeReturn = balance - initialBalance;
+    const allTimeReturnPercent = ((balance - initialBalance) / initialBalance) * 100;
+    
+    // Calculate period metrics
+    const periodPnL = closedTrades.reduce((sum, trade) => sum + (trade.pnl || 0), 0);
+    const totalInvestedInPeriod = closedTrades.reduce((sum, trade) => sum + trade.amount, 0);
+    
+    // Calculate period return percentage based on amount invested in period
+    const periodReturnPercent = totalInvestedInPeriod > 0 
+      ? (periodPnL / totalInvestedInPeriod) * 100 
+      : 0;
     
     const profitableTrades = closedTrades.filter(trade => (trade.pnl || 0) > 0).length;
     const losingTrades = closedTrades.filter(trade => (trade.pnl || 0) < 0).length;
@@ -74,9 +83,10 @@ export const usePerformanceMetrics = (trades: Trade[], balance: number) => {
       : 0;
 
     return {
-      totalReturn,
-      totalReturnPercent,
-      periodPnL: totalPnL,
+      allTimeReturn,
+      allTimeReturnPercent,
+      periodPnL,
+      periodReturnPercent,
       winRate,
       totalTrades: periodTrades.length,
       bestTrade,
