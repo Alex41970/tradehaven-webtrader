@@ -52,13 +52,13 @@ const SuperAdminDashboard = () => {
   const [newUserRole, setNewUserRole] = useState<"admin" | "user">("admin");
 
   useEffect(() => {
-    if (user && !roleLoading && isSuperAdmin()) {
+    if (user && !roleLoading && role === 'super_admin') {
       console.log('SuperAdminDashboard: Initiating data fetch for user:', user.id, 'role:', role);
       fetchSuperAdminData();
     } else {
-      console.log('SuperAdminDashboard: Not fetching data. User:', !!user, 'roleLoading:', roleLoading, 'isSuperAdmin:', isSuperAdmin());
+      console.log('SuperAdminDashboard: Not fetching data. User:', !!user, 'roleLoading:', roleLoading, 'role:', role);
     }
-  }, [user, roleLoading, isSuperAdmin, role]);
+  }, [user, roleLoading, role, retryCount]);
 
   const fetchSuperAdminData = async () => {
     if (!user) {
