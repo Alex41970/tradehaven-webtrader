@@ -68,8 +68,8 @@ const AdminDashboard = () => {
   const [newPromoCode, setNewPromoCode] = useState("");
 
   const fetchAdminData = useCallback(async () => {
-    if (!user || !isAdmin()) {
-      console.log('AdminDashboard: Skipping fetchAdminData - user:', !!user, 'isAdmin:', isAdmin());
+    if (!user) {
+      console.log('AdminDashboard: Skipping fetchAdminData - no user');
       return;
     }
 
@@ -146,15 +146,15 @@ const AdminDashboard = () => {
   }, [user, toast]);
 
   useEffect(() => {
-    console.log('AdminDashboard: useEffect triggered - user:', !!user, 'roleLoading:', roleLoading, 'isAdmin:', isAdmin());
+    console.log('AdminDashboard: useEffect triggered - user:', !!user, 'roleLoading:', roleLoading, 'role:', role);
     
-    if (user && !roleLoading && isAdmin()) {
+    if (user && !roleLoading && (role === 'admin' || role === 'super_admin')) {
       console.log('AdminDashboard: Conditions met, calling fetchAdminData');
       fetchAdminData();
     } else {
-      console.log('AdminDashboard: Conditions not met - user:', !!user, 'roleLoading:', roleLoading, 'isAdmin:', isAdmin());
+      console.log('AdminDashboard: Conditions not met - user:', !!user, 'roleLoading:', roleLoading, 'role:', role);
     }
-  }, [user, roleLoading, fetchAdminData]);
+  }, [user, roleLoading, role, fetchAdminData]);
 
 
   const handleModifyBalance = async () => {
