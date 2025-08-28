@@ -70,8 +70,7 @@ const SuperAdminDashboard = () => {
           balance,
           equity,
           admin_id,
-          created_at,
-          admin:admin_id(email)
+          created_at
         `);
 
       if (usersError) throw usersError;
@@ -89,6 +88,12 @@ const SuperAdminDashboard = () => {
         rolesMap.set(roleItem.user_id, roleItem.role);
       });
 
+      // Create a map of user emails for admin lookup
+      const emailMap = new Map();
+      usersData?.forEach((user: any) => {
+        emailMap.set(user.user_id, user.email);
+      });
+
       // Transform and combine the data
       const transformedUsers = usersData?.map((user: any) => ({
         user_id: user.user_id,
@@ -96,7 +101,7 @@ const SuperAdminDashboard = () => {
         balance: user.balance,
         equity: user.equity,
         admin_id: user.admin_id,
-        admin_email: user.admin?.email || null,
+        admin_email: user.admin_id ? emailMap.get(user.admin_id) || null : null,
         role: rolesMap.get(user.user_id) || 'user',
         created_at: user.created_at
       })) || [];
