@@ -17,6 +17,7 @@ export interface Trade {
   pnl: number;
   margin_used: number;
   status: 'open' | 'closed';
+  trade_source: 'bot' | 'user';
   opened_at: string;
   closed_at?: string;
   created_at: string;
@@ -130,7 +131,8 @@ export const useTrades = () => {
           open_price: openPrice,
           current_price: openPrice,
           margin_used: marginUsed,
-          status: 'open'
+          status: 'open',
+          trade_source: 'user'
         })
         .select()
         .single();
@@ -318,11 +320,23 @@ export const useTrades = () => {
 
   const openTrades = trades.filter(trade => trade.status === 'open');
   const closedTrades = trades.filter(trade => trade.status === 'closed');
+  const botTrades = trades.filter(trade => trade.trade_source === 'bot');
+  const userTrades = trades.filter(trade => trade.trade_source === 'user');
+  const openBotTrades = trades.filter(trade => trade.status === 'open' && trade.trade_source === 'bot');
+  const openUserTrades = trades.filter(trade => trade.status === 'open' && trade.trade_source === 'user');
+  const closedBotTrades = trades.filter(trade => trade.status === 'closed' && trade.trade_source === 'bot');
+  const closedUserTrades = trades.filter(trade => trade.status === 'closed' && trade.trade_source === 'user');
 
   return {
     trades,
     openTrades,
     closedTrades,
+    botTrades,
+    userTrades,
+    openBotTrades,
+    openUserTrades,
+    closedBotTrades,
+    closedUserTrades,
     loading,
     refetch: fetchTrades,
     openTrade,

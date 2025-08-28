@@ -171,6 +171,7 @@ export type Database = {
           pnl: number | null
           status: string
           symbol: string
+          trade_source: string
           trade_type: string
           updated_at: string
           user_id: string
@@ -190,6 +191,7 @@ export type Database = {
           pnl?: number | null
           status?: string
           symbol: string
+          trade_source?: string
           trade_type: string
           updated_at?: string
           user_id: string
@@ -209,6 +211,7 @@ export type Database = {
           pnl?: number | null
           status?: string
           symbol?: string
+          trade_source?: string
           trade_type?: string
           updated_at?: string
           user_id?: string

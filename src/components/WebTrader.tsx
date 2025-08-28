@@ -27,7 +27,7 @@ export const WebTrader = () => {
   const [isExecutingTrade, setIsExecutingTrade] = useState(false);
   
   const { assets, loading: assetsLoading } = useAssets();
-  const { openTrades, closeTrade, openTrade } = useTrades();
+  const { openTrades, openUserTrades, closeTrade, openTrade } = useTrades();
   const { profile, forceRefresh, loading: profileLoading } = useUserProfile();
   const { favorites, addFavorite, removeFavorite, isFavorite } = useFavorites();
   const { getUpdatedAssets, isConnected, connectionStatus, lastUpdate } = useRealTimePrices();
@@ -398,12 +398,12 @@ export const WebTrader = () => {
             
             <TabsContent value="trades" className="mt-0">
               <div className="max-h-96 overflow-y-auto p-3 space-y-2">
-                {openTrades.length === 0 ? (
+                {openUserTrades.length === 0 ? (
                   <div className="text-center text-muted-foreground py-8">
-                    No open trades
+                    No open manual trades
                   </div>
                 ) : (
-                  openTrades.map((trade) => {
+                  openUserTrades.map((trade) => {
                     const asset = realtimeAssets.find(a => a.id === trade.asset_id);
                     if (!asset) return null;
                     

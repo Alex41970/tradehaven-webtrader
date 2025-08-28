@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from "react";
-import { Bot, Pause, Play, Trash2, Activity, Cpu, Zap, ArrowLeft } from "lucide-react";
+import { Bot, Pause, Play, Trash2, Activity, Cpu, Zap, ArrowLeft, TrendingUp, TrendingDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { useTrades } from "@/hooks/useTrades";
+import { useRealTimePrices } from "@/hooks/useRealTimePrices";
 
 interface BotActiveViewProps {
   botStatus: 'active' | 'paused';
@@ -20,6 +22,8 @@ export const BotActiveView: React.FC<BotActiveViewProps> = ({
   onBackToDashboard,
 }) => {
   const [terminalLines, setTerminalLines] = useState<string[]>([]);
+  const { botTrades, openBotTrades, closedBotTrades, loading } = useTrades();
+  const { getUpdatedAsset } = useRealTimePrices();
 
   const generateRandomCode = () => {
     const commands = [
@@ -170,6 +174,46 @@ export const BotActiveView: React.FC<BotActiveViewProps> = ({
           </CardContent>
         </Card>
 
+        {/* Bot Performance Stats */}
+        <div className="grid md:grid-cols-3 gap-4">
+          <Card className="border-primary/20 bg-card/80 backdrop-blur-sm">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm">Bot Trades</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{botTrades.length}</div>
+              <div className="text-xs text-muted-foreground">{openBotTrades.length} active</div>
+            </CardContent>
+          </Card>
+          
+          <Card className="border-primary/20 bg-card/80 backdrop-blur-sm">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm">Bot Win Rate</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-green-500">
+                {closedBotTrades.length > 0 
+                  ? `${((closedBotTrades.filter(t => t.pnl > 0).length / closedBotTrades.length) * 100).toFixed(1)}%`
+                  : '0%'
+                }
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card className="border-primary/20 bg-card/80 backdrop-blur-sm">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm">Bot P&L</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className={`text-2xl font-bold ${
+                closedBotTrades.reduce((sum, t) => sum + t.pnl, 0) >= 0 ? 'text-green-500' : 'text-red-500'
+              }`}>
+                ${closedBotTrades.reduce((sum, t) => sum + t.pnl, 0).toFixed(2)}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
         {/* Terminal */}
         <Card className="border-primary/20 bg-black/90 backdrop-blur-sm">
           <CardHeader className="bg-gradient-to-r from-primary/20 to-transparent">
@@ -201,8 +245,21 @@ export const BotActiveView: React.FC<BotActiveViewProps> = ({
                 ))}
               </div>
 
-              {/* Terminal output */}
+              {/* Terminal output with real bot activity */}
               <div className="relative z-10 space-y-1">
+                {/* Show recent bot trades as terminal output */}
+                {botTrades.slice(-10).map((trade, index) => (
+                  <div key={`trade-${trade.id}`} className="opacity-80 animate-fade-in text-yellow-400">
+                    <span className="text-green-500">$</span> BOT EXECUTED: {trade.trade_type} {trade.symbol} {trade.amount} @ {trade.open_price}
+                    {trade.status === 'closed' && (
+                      <span className={trade.pnl >= 0 ? 'text-green-400' : 'text-red-400'}>
+                        {' '}→ P&L: ${trade.pnl.toFixed(2)}
+                      </span>
+                    )}
+                  </div>
+                ))}
+                
+                {/* Regular terminal lines */}
                 {terminalLines.map((line, index) => (
                   <div key={index} className="opacity-80 animate-fade-in">
                     <span className="text-green-500">$</span> {line}
