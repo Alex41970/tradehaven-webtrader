@@ -61,7 +61,7 @@ const SuperAdminDashboard = () => {
     try {
       setLoading(true);
 
-      // Fetch all users with their roles and admin info
+      // Fetch user profiles separately
       const { data: usersData, error: usersError } = await supabase
         .from('user_profiles')
         .select(`
@@ -71,13 +71,25 @@ const SuperAdminDashboard = () => {
           equity,
           admin_id,
           created_at,
-          user_roles!inner(role),
           admin:admin_id(email)
         `);
 
       if (usersError) throw usersError;
 
-      // Transform the data to match our interface
+      // Fetch user roles separately
+      const { data: rolesData, error: rolesError } = await supabase
+        .from('user_roles')
+        .select('user_id, role');
+
+      if (rolesError) throw rolesError;
+
+      // Create a map of user roles for quick lookup
+      const rolesMap = new Map();
+      rolesData?.forEach((roleItem: any) => {
+        rolesMap.set(roleItem.user_id, roleItem.role);
+      });
+
+      // Transform and combine the data
       const transformedUsers = usersData?.map((user: any) => ({
         user_id: user.user_id,
         email: user.email,
@@ -85,44 +97,37 @@ const SuperAdminDashboard = () => {
         equity: user.equity,
         admin_id: user.admin_id,
         admin_email: user.admin?.email || null,
-        role: user.user_roles[0]?.role || 'user',
+        role: rolesMap.get(user.user_id) || 'user',
         created_at: user.created_at
       })) || [];
 
-      // Fetch admin statistics
-      const { data: adminStats, error: adminError } = await supabase
-        .from('user_profiles')
-        .select(`
-          admin_id,
-          admin:admin_id(email),
-          user_roles!inner(role)
-        `)
-        .not('admin_id', 'is', null);
+      // Get admin data by finding users who have admin role
+      const adminIds = Array.from(rolesMap.entries())
+        .filter(([_, role]) => role === 'admin')
+        .map(([userId, _]) => userId);
 
-      if (adminError) throw adminError;
-
-      // Process admin data
+      // Count users for each admin
       const adminMap = new Map();
-      adminStats?.forEach((item: any) => {
-        const adminId = item.admin_id;
-        const adminEmail = item.admin?.email;
-        const userRole = item.user_roles[0]?.role;
-        
-        if (adminId && adminEmail) {
-          if (!adminMap.has(adminId)) {
-            adminMap.set(adminId, {
-              user_id: adminId,
-              email: adminEmail,
-              role: 'admin' as const,
-              user_count: 0,
-              created_at: new Date().toISOString()
-            });
-          }
-          if (userRole === 'user') {
-            const adminData = adminMap.get(adminId);
-            if (adminData) {
-              adminData.user_count++;
-            }
+      
+      // Initialize admin map with admin users
+      transformedUsers.forEach(user => {
+        if (adminIds.includes(user.user_id)) {
+          adminMap.set(user.user_id, {
+            user_id: user.user_id,
+            email: user.email,
+            role: 'admin' as const,
+            user_count: 0,
+            created_at: user.created_at
+          });
+        }
+      });
+
+      // Count users assigned to each admin
+      transformedUsers.forEach(user => {
+        if (user.admin_id && adminMap.has(user.admin_id) && user.role === 'user') {
+          const adminData = adminMap.get(user.admin_id);
+          if (adminData) {
+            adminData.user_count++;
           }
         }
       });
