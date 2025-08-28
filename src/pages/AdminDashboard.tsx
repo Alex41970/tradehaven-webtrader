@@ -38,6 +38,7 @@ interface UserTrade {
   status: string;
   opened_at: string;
   user_id: string;
+  user_email?: string; // Optional user email for display
 }
 
 interface PromoCode {
@@ -59,6 +60,9 @@ const AdminDashboard = () => {
   const [trades, setTrades] = useState<UserTrade[]>([]);
   const [promoCodes, setPromoCodes] = useState<PromoCode[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedTradeForEdit, setSelectedTradeForEdit] = useState<UserTrade | null>(null);
+  const [selectedTradeForClose, setSelectedTradeForClose] = useState<UserTrade | null>(null);
+  const [closingTrade, setClosingTrade] = useState(false);
 
   // Form states
   const [selectedUserId, setSelectedUserId] = useState("");
@@ -109,7 +113,11 @@ const AdminDashboard = () => {
           throw tradesError;
         }
         
-        tradesData = trades || [];
+        // Add user email to trades for easier display
+        tradesData = (trades || []).map(trade => ({
+          ...trade,
+          user_email: usersData?.find(u => u.user_id === trade.user_id)?.email || 'Unknown'
+        }));
         console.log('AdminDashboard: Found trades:', tradesData.length);
       }
 
@@ -196,40 +204,82 @@ const AdminDashboard = () => {
     }
   };
 
-  const handleModifyTradePrice = async () => {
-    if (!user || !selectedTradeId || !newOpenPrice) return;
+  const handleModifyTradePrice = async (tradeId: string, newOpenPrice: number) => {
+    if (!user?.id) return;
 
     try {
-      const { data, error } = await supabase.rpc('admin_modify_trade_open_price', {
+      const { error } = await supabase.rpc('admin_modify_trade_open_price', {
         _admin_id: user.id,
-        _trade_id: selectedTradeId,
-        _new_open_price: parseFloat(newOpenPrice)
+        _trade_id: tradeId,
+        _new_open_price: newOpenPrice
       });
 
-      if (error) throw error;
-
-      if (data) {
-        toast({
-          title: "Success",
-          description: "Trade open price updated successfully"
-        });
-        fetchAdminData();
-        setSelectedTradeId("");
-        setNewOpenPrice("");
-      } else {
+      if (error) {
+        console.error('Error modifying trade price:', error);
         toast({
           title: "Error",
-          description: "Unauthorized or trade not found",
-          variant: "destructive"
+          description: "Failed to modify trade price",
+          variant: "destructive",
         });
+        return;
       }
+
+      toast({
+        title: "Success",
+        description: "Trade price updated successfully",
+      });
+
+      // Refresh data
+      fetchAdminData();
+      setSelectedTradeForEdit(null);
     } catch (error) {
-      console.error('Error modifying trade price:', error);
+      console.error('Error:', error);
       toast({
         title: "Error",
         description: "Failed to modify trade price",
-        variant: "destructive"
+        variant: "destructive",
       });
+    }
+  };
+
+  const handleCloseTrade = async (tradeId: string, closePrice: number) => {
+    if (!user?.id) return;
+
+    setClosingTrade(true);
+    try {
+      const { data, error } = await supabase.rpc('admin_close_trade', {
+        _admin_id: user.id,
+        _trade_id: tradeId,
+        _close_price: closePrice
+      });
+
+      if (error || !data) {
+        console.error('Error closing trade:', error);
+        toast({
+          title: "Error",
+          description: "Failed to close trade",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      toast({
+        title: "Success",
+        description: "Trade closed successfully",
+      });
+
+      // Refresh data
+      fetchAdminData();
+      setSelectedTradeForClose(null);
+    } catch (error) {
+      console.error('Error:', error);
+      toast({
+        title: "Error",
+        description: "Failed to close trade",
+        variant: "destructive",
+      });
+    } finally {
+      setClosingTrade(false);
     }
   };
 
@@ -425,6 +475,7 @@ const AdminDashboard = () => {
                         <TableHead>P&L</TableHead>
                         <TableHead>Status</TableHead>
                         <TableHead>Opened</TableHead>
+                        <TableHead>Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -449,6 +500,26 @@ const AdminDashboard = () => {
                           </TableCell>
                           <TableCell>
                             {new Date(trade.opened_at).toLocaleDateString()}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex gap-2">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => setSelectedTradeForEdit(trade)}
+                              >
+                                Edit Price
+                              </Button>
+                              {trade.status === 'open' && (
+                                <Button
+                                  size="sm"
+                                  variant="destructive"
+                                  onClick={() => setSelectedTradeForClose(trade)}
+                                >
+                                  Close
+                                </Button>
+                              )}
+                            </div>
                           </TableCell>
                         </TableRow>
                       ))}
@@ -568,7 +639,13 @@ const AdminDashboard = () => {
                 <CardContent className="space-y-4">
                   <div>
                     <Label htmlFor="trade-select">Select Trade</Label>
-                    <Select value={selectedTradeId} onValueChange={setSelectedTradeId}>
+                    <Select value={selectedTradeId} onValueChange={(value) => {
+                      setSelectedTradeId(value);
+                      const trade = trades.find(t => t.id === value);
+                      if (trade) {
+                        setNewOpenPrice(trade.open_price?.toString() || "");
+                      }
+                    }}>
                       <SelectTrigger>
                         <SelectValue placeholder="Choose a trade" />
                       </SelectTrigger>
@@ -592,7 +669,11 @@ const AdminDashboard = () => {
                       onChange={(e) => setNewOpenPrice(e.target.value)}
                     />
                   </div>
-                  <Button onClick={handleModifyTradePrice} className="w-full">
+                  <Button onClick={() => {
+                    if (selectedTradeId && newOpenPrice) {
+                      handleModifyTradePrice(selectedTradeId, parseFloat(newOpenPrice));
+                    }
+                  }} className="w-full">
                     Update Open Price
                   </Button>
                 </CardContent>
@@ -601,6 +682,119 @@ const AdminDashboard = () => {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Edit Trade Price Dialog */}
+      {selectedTradeForEdit && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <div className="bg-background rounded-lg p-6 w-full max-w-md">
+            <h3 className="text-lg font-semibold mb-4">Edit Trade Open Price</h3>
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              const formData = new FormData(e.target as HTMLFormElement);
+              const newOpenPrice = parseFloat(formData.get('newOpenPrice') as string);
+              
+              if (newOpenPrice) {
+                handleModifyTradePrice(selectedTradeForEdit.id, newOpenPrice);
+              }
+            }}>
+              <div className="space-y-4">
+                <div>
+                  <Label>Trade Details</Label>
+                  <p className="text-sm text-muted-foreground">
+                    {selectedTradeForEdit.user_email} - {selectedTradeForEdit.symbol} ({selectedTradeForEdit.trade_type})
+                  </p>
+                </div>
+                <div>
+                  <Label htmlFor="newOpenPrice">New Open Price</Label>
+                  <Input
+                    name="newOpenPrice"
+                    type="number"
+                    step="0.0001"
+                    defaultValue={selectedTradeForEdit.open_price}
+                    placeholder="Enter new open price"
+                    required
+                  />
+                </div>
+                <div className="flex gap-2 justify-end">
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={() => setSelectedTradeForEdit(null)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button type="submit">
+                    Update Price
+                  </Button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Close Trade Dialog */}
+      {selectedTradeForClose && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <div className="bg-background rounded-lg p-6 w-full max-w-md">
+            <h3 className="text-lg font-semibold mb-4">Close Trade</h3>
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              const formData = new FormData(e.target as HTMLFormElement);
+              const closePrice = parseFloat(formData.get('closePrice') as string);
+              
+              if (closePrice) {
+                handleCloseTrade(selectedTradeForClose.id, closePrice);
+              }
+            }}>
+              <div className="space-y-4">
+                <div>
+                  <Label>Trade Details</Label>
+                  <p className="text-sm text-muted-foreground">
+                    {selectedTradeForClose.user_email} - {selectedTradeForClose.symbol} ({selectedTradeForClose.trade_type})
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    Open Price: ${selectedTradeForClose.open_price}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    Current P&L: <span className={selectedTradeForClose.pnl >= 0 ? 'text-green-600' : 'text-red-600'}>
+                      ${selectedTradeForClose.pnl?.toFixed(2) || '0.00'}
+                    </span>
+                  </p>
+                </div>
+                <div>
+                  <Label htmlFor="closePrice">Close Price</Label>
+                  <Input
+                    name="closePrice"
+                    type="number"
+                    step="0.0001"
+                    defaultValue={selectedTradeForClose.current_price || selectedTradeForClose.open_price}
+                    placeholder="Enter close price"
+                    required
+                  />
+                </div>
+                <div className="flex gap-2 justify-end">
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={() => setSelectedTradeForClose(null)}
+                    disabled={closingTrade}
+                  >
+                    Cancel
+                  </Button>
+                  <Button 
+                    type="submit" 
+                    variant="destructive"
+                    disabled={closingTrade}
+                  >
+                    {closingTrade ? 'Closing...' : 'Close Trade'}
+                  </Button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
