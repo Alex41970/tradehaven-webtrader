@@ -145,6 +145,50 @@ const AdminDashboard = () => {
         console.log('AdminDashboard: Found trades:', tradesData.length);
       }
 
+      // Fetch deposit requests for these users
+      let depositRequestsData = [];
+      if (userIds.length > 0) {
+        console.log('AdminDashboard: Fetching deposit requests for user IDs:', userIds);
+        const { data: deposits, error: depositsError } = await supabase
+          .from('deposit_requests')
+          .select('*')
+          .in('user_id', userIds);
+
+        if (depositsError) {
+          console.error('AdminDashboard: Error fetching deposit requests:', depositsError);
+          throw depositsError;
+        }
+        
+        // Add user email to deposit requests for easier display
+        depositRequestsData = (deposits || []).map(deposit => ({
+          ...deposit,
+          user_email: usersData?.find(u => u.user_id === deposit.user_id)?.email || 'Unknown'
+        }));
+        console.log('AdminDashboard: Found deposit requests:', depositRequestsData.length);
+      }
+
+      // Fetch withdrawal requests for these users
+      let withdrawalRequestsData = [];
+      if (userIds.length > 0) {
+        console.log('AdminDashboard: Fetching withdrawal requests for user IDs:', userIds);
+        const { data: withdrawals, error: withdrawalsError } = await supabase
+          .from('withdrawal_requests')
+          .select('*')
+          .in('user_id', userIds);
+
+        if (withdrawalsError) {
+          console.error('AdminDashboard: Error fetching withdrawal requests:', withdrawalsError);
+          throw withdrawalsError;
+        }
+        
+        // Add user email to withdrawal requests for easier display
+        withdrawalRequestsData = (withdrawals || []).map(withdrawal => ({
+          ...withdrawal,
+          user_email: usersData?.find(u => u.user_id === withdrawal.user_id)?.email || 'Unknown'
+        }));
+        console.log('AdminDashboard: Found withdrawal requests:', withdrawalRequestsData.length);
+      }
+
       // Fetch promo codes
       console.log('AdminDashboard: Fetching promo codes for admin:', user.id);
       const { data: promoData, error: promoError } = await supabase
@@ -162,6 +206,8 @@ const AdminDashboard = () => {
       // Update state with fetched data
       setUsers(usersData || []);
       setTrades(tradesData || []);
+      setDepositRequests(depositRequestsData || []);
+      setWithdrawalRequests(withdrawalRequestsData || []);
       setPromoCodes(promoData || []);
       
       console.log('AdminDashboard: Successfully updated state with data');
