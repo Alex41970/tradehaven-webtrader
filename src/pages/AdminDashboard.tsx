@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { BotLicenseManagement } from "@/components/BotLicenseManagement";
+import { AdminPaymentSettings } from "@/components/AdminPaymentSettings";
 import { useAssets } from "@/hooks/useAssets";
 import { useRealTimePrices } from "@/hooks/useRealTimePrices";
 import { calculateRealTimePnL } from "@/utils/pnlCalculator";
@@ -66,6 +67,8 @@ const AdminDashboard = () => {
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [trades, setTrades] = useState<UserTrade[]>([]);
   const [promoCodes, setPromoCodes] = useState<PromoCode[]>([]);
+  const [depositRequests, setDepositRequests] = useState<any[]>([]);
+  const [withdrawalRequests, setWithdrawalRequests] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedTradeForEdit, setSelectedTradeForEdit] = useState<UserTrade | null>(null);
   const [selectedTradeForClose, setSelectedTradeForClose] = useState<UserTrade | null>(null);
@@ -413,6 +416,46 @@ const AdminDashboard = () => {
     }
   };
 
+  const handleProcessRequest = async (requestId: string, action: 'approved' | 'rejected', type: 'deposit' | 'withdrawal', adminNotes?: string) => {
+    if (!user) return;
+
+    try {
+      const functionName = type === 'deposit' ? 'process_deposit_request' : 'process_withdrawal_request';
+      const { data, error } = await supabase.rpc(functionName, {
+        _admin_id: user.id,
+        _request_id: requestId,
+        _action: action,
+        _admin_notes: adminNotes || null
+      });
+
+      if (error) throw error;
+
+      if (data && typeof data === 'object' && 'success' in data) {
+        const result = data as { success: boolean; error?: string };
+        if (result.success) {
+          toast({
+            title: "Success",
+            description: `${type === 'deposit' ? 'Deposit' : 'Withdrawal'} request ${action} successfully`
+          });
+          fetchAdminData();
+        } else {
+          toast({
+            title: "Error",
+            description: result.error || `Failed to process ${type} request`,
+            variant: "destructive"
+          });
+        }
+      }
+    } catch (error) {
+      console.error(`Error processing ${type} request:`, error);
+      toast({
+        title: "Error",
+        description: `Failed to process ${type} request`,
+        variant: "destructive"
+      });
+    }
+  };
+
   // Update trade price when asset changes
   useEffect(() => {
     if (selectedAsset && assets.length > 0) {
@@ -556,8 +599,10 @@ const AdminDashboard = () => {
           <TabsList>
             <TabsTrigger value="users">Users</TabsTrigger>
             <TabsTrigger value="trade-management">Trade Management</TabsTrigger>
+            <TabsTrigger value="deposits">Deposits & Withdrawals</TabsTrigger>
             <TabsTrigger value="promos">Promo Codes</TabsTrigger>
             <TabsTrigger value="bot-licenses">Bot Licenses</TabsTrigger>
+            <TabsTrigger value="payment-settings">Payment Settings</TabsTrigger>
           </TabsList>
 
           <TabsContent value="users" className="space-y-4">
@@ -966,8 +1011,134 @@ const AdminDashboard = () => {
             </Card>
           </TabsContent>
 
+          <TabsContent value="deposits" className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Deposit Requests</CardTitle>
+                  <CardDescription>Review and process deposit requests</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {depositRequests.length === 0 ? (
+                      <p className="text-muted-foreground text-center py-4">No deposit requests</p>
+                    ) : (
+                      depositRequests.map((request) => (
+                        <div key={request.id} className="border rounded-lg p-4 space-y-3">
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <p className="font-medium">
+                                {request.user_profiles?.first_name} {request.user_profiles?.surname}
+                              </p>
+                              <p className="text-sm text-muted-foreground">{request.user_profiles?.email}</p>
+                            </div>
+                            <div className="text-right">
+                              <p className="font-bold">${request.amount.toLocaleString()}</p>
+                              <Badge variant={request.status === 'pending' ? 'secondary' : 
+                                          request.status === 'approved' ? 'default' : 'destructive'}>
+                                {request.status}
+                              </Badge>
+                            </div>
+                          </div>
+                          <div className="text-sm space-y-1">
+                            <p><span className="text-muted-foreground">Type:</span> {request.deposit_type.toUpperCase()}</p>
+                            <p><span className="text-muted-foreground">Date:</span> {new Date(request.created_at).toLocaleDateString()}</p>
+                          </div>
+                          {request.status === 'pending' && (
+                            <div className="flex space-x-2">
+                              <Button 
+                                size="sm" 
+                                onClick={() => handleProcessRequest(request.id, 'approved', 'deposit')}
+                                className="bg-green-600 hover:bg-green-700"
+                              >
+                                Approve
+                              </Button>
+                              <Button 
+                                size="sm" 
+                                variant="destructive"
+                                onClick={() => handleProcessRequest(request.id, 'rejected', 'deposit')}
+                              >
+                                Reject
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Withdrawal Requests</CardTitle>
+                  <CardDescription>Review and process withdrawal requests</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {withdrawalRequests.length === 0 ? (
+                      <p className="text-muted-foreground text-center py-4">No withdrawal requests</p>
+                    ) : (
+                      withdrawalRequests.map((request) => (
+                        <div key={request.id} className="border rounded-lg p-4 space-y-3">
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <p className="font-medium">
+                                {request.user_profiles?.first_name} {request.user_profiles?.surname}
+                              </p>
+                              <p className="text-sm text-muted-foreground">{request.user_profiles?.email}</p>
+                            </div>
+                            <div className="text-right">
+                              <p className="font-bold">${request.amount.toLocaleString()}</p>
+                              <Badge variant={request.status === 'pending' ? 'secondary' : 
+                                          request.status === 'approved' ? 'default' : 'destructive'}>
+                                {request.status}
+                              </Badge>
+                            </div>
+                          </div>
+                          <div className="text-sm space-y-1">
+                            <p><span className="text-muted-foreground">Type:</span> {request.withdrawal_type.toUpperCase()}</p>
+                            <p><span className="text-muted-foreground">Date:</span> {new Date(request.created_at).toLocaleDateString()}</p>
+                            {request.crypto_wallet_address && (
+                              <p><span className="text-muted-foreground">Wallet:</span> <code className="text-xs">{request.crypto_wallet_address}</code></p>
+                            )}
+                            {request.bank_details && (
+                              <p><span className="text-muted-foreground">Bank:</span> {request.bank_details.bankName || 'Bank details provided'}</p>
+                            )}
+                          </div>
+                          {request.status === 'pending' && (
+                            <div className="flex space-x-2">
+                              <Button 
+                                size="sm" 
+                                onClick={() => handleProcessRequest(request.id, 'approved', 'withdrawal')}
+                                className="bg-green-600 hover:bg-green-700"
+                              >
+                                Approve
+                              </Button>
+                              <Button 
+                                size="sm" 
+                                variant="destructive"
+                                onClick={() => handleProcessRequest(request.id, 'rejected', 'withdrawal')}
+                              >
+                                Reject
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
           <TabsContent value="bot-licenses" className="space-y-4">
             <BotLicenseManagement />
+          </TabsContent>
+
+          <TabsContent value="payment-settings" className="space-y-4">
+            <AdminPaymentSettings />
           </TabsContent>
 
         </Tabs>

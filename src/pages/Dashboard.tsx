@@ -8,6 +8,8 @@ import { Portfolio } from "@/components/Portfolio";
 import { TradingHistory } from "@/components/TradingHistory";
 import { TradingBotModal } from "@/components/TradingBotModal";
 import { BotActiveView } from "@/components/BotActiveView";
+import { DepositModal } from "@/components/DepositModal";
+import { WithdrawModal } from "@/components/WithdrawModal";
 import { LogOut, TrendingUp, DollarSign, Activity, ExternalLink, Plus, Minus, BarChart3, Target, Trophy, Shield, TrendingDown, Zap, Award, Bot } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useUserProfile } from "@/hooks/useUserProfile";
@@ -32,6 +34,8 @@ const Dashboard = () => {
   const [botModalOpen, setBotModalOpen] = useState(false);
   const [showPermissions, setShowPermissions] = useState(false);
   const [showBotFullScreen, setShowBotFullScreen] = useState(true);
+  const [showDepositModal, setShowDepositModal] = useState(false);
+  const [showWithdrawModal, setShowWithdrawModal] = useState(false);
   
   // Performance metrics
   const { metrics, selectedPeriod, setSelectedPeriod } = useProfessionalMetrics(trades, profile?.balance || 10000);
@@ -201,10 +205,7 @@ const Dashboard = () => {
                     variant="outline" 
                     size="sm" 
                     className="w-full justify-start"
-                    onClick={() => {
-                      // TODO: Implement deposit functionality
-                      console.log('Deposit clicked');
-                    }}
+                    onClick={() => setShowDepositModal(true)}
                   >
                     <Plus className="h-4 w-4 mr-2" />
                     Deposit
@@ -213,10 +214,7 @@ const Dashboard = () => {
                     variant="outline" 
                     size="sm" 
                     className="w-full justify-start"
-                    onClick={() => {
-                      // TODO: Implement withdraw functionality
-                      console.log('Withdraw clicked');
-                    }}
+                    onClick={() => setShowWithdrawModal(true)}
                   >
                     <Minus className="h-4 w-4 mr-2" />
                     Withdraw
@@ -347,6 +345,18 @@ const Dashboard = () => {
           onActivate={handleLicenseActivate}
           onAcceptPermissions={handleAcceptPermissions}
           showPermissions={showPermissions}
+        />
+
+        {/* Deposit Modal */}
+        <DepositModal 
+          open={showDepositModal} 
+          onOpenChange={setShowDepositModal}
+        />
+
+        {/* Withdraw Modal */}
+        <WithdrawModal 
+          open={showWithdrawModal} 
+          onOpenChange={setShowWithdrawModal}
         />
       </div>
   );

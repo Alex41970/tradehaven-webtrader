@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_payment_settings: {
+        Row: {
+          admin_id: string
+          bank_wire_details: Json | null
+          created_at: string
+          crypto_wallets: Json | null
+          id: string
+          is_active: boolean
+          updated_at: string
+        }
+        Insert: {
+          admin_id: string
+          bank_wire_details?: Json | null
+          created_at?: string
+          crypto_wallets?: Json | null
+          id?: string
+          is_active?: boolean
+          updated_at?: string
+        }
+        Update: {
+          admin_id?: string
+          bank_wire_details?: Json | null
+          created_at?: string
+          crypto_wallets?: Json | null
+          id?: string
+          is_active?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
       admin_user_relationships: {
         Row: {
           admin_id: string
@@ -119,6 +149,48 @@ export type Database = {
           license_key?: string
           updated_at?: string
           used_by_user_id?: string | null
+        }
+        Relationships: []
+      }
+      deposit_requests: {
+        Row: {
+          admin_notes: string | null
+          amount: number
+          bank_details: Json | null
+          created_at: string
+          crypto_wallet_address: string | null
+          deposit_type: string
+          id: string
+          processed_at: string | null
+          processed_by_admin: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          amount: number
+          bank_details?: Json | null
+          created_at?: string
+          crypto_wallet_address?: string | null
+          deposit_type: string
+          id?: string
+          processed_at?: string | null
+          processed_by_admin?: string | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          admin_notes?: string | null
+          amount?: number
+          bank_details?: Json | null
+          created_at?: string
+          crypto_wallet_address?: string | null
+          deposit_type?: string
+          id?: string
+          processed_at?: string | null
+          processed_by_admin?: string | null
+          status?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -369,6 +441,48 @@ export type Database = {
         }
         Relationships: []
       }
+      withdrawal_requests: {
+        Row: {
+          admin_notes: string | null
+          amount: number
+          bank_details: Json | null
+          created_at: string
+          crypto_wallet_address: string | null
+          id: string
+          processed_at: string | null
+          processed_by_admin: string | null
+          status: string
+          user_id: string
+          withdrawal_type: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          amount: number
+          bank_details?: Json | null
+          created_at?: string
+          crypto_wallet_address?: string | null
+          id?: string
+          processed_at?: string | null
+          processed_by_admin?: string | null
+          status?: string
+          user_id: string
+          withdrawal_type: string
+        }
+        Update: {
+          admin_notes?: string | null
+          amount?: number
+          bank_details?: Json | null
+          created_at?: string
+          crypto_wallet_address?: string | null
+          id?: string
+          processed_at?: string | null
+          processed_by_admin?: string | null
+          status?: string
+          user_id?: string
+          withdrawal_type?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -458,6 +572,24 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      process_deposit_request: {
+        Args: {
+          _action: string
+          _admin_id: string
+          _admin_notes?: string
+          _request_id: string
+        }
+        Returns: Json
+      }
+      process_withdrawal_request: {
+        Args: {
+          _action: string
+          _admin_id: string
+          _admin_notes?: string
+          _request_id: string
+        }
+        Returns: Json
       }
       recalculate_user_balance: {
         Args: { user_uuid: string }
