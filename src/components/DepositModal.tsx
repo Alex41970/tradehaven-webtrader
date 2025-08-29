@@ -45,35 +45,34 @@ export const DepositModal: React.FC<DepositModalProps> = ({ open, onOpenChange }
     if (!user) return;
 
     try {
-      // Get user's admin ID first
-      const { data: profile } = await supabase
-        .from('user_profiles')
-        .select('admin_id')
+      // Fetch user's specific payment settings
+      const { data, error } = await supabase
+        .from('user_payment_settings')
+        .select('*')
         .eq('user_id', user.id)
-        .single();
+        .eq('is_active', true)
+        .maybeSingle();
 
-      if (profile?.admin_id) {
-        // Get admin's payment settings
-        const { data: settings } = await supabase
-          .from('admin_payment_settings')
-          .select('crypto_wallets, bank_wire_details')
-          .eq('admin_id', profile.admin_id)
-          .eq('is_active', true)
-          .single();
+      if (error) {
+        console.error('Error fetching user payment settings:', error);
+        return;
+      }
 
-        if (settings) {
-          setPaymentSettings({
-            crypto_wallets: (settings.crypto_wallets as Record<string, string>) || {},
-            bank_wire_details: (settings.bank_wire_details as {
-              bank_name?: string;
-              account_holder?: string;
-              account_number?: string;
-              routing_number?: string;
-              swift_code?: string;
-              iban?: string;
-            }) || {}
-          });
-        }
+      if (data) {
+        setPaymentSettings({
+          crypto_wallets: (data.crypto_wallets as Record<string, string>) || {},
+          bank_wire_details: (data.bank_wire_details as {
+            bank_name?: string;
+            account_holder?: string;
+            account_number?: string;
+            routing_number?: string;
+            swift_code?: string;
+            iban?: string;
+          }) || {}
+        });
+      } else {
+        console.log('No payment settings configured for this user');
+        setPaymentSettings(null);
       }
     } catch (error) {
       console.error('Error fetching payment settings:', error);

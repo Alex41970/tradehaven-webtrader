@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { BotLicenseManagement } from "@/components/BotLicenseManagement";
-import { AdminPaymentSettings } from "@/components/AdminPaymentSettings";
+import { UserPaymentSettings } from "@/components/UserPaymentSettings";
 import { useAssets } from "@/hooks/useAssets";
 import { useRealTimePrices } from "@/hooks/useRealTimePrices";
 import { calculateRealTimePnL } from "@/utils/pnlCalculator";
@@ -648,7 +648,7 @@ const AdminDashboard = () => {
             <TabsTrigger value="deposits">Deposits & Withdrawals</TabsTrigger>
             <TabsTrigger value="promos">Promo Codes</TabsTrigger>
             <TabsTrigger value="bot-licenses">Bot Licenses</TabsTrigger>
-            <TabsTrigger value="payment-settings">Payment Settings</TabsTrigger>
+            <TabsTrigger value="payment-settings">User Payment Settings</TabsTrigger>
           </TabsList>
 
           <TabsContent value="users" className="space-y-4">
@@ -1184,7 +1184,17 @@ const AdminDashboard = () => {
           </TabsContent>
 
           <TabsContent value="payment-settings" className="space-y-4">
-            <AdminPaymentSettings />
+            <Card>
+              <CardHeader>
+                <CardTitle>User Payment Settings</CardTitle>
+                <CardDescription>
+                  Configure personalized cryptocurrency wallets and bank transfer details for each user's deposits.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <UserPaymentSettings users={users} />
+              </CardContent>
+            </Card>
           </TabsContent>
 
         </Tabs>

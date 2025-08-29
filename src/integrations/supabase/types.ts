@@ -363,6 +363,39 @@ export type Database = {
           },
         ]
       }
+      user_payment_settings: {
+        Row: {
+          admin_id: string
+          bank_wire_details: Json | null
+          created_at: string
+          crypto_wallets: Json | null
+          id: string
+          is_active: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          admin_id: string
+          bank_wire_details?: Json | null
+          created_at?: string
+          crypto_wallets?: Json | null
+          id?: string
+          is_active?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          admin_id?: string
+          bank_wire_details?: Json | null
+          created_at?: string
+          crypto_wallets?: Json | null
+          id?: string
+          is_active?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_profiles: {
         Row: {
           admin_id: string | null
