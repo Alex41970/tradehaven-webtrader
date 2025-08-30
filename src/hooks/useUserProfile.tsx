@@ -103,9 +103,10 @@ export const useUserProfile = () => {
             table: 'user_profiles',
             filter: `user_id=eq.${user.id}`
           },
-          (payload) => {
-            console.log('Real-time profile update:', payload);
+           (payload) => {
+            console.log('🔴 useUserProfile real-time update:', payload);
             if (payload.new && typeof payload.new === 'object') {
+              console.log('⚡ Setting profile from real-time update');
               setProfile(payload.new as UserProfile);
             } else if (payload.eventType === 'DELETE') {
               setProfile(null);

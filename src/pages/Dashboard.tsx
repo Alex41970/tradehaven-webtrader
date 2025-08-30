@@ -95,35 +95,17 @@ const Dashboard = () => {
     setSelectedTransaction(null);
   };
 
-  // Listen for real-time user profile updates - optimized to use payload data directly
+  // Debug profile changes - add key to force re-render when profile updates
   useEffect(() => {
-    if (!user) return;
-
-    const channel = supabase
-      .channel('user-profile-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'user_profiles',
-          filter: `user_id=eq.${user.id}`
-        },
-        (payload) => {
-          console.log('Dashboard received real-time profile update:', payload);
-          // Use payload data directly instead of refetching for instant updates
-          if (payload.new && typeof payload.new === 'object') {
-            // Profile updated - no need to refetch, just let useUserProfile handle it
-            console.log('Profile updated in real-time, letting useUserProfile handle it');
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [user]);
+    if (profile) {
+      console.log('🔄 Dashboard profile updated:', {
+        balance: profile.balance,
+        used_margin: profile.used_margin,
+        available_margin: profile.available_margin,
+        timestamp: new Date().toISOString()
+      });
+    }
+  }, [profile?.balance, profile?.used_margin, profile?.available_margin]);
 
   // Create updated assets with real-time prices
   const updatedAssets = useMemo(() => {
