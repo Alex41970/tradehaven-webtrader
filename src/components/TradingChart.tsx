@@ -10,7 +10,7 @@ export const TradingChart = ({ symbol }: TradingChartProps) => {
   // Map asset symbols to proper TradingView symbols
   const getProperSymbol = (symbol: string): string => {
     const symbolMappings: Record<string, string> = {
-      // Major Crypto
+      // Crypto
       'BTCUSD': 'BINANCE:BTCUSDT',
       'ETHUSD': 'BINANCE:ETHUSDT', 
       'XRPUSD': 'BINANCE:XRPUSDT',
@@ -31,8 +31,10 @@ export const TradingChart = ({ symbol }: TradingChartProps) => {
       'BNBUSD': 'BINANCE:BNBUSDT',
       'SOLUSD': 'BINANCE:SOLUSDT',
       'LINKUSD': 'BINANCE:LINKUSDT',
+      'LTCUSD': 'BINANCE:LTCUSDT',
+      'MATICUSD': 'BINANCE:MATICUSDT',
       
-      // Technology Stocks
+      // Stocks
       'AAPL': 'NASDAQ:AAPL',
       'GOOGL': 'NASDAQ:GOOGL',
       'TSLA': 'NASDAQ:TSLA',
@@ -46,32 +48,24 @@ export const TradingChart = ({ symbol }: TradingChartProps) => {
       'CSCO': 'NASDAQ:CSCO',
       'INTC': 'NASDAQ:INTC',
       'AMD': 'NASDAQ:AMD',
-      
-      // Financial Stocks
       'JPM': 'NYSE:JPM',
       'BAC': 'NYSE:BAC',
       'WFC': 'NYSE:WFC',
       'GS': 'NYSE:GS',
-      
-      // Consumer Stocks
       'KO': 'NYSE:KO',
       'MCD': 'NYSE:MCD',
       'WMT': 'NYSE:WMT',
       'PG': 'NYSE:PG',
       'NKE': 'NYSE:NKE',
-      
-      // Healthcare Stocks
       'JNJ': 'NYSE:JNJ',
       'PFE': 'NYSE:PFE',
       'UNH': 'NYSE:UNH',
       'ABBV': 'NYSE:ABBV',
-      
-      // Energy Stocks
       'XOM': 'NYSE:XOM',
       'CVX': 'NYSE:CVX',
       'COP': 'NYSE:COP',
       
-      // Major Forex pairs
+      // Forex
       'EURUSD': 'FX:EURUSD',
       'GBPUSD': 'FX:GBPUSD',
       'USDJPY': 'FX:USDJPY',
@@ -81,8 +75,6 @@ export const TradingChart = ({ symbol }: TradingChartProps) => {
       'NZDUSD': 'FX:NZDUSD',
       'EURJPY': 'FX:EURJPY',
       'GBPJPY': 'FX:GBPJPY',
-      
-      // Exotic Forex pairs
       'USDTRY': 'FX:USDTRY',
       'USDZAR': 'FX:USDZAR',
       'USDMXN': 'FX:USDMXN',
@@ -94,14 +86,17 @@ export const TradingChart = ({ symbol }: TradingChartProps) => {
       'CADJPY': 'FX:CADJPY',
       'AUDJPY': 'FX:AUDJPY',
       'NZDJPY': 'FX:NZDJPY',
+      'EURGBP': 'FX:EURGBP',
       
-      // Major Indices
+      // Indices
       'US30': 'TVC:DJI',
+      'DJ30': 'TVC:DJI',
       'SPX500': 'TVC:SPX',
       'NAS100': 'TVC:NDX',
       'UK100': 'TVC:UKX',
       'GER40': 'TVC:DAX',
       'EU50': 'TVC:SX5E',
+      'FRA40': 'TVC:CAC',
       'ITA40': 'TVC:FTSEMIB',
       'SPA35': 'TVC:IBEX35',
       'HK50': 'TVC:HSI',
@@ -115,6 +110,8 @@ export const TradingChart = ({ symbol }: TradingChartProps) => {
       // Commodities - Metals
       'XAUUSD': 'TVC:GOLD',
       'XAGUSD': 'TVC:SILVER',
+      'XPTUSD': 'TVC:PLATINUM',
+      'XPDUSD': 'TVC:PALLADIUM',
       'COPPER': 'COMEX:HG1!',
       'ALUMINUM': 'LME:AH1!',
       'ZINC': 'LME:ZS1!',
