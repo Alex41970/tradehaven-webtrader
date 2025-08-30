@@ -69,6 +69,7 @@ const AdminDashboard = () => {
   const [depositRequests, setDepositRequests] = useState<any[]>([]);
   const [withdrawalRequests, setWithdrawalRequests] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [selectedTradeForEdit, setSelectedTradeForEdit] = useState<UserTrade | null>(null);
   const [selectedTradeForClose, setSelectedTradeForClose] = useState<UserTrade | null>(null);
   const [closingTrade, setClosingTrade] = useState(false);
@@ -96,28 +97,38 @@ const AdminDashboard = () => {
 
   const fetchAdminData = useCallback(async () => {
     if (!user) {
-      console.log('AdminDashboard: Skipping fetchAdminData - no user');
+      console.log('❌ AdminDashboard: No user found - skipping data fetch');
+      setError('Please log in to access admin dashboard');
+      setLoading(false);
       return;
     }
 
-    console.log('AdminDashboard: Starting fetchAdminData for admin:', user.id);
+    console.log('🔍 AdminDashboard: Starting fetchAdminData for user:', user.id, 'email:', user.email);
     
     try {
       setLoading(true);
+      setError(null);
 
       // Verify auth session is active
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      console.log('🔐 AdminDashboard: Session check - valid:', !!session, 'error:', sessionError);
+      
       if (!session || sessionError) {
-        console.error('AdminDashboard: Session invalid:', sessionError);
-        toast({
-          title: "Authentication Error",
-          description: "Please sign out and sign back in.",
-          variant: "destructive",
-        });
+        console.error('❌ AdminDashboard: Session invalid:', sessionError);
+        setError('Authentication session expired. Please sign out and sign back in.');
+        setLoading(false);
         return;
       }
 
-      // Fetch users under this admin
+      // Check if user has admin role before proceeding
+      if (!isAdmin()) {
+        console.error('❌ AdminDashboard: User does not have admin role');
+        setError('Access denied. Admin role required.');
+        setLoading(false);
+        return;
+      }
+
+      console.log('✅ AdminDashboard: User authenticated as admin, fetching data...');
       console.log('AdminDashboard: Fetching users for admin:', user.id);
       const { data: usersData, error: usersError } = await supabase
         .from('user_profiles')

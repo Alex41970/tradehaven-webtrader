@@ -92,33 +92,45 @@ const SuperAdminDashboard = () => {
 
   const fetchSuperAdminData = async () => {
     if (!user) {
-      console.log('SuperAdminDashboard: No user found, aborting fetch');
-      setError('User not authenticated');
+      console.log('❌ SuperAdminDashboard: No user found - aborting fetch');
+      setError('Please log in to access super admin dashboard');
       setLoading(false);
       return;
     }
+
+    console.log('🔍 SuperAdminDashboard: Starting data fetch for user:', user.id, 'email:', user.email);
 
     try {
       setLoading(true);
       setError(null);
       
-      console.log('SuperAdminDashboard: Starting data fetch attempt', retryCount + 1);
+      console.log('🚀 SuperAdminDashboard: Fetch attempt', retryCount + 1);
       
       // Verify auth session is active and valid
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      console.log('SuperAdminDashboard: Session check - session exists:', !!session, 'session user:', session?.user?.id, 'error:', sessionError);
+      console.log('🔐 SuperAdminDashboard: Session check - valid:', !!session, 'user match:', session?.user?.id === user.id);
       
       if (!session || !session.user || session.user.id !== user.id) {
-        console.error('SuperAdminDashboard: Invalid session - session:', !!session, 'session user:', session?.user?.id, 'current user:', user.id);
+        console.error('❌ SuperAdminDashboard: Invalid session');
         // Try to refresh the session
         const { data: { session: refreshedSession }, error: refreshError } = await supabase.auth.refreshSession();
         if (refreshError || !refreshedSession) {
-          setError('Authentication session invalid. Please sign out and sign back in.');
+          setError('Authentication session expired. Please sign out and sign back in.');
           setLoading(false);
           return;
         }
-        console.log('SuperAdminDashboard: Session refreshed successfully');
+        console.log('✅ SuperAdminDashboard: Session refreshed successfully');
       }
+
+      // Check if user has super admin role before proceeding
+      if (role !== 'super_admin') {
+        console.error('❌ SuperAdminDashboard: User does not have super admin role, current role:', role);
+        setError('Access denied. Super admin role required.');
+        setLoading(false);
+        return;
+      }
+
+      console.log('✅ SuperAdminDashboard: User authenticated as super admin, fetching data...');
 
       console.log('SuperAdminDashboard: Fetching user profiles...');
       // Fetch user profiles separately
