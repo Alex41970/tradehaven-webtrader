@@ -35,15 +35,22 @@ export const useRealtimeData = () => {
 
     console.log(`🔌 Setting up real-time subscription for: ${table}`, { filter });
 
+    // Simplified channel setup with better error handling
     const channel = supabase
-      .channel(channelName)
+      .channel(channelName, {
+        config: {
+          presence: {
+            key: channelName,
+          },
+        },
+      })
       .on(
         'postgres_changes',
         { 
           event: '*', 
           schema: 'public', 
           table: table,
-          filter: filter
+          ...(filter && { filter })
         },
         (payload) => {
           console.log(`📡 Real-time ${payload.eventType} on ${table}:`, payload);
@@ -65,23 +72,19 @@ export const useRealtimeData = () => {
         console.log(`📊 Subscription status for ${table}:`, status);
         
         if (status === 'SUBSCRIBED') {
-          toast({
-            title: "Real-time Connected",
-            description: `Live updates enabled for ${table}`,
-            duration: 2000,
-          });
+          console.log(`✅ Successfully connected to real-time updates for ${table}`);
         } else if (status === 'CHANNEL_ERROR') {
-          toast({
-            title: "Connection Error",
-            description: `Failed to connect real-time updates for ${table}`,
-            variant: "destructive",
-          });
+          console.error(`❌ Failed to connect real-time updates for ${table}`);
+        } else if (status === 'TIMED_OUT') {
+          console.error(`⏰ Real-time connection timed out for ${table}`);
+        } else if (status === 'CLOSED') {
+          console.log(`🔌 Real-time connection closed for ${table}`);
         }
       });
 
     subscriptionsRef.current.set(channelName, channel);
     return channelName;
-  }, [toast]);
+  }, []);
 
   const unsubscribe = useCallback((subscriptionId: string) => {
     const channel = subscriptionsRef.current.get(subscriptionId);
@@ -123,7 +126,21 @@ export const useRealtimeUserProfile = (userId?: string) => {
   const subscriptionIdRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (!userId) return;
+    if (!userId) {
+      // Clean up existing subscription if user becomes undefined
+      if (subscriptionIdRef.current) {
+        unsubscribe(subscriptionIdRef.current);
+        subscriptionIdRef.current = null;
+      }
+      return;
+    }
+
+    // Clean up any existing subscription first
+    if (subscriptionIdRef.current) {
+      unsubscribe(subscriptionIdRef.current);
+    }
+
+    console.log(`🔄 Setting up profile subscription for user: ${userId}`);
 
     const subscriptionId = subscribe({
       table: 'user_profiles',
@@ -142,7 +159,9 @@ export const useRealtimeUserProfile = (userId?: string) => {
 
     return () => {
       if (subscriptionIdRef.current) {
+        console.log(`🔌 Cleaning up profile subscription for user: ${userId}`);
         unsubscribe(subscriptionIdRef.current);
+        subscriptionIdRef.current = null;
       }
     };
   }, [userId, subscribe, unsubscribe]);
