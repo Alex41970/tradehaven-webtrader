@@ -24,7 +24,7 @@ import { SimplePriceIndicator } from "./SimplePriceIndicator";
 export const WebTrader = () => {
   const { assets, loading: assetsLoading } = useAssets();
   const { openTrade, closeTrade, openTrades, loading: tradesLoading } = useTrades();
-  const { profile, loading: profileLoading, refetch: refetchProfile } = useUserProfile();
+  const { profile, loading: profileLoading, refetch: refetchProfile, recalculateMargins } = useUserProfile();
   const { favorites, addFavorite, removeFavorite } = useFavorites();
   const { getUpdatedAssets, isConnected, lastUpdate } = useRealTimePrices();
   const { createOrder } = useTradeOrders();
@@ -164,8 +164,9 @@ export const WebTrader = () => {
           description: `${tradeType} order for ${selectedAsset.symbol} executed successfully`,
         });
         
-        // Force refresh the profile
-        await refetchProfile();
+        // Recalculate margins to ensure accuracy
+        console.log('Recalculating margins after trade execution...');
+        await recalculateMargins();
       }
     } catch (error) {
       console.error('Trade execution error:', error);
@@ -220,7 +221,9 @@ export const WebTrader = () => {
             title: "Market Order Executed",
             description: `${orderData.tradeType} order for ${selectedAsset.symbol} executed successfully`,
           });
-          await refetchProfile();
+          // Recalculate margins to ensure accuracy
+          console.log('Recalculating margins after market order...');
+          await recalculateMargins();
         }
       } else {
         // Create pending order
@@ -260,8 +263,9 @@ export const WebTrader = () => {
     setIsExecuting(true);
     try {
       await closeTrade(tradeId, closePrice);
-      // Force refresh the profile after closing trade
-      await refetchProfile();
+      // Recalculate margins to ensure accuracy after closing trade
+      console.log('Recalculating margins after trade close...');
+      await recalculateMargins();
     } catch (error) {
       console.error('Error closing trade:', error);
     } finally {

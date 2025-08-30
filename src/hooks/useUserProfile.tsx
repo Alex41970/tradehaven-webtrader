@@ -182,11 +182,65 @@ export const useUserProfile = () => {
     }
   };
 
+  const recalculateMargins = async () => {
+    if (!user) {
+      console.error('No user found for margin recalculation');
+      return false;
+    }
+
+    try {
+      console.log('Recalculating margins for user:', user.id);
+      const { data, error } = await supabase.rpc('recalculate_user_margins', {
+        _user_id: user.id
+      });
+
+      if (error) {
+        console.error('Error recalculating margins:', error);
+        toast({
+          title: "Error",
+          description: "Failed to recalculate margins",
+          variant: "destructive",
+        });
+        return false;
+      }
+
+      const result = data as { success: boolean; error?: string; balance?: number; used_margin?: number; available_margin?: number; equity?: number };
+
+      if (result?.success) {
+        console.log('Margins recalculated successfully:', result);
+        // Force refresh profile to get updated values
+        await forceRefresh();
+        toast({
+          title: "Success",
+          description: "Margins recalculated successfully",
+        });
+        return true;
+      } else {
+        console.error('Margin recalculation failed:', result?.error);
+        toast({
+          title: "Error",
+          description: result?.error || "Failed to recalculate margins",
+          variant: "destructive",
+        });
+        return false;
+      }
+    } catch (error) {
+      console.error('Error during margin recalculation:', error);
+      toast({
+        title: "Error",
+        description: "Failed to recalculate margins",
+        variant: "destructive",
+      });
+      return false;
+    }
+  };
+
   return {
     profile,
     loading,
     refetch: fetchProfile,
     forceRefresh,
     updateBalance,
+    recalculateMargins,
   };
 };
