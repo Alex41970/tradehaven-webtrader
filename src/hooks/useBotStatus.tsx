@@ -33,6 +33,28 @@ export const useBotStatus = () => {
   useEffect(() => {
     if (user) {
       fetchBotStatus();
+      
+      // Set up real-time subscription for bot status changes
+      const channel = supabase
+        .channel('bot-status-changes')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'user_bot_status',
+            filter: `user_id=eq.${user.id}`,
+          },
+          () => {
+            // Refetch bot status when changes occur
+            fetchBotStatus();
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
     } else {
       setBotStatus(prev => ({ ...prev, loading: false, isConnected: false }));
     }
@@ -40,21 +62,36 @@ export const useBotStatus = () => {
 
   const fetchBotStatus = async () => {
     try {
-      const { data, error } = await supabase
-        .from('user_bot_status')
-        .select('*')
-        .eq('user_id', user?.id)
-        .single();
+      const { data, error } = await supabase.rpc('get_valid_bot_status', {
+        _user_id: user?.id,
+      });
 
-      if (error && error.code !== 'PGRST116') {
-        throw error;
+      if (error) throw error;
+
+      const result = data as any;
+      
+      if (!result.valid) {
+        // License is invalid or expired, disconnect user
+        setBotStatus({
+          isConnected: false,
+          botStatus: 'active',
+          licenseKey: null,
+          permissions: {
+            trade_execution: true,
+            history_access: true,
+            analytics_access: true,
+          },
+          loading: false,
+        });
+        return;
       }
 
+      const botData = result.bot_status;
       setBotStatus({
-        isConnected: !!data,
-        botStatus: (data?.bot_status as 'active' | 'paused') || 'active',
-        licenseKey: data?.license_key || null,
-        permissions: (data?.permissions as any) || {
+        isConnected: true,
+        botStatus: (botData?.bot_status as 'active' | 'paused') || 'active',
+        licenseKey: botData?.license_key || null,
+        permissions: (botData?.permissions as any) || {
           trade_execution: true,
           history_access: true,
           analytics_access: true,
@@ -63,7 +100,7 @@ export const useBotStatus = () => {
       });
     } catch (error) {
       console.error('Error fetching bot status:', error);
-      setBotStatus(prev => ({ ...prev, loading: false }));
+      setBotStatus(prev => ({ ...prev, loading: false, isConnected: false }));
     }
   };
 
