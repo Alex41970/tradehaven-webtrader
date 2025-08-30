@@ -180,19 +180,111 @@ const Dashboard = () => {
         <div className="container mx-auto px-4 py-6">
           {/* Quick Stats */}
           <div className="grid md:grid-cols-3 gap-6 mb-6">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Account Balance</CardTitle>
-                <DollarSign className="h-4 w-4 text-muted-foreground" />
+            <Card className="bg-gradient-to-br from-card via-card to-card/95 border-2 border-primary/10 shadow-lg hover:shadow-xl transition-shadow duration-300">
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <div className="p-2 bg-primary/10 rounded-full">
+                      <DollarSign className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-lg font-bold text-foreground">
+                        {profile?.first_name && profile?.surname 
+                          ? `${profile.first_name} ${profile.surname}`
+                          : 'Account Holder'
+                        }
+                      </CardTitle>
+                      <CardDescription className="text-xs text-muted-foreground mt-1">
+                        Premium Trading Account • ID: {user?.id?.slice(-8).toUpperCase()}
+                      </CardDescription>
+                    </div>
+                  </div>
+                  <Badge variant="outline" className="text-xs bg-primary/5 text-primary border-primary/20">
+                    <Shield className="w-3 h-3 mr-1" />
+                    Verified
+                  </Badge>
+                </div>
               </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">${profile?.balance.toFixed(2) || '0.00'}</div>
-                <p className="text-xs text-muted-foreground">
-                  Available Margin: ${profile?.available_margin.toFixed(2) || '0.00'}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  Used Margin: ${profile?.used_margin.toFixed(2) || '0.00'}
-                </p>
+              <CardContent className="pt-0">
+                <div className="space-y-4">
+                  {/* Account Balance Section */}
+                  <div className="bg-gradient-to-r from-primary/5 to-primary/10 rounded-lg p-4 border border-primary/10">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-medium text-muted-foreground">Total Account Balance</span>
+                      <Trophy className="h-4 w-4 text-primary" />
+                    </div>
+                    <div className="text-3xl font-bold text-foreground mb-1">
+                      ${profile?.balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      Last updated: {new Date().toLocaleTimeString()}
+                    </div>
+                  </div>
+
+                  {/* Margin Details Section */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="bg-muted/30 rounded-lg p-3 border">
+                      <div className="flex items-center space-x-2 mb-1">
+                        <TrendingUp className="h-3 w-3 text-green-500" />
+                        <span className="text-xs font-medium text-muted-foreground">Available</span>
+                      </div>
+                      <div className="text-lg font-bold text-foreground">
+                        ${profile?.available_margin.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {profile?.balance ? ((profile.available_margin / profile.balance) * 100).toFixed(1) : '0'}% free
+                      </div>
+                    </div>
+                    
+                    <div className="bg-muted/30 rounded-lg p-3 border">
+                      <div className="flex items-center space-x-2 mb-1">
+                        <Activity className="h-3 w-3 text-orange-500" />
+                        <span className="text-xs font-medium text-muted-foreground">In Use</span>
+                      </div>
+                      <div className="text-lg font-bold text-foreground">
+                        ${profile?.used_margin.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {profile?.balance ? ((profile.used_margin / profile.balance) * 100).toFixed(1) : '0'}% utilized
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Margin Level Indicator */}
+                  <div className="bg-muted/20 rounded-lg p-3 border">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-medium text-muted-foreground">Margin Level</span>
+                      <span className={`text-xs font-bold ${
+                        profile?.used_margin && profile?.balance && (profile.balance / profile.used_margin) > 2 
+                          ? 'text-green-500' 
+                          : profile?.used_margin && profile?.balance && (profile.balance / profile.used_margin) > 1.5
+                          ? 'text-yellow-500'
+                          : 'text-red-500'
+                      }`}>
+                        {profile?.used_margin && profile?.used_margin > 0 && profile?.balance 
+                          ? `${((profile.balance / profile.used_margin) * 100).toFixed(0)}%`
+                          : '∞'
+                        }
+                      </span>
+                    </div>
+                    <div className="w-full bg-muted rounded-full h-2">
+                      <div 
+                        className={`h-2 rounded-full transition-all duration-300 ${
+                          profile?.used_margin && profile?.balance && (profile.balance / profile.used_margin) > 2
+                            ? 'bg-green-500'
+                            : profile?.used_margin && profile?.balance && (profile.balance / profile.used_margin) > 1.5
+                            ? 'bg-yellow-500'
+                            : 'bg-red-500'
+                        }`}
+                        style={{
+                          width: profile?.used_margin && profile?.used_margin > 0 && profile?.balance
+                            ? `${Math.min((profile.balance / profile.used_margin) * 10, 100)}%`
+                            : '100%'
+                        }}
+                      />
+                    </div>
+                  </div>
+                </div>
               </CardContent>
             </Card>
             <Card>
