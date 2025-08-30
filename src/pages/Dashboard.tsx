@@ -10,7 +10,8 @@ import { TradingBotModal } from "@/components/TradingBotModal";
 import { BotActiveView } from "@/components/BotActiveView";
 import { DepositModal } from "@/components/DepositModal";
 import { WithdrawModal } from "@/components/WithdrawModal";
-import { LogOut, TrendingUp, DollarSign, Activity, ExternalLink, Plus, Minus, BarChart3, Target, Trophy, Shield, TrendingDown, Zap, Award, Bot } from "lucide-react";
+import { TransactionHistoryPopup } from "@/components/TransactionHistoryPopup";
+import { LogOut, TrendingUp, DollarSign, Activity, ExternalLink, Plus, Minus, BarChart3, Target, Trophy, Shield, TrendingDown, Zap, Award, Bot, History, ArrowUpRight, ArrowDownLeft, Clock, CheckCircle, XCircle, Loader } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { useTrades } from "@/hooks/useTrades";
@@ -21,6 +22,7 @@ import { useMemo, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useProfessionalMetrics, TimePeriod } from "@/hooks/usePerformanceMetrics";
 import { useBotStatus } from "@/hooks/useBotStatus";
+import { useTransactionHistory, TransactionHistory } from "@/hooks/useTransactionHistory";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 const Dashboard = () => {
   const { user, signOut } = useAuth();
@@ -36,9 +38,14 @@ const Dashboard = () => {
   const [showBotFullScreen, setShowBotFullScreen] = useState(false);
   const [showDepositModal, setShowDepositModal] = useState(false);
   const [showWithdrawModal, setShowWithdrawModal] = useState(false);
+  const [selectedTransaction, setSelectedTransaction] = useState<TransactionHistory | null>(null);
+  const [showTransactionPopup, setShowTransactionPopup] = useState(false);
   
   // Performance metrics
   const { metrics, selectedPeriod, setSelectedPeriod } = useProfessionalMetrics(trades, profile?.balance || 10000);
+  
+  // Transaction history
+  const { transactionHistory, loading: transactionLoading } = useTransactionHistory();
 
   const handleSignOut = async () => {
     if (signingOut) return;
@@ -74,6 +81,16 @@ const Dashboard = () => {
 
   const handleBackToDashboard = () => {
     setShowBotFullScreen(false);
+  };
+
+  const handleTransactionClick = (transaction: TransactionHistory) => {
+    setSelectedTransaction(transaction);
+    setShowTransactionPopup(true);
+  };
+
+  const handleCloseTransactionPopup = () => {
+    setShowTransactionPopup(false);
+    setSelectedTransaction(null);
   };
 
   // Listen for real-time user profile updates
@@ -291,7 +308,7 @@ const Dashboard = () => {
               <CardHeader>
                 <CardTitle className="text-sm font-medium">Account Actions</CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="space-y-4">
                 <div className="space-y-2">
                   <Button 
                     variant="outline" 
@@ -312,11 +329,74 @@ const Dashboard = () => {
                     Withdraw
                   </Button>
                 </div>
+
+                {/* Transaction History Section */}
+                <div className="border-t pt-4">
+                  <div className="flex items-center space-x-2 mb-3">
+                    <History className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm font-medium text-muted-foreground">Recent Transactions</span>
+                  </div>
+                  
+                  {transactionLoading ? (
+                    <div className="flex items-center justify-center py-4">
+                      <Loader className="h-4 w-4 animate-spin text-muted-foreground" />
+                    </div>
+                  ) : transactionHistory.length > 0 ? (
+                    <div className="space-y-2 max-h-32 overflow-y-auto">
+                      {transactionHistory.slice(0, 5).map((transaction) => (
+                        <div
+                          key={transaction.id}
+                          className="flex items-center justify-between p-2 bg-muted/30 rounded-lg cursor-pointer hover:bg-muted/50 transition-colors"
+                          onClick={() => handleTransactionClick(transaction)}
+                        >
+                          <div className="flex items-center space-x-2">
+                            {transaction.type === 'deposit' ? (
+                              <ArrowDownLeft className="h-3 w-3 text-green-500" />
+                            ) : (
+                              <ArrowUpRight className="h-3 w-3 text-blue-500" />
+                            )}
+                            <div>
+                              <p className="text-xs font-medium capitalize">{transaction.type}</p>
+                              <p className="text-xs text-muted-foreground">
+                                ${transaction.amount.toFixed(2)}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center space-x-1">
+                            <Badge 
+                              variant="secondary" 
+                              className={`text-xs px-1.5 py-0.5 ${
+                                transaction.status === 'approved' 
+                                  ? 'bg-green-500/10 text-green-500 border-green-500/20' 
+                                  : transaction.status === 'rejected'
+                                  ? 'bg-red-500/10 text-red-500 border-red-500/20'
+                                  : 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20'
+                              }`}
+                            >
+                              {transaction.status === 'approved' ? (
+                                <CheckCircle className="h-2 w-2 mr-1" />
+                              ) : transaction.status === 'rejected' ? (
+                                <XCircle className="h-2 w-2 mr-1" />
+                              ) : (
+                                <Clock className="h-2 w-2 mr-1" />
+                              )}
+                              {transaction.status}
+                            </Badge>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-4">
+                      <p className="text-xs text-muted-foreground">No transactions yet</p>
+                    </div>
+                  )}
+                </div>
               </CardContent>
             </Card>
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Performance</CardTitle>
+                <CardTitle className="text-sm font-medium">Performance Metrics</CardTitle>
                 <BarChart3 className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent className="space-y-4">
@@ -343,7 +423,71 @@ const Dashboard = () => {
                   </ToggleGroupItem>
                 </ToggleGroup>
                 
-                <div className="space-y-2">
+                <div className="space-y-2 max-h-64 overflow-y-auto">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-muted-foreground flex items-center">
+                      <BarChart3 className="w-3 h-3 mr-1" />
+                      Total Trades
+                    </span>
+                    <span className="text-sm font-medium text-foreground">
+                      {metrics.totalTrades}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-muted-foreground flex items-center">
+                      <Trophy className="w-3 h-3 mr-1" />
+                      Win/Loss Ratio
+                    </span>
+                    <span className="text-sm font-medium text-foreground">
+                      {metrics.profitableTrades}W/{metrics.losingTrades}L
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-muted-foreground flex items-center">
+                      <TrendingUp className="w-3 h-3 mr-1" />
+                      Largest Win
+                    </span>
+                    <span className="text-sm font-medium text-trading-success">
+                      ${metrics.largestWin.toFixed(2)}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-muted-foreground flex items-center">
+                      <TrendingDown className="w-3 h-3 mr-1" />
+                      Largest Loss
+                    </span>
+                    <span className="text-sm font-medium text-trading-danger">
+                      ${Math.abs(metrics.largestLoss).toFixed(2)}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-muted-foreground flex items-center">
+                      <Zap className="w-3 h-3 mr-1" />
+                      Current Streak
+                    </span>
+                    <span className={`text-sm font-medium ${
+                      metrics.consecutiveWins > 0 ? 'text-trading-success' : 
+                      metrics.consecutiveLosses > 0 ? 'text-trading-danger' : 'text-muted-foreground'
+                    }`}>
+                      {metrics.consecutiveWins > 0 ? `${metrics.consecutiveWins}W` : 
+                       metrics.consecutiveLosses > 0 ? `${metrics.consecutiveLosses}L` : 'None'}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-muted-foreground flex items-center">
+                      <Award className="w-3 h-3 mr-1" />
+                      Period Return
+                    </span>
+                    <span className={`text-sm font-medium ${metrics.periodReturn >= 0 ? 'text-trading-success' : 'text-trading-danger'}`}>
+                      {metrics.periodReturn >= 0 ? '+' : ''}${metrics.periodReturn.toFixed(2)}
+                    </span>
+                  </div>
+                  
                   <div className="flex items-center justify-between">
                     <span className="text-xs text-muted-foreground flex items-center">
                       <BarChart3 className="w-3 h-3 mr-1" />
@@ -379,7 +523,7 @@ const Dashboard = () => {
                       <Target className="w-3 h-3 mr-1" />
                       Win Rate
                     </span>
-                    <span className="text-sm font-medium text-muted-foreground">
+                    <span className={`text-sm font-medium ${metrics.winRate >= 60 ? 'text-trading-success' : metrics.winRate >= 40 ? 'text-yellow-500' : 'text-trading-danger'}`}>
                       {metrics.winRate.toFixed(1)}%
                     </span>
                   </div>
@@ -401,6 +545,16 @@ const Dashboard = () => {
                     </span>
                     <span className={`text-sm font-medium ${metrics.recoveryFactor >= 2.0 ? 'text-trading-success' : metrics.recoveryFactor >= 1.0 ? 'text-yellow-500' : 'text-trading-danger'}`}>
                       {metrics.recoveryFactor.toFixed(2)}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-muted-foreground flex items-center">
+                      <Activity className="w-3 h-3 mr-1" />
+                      Current Drawdown
+                    </span>
+                    <span className={`text-sm font-medium ${metrics.currentDrawdownPercent <= 5 ? 'text-trading-success' : metrics.currentDrawdownPercent <= 15 ? 'text-yellow-500' : 'text-trading-danger'}`}>
+                      -{metrics.currentDrawdownPercent.toFixed(1)}%
                     </span>
                   </div>
                 </div>
@@ -449,6 +603,13 @@ const Dashboard = () => {
         <WithdrawModal 
           open={showWithdrawModal} 
           onOpenChange={setShowWithdrawModal}
+        />
+
+        {/* Transaction History Popup */}
+        <TransactionHistoryPopup
+          transaction={selectedTransaction}
+          isOpen={showTransactionPopup}
+          onClose={handleCloseTransactionPopup}
         />
       </div>
   );
