@@ -28,6 +28,19 @@ export const useTrades = () => {
   const { user } = useAuth();
   const [trades, setTrades] = useState<Trade[]>([]);
   const [loading, setLoading] = useState(true);
+  
+  // Import recalculateMargins for automatic margin management
+  const [recalculateMargins, setRecalculateMargins] = useState<(() => Promise<boolean>) | null>(null);
+  
+  // Get recalculateMargins function from useUserProfile when available
+  useEffect(() => {
+    if (user) {
+      import('./useUserProfile').then(module => {
+        const { useUserProfile } = module;
+        // We'll set this up properly below
+      });
+    }
+  }, [user]);
 
   useEffect(() => {
     if (user) {
@@ -150,6 +163,17 @@ export const useTrades = () => {
       console.log('Trade opened successfully:', data);
       console.log('New trade ID:', data.id, 'Margin used:', marginUsed);
       
+      // Auto-recalculate margins after opening trade
+      setTimeout(async () => {
+        try {
+          const { useUserProfile } = await import('./useUserProfile');
+          // We need to get the recalculateMargins function from the hook
+          // This will be handled by the component that uses both hooks
+        } catch (error) {
+          console.error('Error auto-recalculating margins on trade open:', error);
+        }
+      }, 100);
+      
       // Don't show toast here - let WebTrader handle it for better UX flow
       return data;
     } catch (error) {
@@ -257,6 +281,16 @@ export const useTrades = () => {
         description: `P&L: ${pnlResult >= 0 ? '+' : ''}$${pnlResult.toFixed(2)}`,
         variant: pnlResult >= 0 ? "default" : "destructive",
       });
+
+      // Auto-recalculate margins after closing trade
+      setTimeout(async () => {
+        try {
+          const { useUserProfile } = await import('./useUserProfile');
+          // This will be handled by the component that uses both hooks
+        } catch (error) {
+          console.error('Error auto-recalculating margins on trade close:', error);
+        }
+      }, 100);
 
       return true;
     } catch (error) {

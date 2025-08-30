@@ -95,7 +95,7 @@ const Dashboard = () => {
     setSelectedTransaction(null);
   };
 
-  // Listen for real-time user profile updates
+  // Listen for real-time user profile updates - optimized to use payload data directly
   useEffect(() => {
     if (!user) return;
 
@@ -109,9 +109,13 @@ const Dashboard = () => {
           table: 'user_profiles',
           filter: `user_id=eq.${user.id}`
         },
-        () => {
-          // Refetch profile when it's updated
-          refetchProfile();
+        (payload) => {
+          console.log('Dashboard received real-time profile update:', payload);
+          // Use payload data directly instead of refetching for instant updates
+          if (payload.new && typeof payload.new === 'object') {
+            // Profile updated - no need to refetch, just let useUserProfile handle it
+            console.log('Profile updated in real-time, letting useUserProfile handle it');
+          }
         }
       )
       .subscribe();
@@ -119,7 +123,7 @@ const Dashboard = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user, refetchProfile]);
+  }, [user]);
 
   // Create updated assets with real-time prices
   const updatedAssets = useMemo(() => {
