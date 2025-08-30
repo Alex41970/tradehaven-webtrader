@@ -110,12 +110,6 @@ export const EnhancedTradingPanel: React.FC<EnhancedTradingPanelProps> = ({
 
   return (
     <Card className="bg-card/50 backdrop-blur-sm border-trading-secondary/20">
-      <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-lg">
-          <Target className="h-5 w-5 text-trading-accent" />
-          Advanced Trading
-        </CardTitle>
-      </CardHeader>
       <CardContent className="space-y-4">
         {/* Order Type Selection */}
         <div className="space-y-2">
@@ -166,11 +160,8 @@ export const EnhancedTradingPanel: React.FC<EnhancedTradingPanelProps> = ({
 
         {/* Leverage */}
         <div className="space-y-2">
-          <Label htmlFor="leverage" className="flex items-center justify-between">
+          <Label htmlFor="leverage">
             <span>Leverage: {leverage}x</span>
-            <Badge variant={leverage > 20 ? "destructive" : leverage > 10 ? "secondary" : "default"}>
-              {leverage > 20 ? "High Risk" : leverage > 10 ? "Medium Risk" : "Low Risk"}
-            </Badge>
           </Label>
           <Select value={leverage.toString()} onValueChange={(value) => onLeverageChange(parseInt(value))}>
             <SelectTrigger className="bg-trading-secondary/20 border-trading-secondary/30">
@@ -179,12 +170,7 @@ export const EnhancedTradingPanel: React.FC<EnhancedTradingPanelProps> = ({
             <SelectContent>
               {[1, 2, 5, 10, 20, 50, Math.min(100, selectedAsset.max_leverage)].map((lev) => (
                 <SelectItem key={lev} value={lev.toString()}>
-                  <div className="flex items-center justify-between w-full">
-                    <span>{lev}x</span>
-                    <span className="text-xs text-muted-foreground ml-2">
-                      {lev === 1 ? "No Risk" : lev <= 5 ? "Low" : lev <= 20 ? "Medium" : "High"}
-                    </span>
-                  </div>
+                  {lev}x
                 </SelectItem>
               ))}
             </SelectContent>
@@ -361,20 +347,6 @@ export const EnhancedTradingPanel: React.FC<EnhancedTradingPanelProps> = ({
           </Collapsible>
         )}
 
-        {/* Position Summary */}
-        <div className="p-3 bg-trading-secondary/10 rounded-lg space-y-2">
-          <div className="flex items-center gap-2 mb-2">
-            <Calculator className="h-4 w-4 text-trading-accent" />
-            <span className="text-sm font-medium">Position Summary</span>
-          </div>
-          <div className="grid grid-cols-2 gap-2 text-xs">
-            <div>Position Size: <span className="font-medium">${calculations.positionSize.toFixed(2)}</span></div>
-            <div>Margin Required: <span className="font-medium">${calculations.marginRequired.toFixed(2)}</span></div>
-            <div>Available After: <span className="font-medium">${calculations.availableAfterTrade.toFixed(2)}</span></div>
-            <div>Max Leverage: <span className="font-medium">{selectedAsset.max_leverage}x</span></div>
-          </div>
-        </div>
-
         {/* Trading Buttons */}
         <div className="grid grid-cols-2 gap-3 pt-2">
           <Button
@@ -391,6 +363,20 @@ export const EnhancedTradingPanel: React.FC<EnhancedTradingPanelProps> = ({
           >
             {orderType === 'market' ? 'SELL' : `SELL ${orderType.toUpperCase()}`}
           </Button>
+        </div>
+
+        {/* Position Summary */}
+        <div className="p-3 bg-trading-secondary/10 rounded-lg space-y-2">
+          <div className="flex items-center gap-2 mb-2">
+            <Calculator className="h-4 w-4 text-trading-accent" />
+            <span className="text-sm font-medium">Position Summary</span>
+          </div>
+          <div className="grid grid-cols-2 gap-2 text-xs">
+            <div>Position Size: <span className="font-medium">${calculations.positionSize.toFixed(2)}</span></div>
+            <div>Margin Required: <span className="font-medium">${calculations.marginRequired.toFixed(2)}</span></div>
+            <div>Available After: <span className="font-medium">${calculations.availableAfterTrade.toFixed(2)}</span></div>
+            <div>Max Leverage: <span className="font-medium">{selectedAsset.max_leverage}x</span></div>
+          </div>
         </div>
 
         {calculations.availableAfterTrade < 0 && (
