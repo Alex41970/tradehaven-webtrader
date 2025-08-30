@@ -331,24 +331,24 @@ export const WebTrader = () => {
         </div>
 
         {selectedAsset && (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-160px)]">
-            {/* Left Column - Market Watch */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Left Column - Market Watch - Fixed Height */}
             <div className="lg:col-span-1">
-              <Card className="bg-card/80 backdrop-blur border-border/50 h-full flex flex-col">
-                <CardHeader className="pb-3">
+              <Card className="bg-card/80 backdrop-blur border-border/50 h-[600px] flex flex-col">
+                <CardHeader className="pb-2 px-4 pt-4">
                   <CardTitle className="text-lg">Market Watch</CardTitle>
-                  <CardDescription>Live market data and watchlist</CardDescription>
+                  <CardDescription className="text-sm">Live market data</CardDescription>
                 </CardHeader>
-                <CardContent className="flex-1 flex flex-col space-y-4">
+                <CardContent className="flex-1 flex flex-col space-y-3 px-4 pb-4">
                   <div className="space-y-2">
                     <Input
                       placeholder="Search assets..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
-                      className="bg-muted/20"
+                      className="bg-muted/20 h-9"
                     />
                     <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                      <SelectTrigger className="bg-muted/20">
+                      <SelectTrigger className="bg-muted/20 h-9">
                         <SelectValue placeholder="Filter by category" />
                       </SelectTrigger>
                       <SelectContent>
@@ -363,66 +363,72 @@ export const WebTrader = () => {
                   </div>
 
                   <Tabs defaultValue="all" className="flex-1 flex flex-col">
-                    <TabsList className="grid w-full grid-cols-3">
-                      <TabsTrigger value="all">All</TabsTrigger>
-                      <TabsTrigger value="favorites">Favorites</TabsTrigger>
-                      <TabsTrigger value="trades">Open Trades</TabsTrigger>
+                    <TabsList className="grid w-full grid-cols-3 h-9">
+                      <TabsTrigger value="all" className="text-xs">All</TabsTrigger>
+                      <TabsTrigger value="favorites" className="text-xs">Favorites</TabsTrigger>
+                      <TabsTrigger value="trades" className="text-xs">Trades</TabsTrigger>
                     </TabsList>
                     
-                    <TabsContent value="all" className="flex-1 overflow-y-auto space-y-2 mt-3">
-                      {filteredAssets.map((asset) => (
-                        <AssetRow key={asset.id} asset={asset} />
-                      ))}
-                    </TabsContent>
-                    
-                    <TabsContent value="favorites" className="flex-1 overflow-y-auto space-y-2 mt-3">
-                      {favoriteAssets.length > 0 ? (
-                        favoriteAssets.map((asset) => (
+                    <TabsContent value="all" className="flex-1 mt-2">
+                      <div className="max-h-[400px] overflow-y-auto space-y-2 pr-2">
+                        {filteredAssets.map((asset) => (
                           <AssetRow key={asset.id} asset={asset} />
-                        ))
-                      ) : (
-                        <div className="text-center py-8 text-muted-foreground">
-                          <Star className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                          <p>No favorite assets</p>
-                        </div>
-                      )}
+                        ))}
+                      </div>
                     </TabsContent>
                     
-                    <TabsContent value="trades" className="flex-1 overflow-y-auto space-y-2 mt-3">
-                      {openTrades.length > 0 ? (
-                        openTrades.map((trade) => {
-                          const asset = realtimeAssets.find(a => a.id === trade.asset_id);
-                          return (
-                            <TradeRow
-                              key={trade.id}
-                              trade={trade}
-                              asset={asset}
-                              onCloseTrade={(tradeId) => handleCloseTrade(tradeId, asset?.price || 0)}
-                              isClosing={isExecuting}
-                            />
-                          );
-                        })
-                      ) : (
-                        <div className="text-center py-8 text-muted-foreground">
-                          <TrendingUp className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                          <p>No open trades</p>
-                        </div>
-                      )}
+                    <TabsContent value="favorites" className="flex-1 mt-2">
+                      <div className="max-h-[400px] overflow-y-auto space-y-2 pr-2">
+                        {favoriteAssets.length > 0 ? (
+                          favoriteAssets.map((asset) => (
+                            <AssetRow key={asset.id} asset={asset} />
+                          ))
+                        ) : (
+                          <div className="text-center py-8 text-muted-foreground">
+                            <Star className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                            <p className="text-sm">No favorite assets</p>
+                          </div>
+                        )}
+                      </div>
+                    </TabsContent>
+                    
+                    <TabsContent value="trades" className="flex-1 mt-2">
+                      <div className="max-h-[400px] overflow-y-auto space-y-2 pr-2">
+                        {openTrades.length > 0 ? (
+                          openTrades.map((trade) => {
+                            const asset = realtimeAssets.find(a => a.id === trade.asset_id);
+                            return (
+                              <TradeRow
+                                key={trade.id}
+                                trade={trade}
+                                asset={asset}
+                                onCloseTrade={(tradeId) => handleCloseTrade(tradeId, asset?.price || 0)}
+                                isClosing={isExecuting}
+                              />
+                            );
+                          })
+                        ) : (
+                          <div className="text-center py-8 text-muted-foreground">
+                            <TrendingUp className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                            <p className="text-sm">No open trades</p>
+                          </div>
+                        )}
+                      </div>
                     </TabsContent>
                   </Tabs>
                 </CardContent>
               </Card>
             </div>
 
-            {/* Right Column - Chart, Trading Panel, Orders */}
-            <div className="lg:col-span-2 flex flex-col space-y-6">
-              {/* Chart - 60% of right column */}
-              <div className="h-[60%]">
+            {/* Right Column - Chart and Trading - Fixed Heights */}
+            <div className="lg:col-span-2 space-y-4">
+              {/* Chart Section - 400px Fixed Height */}
+              <div className="h-[400px]">
                 <TradingChart symbol={selectedAsset?.symbol || ''} />
               </div>
 
-              {/* Trading Panel and Order Management - 40% of right column */}
-              <div className="h-[40%] grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Trading Panel and Order Management - 200px Fixed Height */}
+              <div className="h-[200px] grid grid-cols-1 lg:grid-cols-2 gap-4">
                 {/* Advanced Trading Panel */}
                 <Card className="bg-card/80 backdrop-blur border-border/50 flex flex-col">
                   <CardHeader className="pb-3">
