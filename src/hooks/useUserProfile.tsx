@@ -189,48 +189,44 @@ export const useUserProfile = () => {
     }
 
     try {
-      console.log('Recalculating margins for user:', user.id);
-      const { data, error } = await supabase.rpc('recalculate_user_margins', {
-        _user_id: user.id
+      console.log('Fixing margins for user:', user.id);
+      
+      const response = await fetch(`https://stdfkfutgkmnaajixguz.supabase.co/functions/v1/fix-user-margins`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN0ZGZrZnV0Z2ttbmFhaml4Z3V6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYzMTI3NjUsImV4cCI6MjA3MTg4ODc2NX0.kf5keye0-ezD9cjcvTWxMsBbpVELf_cWIwL2OeW0Yg4`,
+        },
+        body: JSON.stringify({ user_id: user.id })
       });
 
-      if (error) {
-        console.error('Error recalculating margins:', error);
-        toast({
-          title: "Error",
-          description: "Failed to recalculate margins",
-          variant: "destructive",
-        });
-        return false;
-      }
+      const result = await response.json();
 
-      const result = data as { success: boolean; error?: string; balance?: number; used_margin?: number; available_margin?: number; equity?: number };
-
-      if (result?.success) {
-        console.log('Margins recalculated successfully:', result);
+      if (result.success) {
+        console.log('Margins fixed successfully:', result);
         
-        // Force refresh the profile after successful recalculation
+        // Force refresh the profile after successful fix
         await forceRefresh();
         
         toast({
           title: "Success",
-          description: "Margins recalculated successfully",
+          description: "Margins fixed successfully",
         });
         return true;
       } else {
-        console.error('Failed to recalculate margins:', result?.error);
+        console.error('Failed to fix margins:', result.error);
         toast({
           title: "Error", 
-          description: result?.error || "Failed to recalculate margins",
+          description: result.error || "Failed to fix margins",
           variant: "destructive",
         });
         return false;
       }
     } catch (error) {
-      console.error('Unexpected error during margin recalculation:', error);
+      console.error('Unexpected error during margin fix:', error);
       toast({
         title: "Error",
-        description: "Unexpected error occurred",
+        description: "Failed to connect to margin fix service",
         variant: "destructive",
       });
       return false;
