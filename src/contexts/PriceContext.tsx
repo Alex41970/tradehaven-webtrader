@@ -51,12 +51,6 @@ export const PriceProvider = ({ children }: PriceProviderProps) => {
         setIsConnected(true);
         setConnectionStatus('connected');
         reconnectAttempts.current = 0;
-        
-        toast({
-          title: "Connected",
-          description: "Real-time price updates are now active",
-          duration: 2000,
-        });
       };
 
       wsRef.current.onmessage = (event) => {

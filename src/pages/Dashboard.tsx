@@ -172,7 +172,6 @@ const Dashboard = () => {
                 </Button>
               ) : null}
               <ConnectionStatus />
-              <TradingStatusIndicator />
               <span className="text-sm text-muted-foreground">Welcome, {user?.email}</span>
               <Button variant="outline" size="sm" onClick={handleSignOut} disabled={signingOut}>
                 <LogOut className="h-4 w-4 mr-2" />

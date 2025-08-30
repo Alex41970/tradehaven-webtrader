@@ -65,12 +65,6 @@ export const useRealTimeTrading = () => {
       if (message.trades) {
         setTrades(message.trades);
       }
-      
-      toast({
-        title: "Connected",
-        description: "Real-time trading updates active",
-        duration: 2000,
-      });
     };
 
     const handleMarginUpdate = (message: TradingWebSocketMessage) => {
