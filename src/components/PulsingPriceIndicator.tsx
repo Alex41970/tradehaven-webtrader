@@ -63,8 +63,7 @@ export const PulsingPriceIndicator = ({ price, change, symbol, className }: Puls
           : "bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-400",
         isPulsing ? "ring-2 ring-primary/30" : ""
       )}>
-        <span>{isPositive ? '+' : ''}{safeChange.toFixed(symbol.includes('JPY') ? 2 : 4)}</span>
-        <span>({isPositive ? '+' : ''}{changePercent}%)</span>
+        <span>{isPositive ? '+' : ''}{changePercent}%</span>
       </div>
     </div>
   );
