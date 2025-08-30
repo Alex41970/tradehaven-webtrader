@@ -332,138 +332,126 @@ export const WebTrader = () => {
 
         {selectedAsset && (
           <div className="space-y-6">
-            {/* Top Row: Market Watch + Chart */}
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-              {/* Market Watch - Left Column (1/4 width) */}
-              <Card className="bg-card/80 backdrop-blur border-border/50">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-lg">Market Watch</CardTitle>
-                  <CardDescription>Live market data and watchlist</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Input
-                      placeholder="Search assets..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="bg-muted/20"
-                    />
-                    <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                      <SelectTrigger className="bg-muted/20">
-                        <SelectValue placeholder="Filter by category" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Categories</SelectItem>
-                        <SelectItem value="forex">Forex</SelectItem>
-                        <SelectItem value="crypto">Cryptocurrency</SelectItem>
-                        <SelectItem value="stocks">Stocks</SelectItem>
-                        <SelectItem value="commodities">Commodities</SelectItem>
-                        <SelectItem value="indices">Indices</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+            {/* Market Watch */}
+            <Card className="bg-card/80 backdrop-blur border-border/50">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg">Market Watch</CardTitle>
+                <CardDescription>Live market data and watchlist</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Input
+                    placeholder="Search assets..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="bg-muted/20"
+                  />
+                  <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                    <SelectTrigger className="bg-muted/20">
+                      <SelectValue placeholder="Filter by category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Categories</SelectItem>
+                      <SelectItem value="forex">Forex</SelectItem>
+                      <SelectItem value="crypto">Cryptocurrency</SelectItem>
+                      <SelectItem value="stocks">Stocks</SelectItem>
+                      <SelectItem value="commodities">Commodities</SelectItem>
+                      <SelectItem value="indices">Indices</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
 
-                  <Tabs defaultValue="all" className="space-y-3">
-                    <TabsList className="grid w-full grid-cols-3">
-                      <TabsTrigger value="all">All</TabsTrigger>
-                      <TabsTrigger value="favorites">Favorites</TabsTrigger>
-                      <TabsTrigger value="trades">Open Trades</TabsTrigger>
-                    </TabsList>
-                    
-                    <TabsContent value="all" className="max-h-96 overflow-y-auto space-y-2">
-                      {filteredAssets.map((asset) => (
+                <Tabs defaultValue="all" className="space-y-3">
+                  <TabsList className="grid w-full grid-cols-3">
+                    <TabsTrigger value="all">All</TabsTrigger>
+                    <TabsTrigger value="favorites">Favorites</TabsTrigger>
+                    <TabsTrigger value="trades">Open Trades</TabsTrigger>
+                  </TabsList>
+                  
+                  <TabsContent value="all" className="max-h-96 overflow-y-auto space-y-2">
+                    {filteredAssets.map((asset) => (
+                      <AssetRow key={asset.id} asset={asset} />
+                    ))}
+                  </TabsContent>
+                  
+                  <TabsContent value="favorites" className="max-h-96 overflow-y-auto space-y-2">
+                    {favoriteAssets.length > 0 ? (
+                      favoriteAssets.map((asset) => (
                         <AssetRow key={asset.id} asset={asset} />
-                      ))}
-                    </TabsContent>
-                    
-                    <TabsContent value="favorites" className="max-h-96 overflow-y-auto space-y-2">
-                      {favoriteAssets.length > 0 ? (
-                        favoriteAssets.map((asset) => (
-                          <AssetRow key={asset.id} asset={asset} />
-                        ))
-                      ) : (
-                        <div className="text-center py-8 text-muted-foreground">
-                          <Star className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                          <p>No favorite assets</p>
-                        </div>
-                      )}
-                    </TabsContent>
-                    
-                    <TabsContent value="trades" className="max-h-96 overflow-y-auto space-y-2">
-                      {openTrades.length > 0 ? (
-                        openTrades.map((trade) => {
-                          const asset = realtimeAssets.find(a => a.id === trade.asset_id);
-                          return (
-                            <TradeRow
-                              key={trade.id}
-                              trade={trade}
-                              asset={asset}
-                              onCloseTrade={(tradeId) => handleCloseTrade(tradeId, asset?.price || 0)}
-                              isClosing={isExecuting}
-                            />
-                          );
-                        })
-                      ) : (
-                        <div className="text-center py-8 text-muted-foreground">
-                          <TrendingUp className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                          <p>No open trades</p>
-                        </div>
-                      )}
-                    </TabsContent>
-                  </Tabs>
-                </CardContent>
-              </Card>
+                      ))
+                    ) : (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <Star className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                        <p>No favorite assets</p>
+                      </div>
+                    )}
+                  </TabsContent>
+                  
+                  <TabsContent value="trades" className="max-h-96 overflow-y-auto space-y-2">
+                    {openTrades.length > 0 ? (
+                      openTrades.map((trade) => {
+                        const asset = realtimeAssets.find(a => a.id === trade.asset_id);
+                        return (
+                          <TradeRow
+                            key={trade.id}
+                            trade={trade}
+                            asset={asset}
+                            onCloseTrade={(tradeId) => handleCloseTrade(tradeId, asset?.price || 0)}
+                            isClosing={isExecuting}
+                          />
+                        );
+                      })
+                    ) : (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <TrendingUp className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                        <p>No open trades</p>
+                      </div>
+                    )}
+                  </TabsContent>
+                </Tabs>
+              </CardContent>
+            </Card>
 
-              {/* Chart - Right Column (3/4 width) */}
-              <div className="lg:col-span-3">
-                <TradingChart symbol={selectedAsset?.symbol || ''} />
-              </div>
-            </div>
+            {/* Chart */}
+            <TradingChart symbol={selectedAsset?.symbol || ''} />
 
-            {/* Bottom Row: Trading Panel + Order Management */}
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-              {/* Trading Panel */}
-              <div className="lg:col-span-3">
-                <Card className="bg-card/80 backdrop-blur border-border/50">
-                  <CardHeader className="pb-3">
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="text-lg">
-                        {selectedAsset ? selectedAsset.symbol : 'Select Asset'}
-                      </CardTitle>
-                        {profile && (
-                          <Badge variant="outline" className="text-xs">
-                            Balance: ${profile.balance.toFixed(2)}
-                          </Badge>
-                        )}
-                    </div>
-                    <CardDescription className="flex items-center gap-2">
-                      <div className={`h-2 w-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                      <span className="text-xs">
-                        {isConnected ? 'Live Updates' : 'Disconnected'}
-                        {lastUpdate && ` • ${lastUpdate.toLocaleTimeString()}`}
-                      </span>
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <EnhancedTradingPanel
-                      selectedAsset={selectedAsset}
-                      amount={amount}
-                      leverage={leverage}
-                      onAmountChange={setAmount}
-                      onLeverageChange={setLeverage}
-                      onTrade={handleEnhancedTrade}
-                      userProfile={profile}
-                      isExecuting={isExecuting}
-                    />
-                  </CardContent>
-                </Card>
-              </div>
+            {/* Advanced Trading Panel */}
+            <Card className="bg-card/80 backdrop-blur border-border/50">
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-lg">
+                    {selectedAsset ? selectedAsset.symbol : 'Select Asset'}
+                  </CardTitle>
+                    {profile && (
+                      <Badge variant="outline" className="text-xs">
+                        Balance: ${profile.balance.toFixed(2)}
+                      </Badge>
+                    )}
+                </div>
+                <CardDescription className="flex items-center gap-2">
+                  <div className={`h-2 w-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                  <span className="text-xs">
+                    {isConnected ? 'Live Updates' : 'Disconnected'}
+                    {lastUpdate && ` • ${lastUpdate.toLocaleTimeString()}`}
+                  </span>
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <EnhancedTradingPanel
+                  selectedAsset={selectedAsset}
+                  amount={amount}
+                  leverage={leverage}
+                  onAmountChange={setAmount}
+                  onLeverageChange={setLeverage}
+                  onTrade={handleEnhancedTrade}
+                  userProfile={profile}
+                  isExecuting={isExecuting}
+                />
+              </CardContent>
+            </Card>
 
-              {/* Order Management */}
-              <div className="lg:col-span-1">
-                <OrderManagement />
-              </div>
-            </div>
+            {/* Order Management */}
+            <OrderManagement />
           </div>
         )}
       </div>
