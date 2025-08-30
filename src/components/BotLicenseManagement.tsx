@@ -37,23 +37,46 @@ export const BotLicenseManagement: React.FC = () => {
     try {
       setLoading(true);
       
-      // First get licenses
+      // Ensure user is authenticated before fetching
+      if (!user?.id) {
+        console.error('No authenticated user found');
+        toast({
+          title: "Error",
+          description: "Authentication required",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      console.log('Fetching bot licenses for admin:', user.id);
+      
+      // Get licenses created by this admin only
       const { data: licenseData, error: licenseError } = await supabase
         .from('bot_licenses')
         .select('*')
+        .eq('admin_id', user.id)
         .order('created_at', { ascending: false });
 
-      if (licenseError) throw licenseError;
+      if (licenseError) {
+        console.error('Error fetching licenses:', licenseError);
+        throw licenseError;
+      }
+
+      console.log('Found licenses for admin:', licenseData?.length || 0);
 
       // Then get user emails for licenses that are in use
       const licensesWithEmails = await Promise.all(
         (licenseData || []).map(async (license) => {
           if (license.used_by_user_id) {
-            const { data: userProfile } = await supabase
+            const { data: userProfile, error: profileError } = await supabase
               .from('user_profiles')
               .select('email')
               .eq('user_id', license.used_by_user_id)
               .single();
+            
+            if (profileError) {
+              console.warn('Could not fetch user profile for license:', license.id, profileError);
+            }
             
             return {
               ...license,
@@ -69,7 +92,7 @@ export const BotLicenseManagement: React.FC = () => {
       console.error('Error fetching licenses:', error);
       toast({
         title: "Error",
-        description: "Failed to load licenses",
+        description: "Failed to load licenses. You may not have permission to view this data.",
         variant: "destructive",
       });
     } finally {
