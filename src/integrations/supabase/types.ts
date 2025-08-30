@@ -243,6 +243,78 @@ export type Database = {
         }
         Relationships: []
       }
+      trade_orders: {
+        Row: {
+          amount: number
+          asset_id: string
+          created_at: string
+          expires_at: string | null
+          filled_at: string | null
+          id: string
+          leverage: number
+          order_type: string
+          status: string
+          stop_loss_price: number | null
+          symbol: string
+          take_profit_price: number | null
+          trade_type: string
+          trigger_price: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          asset_id: string
+          created_at?: string
+          expires_at?: string | null
+          filled_at?: string | null
+          id?: string
+          leverage?: number
+          order_type?: string
+          status?: string
+          stop_loss_price?: number | null
+          symbol: string
+          take_profit_price?: number | null
+          trade_type: string
+          trigger_price?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          asset_id?: string
+          created_at?: string
+          expires_at?: string | null
+          filled_at?: string | null
+          id?: string
+          leverage?: number
+          order_type?: string
+          status?: string
+          stop_loss_price?: number | null
+          symbol?: string
+          take_profit_price?: number | null
+          trade_type?: string
+          trigger_price?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_trade_orders_assets"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_trade_orders_user_profiles"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       trades: {
         Row: {
           amount: number
@@ -256,9 +328,12 @@ export type Database = {
           margin_used: number
           open_price: number
           opened_at: string
+          parent_order_id: string | null
           pnl: number | null
           status: string
+          stop_loss_price: number | null
           symbol: string
+          take_profit_price: number | null
           trade_source: string
           trade_type: string
           updated_at: string
@@ -276,9 +351,12 @@ export type Database = {
           margin_used: number
           open_price: number
           opened_at?: string
+          parent_order_id?: string | null
           pnl?: number | null
           status?: string
+          stop_loss_price?: number | null
           symbol: string
+          take_profit_price?: number | null
           trade_source?: string
           trade_type: string
           updated_at?: string
@@ -296,15 +374,25 @@ export type Database = {
           margin_used?: number
           open_price?: number
           opened_at?: string
+          parent_order_id?: string | null
           pnl?: number | null
           status?: string
+          stop_loss_price?: number | null
           symbol?: string
+          take_profit_price?: number | null
           trade_source?: string
           trade_type?: string
           updated_at?: string
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "fk_trades_parent_order"
+            columns: ["parent_order_id"]
+            isOneToOne: false
+            referencedRelation: "trade_orders"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "fk_trades_user_profiles"
             columns: ["user_id"]
