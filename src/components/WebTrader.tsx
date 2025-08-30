@@ -18,7 +18,7 @@ import { useFavorites } from "@/hooks/useFavorites";
 import { useRealTimePrices } from "@/hooks/useRealTimePrices";
 import { useTradeOrders } from "@/hooks/useTradeOrders";
 import { toast } from "@/hooks/use-toast";
-import { SimplePriceIndicator } from "./SimplePriceIndicator";
+import { PulsingPriceIndicator } from "./PulsingPriceIndicator";
 
 export const WebTrader = () => {
   const { assets, loading: assetsLoading } = useAssets();
@@ -291,8 +291,9 @@ export const WebTrader = () => {
             <div className="text-xs text-muted-foreground truncate">{asset.name}</div>
           </div>
           <div className="text-right">
-            <SimplePriceIndicator 
+            <PulsingPriceIndicator 
               price={asset.price} 
+              change={asset.change_24h}
               symbol={asset.symbol} 
             />
           </div>
