@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Key, Plus, Copy, Calendar, User, CheckCircle, XCircle, Clock } from "lucide-react";
+import { Key, Plus, Copy, Calendar, User, CheckCircle, XCircle, Clock, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -160,6 +161,41 @@ export const BotLicenseManagement: React.FC = () => {
       title: "Copied",
       description: "License key copied to clipboard",
     });
+  };
+
+  const deleteLicense = async (license: License) => {
+    try {
+      // Prevent deletion of licenses in use
+      if (license.used_by_user_id) {
+        toast({
+          title: "Cannot Delete License",
+          description: "This license is currently in use and cannot be deleted",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const { error } = await supabase
+        .from('bot_licenses')
+        .delete()
+        .eq('id', license.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "License Deleted",
+        description: "License has been permanently deleted",
+      });
+
+      await fetchLicenses();
+    } catch (error) {
+      console.error('Error deleting license:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete license",
+        variant: "destructive",
+      });
+    }
   };
 
   const formatDate = (dateString: string) => {
@@ -321,15 +357,51 @@ export const BotLicenseManagement: React.FC = () => {
                     )}
                   </TableCell>
                   <TableCell className="text-sm">{formatDate(license.created_at)}</TableCell>
-                  <TableCell>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => toggleLicense(license.id, license.is_active)}
-                    >
-                      {license.is_active ? 'Deactivate' : 'Activate'}
-                    </Button>
-                  </TableCell>
+                   <TableCell>
+                     <div className="flex items-center gap-2">
+                       <Button
+                         variant="outline"
+                         size="sm"
+                         onClick={() => toggleLicense(license.id, license.is_active)}
+                       >
+                         {license.is_active ? 'Deactivate' : 'Activate'}
+                       </Button>
+                       
+                       <AlertDialog>
+                         <AlertDialogTrigger asChild>
+                           <Button
+                             variant="outline"
+                             size="sm"
+                             className="text-destructive hover:bg-destructive/10"
+                             disabled={license.used_by_user_id !== null}
+                           >
+                             <Trash2 className="h-3 w-3" />
+                           </Button>
+                         </AlertDialogTrigger>
+                         <AlertDialogContent>
+                           <AlertDialogHeader>
+                             <AlertDialogTitle>Delete License</AlertDialogTitle>
+                             <AlertDialogDescription>
+                               Are you sure you want to delete this license key?
+                               <br />
+                               <strong>License: {license.license_key.substring(0, 20)}...</strong>
+                               <br />
+                               This action cannot be undone.
+                             </AlertDialogDescription>
+                           </AlertDialogHeader>
+                           <AlertDialogFooter>
+                             <AlertDialogCancel>Cancel</AlertDialogCancel>
+                             <AlertDialogAction
+                               onClick={() => deleteLicense(license)}
+                               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                             >
+                               Delete License
+                             </AlertDialogAction>
+                           </AlertDialogFooter>
+                         </AlertDialogContent>
+                       </AlertDialog>
+                     </div>
+                   </TableCell>
                 </TableRow>
               ))}
             </TableBody>
