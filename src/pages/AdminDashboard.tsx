@@ -66,7 +66,6 @@ const AdminDashboard = () => {
   const [signingOut, setSigningOut] = useState(false);
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [trades, setTrades] = useState<UserTrade[]>([]);
-  const [promoCodes, setPromoCodes] = useState<PromoCode[]>([]);
   const [depositRequests, setDepositRequests] = useState<any[]>([]);
   const [withdrawalRequests, setWithdrawalRequests] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -81,7 +80,6 @@ const AdminDashboard = () => {
   const [balanceOperation, setBalanceOperation] = useState<"add" | "deduct">("add");
   const [selectedTradeId, setSelectedTradeId] = useState("");
   const [newOpenPrice, setNewOpenPrice] = useState("");
-  const [newPromoCode, setNewPromoCode] = useState("");
   
   // Trade creation states
   const [showCreateTrade, setShowCreateTrade] = useState(false);
@@ -189,26 +187,11 @@ const AdminDashboard = () => {
         console.log('AdminDashboard: Found withdrawal requests:', withdrawalRequestsData.length);
       }
 
-      // Fetch promo codes
-      console.log('AdminDashboard: Fetching promo codes for admin:', user.id);
-      const { data: promoData, error: promoError } = await supabase
-        .from('promo_codes')
-        .select('*')
-        .eq('admin_id', user.id);
-
-      if (promoError) {
-        console.error('AdminDashboard: Error fetching promo codes:', promoError);
-        throw promoError;
-      }
-
-      console.log('AdminDashboard: Found promo codes:', promoData?.length || 0);
-
       // Update state with fetched data
       setUsers(usersData || []);
       setTrades(tradesData || []);
       setDepositRequests(depositRequestsData || []);
       setWithdrawalRequests(withdrawalRequestsData || []);
-      setPromoCodes(promoData || []);
       
       console.log('AdminDashboard: Successfully updated state with data');
     } catch (error) {
@@ -432,35 +415,6 @@ const AdminDashboard = () => {
     }
   };
 
-  const handleCreatePromoCode = async () => {
-    if (!user || !newPromoCode) return;
-
-    try {
-      const { error } = await supabase
-        .from('promo_codes')
-        .insert({
-          code: newPromoCode,
-          admin_id: user.id,
-          is_active: true
-        });
-
-      if (error) throw error;
-
-      toast({
-        title: "Success",
-        description: "Promo code created successfully"
-      });
-      fetchAdminData();
-      setNewPromoCode("");
-    } catch (error) {
-      console.error('Error creating promo code:', error);
-      toast({
-        title: "Error",
-        description: "Failed to create promo code",
-        variant: "destructive"
-      });
-    }
-  };
 
   const handleProcessRequest = async (requestId: string, action: 'approved' | 'rejected', type: 'deposit' | 'withdrawal', adminNotes?: string) => {
     if (!user) return;
@@ -646,7 +600,6 @@ const AdminDashboard = () => {
             <TabsTrigger value="users">Users</TabsTrigger>
             <TabsTrigger value="trade-management">Trade Management</TabsTrigger>
             <TabsTrigger value="deposits">Deposits & Withdrawals</TabsTrigger>
-            <TabsTrigger value="promos">Promo Codes</TabsTrigger>
             <TabsTrigger value="bot-licenses">Bot Licenses</TabsTrigger>
             <TabsTrigger value="payment-settings">User Payment Settings</TabsTrigger>
           </TabsList>
@@ -1007,55 +960,6 @@ const AdminDashboard = () => {
             )}
           </TabsContent>
 
-          <TabsContent value="promos" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Promo Codes</CardTitle>
-                <CardDescription>Manage promo codes for user registration</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex gap-2">
-                    <Input
-                      placeholder="Enter new promo code"
-                      value={newPromoCode}
-                      onChange={(e) => setNewPromoCode(e.target.value)}
-                    />
-                    <Button onClick={handleCreatePromoCode}>Create</Button>
-                  </div>
-                  
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Code</TableHead>
-                        <TableHead>Uses</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Created</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {promoCodes.map((promo) => (
-                        <TableRow key={promo.id}>
-                          <TableCell className="font-mono">{promo.code}</TableCell>
-                          <TableCell>
-                            {promo.current_uses} / {promo.max_uses || '∞'}
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant={promo.is_active ? 'default' : 'secondary'}>
-                              {promo.is_active ? 'Active' : 'Inactive'}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            {new Date(promo.created_at).toLocaleDateString()}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
 
           <TabsContent value="deposits" className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

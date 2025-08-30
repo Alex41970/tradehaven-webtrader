@@ -50,16 +50,40 @@ const Auth = () => {
 
       // If promo code is provided and user was created, assign to admin
       if (data.user && promoCode.trim()) {
-        const { error: promoError } = await supabase.rpc('assign_user_to_admin_via_promo', {
-          _user_id: data.user.id,
-          _promo_code: promoCode.trim()
-        });
+        // Add a small delay to ensure user profile is created
+        await new Promise(resolve => setTimeout(resolve, 1000));
         
-        if (promoError) {
-          console.error('Promo code assignment error:', promoError);
+        try {
+          const { data: result, error: promoError } = await supabase.rpc('assign_user_to_admin_via_promo', {
+            _user_id: data.user.id,
+            _promo_code: promoCode.trim()
+          });
+          
+          if (promoError) {
+            console.error('Promo code assignment error:', promoError);
+            toast({
+              title: "Warning", 
+              description: "Account created but promo code assignment failed. Please contact support.",
+              variant: "default"
+            });
+          } else if (result && typeof result === 'object' && 'success' in result) {
+            const assignmentResult = result as { success: boolean; error?: string; admin_id?: string };
+            if (assignmentResult.success) {
+              console.log('Successfully assigned user to admin:', assignmentResult.admin_id);
+            } else {
+              console.error('Promo code assignment failed:', assignmentResult.error);
+              toast({
+                title: "Warning",
+                description: assignmentResult.error || "Invalid promo code",
+                variant: "default"
+              });
+            }
+          }
+        } catch (promoAssignmentError) {
+          console.error('Error during promo code assignment:', promoAssignmentError);
           toast({
             title: "Warning",
-            description: "Account created but promo code was invalid",
+            description: "Account created but promo code assignment failed. Please contact support.",
             variant: "default"
           });
         }
