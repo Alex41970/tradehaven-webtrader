@@ -4,6 +4,7 @@ import { TradeRow } from "./TradeRow";
 import { EnhancedTradingPanel } from "./EnhancedTradingPanel";
 import { OrderManagement } from "./OrderManagement";
 import { TrendingUp } from "lucide-react";
+import { calculateRealTimePnL } from "@/utils/pnlCalculator";
 
 interface TradingTabsInterfaceProps {
   selectedAsset: any;
@@ -102,9 +103,17 @@ export const TradingTabsInterface: React.FC<TradingTabsInterfaceProps> = ({
                         )}
                       </div>
                       <div className="col-span-2">
-                        <div className={`text-sm font-medium ${trade.pnl >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                          {trade.pnl >= 0 ? '+' : ''}${trade.pnl.toFixed(2)}
-                        </div>
+                        {(() => {
+                          // Calculate real-time P&L if asset price is available
+                          const realTimePnL = asset ? calculateRealTimePnL(trade, asset.price) : trade.pnl;
+                          const displayPnL = realTimePnL ?? trade.pnl ?? 0;
+                          
+                          return (
+                            <div className={`text-sm font-medium ${displayPnL >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                              {displayPnL >= 0 ? '+' : ''}${displayPnL.toFixed(2)}
+                            </div>
+                          );
+                        })()}
                       </div>
                       <div className="col-span-2">
                         <button
