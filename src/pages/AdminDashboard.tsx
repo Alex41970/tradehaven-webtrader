@@ -17,7 +17,7 @@ import { UserPaymentSettings } from "@/components/UserPaymentSettings";
 import { useAssets } from "@/hooks/useAssets";
 import { useRealTimePrices } from "@/hooks/useRealTimePrices";
 import { calculateRealTimePnL } from "@/utils/pnlCalculator";
-import { Users, DollarSign, TrendingUp, Settings, LogOut, Bot, Loader2 } from "lucide-react";
+import { Users, DollarSign, TrendingUp, Settings, LogOut, Bot, Loader2, Search, Filter, Activity, BarChart3 } from "lucide-react";
 import { Navigate } from "react-router-dom";
 
 interface UserProfile {
@@ -90,6 +90,11 @@ const AdminDashboard = () => {
   const [tradeLeverage, setTradeLeverage] = useState(1);
   const [tradePrice, setTradePrice] = useState("");
   const [creatingTrade, setCreatingTrade] = useState(false);
+  
+  // All Trades filtering states
+  const [tradesFilter, setTradesFilter] = useState<"all" | "active" | "closed">("all");
+  const [tradesUserFilter, setTradesUserFilter] = useState<string>("all");
+  const [tradesSymbolFilter, setTradesSymbolFilter] = useState<string>("");
   
   // Hooks for assets and prices
   const { assets, loading: assetsLoading } = useAssets();
@@ -589,6 +594,54 @@ const AdminDashboard = () => {
     return trades.filter(trade => trade.user_id === selectedUser.user_id);
   }, [trades, selectedUser]);
 
+  // Filter all trades based on current filters
+  const filteredTrades = useMemo(() => {
+    let filtered = [...trades];
+    
+    // Status filter
+    if (tradesFilter === "active") {
+      filtered = filtered.filter(trade => trade.status === 'open');
+    } else if (tradesFilter === "closed") {
+      filtered = filtered.filter(trade => trade.status === 'closed');
+    }
+    
+    // User filter
+    if (tradesUserFilter !== "all") {
+      filtered = filtered.filter(trade => trade.user_id === tradesUserFilter);
+    }
+    
+    // Symbol filter
+    if (tradesSymbolFilter) {
+      filtered = filtered.filter(trade => 
+        trade.symbol.toLowerCase().includes(tradesSymbolFilter.toLowerCase())
+      );
+    }
+    
+    return filtered.sort((a, b) => new Date(b.opened_at).getTime() - new Date(a.opened_at).getTime());
+  }, [trades, tradesFilter, tradesUserFilter, tradesSymbolFilter]);
+
+  // Trade summary stats
+  const tradeStats = useMemo(() => {
+    const activeTrades = trades.filter(t => t.status === 'open');
+    const closedTrades = trades.filter(t => t.status === 'closed');
+    
+    const totalActivePnL = activeTrades.reduce((sum, trade) => {
+      const { displayPnL } = getTradeDisplayData(trade);
+      return sum + displayPnL;
+    }, 0);
+    
+    const totalClosedPnL = closedTrades.reduce((sum, trade) => {
+      return sum + (trade.pnl || 0);
+    }, 0);
+    
+    return {
+      activeTrades: activeTrades.length,
+      closedTrades: closedTrades.length,
+      totalPnL: totalActivePnL + totalClosedPnL,
+      activeTradesPnL: totalActivePnL
+    };
+  }, [trades, getTradeDisplayData]);
+
   if (roleLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -663,6 +716,7 @@ const AdminDashboard = () => {
         <Tabs defaultValue="users" className="space-y-4">
           <TabsList>
             <TabsTrigger value="users">Users</TabsTrigger>
+            <TabsTrigger value="all-trades">All Trades</TabsTrigger>
             <TabsTrigger value="trade-management">Trade Management</TabsTrigger>
             <TabsTrigger value="deposits">Deposits & Withdrawals</TabsTrigger>
             <TabsTrigger value="bot-licenses">Bot Licenses</TabsTrigger>
@@ -715,6 +769,245 @@ const AdminDashboard = () => {
                         ))}
                       </TableBody>
                     </Table>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="all-trades" className="space-y-6">
+            {/* Trade Status Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Active Trades</CardTitle>
+                  <Activity className="h-4 w-4 text-green-600" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-green-600">{tradeStats.activeTrades}</div>
+                  <p className="text-xs text-muted-foreground">
+                    P&L: <span className={tradeStats.activeTradesPnL >= 0 ? 'text-green-600' : 'text-red-600'}>
+                      ${tradeStats.activeTradesPnL.toFixed(2)}
+                    </span>
+                  </p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Closed Trades</CardTitle>
+                  <BarChart3 className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{tradeStats.closedTrades}</div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Total P&L</CardTitle>
+                  <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className={`text-2xl font-bold ${tradeStats.totalPnL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    ${tradeStats.totalPnL.toFixed(2)}
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Filtered Trades</CardTitle>
+                  <Filter className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{filteredTrades.length}</div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Filters */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Trade Filters</CardTitle>
+                <CardDescription>Filter and search all trades across users</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div>
+                    <Label className="text-sm font-medium">Status</Label>
+                    <Select value={tradesFilter} onValueChange={(value: "all" | "active" | "closed") => setTradesFilter(value)}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Trades</SelectItem>
+                        <SelectItem value="active">Active Only</SelectItem>
+                        <SelectItem value="closed">Closed Only</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div>
+                    <Label className="text-sm font-medium">User</Label>
+                    <Select value={tradesUserFilter} onValueChange={setTradesUserFilter}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Users</SelectItem>
+                        {users.map((user) => (
+                          <SelectItem key={user.user_id} value={user.user_id}>
+                            {user.first_name && user.surname 
+                              ? `${user.first_name} ${user.surname}` 
+                              : user.email}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div>
+                    <Label className="text-sm font-medium">Symbol Search</Label>
+                    <div className="relative">
+                      <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        placeholder="Search symbol..."
+                        value={tradesSymbolFilter}
+                        onChange={(e) => setTradesSymbolFilter(e.target.value)}
+                        className="pl-10"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <Label className="text-sm font-medium">Clear Filters</Label>
+                    <Button 
+                      variant="outline" 
+                      onClick={() => {
+                        setTradesFilter("all");
+                        setTradesUserFilter("all");
+                        setTradesSymbolFilter("");
+                      }}
+                      className="w-full"
+                    >
+                      Reset All
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* All Trades Table */}
+            <Card>
+              <CardHeader>
+                <CardTitle>All Trades Overview</CardTitle>
+                <CardDescription>
+                  Showing {filteredTrades.length} of {trades.length} total trades
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {filteredTrades.length === 0 ? (
+                  <div className="text-center text-muted-foreground py-8">
+                    <Activity className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <p>No trades found with current filters</p>
+                  </div>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>User</TableHead>
+                        <TableHead>Symbol</TableHead>
+                        <TableHead>Type</TableHead>
+                        <TableHead>Amount</TableHead>
+                        <TableHead>Leverage</TableHead>
+                        <TableHead>Open Price</TableHead>
+                        <TableHead>Current Price</TableHead>
+                        <TableHead>P&L</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Opened</TableHead>
+                        <TableHead>Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredTrades.map((trade) => {
+                        const { currentPrice, displayPnL, isRealTime, hasRealTimePrice } = getTradeDisplayData(trade);
+                        const tradeUser = users.find(u => u.user_id === trade.user_id);
+                        
+                        return (
+                          <TableRow key={trade.id} className={trade.status === 'open' ? 'bg-green-50 dark:bg-green-950/20' : ''}>
+                            <TableCell>
+                              <div>
+                                <div className="font-medium text-sm">
+                                  {tradeUser?.first_name && tradeUser?.surname 
+                                    ? `${tradeUser.first_name} ${tradeUser.surname}` 
+                                    : trade.user_email || 'Unknown'}
+                                </div>
+                                <div className="text-xs text-muted-foreground">
+                                  {trade.user_email}
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell className="font-medium">{trade.symbol}</TableCell>
+                            <TableCell>
+                              <Badge variant={trade.trade_type === 'BUY' ? 'default' : 'secondary'}>
+                                {trade.trade_type}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>{trade.amount}</TableCell>
+                            <TableCell>{trade.leverage}x</TableCell>
+                            <TableCell>${trade.open_price?.toFixed(5)}</TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-1">
+                                ${currentPrice?.toFixed(5) || 'N/A'}
+                                {hasRealTimePrice && isConnected && (
+                                  <span className="text-xs text-green-600">●</span>
+                                )}
+                              </div>
+                            </TableCell>
+                            <TableCell className={displayPnL >= 0 ? 'text-green-600' : 'text-red-600'}>
+                              <div className="flex items-center gap-1 font-medium">
+                                ${displayPnL.toFixed(2)}
+                                {isRealTime && isConnected && (
+                                  <span className="text-xs text-green-600">●</span>
+                                )}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <Badge 
+                                variant={trade.status === 'open' ? 'default' : 'outline'}
+                                className={trade.status === 'open' ? 'bg-green-600 hover:bg-green-700' : ''}
+                              >
+                                {trade.status.toUpperCase()}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-sm">
+                              {new Date(trade.opened_at).toLocaleDateString()}
+                              <div className="text-xs text-muted-foreground">
+                                {new Date(trade.opened_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex gap-2">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => setSelectedTradeForEdit(trade)}
+                                >
+                                  Edit
+                                </Button>
+                                {trade.status === 'open' && (
+                                  <Button
+                                    size="sm"
+                                    variant="destructive"
+                                    onClick={() => setSelectedTradeForClose(trade)}
+                                  >
+                                    Close
+                                  </Button>
+                                )}
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
                 )}
               </CardContent>
             </Card>
