@@ -10,89 +10,81 @@ export const TradingChart = ({ symbol }: TradingChartProps) => {
   const [error, setError] = useState<string | null>(null);
   const [displaySymbol, setDisplaySymbol] = useState<string>("");
 
-  // Simple mappings for original 46 assets - focus on what works reliably
+  // Complete mappings for all current assets - optimized for TradingView free widgets
   const getProperSymbol = (symbol: string): string => {
     console.log(`[TradingChart] Getting symbol for: ${symbol}`);
     
-    // Direct mappings for original assets that work with free TradingView
+    // Complete mappings for all database assets
     const symbolMappings: Record<string, string> = {
-      // Crypto - use simple USD pairs
-      'BTCUSD': 'BTCUSD',
-      'ETHUSD': 'ETHUSD', 
-      'BNBUSD': 'BNBUSD',
-      'LTCUSD': 'LTCUSD',
-      'SOLUSD': 'SOLUSD',
-      'XRPUSD': 'XRPUSD',
-      'MATICUSD': 'MATICUSD',
-      'DOTUSD': 'DOTUSD',
-      'LINKUSD': 'LINKUSD',
+      // Crypto - use BINANCE exchange for reliability
+      'BTCUSD': 'BINANCE:BTCUSDT',
+      'ETHUSD': 'BINANCE:ETHUSDT', 
+      'BNBUSD': 'BINANCE:BNBUSDT',
+      'LTCUSD': 'BINANCE:LTCUSDT',
+      'SOLUSD': 'BINANCE:SOLUSDT',
+      'XRPUSD': 'BINANCE:XRPUSDT',
+      'MATICUSD': 'BINANCE:MATICUSDT',
+      'DOTUSD': 'BINANCE:DOTUSDT',
+      'LINKUSD': 'BINANCE:LINKUSDT',
+      'ADAUSD': 'BINANCE:ADAUSDT',
       
-      // Stocks - use basic symbols
-      'AAPL': 'AAPL',
-      'MSFT': 'MSFT',
-      'GOOGL': 'GOOGL', 
-      'AMZN': 'AMZN',
-      'TSLA': 'TSLA',
-      'META': 'META',
-      'NVDA': 'NVDA',
-      'NFLX': 'NFLX',
-      'INTC': 'INTC',
+      // Stocks - use basic NASDAQ symbols
+      'AAPL': 'NASDAQ:AAPL',
+      'MSFT': 'NASDAQ:MSFT',
+      'GOOGL': 'NASDAQ:GOOGL', 
+      'AMZN': 'NASDAQ:AMZN',
+      'TSLA': 'NASDAQ:TSLA',
+      'META': 'NASDAQ:META',
+      'NVDA': 'NASDAQ:NVDA',
+      'NFLX': 'NASDAQ:NFLX',
+      'INTC': 'NASDAQ:INTC',
+      'AMD': 'NASDAQ:AMD',
       
-      // Forex - use standard pairs
-      'EURUSD': 'EURUSD',
-      'GBPUSD': 'GBPUSD',
-      'USDJPY': 'USDJPY', 
-      'AUDUSD': 'AUDUSD',
-      'USDCAD': 'USDCAD',
-      'USDCHF': 'USDCHF',
-      'NZDUSD': 'NZDUSD',
-      'EURGBP': 'EURGBP',
-      'EURJPY': 'EURJPY',
+      // Forex - use FX_IDC for reliability
+      'EURUSD': 'FX_IDC:EURUSD',
+      'GBPUSD': 'FX_IDC:GBPUSD',
+      'USDJPY': 'FX_IDC:USDJPY', 
+      'AUDUSD': 'FX_IDC:AUDUSD',
+      'USDCAD': 'FX_IDC:USDCAD',
+      'USDCHF': 'FX_IDC:USDCHF',
+      'NZDUSD': 'FX_IDC:NZDUSD',
+      'EURGBP': 'FX_IDC:EURGBP',
+      'EURJPY': 'FX_IDC:EURJPY',
+      'GBPJPY': 'FX_IDC:GBPJPY',
       
-      // Indices - use basic forms
-      'SPX500': 'SPX',
-      'NAS100': 'IXIC',
-      'UK100': 'UKX',
-      'JPN225': 'N225',
-      'GER40': 'DAX',
-      'FRA40': 'CAC',
-      'AUS200': 'AS51',
+      // Indices - use TVC for global indices
+      'SPX500': 'TVC:SPX',
+      'NAS100': 'TVC:NDX',
+      'UK100': 'TVC:UKX',
+      'JPN225': 'TVC:NI225',
+      'GER40': 'TVC:DAX',
+      'FRA40': 'TVC:CAC',
+      'AUS200': 'TVC:AS51',
+      'DJ30': 'TVC:DJI',
+      'US30': 'TVC:DJI',
       
-      // Commodities - use spot symbols
-      'XAUUSD': 'XAUUSD',
-      'XAGUSD': 'XAGUSD',
-      'WTIUSD': 'USOIL',
-      'NATGAS': 'NGAS',
-      'XPTUSD': 'XPTUSD',
-      'XPDUSD': 'XPDUSD',
+      // Commodities - use TVC for commodities
+      'XAUUSD': 'TVC:GOLD',
+      'XAGUSD': 'TVC:SILVER',
+      'WTIUSD': 'TVC:USOIL',
+      'BCOUSD': 'TVC:UKOIL',
+      'NATGAS': 'TVC:NATURALGAS',
+      'XPTUSD': 'TVC:PLATINUM',
+      'XPDUSD': 'TVC:PALLADIUM',
     };
 
-    // Direct mapping first
+    // Direct mapping - should cover all assets now
     if (symbolMappings[symbol]) {
       const mapped = symbolMappings[symbol];
-      console.log(`[TradingChart] Direct mapping: ${symbol} -> ${mapped}`);
-      setDisplaySymbol(mapped);
+      console.log(`[TradingChart] Mapped: ${symbol} -> ${mapped}`);
+      setDisplaySymbol(symbol);
       return mapped;
     }
 
-    // Simple fallbacks for unmapped symbols
-    console.log(`[TradingChart] No direct mapping for ${symbol}, using fallback`);
-    
-    // Default to Bitcoin for any crypto-like symbols
-    if (symbol.includes('USD') && symbol.length <= 7) {
-      setDisplaySymbol('BTCUSD (Bitcoin)');
-      return 'BTCUSD';
-    }
-    
-    // Default to Apple for stock-like symbols  
-    if (symbol.length <= 4 && !symbol.includes('USD')) {
-      setDisplaySymbol('AAPL (Apple)');
-      return 'AAPL';
-    }
-    
-    // Ultimate fallback -> EUR/USD
-    setDisplaySymbol('EURUSD (Euro/Dollar)');
-    return 'EURUSD';
+    // Fallback (should rarely be used now)
+    console.log(`[TradingChart] No mapping for ${symbol}, using EURUSD fallback`);
+    setDisplaySymbol(`${symbol} (Using EUR/USD)`);
+    return 'FX_IDC:EURUSD';
   };
 
   useEffect(() => {
@@ -109,20 +101,35 @@ export const TradingChart = ({ symbol }: TradingChartProps) => {
       chartRef.current.innerHTML = '';
     }
 
-    // Create TradingView widget with error handling
-    const script = document.createElement("script");
-    script.src = "https://s3.tradingview.com/tv.js";
-    script.async = true;
-    
-    script.onload = () => {
+    // Check if TradingView is already loaded to avoid reloading script
+    if (window.TradingView) {
+      createWidget(tradingViewSymbol);
+    } else {
+      // Load TradingView script only once
+      const existingScript = document.querySelector('script[src="https://s3.tradingview.com/tv.js"]');
+      if (!existingScript) {
+        const script = document.createElement("script");
+        script.src = "https://s3.tradingview.com/tv.js";
+        script.async = true;
+        script.onload = () => createWidget(tradingViewSymbol);
+        script.onerror = () => {
+          console.error(`[TradingView] Script loading failed`);
+          setError('Failed to load TradingView library');
+          setIsLoading(false);
+        };
+        document.head.appendChild(script);
+      }
+    }
+
+    function createWidget(tvSymbol: string) {
       try {
         if (window.TradingView && chartRef.current) {
-          console.log(`[TradingView] Creating widget for: ${tradingViewSymbol}`);
+          console.log(`[TradingView] Creating widget for: ${tvSymbol}`);
           
           new window.TradingView.widget({
             autosize: true,
-            symbol: tradingViewSymbol,
-            interval: "5", // 5-minute interval (more reliable than 1m)
+            symbol: tvSymbol,
+            interval: "15", // 15-minute for better performance
             timezone: "Etc/UTC",
             theme: document.documentElement.classList.contains('dark') ? "dark" : "light",
             style: "1", 
@@ -135,40 +142,26 @@ export const TradingChart = ({ symbol }: TradingChartProps) => {
             container_id: chartRef.current.id,
             height: 400,
             onChartReady: () => {
-              console.log(`[TradingView] Chart ready for: ${tradingViewSymbol}`);
+              console.log(`[TradingView] Chart ready for: ${tvSymbol}`);
               setIsLoading(false);
             },
           });
           
-          // Set timeout to detect loading issues
+          // Faster timeout for quicker error detection
           setTimeout(() => {
             if (isLoading) {
-              console.warn(`[TradingView] Chart taking too long to load: ${tradingViewSymbol}`);
+              console.warn(`[TradingView] Chart loading timeout: ${tvSymbol}`);
               setError(`Chart loading timeout for ${displaySymbol || symbol}`);
               setIsLoading(false);
             }
-          }, 10000);
+          }, 5000);
         }
       } catch (err) {
         console.error(`[TradingView] Widget creation failed:`, err);
         setError(`Failed to load chart for ${displaySymbol || symbol}`);
         setIsLoading(false);
       }
-    };
-
-    script.onerror = (err) => {
-      console.error(`[TradingView] Script loading failed:`, err);
-      setError('Failed to load TradingView library');
-      setIsLoading(false);
-    };
-
-    document.head.appendChild(script);
-
-    return () => {
-      if (document.head.contains(script)) {
-        document.head.removeChild(script);
-      }
-    };
+    }
   }, [symbol]);
 
   return (
