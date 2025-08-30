@@ -1,6 +1,5 @@
 import React from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card } from "@/components/ui/card";
 import { TradeRow } from "./TradeRow";
 import { EnhancedTradingPanel } from "./EnhancedTradingPanel";
 import { OrderManagement } from "./OrderManagement";
@@ -34,16 +33,16 @@ export const TradingTabsInterface: React.FC<TradingTabsInterfaceProps> = ({
   onCloseTrade,
 }) => {
   return (
-    <Card className="bg-card/90 backdrop-blur-sm border-border shadow-sm h-[200px]">
+    <div className="h-[200px]">
       <Tabs defaultValue="trading" className="h-full flex flex-col">
-        <TabsList className="grid w-full grid-cols-3 h-10 mx-3 mt-3 bg-muted/50">
+        <TabsList className="grid w-full grid-cols-3 h-10 bg-muted/50 border border-border/30 rounded-lg shadow-sm">
           <TabsTrigger value="trading" className="text-xs font-medium">Trading Panel</TabsTrigger>
           <TabsTrigger value="open-trades" className="text-xs font-medium">Open Trades</TabsTrigger>
           <TabsTrigger value="orders" className="text-xs font-medium">Orders</TabsTrigger>
         </TabsList>
         
         {/* Trading Panel Tab */}
-        <TabsContent value="trading" className="flex-1 mt-1 mx-3 mb-3">
+        <TabsContent value="trading" className="flex-1 mt-2 p-3 bg-card/90 backdrop-blur-sm border border-border/30 rounded-lg shadow-sm">
           <div className="h-full overflow-y-auto">
             {selectedAsset ? (
               <EnhancedTradingPanel
@@ -65,7 +64,7 @@ export const TradingTabsInterface: React.FC<TradingTabsInterfaceProps> = ({
         </TabsContent>
         
         {/* Open Trades Tab */}
-        <TabsContent value="open-trades" className="flex-1 mt-1 mx-3 mb-3">
+        <TabsContent value="open-trades" className="flex-1 mt-2 p-3 bg-card/90 backdrop-blur-sm border border-border/30 rounded-lg shadow-sm">
           <div className="h-full overflow-y-auto">
             {openTrades.length > 0 ? (
               <div className="space-y-1">
@@ -131,12 +130,12 @@ export const TradingTabsInterface: React.FC<TradingTabsInterfaceProps> = ({
         </TabsContent>
         
         {/* Order Management Tab */}
-        <TabsContent value="orders" className="flex-1 mt-1 mx-3 mb-3">
+        <TabsContent value="orders" className="flex-1 mt-2 p-3 bg-card/90 backdrop-blur-sm border border-border/30 rounded-lg shadow-sm">
           <div className="h-full overflow-hidden">
             <OrderManagement />
           </div>
         </TabsContent>
       </Tabs>
-    </Card>
+    </div>
   );
 };
