@@ -16,6 +16,14 @@ export const TradingChart = ({ symbol }: TradingChartProps) => {
   const [currentPrice, setCurrentPrice] = useState<number>(0);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Get appropriate decimal places based on price level
+  const getDecimalPlaces = (price: number): number => {
+    if (price < 1) return 4;
+    if (price < 10) return 3;
+    if (price < 100) return 2;
+    return 2;
+  };
+
   // Generate mock base price for different asset types
   const getBasePrice = (symbol: string): number => {
     // Crypto
@@ -102,13 +110,6 @@ export const TradingChart = ({ symbol }: TradingChartProps) => {
     return data;
   }, [symbol]);
 
-  // Get appropriate decimal places based on price level
-  const getDecimalPlaces = (price: number): number => {
-    if (price < 1) return 4;
-    if (price < 10) return 3;
-    if (price < 100) return 2;
-    return 2;
-  };
 
   // Initialize chart data
   useEffect(() => {
