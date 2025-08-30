@@ -1,23 +1,19 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { useTrades } from "@/hooks/useTrades";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { useAssets } from "@/hooks/useAssets";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Shield, AlertTriangle } from "lucide-react";
-import { useMemo, useEffect, useState, useCallback } from "react";
+import { useMemo, useState, useCallback } from "react";
 import { useRealTimePrices } from "@/hooks/useRealTimePrices";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/useAuth";
 import { TradeRow } from "@/components/TradeRow";
 import { calculateRealTimePnL } from "@/utils/pnlCalculator";
 
 export const Portfolio = () => {
   // ALL HOOKS MUST BE CALLED FIRST - NO CONDITIONAL HOOK CALLS
-  const { user } = useAuth();
   const { openTrades, closeTrade, loading: tradesLoading } = useTrades();
-  const { profile, loading: profileLoading, refetch: refetchProfile } = useUserProfile();
+  const { profile, loading: profileLoading } = useUserProfile();
   const { assets, loading: assetsLoading } = useAssets();
   const { toast } = useToast();
   const { getUpdatedAssets } = useRealTimePrices();
@@ -151,31 +147,7 @@ export const Portfolio = () => {
     }
   }, [updatedAssets, closeTrade, toast]);
 
-  // Listen for real-time user profile updates
-  useEffect(() => {
-    if (!user) return;
-
-    const channel = supabase
-      .channel('portfolio-profile-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'user_profiles',
-          filter: `user_id=eq.${user.id}`
-        },
-        () => {
-          console.log('Profile updated in Portfolio, refreshing data...');
-          refetchProfile();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [user, refetchProfile]);
+  // Real-time updates are now handled by the WebSocket system
 
   // NOW we can do conditional rendering AFTER all hooks are called
   const isLoading = tradesLoading || profileLoading || assetsLoading;

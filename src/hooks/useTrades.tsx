@@ -1,8 +1,7 @@
-import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
-import { toast } from "@/hooks/use-toast";
-import { useMarginManager } from "./useMarginManager";
+import { useRealTimeTrading } from './useRealTimeTrading';
+import { useRealTimePrices } from './useRealTimePrices';
+import { calculateRealTimePnL } from '@/utils/pnlCalculator';
 
 export interface Trade {
   id: string;
@@ -27,84 +26,26 @@ export interface Trade {
 
 export const useTrades = () => {
   const { user } = useAuth();
-  const [trades, setTrades] = useState<Trade[]>([]);
-  const [loading, setLoading] = useState(true);
-  const { recalculateMargins } = useMarginManager();
+  const { 
+    trades, 
+    loading,
+    openTrades,
+    closedTrades,
+    botTrades,
+    userTrades,
+    openBotTrades,
+    openUserTrades,
+    closedBotTrades,
+    closedUserTrades,
+    openTrade: realtimeOpenTrade,
+    closeTrade: realtimeCloseTrade
+  } = useRealTimeTrading();
+  
+  const { getUpdatedAssets } = useRealTimePrices();
 
-  useEffect(() => {
-    if (user) {
-      fetchTrades();
-      
-      // Set up real-time subscription for trade updates with enhanced handling
-      const channel = supabase
-        .channel('trades-changes')
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'trades',
-            filter: `user_id=eq.${user.id}`
-          },
-          (payload) => {
-            console.log('Trade update received:', payload);
-            
-            if (payload.eventType === 'INSERT') {
-              const newTrade = payload.new as Trade;
-              console.log('New trade inserted:', newTrade.id, newTrade.status);
-              setTrades(prev => {
-                // Prevent duplicates
-                if (prev.some(t => t.id === newTrade.id)) return prev;
-                return [...prev, newTrade];
-              });
-            } else if (payload.eventType === 'UPDATE') {
-              const updatedTrade = payload.new as Trade;
-              console.log('Trade updated via real-time:', updatedTrade.id, 'status:', updatedTrade.status);
-              setTrades(prev => prev.map(trade => 
-                trade.id === updatedTrade.id ? updatedTrade : trade
-              ));
-            } else if (payload.eventType === 'DELETE') {
-              setTrades(prev => prev.filter(trade => trade.id !== payload.old.id));
-            }
-          }
-        )
-        .subscribe();
-
-      return () => {
-        supabase.removeChannel(channel);
-      };
-    } else {
-      setTrades([]);
-      setLoading(false);
-    }
-  }, [user]);
-
+  // Legacy fetch function (no longer used with WebSocket)
   const fetchTrades = async () => {
-    if (!user) return;
-
-    try {
-      const { data, error } = await supabase
-        .from('trades')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('opened_at', { ascending: false });
-
-      if (error) {
-        console.error('Error fetching trades:', error);
-        toast({
-          title: "Error",
-          description: "Failed to fetch trades",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      setTrades(data as Trade[] || []);
-    } catch (error) {
-      console.error('Error:', error);
-    } finally {
-      setLoading(false);
-    }
+    console.log('fetchTrades called - now using real-time WebSocket');
   };
 
   const openTrade = async (
@@ -119,233 +60,53 @@ export const useTrades = () => {
     if (!user) return null;
 
     try {
-      console.log('Opening trade:', { assetId, symbol, tradeType, amount, leverage, openPrice, marginUsed });
+      console.log('Opening trade via WebSocket:', { assetId, symbol, tradeType, amount, leverage, openPrice, marginUsed });
       
-      const { data, error } = await supabase
-        .from('trades')
-        .insert({
-          user_id: user.id,
-          asset_id: assetId,
-          symbol,
-          trade_type: tradeType,
-          amount,
-          leverage,
-          open_price: openPrice,
-          current_price: openPrice,
-          margin_used: marginUsed,
-          status: 'open',
-          trade_source: 'user'
-        })
-        .select()
-        .single();
-
-      if (error) {
-        console.error('Error opening trade:', error);
-        toast({
-          title: "Error",
-          description: "Failed to open trade",
-          variant: "destructive",
-        });
-        return null;
-      }
-
-      console.log('Trade opened successfully:', data);
-      console.log('New trade ID:', data.id, 'Margin used:', marginUsed);
+      await realtimeOpenTrade(assetId, symbol, tradeType, amount, leverage, openPrice, marginUsed);
       
-      // Database triggers will automatically handle margin recalculation
-      // But add a small delay to ensure the trigger completes
-      setTimeout(async () => {
-        const consistency = await recalculateMargins();
-        if (!consistency) {
-          console.warn('Margin recalculation may have failed after trade opening');
-        }
-      }, 500);
-      
-      // Don't show toast here - let WebTrader handle it for better UX flow
-      return data;
+      // Return a mock trade object for compatibility
+      return {
+        id: 'pending',
+        user_id: user.id,
+        asset_id: assetId,
+        symbol,
+        trade_type: tradeType,
+        amount,
+        leverage,
+        open_price: openPrice,
+        current_price: openPrice,
+        margin_used: marginUsed,
+        status: 'open' as const,
+        trade_source: 'user' as const,
+        pnl: 0,
+        opened_at: new Date().toISOString(),
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
     } catch (error) {
-      console.error('Error:', error);
-      return null;
+      console.error('Error opening trade via WebSocket:', error);
+      throw error;
     }
   };
 
   const closeTrade = async (tradeId: string, closePrice: number) => {
-    console.log('Closing trade:', tradeId, 'at price:', closePrice);
+    console.log('Closing trade via WebSocket:', tradeId, 'at price:', closePrice);
     
     try {
-      // Optimistically update local state to immediately remove from open trades
-      setTrades(prev => prev.map(trade => 
-        trade.id === tradeId 
-          ? { ...trade, status: 'closed' as const, close_price: closePrice, closed_at: new Date().toISOString() }
-          : trade
-      ));
-
-      // Get the trade and asset information
-      const { data: tradeData, error: tradeError } = await supabase
-        .from('trades')
-        .select(`
-          *,
-          assets:asset_id (
-            category,
-            contract_size
-          )
-        `)
-        .eq('id', tradeId)
-        .single();
-
-      if (tradeError || !tradeData) {
-        console.error('Error fetching trade for closure:', tradeError);
-        // Revert optimistic update
-        setTrades(prev => prev.map(trade => 
-          trade.id === tradeId 
-            ? { ...trade, status: 'open' as const, close_price: undefined, closed_at: undefined }
-            : trade
-        ));
-        toast({
-          title: "Error",
-          description: "Failed to fetch trade details",
-          variant: "destructive",
-        });
-        return false;
-      }
-
-      // Calculate P&L using the database function which handles forex lots correctly
-      const { data: pnlResult, error: pnlError } = await supabase
-        .rpc('calculate_pnl', {
-          trade_type: tradeData.trade_type,
-          amount: tradeData.amount,
-          open_price: tradeData.open_price,
-          current_price: closePrice,
-          leverage_param: tradeData.leverage || 1
-        });
-
-      if (pnlError) {
-        console.error('Error calculating P&L:', pnlError);
-        // Revert optimistic update
-        setTrades(prev => prev.map(trade => 
-          trade.id === tradeId 
-            ? { ...trade, status: 'open' as const, close_price: undefined, closed_at: undefined }
-            : trade
-        ));
-        toast({
-          title: "Error",
-          description: "Failed to calculate P&L",
-          variant: "destructive",
-        });
-        return false;
-      }
-
-      // Update in database - triggers will handle balance/margin updates automatically
-      const { error: updateError } = await supabase
-        .from('trades')
-        .update({
-          close_price: closePrice,
-          pnl: pnlResult,
-          status: 'closed',
-          closed_at: new Date().toISOString(),
-        })
-        .eq('id', tradeId);
-
-      if (updateError) {
-        console.error('Error closing trade:', updateError);
-        // Revert optimistic update
-        setTrades(prev => prev.map(trade => 
-          trade.id === tradeId 
-            ? { ...trade, status: 'open' as const, close_price: undefined, closed_at: undefined }
-            : trade
-        ));
-        toast({
-          title: "Error",
-          description: "Failed to close trade",
-          variant: "destructive",
-        });
-        return false;
-      }
-
-      console.log('Trade closed successfully:', tradeId, 'P&L:', pnlResult);
-      toast({
-        title: "Trade Closed",
-        description: `P&L: ${pnlResult >= 0 ? '+' : ''}$${pnlResult.toFixed(2)}`,
-        variant: pnlResult >= 0 ? "default" : "destructive",
-      });
-
-      // Database triggers will automatically handle margin recalculation
-      // But add a small delay to ensure the trigger completes and provide fallback
-      setTimeout(async () => {
-        const consistency = await recalculateMargins();
-        if (!consistency) {
-          console.warn('Margin recalculation may have failed after trade closing');
-        }
-      }, 500);
-
+      await realtimeCloseTrade(tradeId, closePrice);
       return true;
     } catch (error) {
-      console.error('Error closing trade:', error);
-      // Revert optimistic update on any error
-      setTrades(prev => prev.map(trade => 
-        trade.id === tradeId 
-          ? { ...trade, status: 'open' as const, close_price: undefined, closed_at: undefined }
-          : trade
-      ));
-      return false;
+      console.error('Error closing trade via WebSocket:', error);
+      throw error;
     }
   };
 
+  // Real-time P&L updates are now handled by the WebSocket system
   const updateTradePnL = async (tradeId: string, currentPrice: number) => {
-    const trade = trades.find(t => t.id === tradeId);
-    if (!trade || trade.status !== 'open') {
-      console.log('Skipping P&L update for trade:', tradeId, 'Status:', trade?.status);
-      return;
-    }
-
-    try {
-      // Use the database function to calculate P&L properly for all instrument types
-      const { data: pnlResult, error: pnlError } = await supabase
-        .rpc('calculate_pnl', {
-          trade_type: trade.trade_type,
-          amount: trade.amount,
-          open_price: trade.open_price,
-          current_price: currentPrice,
-          leverage_param: trade.leverage || 1
-        });
-
-      if (pnlError) {
-        console.error('Error calculating P&L:', pnlError);
-        return;
-      }
-
-      // Only update if trade is still open (prevent race conditions)
-      const currentTrade = trades.find(t => t.id === tradeId);
-      if (!currentTrade || currentTrade.status !== 'open') {
-        console.log('Trade status changed during P&L calculation, skipping update');
-        return;
-      }
-
-      const { error } = await supabase
-        .from('trades')
-        .update({
-          current_price: currentPrice,
-          pnl: pnlResult,
-        })
-        .eq('id', tradeId)
-        .eq('status', 'open'); // Only update if still open
-
-      if (error) {
-        console.error('Error updating trade P&L:', error);
-      }
-    } catch (error) {
-      console.error('Error:', error);
-    }
+    console.log('updateTradePnL called - now handled by real-time WebSocket system');
   };
 
-  const openTrades = trades.filter(trade => trade.status === 'open');
-  const closedTrades = trades.filter(trade => trade.status === 'closed');
-  const botTrades = trades.filter(trade => trade.trade_source === 'bot');
-  const userTrades = trades.filter(trade => trade.trade_source === 'user');
-  const openBotTrades = trades.filter(trade => trade.status === 'open' && trade.trade_source === 'bot');
-  const openUserTrades = trades.filter(trade => trade.status === 'open' && trade.trade_source === 'user');
-  const closedBotTrades = trades.filter(trade => trade.status === 'closed' && trade.trade_source === 'bot');
-  const closedUserTrades = trades.filter(trade => trade.status === 'closed' && trade.trade_source === 'user');
+  // Derived data is now provided by useRealTimeTrading
 
   return {
     trades,
@@ -362,6 +123,6 @@ export const useTrades = () => {
     openTrade,
     closeTrade,
     updateTradePnL,
-    recalculateMargins, // Expose margin management function
+    recalculateMargins: async () => true, // No longer needed with real-time system
   };
 };

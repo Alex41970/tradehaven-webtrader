@@ -1,7 +1,55 @@
 project_id = "stdfkfutgkmnaajixguz"
 
-[functions.update-prices]
-verify_jwt = false
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[auth]
+enabled = true
+port = 54322
+site_url = "http://localhost:3000"
+additional_redirect_urls = ["https://lovable.dev"]
+jwt_expiry = 3600
+enable_signup = true
+
+[auth.email]
+enable_signup = true
+double_confirm_changes = true
+enable_confirmations = false
+
+[db]
+port = 54322
+shadow_port = 54320
+major_version = 15
+
+[realtime]
+enabled = true
+ip_version = "ipv4"
+port = 54323
+secure_channels = false
+
+[studio]
+enabled = true
+port = 54323
+api_url = "http://127.0.0.1:54321"
+openai_api_key = "env(OPENAI_API_KEY)"
+
+[edge_functions]
+enabled = true
+port = 54324
+ip_version = "ipv4"
 
 [functions.realtime-prices]
+verify_jwt = false
+
+[functions.websocket-trading-updates]
+verify_jwt = false
+
+[functions.fix-user-margins]
+verify_jwt = false
+
+[functions.update-prices]
 verify_jwt = false
