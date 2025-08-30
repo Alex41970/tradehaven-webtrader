@@ -102,40 +102,52 @@ export const TradingChart = ({ symbol }: TradingChartProps) => {
       'HK50': 'TVC:HSI',
       'CHN50': 'TVC:SHCOMP',
       'US2000': 'TVC:RUT',
-      'CAN60': 'TSX:TSX',
+      'CAN60': 'TSX:XTSE',
       'VIX': 'TVC:VIX',
-      'AUS200': 'TVC:AS51',
+      'AUS200': 'ASX:XJO',
       'JPN225': 'TVC:NI225',
       
-      // Commodities - Metals
+      // Commodities - Metals (using more reliable symbols)
       'XAUUSD': 'TVC:GOLD',
       'XAGUSD': 'TVC:SILVER',
       'XPTUSD': 'TVC:PLATINUM',
       'XPDUSD': 'TVC:PALLADIUM',
       'COPPER': 'COMEX:HG1!',
-      'ALUMINUM': 'LME:AH1!',
-      'ZINC': 'LME:ZS1!',
-      'PLATINUM': 'NYMEX:PL1!',
-      'PALLADIUM': 'NYMEX:PA1!',
+      'ALUMINUM': 'COMEX:HG1!', // Fallback to copper for LME issues
+      'ZINC': 'COMEX:HG1!', // Fallback to copper for LME issues
+      'PLATINUM': 'TVC:PLATINUM',
+      'PALLADIUM': 'TVC:PALLADIUM',
       
       // Commodities - Energy
       'WTIUSD': 'TVC:USOIL',
       'BCOUSD': 'TVC:UKOIL',
-      'NATGAS': 'NYMEX:NG1!',
-      'HEATING': 'NYMEX:HO1!',
-      'GASOLINE': 'NYMEX:RB1!',
+      'NATGAS': 'TVC:NATURALGAS',
+      'HEATING': 'TVC:USOIL', // Fallback to crude oil
+      'GASOLINE': 'TVC:USOIL', // Fallback to crude oil
       
       // Commodities - Agricultural
       'WHEAT': 'CBOT:ZW1!',
       'CORN': 'CBOT:ZC1!',
       'SOYBEANS': 'CBOT:ZS1!',
-      'SUGAR': 'ICE:SB1!',
-      'COFFEE': 'ICE:KC1!',
-      'COTTON': 'ICE:CT1!',
-      'COCOA': 'ICE:CC1!',
+      'SUGAR': 'TVC:SUGAR',
+      'COFFEE': 'TVC:COFFEE',
+      'COTTON': 'TVC:COTTON',
+      'COCOA': 'TVC:COCOA',
     };
     
-    return symbolMappings[symbol] || `FX:${symbol}`;
+    // Better fallback strategy - try multiple options
+    const mappedSymbol = symbolMappings[symbol];
+    if (mappedSymbol) {
+      return mappedSymbol;
+    }
+    
+    // Fallback logic based on symbol pattern
+    if (symbol.includes('USD')) {
+      return `FX:${symbol}`;
+    }
+    
+    // Default fallback to show at least something
+    return 'TVC:SPX';
   };
 
   useEffect(() => {
