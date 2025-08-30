@@ -693,6 +693,10 @@ export type Database = {
         Args: { _promo_code: string; _user_id: string }
         Returns: Json
       }
+      auto_fix_detected_issues: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
       auto_recalculate_user_margins: {
         Args: { _user_id: string }
         Returns: undefined
@@ -776,6 +780,10 @@ export type Database = {
       }
       recalculate_user_margins: {
         Args: { _user_id: string }
+        Returns: Json
+      }
+      run_system_health_check: {
+        Args: Record<PropertyKey, never>
         Returns: Json
       }
       sync_admin_user_relationships: {

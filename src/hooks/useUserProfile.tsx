@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 import { toast } from "@/hooks/use-toast";
+import { useRealtimeUserProfile } from './useRealtimeData';
 
 export interface UserProfile {
   id: string;
@@ -22,6 +23,22 @@ export const useUserProfile = () => {
   const { user } = useAuth();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  
+  // Enable enhanced real-time updates
+  useRealtimeUserProfile(user?.id);
+
+  // Listen for real-time profile updates from the enhanced system
+  useEffect(() => {
+    const handleProfileUpdate = (event: CustomEvent) => {
+      console.log('🔄 Profile updated via enhanced real-time:', event.detail);
+      setProfile(event.detail);
+    };
+
+    window.addEventListener('profile_updated', handleProfileUpdate as EventListener);
+    return () => {
+      window.removeEventListener('profile_updated', handleProfileUpdate as EventListener);
+    };
+  }, []);
 
   const fetchProfile = useCallback(async () => {
     if (!user) return;
@@ -90,40 +107,11 @@ export const useUserProfile = () => {
   useEffect(() => {
     if (user) {
       fetchProfile();
-      
-      // Set up real-time subscription for profile changes
-      console.log('Setting up real-time subscription for user profile');
-      const channel = supabase
-        .channel(`user_profile_changes_${user.id}`)
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'user_profiles',
-            filter: `user_id=eq.${user.id}`
-          },
-           (payload) => {
-            console.log('🔴 useUserProfile real-time update:', payload);
-            if (payload.new && typeof payload.new === 'object') {
-              console.log('⚡ Setting profile from real-time update');
-              setProfile(payload.new as UserProfile);
-            } else if (payload.eventType === 'DELETE') {
-              setProfile(null);
-            }
-          }
-        )
-        .subscribe();
-
-      return () => {
-        console.log('Cleaning up profile subscription');
-        supabase.removeChannel(channel);
-      };
     } else {
       setProfile(null);
       setLoading(false);
     }
-  }, [user?.id, fetchProfile]); // Fixed dependencies to prevent multiple fetches
+  }, [user?.id, fetchProfile]);
 
   // Force refresh function for manual updates
   const forceRefresh = useCallback(async () => {
