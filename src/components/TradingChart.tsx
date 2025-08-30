@@ -10,21 +10,68 @@ export const TradingChart = ({ symbol }: TradingChartProps) => {
   // Map asset symbols to proper TradingView symbols
   const getProperSymbol = (symbol: string): string => {
     const symbolMappings: Record<string, string> = {
-      // Crypto
+      // Major Crypto
       'BTCUSD': 'BINANCE:BTCUSDT',
       'ETHUSD': 'BINANCE:ETHUSDT', 
       'XRPUSD': 'BINANCE:XRPUSDT',
       'ADAUSD': 'BINANCE:ADAUSDT',
       'DOTUSD': 'BINANCE:DOTUSDT',
+      'AVAXUSD': 'BINANCE:AVAXUSDT',
+      'DOGEUSD': 'BINANCE:DOGEUSDT',
+      'SHIBUSD': 'BINANCE:SHIBUSDT',
+      'UNIUSD': 'BINANCE:UNIUSDT',
+      'TRXUSD': 'BINANCE:TRXUSDT',
+      'ATOMUSD': 'BINANCE:ATOMUSDT',
+      'NEARUSD': 'BINANCE:NEARUSDT',
+      'APTUSD': 'BINANCE:APTUSDT',
+      'ARBUSD': 'BINANCE:ARBUSDT',
+      'OPUSD': 'BINANCE:OPUSDT',
+      'PEPEUSD': 'BINANCE:PEPEUSDT',
+      'FLOKIUSD': 'BINANCE:FLOKIUSDT',
+      'BNBUSD': 'BINANCE:BNBUSDT',
+      'SOLUSD': 'BINANCE:SOLUSDT',
+      'LINKUSD': 'BINANCE:LINKUSDT',
       
-      // Stocks
+      // Technology Stocks
       'AAPL': 'NASDAQ:AAPL',
       'GOOGL': 'NASDAQ:GOOGL',
       'TSLA': 'NASDAQ:TSLA',
       'MSFT': 'NASDAQ:MSFT',
       'AMZN': 'NASDAQ:AMZN',
+      'NVDA': 'NASDAQ:NVDA',
+      'META': 'NASDAQ:META',
+      'ADBE': 'NASDAQ:ADBE',
+      'CRM': 'NYSE:CRM',
+      'ORCL': 'NYSE:ORCL',
+      'CSCO': 'NASDAQ:CSCO',
+      'INTC': 'NASDAQ:INTC',
+      'AMD': 'NASDAQ:AMD',
       
-      // Forex pairs
+      // Financial Stocks
+      'JPM': 'NYSE:JPM',
+      'BAC': 'NYSE:BAC',
+      'WFC': 'NYSE:WFC',
+      'GS': 'NYSE:GS',
+      
+      // Consumer Stocks
+      'KO': 'NYSE:KO',
+      'MCD': 'NYSE:MCD',
+      'WMT': 'NYSE:WMT',
+      'PG': 'NYSE:PG',
+      'NKE': 'NYSE:NKE',
+      
+      // Healthcare Stocks
+      'JNJ': 'NYSE:JNJ',
+      'PFE': 'NYSE:PFE',
+      'UNH': 'NYSE:UNH',
+      'ABBV': 'NYSE:ABBV',
+      
+      // Energy Stocks
+      'XOM': 'NYSE:XOM',
+      'CVX': 'NYSE:CVX',
+      'COP': 'NYSE:COP',
+      
+      // Major Forex pairs
       'EURUSD': 'FX:EURUSD',
       'GBPUSD': 'FX:GBPUSD',
       'USDJPY': 'FX:USDJPY',
@@ -32,19 +79,63 @@ export const TradingChart = ({ symbol }: TradingChartProps) => {
       'AUDUSD': 'FX:AUDUSD',
       'USDCAD': 'FX:USDCAD',
       'NZDUSD': 'FX:NZDUSD',
+      'EURJPY': 'FX:EURJPY',
+      'GBPJPY': 'FX:GBPJPY',
       
-      // Commodities
-      'XAUUSD': 'TVC:GOLD',
-      'XAGUSD': 'TVC:SILVER',
-      'WTIUSD': 'TVC:USOIL',
-      'BCOUSD': 'TVC:UKOIL',
+      // Exotic Forex pairs
+      'USDTRY': 'FX:USDTRY',
+      'USDZAR': 'FX:USDZAR',
+      'USDMXN': 'FX:USDMXN',
+      'USDSGD': 'FX:USDSGD',
+      'USDNOK': 'FX:USDNOK',
+      'USDSEK': 'FX:USDSEK',
+      'USDDKK': 'FX:USDDKK',
+      'USDPLN': 'FX:USDPLN',
+      'CADJPY': 'FX:CADJPY',
+      'AUDJPY': 'FX:AUDJPY',
+      'NZDJPY': 'FX:NZDJPY',
       
-      // Indices
+      // Major Indices
       'US30': 'TVC:DJI',
       'SPX500': 'TVC:SPX',
       'NAS100': 'TVC:NDX',
       'UK100': 'TVC:UKX',
       'GER40': 'TVC:DAX',
+      'EU50': 'TVC:SX5E',
+      'ITA40': 'TVC:FTSEMIB',
+      'SPA35': 'TVC:IBEX35',
+      'HK50': 'TVC:HSI',
+      'CHN50': 'TVC:SHCOMP',
+      'US2000': 'TVC:RUT',
+      'CAN60': 'TSX:TSX',
+      'VIX': 'TVC:VIX',
+      'AUS200': 'TVC:AS51',
+      'JPN225': 'TVC:NI225',
+      
+      // Commodities - Metals
+      'XAUUSD': 'TVC:GOLD',
+      'XAGUSD': 'TVC:SILVER',
+      'COPPER': 'COMEX:HG1!',
+      'ALUMINUM': 'LME:AH1!',
+      'ZINC': 'LME:ZS1!',
+      'PLATINUM': 'NYMEX:PL1!',
+      'PALLADIUM': 'NYMEX:PA1!',
+      
+      // Commodities - Energy
+      'WTIUSD': 'TVC:USOIL',
+      'BCOUSD': 'TVC:UKOIL',
+      'NATGAS': 'NYMEX:NG1!',
+      'HEATING': 'NYMEX:HO1!',
+      'GASOLINE': 'NYMEX:RB1!',
+      
+      // Commodities - Agricultural
+      'WHEAT': 'CBOT:ZW1!',
+      'CORN': 'CBOT:ZC1!',
+      'SOYBEANS': 'CBOT:ZS1!',
+      'SUGAR': 'ICE:SB1!',
+      'COFFEE': 'ICE:KC1!',
+      'COTTON': 'ICE:CT1!',
+      'COCOA': 'ICE:CC1!',
     };
     
     return symbolMappings[symbol] || `FX:${symbol}`;
