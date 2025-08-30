@@ -18,12 +18,14 @@ import { useTrades } from "@/hooks/useTrades";
 import { useAssets } from "@/hooks/useAssets";
 import { useRealTimePrices } from "@/hooks/useRealTimePrices";
 import { calculateRealTimePnL } from "@/utils/pnlCalculator";
+import { formatLargeNumber, getResponsiveTextSize, formatPercentage } from "@/utils/numberFormatter";
 import { useMemo, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useProfessionalMetrics, TimePeriod } from "@/hooks/usePerformanceMetrics";
 import { useBotStatus } from "@/hooks/useBotStatus";
 import { useTransactionHistory, TransactionHistory } from "@/hooks/useTransactionHistory";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 const Dashboard = () => {
   const { user, signOut } = useAuth();
   const { profile, loading: profileLoading, refetch: refetchProfile } = useUserProfile();
@@ -230,9 +232,21 @@ const Dashboard = () => {
                       <span className="text-sm font-medium text-muted-foreground">Total Account Balance</span>
                       <Trophy className="h-4 w-4 text-primary" />
                     </div>
-                    <div className="text-3xl font-bold text-foreground mb-1">
-                      ${profile?.balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}
-                    </div>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div className={`font-bold text-foreground mb-1 min-w-0 ${getResponsiveTextSize(profile?.balance || 0, 'text-3xl')}`}>
+                            {(() => {
+                              const formatted = formatLargeNumber(profile?.balance || 0);
+                              return formatted.display;
+                            })()}
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>{formatLargeNumber(profile?.balance || 0).full}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                     <div className="text-xs text-muted-foreground">
                       Last updated: {new Date().toLocaleTimeString()}
                     </div>
@@ -245,11 +259,20 @@ const Dashboard = () => {
                         <TrendingUp className="h-3 w-3 text-green-500" />
                         <span className="text-xs font-medium text-muted-foreground">Available</span>
                       </div>
-                      <div className="text-lg font-bold text-foreground">
-                        ${profile?.available_margin.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}
-                      </div>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div className={`font-bold text-foreground min-w-0 ${getResponsiveTextSize(profile?.available_margin || 0, 'text-lg')}`}>
+                              {formatLargeNumber(profile?.available_margin || 0).display}
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>{formatLargeNumber(profile?.available_margin || 0).full}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
                       <div className="text-xs text-muted-foreground">
-                        {profile?.balance ? ((profile.available_margin / profile.balance) * 100).toFixed(1) : '0'}% free
+                        {profile?.balance ? formatPercentage((profile.available_margin / profile.balance) * 100) : '0.0%'} free
                       </div>
                     </div>
                     
@@ -258,11 +281,20 @@ const Dashboard = () => {
                         <Activity className="h-3 w-3 text-orange-500" />
                         <span className="text-xs font-medium text-muted-foreground">In Use</span>
                       </div>
-                      <div className="text-lg font-bold text-foreground">
-                        ${profile?.used_margin.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}
-                      </div>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div className={`font-bold text-foreground min-w-0 ${getResponsiveTextSize(profile?.used_margin || 0, 'text-lg')}`}>
+                              {formatLargeNumber(profile?.used_margin || 0).display}
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>{formatLargeNumber(profile?.used_margin || 0).full}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
                       <div className="text-xs text-muted-foreground">
-                        {profile?.balance ? ((profile.used_margin / profile.balance) * 100).toFixed(1) : '0'}% utilized
+                        {profile?.balance ? formatPercentage((profile.used_margin / profile.balance) * 100) : '0.0%'} utilized
                       </div>
                     </div>
                   </div>
@@ -279,7 +311,7 @@ const Dashboard = () => {
                           : 'text-red-500'
                       }`}>
                         {profile?.used_margin && profile?.used_margin > 0 && profile?.balance 
-                          ? `${((profile.balance / profile.used_margin) * 100).toFixed(0)}%`
+                          ? formatPercentage((profile.balance / profile.used_margin) * 100, 0)
                           : '∞'
                         }
                       </span>
@@ -357,8 +389,8 @@ const Dashboard = () => {
                             )}
                             <div>
                               <p className="text-xs font-medium capitalize">{transaction.type}</p>
-                              <p className="text-xs text-muted-foreground">
-                                ${transaction.amount.toFixed(2)}
+                              <p className="text-xs text-muted-foreground truncate">
+                                {formatLargeNumber(transaction.amount).display}
                               </p>
                             </div>
                           </div>

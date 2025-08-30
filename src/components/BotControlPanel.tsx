@@ -3,6 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { formatLargeNumber, getResponsiveTextSize, formatPnL } from "@/utils/numberFormatter";
 import { 
   Bot, 
   Pause, 
@@ -171,9 +173,18 @@ export const BotControlPanel: React.FC<BotControlPanelProps> = ({
                   <BarChart3 className="h-5 w-5 text-trading-primary" />
                   <div>
                     <p className="text-xs text-muted-foreground">Total P&L</p>
-                    <p className={`text-xl font-bold ${totalPnL >= 0 ? 'text-trading-success' : 'text-trading-danger'}`}>
-                      ${totalPnL.toFixed(2)}
-                    </p>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <p className={`font-bold min-w-0 ${getResponsiveTextSize(totalPnL, 'text-xl')} ${totalPnL >= 0 ? 'text-trading-success' : 'text-trading-danger'}`}>
+                            {formatPnL(totalPnL).display}
+                          </p>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>{formatPnL(totalPnL).full}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                   </div>
                 </div>
               </CardContent>
@@ -261,21 +272,48 @@ export const BotControlPanel: React.FC<BotControlPanelProps> = ({
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <p className="text-sm text-muted-foreground">Best Trade</p>
-                  <p className="text-lg font-semibold text-trading-success">
-                    ${Math.max(...closedBotTrades.map(t => t.pnl), 0).toFixed(2)}
-                  </p>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <p className={`font-semibold text-trading-success min-w-0 ${getResponsiveTextSize(Math.max(...closedBotTrades.map(t => t.pnl), 0), 'text-lg')}`}>
+                          {formatLargeNumber(Math.max(...closedBotTrades.map(t => t.pnl), 0)).display}
+                        </p>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>{formatLargeNumber(Math.max(...closedBotTrades.map(t => t.pnl), 0)).full}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 </div>
                 <div className="space-y-2">
                   <p className="text-sm text-muted-foreground">Worst Trade</p>
-                  <p className="text-lg font-semibold text-trading-danger">
-                    ${Math.min(...closedBotTrades.map(t => t.pnl), 0).toFixed(2)}
-                  </p>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <p className={`font-semibold text-trading-danger min-w-0 ${getResponsiveTextSize(Math.abs(Math.min(...closedBotTrades.map(t => t.pnl), 0)), 'text-lg')}`}>
+                          {formatLargeNumber(Math.min(...closedBotTrades.map(t => t.pnl), 0)).display}
+                        </p>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>{formatLargeNumber(Math.min(...closedBotTrades.map(t => t.pnl), 0)).full}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 </div>
                 <div className="space-y-2">
                   <p className="text-sm text-muted-foreground">Avg Trade Size</p>
-                  <p className="text-lg font-semibold">
-                    ${(botTrades.reduce((sum, t) => sum + t.amount, 0) / (botTrades.length || 1)).toFixed(2)}
-                  </p>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <p className={`font-semibold min-w-0 ${getResponsiveTextSize(botTrades.reduce((sum, t) => sum + t.amount, 0) / (botTrades.length || 1), 'text-lg')}`}>
+                          {formatLargeNumber(botTrades.reduce((sum, t) => sum + t.amount, 0) / (botTrades.length || 1)).display}
+                        </p>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>{formatLargeNumber(botTrades.reduce((sum, t) => sum + t.amount, 0) / (botTrades.length || 1)).full}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 </div>
                 <div className="space-y-2">
                   <p className="text-sm text-muted-foreground">Success Streak</p>
