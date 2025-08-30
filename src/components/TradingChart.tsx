@@ -10,109 +10,89 @@ export const TradingChart = ({ symbol }: TradingChartProps) => {
   const [error, setError] = useState<string | null>(null);
   const [displaySymbol, setDisplaySymbol] = useState<string>("");
 
-  // ULTRA-CONSERVATIVE: Only use symbols 100% confirmed to work in FREE TradingView widget
+  // Simple mappings for original 46 assets - focus on what works reliably
   const getProperSymbol = (symbol: string): string => {
     console.log(`[TradingChart] Getting symbol for: ${symbol}`);
     
-    // MINIMAL GUARANTEED FREE SYMBOLS - Only the most basic ones
-    const guaranteedSymbols: Record<string, string> = {
-      // Top Cryptocurrencies (BINANCE confirmed free)
-      'BTCUSD': 'BTCUSDT',
-      'ETHUSD': 'ETHUSDT',
-      'BNBUSD': 'BNBUSDT',
-      'ADAUSD': 'ADAUSDT',
-      'SOLUSD': 'SOLUSDT',
-      'XRPUSD': 'XRPUSDT',
-      'DOGEUSD': 'DOGEUSDT',
-      'AVAXUSD': 'AVAXUSDT',
-      'DOTUSD': 'DOTUSDT',
-      'MATICUSD': 'MATICUSDT',
-      'LINKUSD': 'LINKUSDT',
-      'LTCUSD': 'LTCUSDT',
+    // Direct mappings for original assets that work with free TradingView
+    const symbolMappings: Record<string, string> = {
+      // Crypto - use simple USD pairs
+      'BTCUSD': 'BTCUSD',
+      'ETHUSD': 'ETHUSD', 
+      'BNBUSD': 'BNBUSD',
+      'LTCUSD': 'LTCUSD',
+      'SOLUSD': 'SOLUSD',
+      'XRPUSD': 'XRPUSD',
+      'MATICUSD': 'MATICUSD',
+      'DOTUSD': 'DOTUSD',
+      'LINKUSD': 'LINKUSD',
       
-      // Major US Stocks (no exchange prefix - most basic)
+      // Stocks - use basic symbols
       'AAPL': 'AAPL',
-      'MSFT': 'MSFT', 
-      'GOOGL': 'GOOGL',
+      'MSFT': 'MSFT',
+      'GOOGL': 'GOOGL', 
       'AMZN': 'AMZN',
       'TSLA': 'TSLA',
       'META': 'META',
       'NVDA': 'NVDA',
-      'JPM': 'JPM',
-      'JNJ': 'JNJ',
-      'WMT': 'WMT',
+      'NFLX': 'NFLX',
+      'INTC': 'INTC',
       
-      // Major Forex (no prefix - most basic)
+      // Forex - use standard pairs
       'EURUSD': 'EURUSD',
-      'GBPUSD': 'GBPUSD', 
-      'USDJPY': 'USDJPY',
+      'GBPUSD': 'GBPUSD',
+      'USDJPY': 'USDJPY', 
       'AUDUSD': 'AUDUSD',
       'USDCAD': 'USDCAD',
       'USDCHF': 'USDCHF',
       'NZDUSD': 'NZDUSD',
+      'EURGBP': 'EURGBP',
+      'EURJPY': 'EURJPY',
       
-      // Basic Indices (no prefix)
+      // Indices - use basic forms
       'SPX500': 'SPX',
-      'US30': 'DJI',
-      'NAS100': 'NDX',
-      'VIX': 'VIX',
+      'NAS100': 'IXIC',
+      'UK100': 'UKX',
+      'JPN225': 'N225',
+      'GER40': 'DAX',
+      'FRA40': 'CAC',
+      'AUS200': 'AS51',
       
-      // Basic Commodities (no prefix)
-      'XAUUSD': 'GOLD',
-      'XAGUSD': 'SILVER', 
+      // Commodities - use spot symbols
+      'XAUUSD': 'XAUUSD',
+      'XAGUSD': 'XAGUSD',
       'WTIUSD': 'USOIL',
+      'NATGAS': 'NGAS',
+      'XPTUSD': 'XPTUSD',
+      'XPDUSD': 'XPDUSD',
     };
 
     // Direct mapping first
-    if (guaranteedSymbols[symbol]) {
-      const mapped = guaranteedSymbols[symbol];
+    if (symbolMappings[symbol]) {
+      const mapped = symbolMappings[symbol];
       console.log(`[TradingChart] Direct mapping: ${symbol} -> ${mapped}`);
       setDisplaySymbol(mapped);
       return mapped;
     }
 
-    // Category-based fallbacks to guaranteed symbols
-    console.log(`[TradingChart] No direct mapping for ${symbol}, using category fallback`);
+    // Simple fallbacks for unmapped symbols
+    console.log(`[TradingChart] No direct mapping for ${symbol}, using fallback`);
     
-    // Crypto fallback -> Bitcoin
-    if (symbol.includes('USD') && (symbol.length <= 7 || ['BTC', 'ETH', 'BNB', 'ADA', 'SOL', 'XRP', 'DOGE', 'AVAX', 'DOT', 'MATIC', 'LINK', 'LTC'].some(crypto => symbol.includes(crypto)))) {
-      console.log(`[TradingChart] Crypto fallback: ${symbol} -> BTCUSDT`);
-      setDisplaySymbol('BTCUSDT (Bitcoin)');
-      return 'BTCUSDT';
+    // Default to Bitcoin for any crypto-like symbols
+    if (symbol.includes('USD') && symbol.length <= 7) {
+      setDisplaySymbol('BTCUSD (Bitcoin)');
+      return 'BTCUSD';
     }
     
-    // Stock fallback -> Apple
-    if (symbol.length <= 4 && !symbol.includes('USD') && symbol === symbol.toUpperCase()) {
-      console.log(`[TradingChart] Stock fallback: ${symbol} -> AAPL`);
+    // Default to Apple for stock-like symbols  
+    if (symbol.length <= 4 && !symbol.includes('USD')) {
       setDisplaySymbol('AAPL (Apple)');
       return 'AAPL';
     }
     
-    // Forex fallback -> EUR/USD
-    if (symbol.includes('USD') || symbol.length === 6) {
-      console.log(`[TradingChart] Forex fallback: ${symbol} -> EURUSD`);
-      setDisplaySymbol('EURUSD (Euro/Dollar)');
-      return 'EURUSD';
-    }
-    
-    // Index fallback -> S&P 500
-    if (symbol.includes('30') || symbol.includes('500') || symbol.includes('100')) {
-      console.log(`[TradingChart] Index fallback: ${symbol} -> SPX`);
-      setDisplaySymbol('SPX (S&P 500)');
-      return 'SPX';
-    }
-    
-    // Commodity fallback -> Gold
-    if (symbol.includes('XAU') || symbol.includes('GOLD') || symbol.includes('WTI') || symbol.includes('OIL')) {
-      console.log(`[TradingChart] Commodity fallback: ${symbol} -> GOLD`);
-      setDisplaySymbol('GOLD (Gold Spot)');
-      return 'GOLD';
-    }
-    
-    // Ultimate fallback -> S&P 500
-    console.log(`[TradingChart] Ultimate fallback: ${symbol} -> SPX`);
-    setDisplaySymbol('SPX (S&P 500)');
-    return 'SPX';
+    // Ultimate fallback -> EUR/USD
+    setDisplaySymbol('EURUSD (Euro/Dollar)');
+    return 'EURUSD';
   };
 
   useEffect(() => {
