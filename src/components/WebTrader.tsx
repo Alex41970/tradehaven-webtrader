@@ -436,7 +436,7 @@ export const WebTrader = () => {
 
             {/* Chart - Middle Column */}
             <div className="lg:col-span-2">
-              <TradingChart asset={selectedAsset} />
+              <TradingChart symbol={selectedAsset?.symbol || ''} />
             </div>
 
             {/* Trading Panel and Order Management - Right Column */}
