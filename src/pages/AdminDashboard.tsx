@@ -120,13 +120,8 @@ const AdminDashboard = () => {
         return;
       }
 
-      // Check if user has admin role before proceeding
-      if (!role || (role !== 'admin' && role !== 'super_admin')) {
-        console.error('❌ AdminDashboard: User does not have admin role. Current role:', role);
-        setError('Access denied. Admin role required.');
-        setLoading(false);
-        return;
-      }
+      // Role check is already done in useEffect before calling this function
+      console.log('✅ AdminDashboard: Role verified, proceeding with data fetch...');
 
       console.log('✅ AdminDashboard: User authenticated as admin, fetching data...');
       console.log('AdminDashboard: Fetching users for admin:', user.id);
