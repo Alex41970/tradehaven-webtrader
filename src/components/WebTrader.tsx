@@ -9,8 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { TradingChart } from "./TradingChart";
 import { TradeRow } from "./TradeRow";
-import { EnhancedTradingPanel } from "./EnhancedTradingPanel";
-import { OrderManagement } from "./OrderManagement";
+import { TradingTabsInterface } from "./TradingTabsInterface";
 import { Star, StarIcon, TrendingUp, TrendingDown } from "lucide-react";
 import { useAssets } from "@/hooks/useAssets";
 import { useTrades } from "@/hooks/useTrades";
@@ -363,10 +362,9 @@ export const WebTrader = () => {
                   </div>
 
                   <Tabs defaultValue="all" className="flex-1 flex flex-col">
-                    <TabsList className="grid w-full grid-cols-3 h-9">
+                    <TabsList className="grid w-full grid-cols-2 h-9">
                       <TabsTrigger value="all" className="text-xs">All</TabsTrigger>
                       <TabsTrigger value="favorites" className="text-xs">Favorites</TabsTrigger>
-                      <TabsTrigger value="trades" className="text-xs">Trades</TabsTrigger>
                     </TabsList>
                     
                     <TabsContent value="all" className="flex-1 mt-2">
@@ -392,29 +390,6 @@ export const WebTrader = () => {
                       </div>
                     </TabsContent>
                     
-                    <TabsContent value="trades" className="flex-1 mt-2">
-                      <div className="max-h-[400px] overflow-y-auto space-y-2 pr-2">
-                        {openTrades.length > 0 ? (
-                          openTrades.map((trade) => {
-                            const asset = realtimeAssets.find(a => a.id === trade.asset_id);
-                            return (
-                              <TradeRow
-                                key={trade.id}
-                                trade={trade}
-                                asset={asset}
-                                onCloseTrade={(tradeId) => handleCloseTrade(tradeId, asset?.price || 0)}
-                                isClosing={isExecuting}
-                              />
-                            );
-                          })
-                        ) : (
-                          <div className="text-center py-8 text-muted-foreground">
-                            <TrendingUp className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                            <p className="text-sm">No open trades</p>
-                          </div>
-                        )}
-                      </div>
-                    </TabsContent>
                   </Tabs>
                 </CardContent>
               </Card>
@@ -427,48 +402,23 @@ export const WebTrader = () => {
                 <TradingChart symbol={selectedAsset?.symbol || ''} />
               </div>
 
-              {/* Trading Panel and Order Management - 200px Fixed Height */}
-              <div className="h-[200px] grid grid-cols-1 lg:grid-cols-2 gap-4">
-                {/* Advanced Trading Panel */}
-                <Card className="bg-card/80 backdrop-blur border-border/50 flex flex-col">
-                  <CardHeader className="pb-3">
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="text-lg">
-                        {selectedAsset ? selectedAsset.symbol : 'Select Asset'}
-                      </CardTitle>
-                        {profile && (
-                          <Badge variant="outline" className="text-xs">
-                            Balance: ${profile.balance.toFixed(2)}
-                          </Badge>
-                        )}
-                    </div>
-                    <CardDescription className="flex items-center gap-2">
-                      <div className={`h-2 w-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                      <span className="text-xs">
-                        {isConnected ? 'Live Updates' : 'Disconnected'}
-                        {lastUpdate && ` • ${lastUpdate.toLocaleTimeString()}`}
-                      </span>
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="flex-1 overflow-y-auto">
-                    <EnhancedTradingPanel
-                      selectedAsset={selectedAsset}
-                      amount={amount}
-                      leverage={leverage}
-                      onAmountChange={setAmount}
-                      onLeverageChange={setLeverage}
-                      onTrade={handleEnhancedTrade}
-                      userProfile={profile}
-                      isExecuting={isExecuting}
-                    />
-                  </CardContent>
-                </Card>
-
-                {/* Order Management */}
-                <div className="flex flex-col">
-                  <OrderManagement />
-                </div>
-              </div>
+              {/* Trading Tabs Interface - 200px Fixed Height */}
+              <TradingTabsInterface
+                selectedAsset={selectedAsset}
+                amount={amount}
+                leverage={leverage}
+                onAmountChange={setAmount}
+                onLeverageChange={setLeverage}
+                onTrade={handleEnhancedTrade}
+                userProfile={profile}
+                isExecuting={isExecuting}
+                openTrades={openTrades}
+                realtimeAssets={realtimeAssets}
+                onCloseTrade={(tradeId) => {
+                  const asset = realtimeAssets.find(a => openTrades.find(t => t.id === tradeId)?.asset_id === a.id);
+                  handleCloseTrade(tradeId, asset?.price || 0);
+                }}
+              />
             </div>
           </div>
         )}
