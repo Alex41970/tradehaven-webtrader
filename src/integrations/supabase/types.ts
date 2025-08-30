@@ -576,6 +576,10 @@ export type Database = {
             }
         Returns: number
       }
+      gen_random_uuid: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       generate_bot_license: {
         Args: { _admin_id: string; _expires_at?: string }
         Returns: string
