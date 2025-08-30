@@ -74,30 +74,7 @@ export const WebTrader = () => {
     }
   }, [realtimeAssets, selectedAsset]);
 
-  // Set up real-time subscription for user profile updates
-  useEffect(() => {
-    if (!profile?.user_id) return;
-
-    const channel = supabase
-      .channel('profile-balance-updates')
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'user_profiles',
-          filter: `user_id=eq.${profile.user_id}`
-        },
-        () => {
-          refetchProfile();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [profile?.user_id]); // Removed refetchProfile to prevent infinite loop
+  // Real-time updates are now handled by WebSocket system, no need for Supabase subscriptions
 
   // Calculate margin required
   const calculateMargin = useMemo(() => {

@@ -11,6 +11,8 @@ import { BotActiveView } from "@/components/BotActiveView";
 import { DepositModal } from "@/components/DepositModal";
 import { WithdrawModal } from "@/components/WithdrawModal";
 import { TransactionHistoryPopup } from "@/components/TransactionHistoryPopup";
+import TradingStatusIndicator from "@/components/TradingStatusIndicator";
+import { ConnectionStatus } from "@/components/ConnectionStatus";
 import { LogOut, TrendingUp, DollarSign, Activity, ExternalLink, Plus, Minus, BarChart3, Target, Trophy, Shield, TrendingDown, Zap, Award, Bot, History, ArrowUpRight, ArrowDownLeft, Clock, CheckCircle, XCircle, Loader } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useUserProfile } from "@/hooks/useUserProfile";
@@ -169,10 +171,8 @@ const Dashboard = () => {
                   Connect Your Trading Bot
                 </Button>
               ) : null}
-              <Badge variant="outline" className="text-sm">
-                <Activity className="w-3 h-3 mr-1" />
-                Live Data
-              </Badge>
+              <ConnectionStatus />
+              <TradingStatusIndicator />
               <span className="text-sm text-muted-foreground">Welcome, {user?.email}</span>
               <Button variant="outline" size="sm" onClick={handleSignOut} disabled={signingOut}>
                 <LogOut className="h-4 w-4 mr-2" />

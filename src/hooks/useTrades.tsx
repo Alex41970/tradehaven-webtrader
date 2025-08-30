@@ -1,6 +1,8 @@
+import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "./useAuth";
 import { useRealTimeTrading } from './useRealTimeTrading';
 import { useRealTimePrices } from './useRealTimePrices';
+import { supabase } from "@/integrations/supabase/client";
 import { calculateRealTimePnL } from '@/utils/pnlCalculator';
 
 export interface Trade {
@@ -26,27 +28,62 @@ export interface Trade {
 
 export const useTrades = () => {
   const { user } = useAuth();
+  const [dbTrades, setDbTrades] = useState<Trade[]>([]);
+  const [dbLoading, setDbLoading] = useState(true);
+  
   const { 
-    trades, 
-    loading,
-    openTrades,
-    closedTrades,
-    botTrades,
-    userTrades,
-    openBotTrades,
-    openUserTrades,
-    closedBotTrades,
-    closedUserTrades,
+    trades: realtimeTrades, 
+    loading: realtimeLoading,
+    isConnected,
     openTrade: realtimeOpenTrade,
     closeTrade: realtimeCloseTrade
   } = useRealTimeTrading();
   
   const { getUpdatedAssets } = useRealTimePrices();
 
-  // Legacy fetch function (no longer used with WebSocket)
-  const fetchTrades = async () => {
-    console.log('fetchTrades called - now using real-time WebSocket');
-  };
+  // Fallback database query
+  const fetchTrades = useCallback(async () => {
+    if (!user) {
+      setDbLoading(false);
+      return;
+    }
+
+    try {
+      setDbLoading(true);
+      const { data, error } = await supabase
+        .from('trades')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setDbTrades((data || []) as Trade[]);
+    } catch (error) {
+      console.error('Error fetching trades from database:', error);
+      setDbTrades([]);
+    } finally {
+      setDbLoading(false);
+    }
+  }, [user]);
+
+  // Initial database load
+  useEffect(() => {
+    fetchTrades();
+  }, [fetchTrades]);
+
+  // Use real-time data if connected, fallback to database data
+  const trades = isConnected && realtimeTrades.length > 0 ? realtimeTrades : dbTrades;
+  const loading = isConnected ? realtimeLoading : dbLoading;
+
+  // Derived data
+  const openTrades = trades.filter(trade => trade.status === 'open');
+  const closedTrades = trades.filter(trade => trade.status === 'closed');
+  const botTrades = trades.filter(trade => trade.trade_source === 'bot');
+  const userTrades = trades.filter(trade => trade.trade_source === 'user');
+  const openBotTrades = trades.filter(trade => trade.status === 'open' && trade.trade_source === 'bot');
+  const openUserTrades = trades.filter(trade => trade.status === 'open' && trade.trade_source === 'user');
+  const closedBotTrades = trades.filter(trade => trade.status === 'closed' && trade.trade_source === 'bot');
+  const closedUserTrades = trades.filter(trade => trade.status === 'closed' && trade.trade_source === 'user');
 
   const openTrade = async (
     assetId: string,
@@ -60,43 +97,89 @@ export const useTrades = () => {
     if (!user) return null;
 
     try {
-      console.log('Opening trade via WebSocket:', { assetId, symbol, tradeType, amount, leverage, openPrice, marginUsed });
+      // Try WebSocket first if connected
+      if (isConnected) {
+        console.log('Opening trade via WebSocket:', { assetId, symbol, tradeType, amount, leverage, openPrice, marginUsed });
+        await realtimeOpenTrade(assetId, symbol, tradeType, amount, leverage, openPrice, marginUsed);
+      } else {
+        // Fallback to direct database insertion
+        console.log('Opening trade via database (WebSocket not connected)');
+        const { data, error } = await supabase
+          .from('trades')
+          .insert({
+            user_id: user.id,
+            asset_id: assetId,
+            symbol,
+            trade_type: tradeType,
+            amount,
+            leverage,
+            open_price: openPrice,
+            current_price: openPrice,
+            margin_used: marginUsed,
+            status: 'open',
+            trade_source: 'user',
+            pnl: 0
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
+        
+        // Refresh database data
+        await fetchTrades();
+      }
       
-      await realtimeOpenTrade(assetId, symbol, tradeType, amount, leverage, openPrice, marginUsed);
-      
-      // Return a mock trade object for compatibility
-      return {
-        id: 'pending',
-        user_id: user.id,
-        asset_id: assetId,
-        symbol,
-        trade_type: tradeType,
-        amount,
-        leverage,
-        open_price: openPrice,
-        current_price: openPrice,
-        margin_used: marginUsed,
-        status: 'open' as const,
-        trade_source: 'user' as const,
-        pnl: 0,
-        opened_at: new Date().toISOString(),
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      };
+      return true;
     } catch (error) {
-      console.error('Error opening trade via WebSocket:', error);
+      console.error('Error opening trade:', error);
       throw error;
     }
   };
 
   const closeTrade = async (tradeId: string, closePrice: number) => {
-    console.log('Closing trade via WebSocket:', tradeId, 'at price:', closePrice);
-    
     try {
-      await realtimeCloseTrade(tradeId, closePrice);
+      // Try WebSocket first if connected
+      if (isConnected) {
+        console.log('Closing trade via WebSocket:', tradeId, 'at price:', closePrice);
+        await realtimeCloseTrade(tradeId, closePrice);
+      } else {
+        // Fallback to direct database update
+        console.log('Closing trade via database (WebSocket not connected)');
+        
+        // Get trade details for P&L calculation
+        const { data: trade } = await supabase
+          .from('trades')
+          .select('*')
+          .eq('id', tradeId)
+          .single();
+
+        if (!trade) throw new Error('Trade not found');
+
+        // Calculate P&L
+        const pnl = trade.trade_type === 'BUY' 
+          ? (closePrice - trade.open_price) * trade.amount * trade.leverage
+          : (trade.open_price - closePrice) * trade.amount * trade.leverage;
+
+        // Update trade
+        const { error } = await supabase
+          .from('trades')
+          .update({
+            status: 'closed',
+            close_price: closePrice,
+            pnl,
+            closed_at: new Date().toISOString()
+          })
+          .eq('id', tradeId);
+
+        if (error) throw error;
+        
+        // Refresh database data
+        await fetchTrades();
+      }
+      
       return true;
     } catch (error) {
-      console.error('Error closing trade via WebSocket:', error);
+      console.error('Error closing trade:', error);
       throw error;
     }
   };
@@ -122,7 +205,7 @@ export const useTrades = () => {
     refetch: fetchTrades,
     openTrade,
     closeTrade,
-    updateTradePnL,
-    recalculateMargins: async () => true, // No longer needed with real-time system
+    updateTradePnL: async () => {}, // No longer needed with real-time system
+    recalculateMargins: async () => true,
   };
 };

@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "./useAuth";
 import { toast } from "@/hooks/use-toast";
 import { useRealTimeTrading } from './useRealTimeTrading';
+import { supabase } from "@/integrations/supabase/client";
 
 export interface UserProfile {
   id: string;
@@ -20,16 +21,44 @@ export interface UserProfile {
 
 export const useUserProfile = () => {
   const { user } = useAuth();
-  const { profile: realtimeProfile, loading: realtimeLoading } = useRealTimeTrading();
+  const [dbProfile, setDbProfile] = useState<UserProfile | null>(null);
+  const [dbLoading, setDbLoading] = useState(true);
   
-  // Return real-time profile data directly
-  const profile = realtimeProfile as UserProfile | null;
-  const loading = realtimeLoading;
+  const { profile: realtimeProfile, loading: realtimeLoading, isConnected } = useRealTimeTrading();
+  
+  // Use real-time data if connected, fallback to database data
+  const profile = (isConnected && realtimeProfile) ? realtimeProfile as UserProfile : dbProfile;
+  const loading = isConnected ? realtimeLoading : dbLoading;
 
-  // Legacy fetch function (no longer used with real-time)
+  // Fallback database fetch
   const fetchProfile = useCallback(async () => {
-    console.log('fetchProfile called - now using real-time data');
-  }, []);
+    if (!user) {
+      setDbLoading(false);
+      return;
+    }
+
+    try {
+      setDbLoading(true);
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+
+      if (error) throw error;
+      setDbProfile(data);
+    } catch (error) {
+      console.error('Error fetching user profile from database:', error);
+      setDbProfile(null);
+    } finally {
+      setDbLoading(false);
+    }
+  }, [user]);
+
+  // Initial database load
+  useEffect(() => {
+    fetchProfile();
+  }, [fetchProfile]);
 
   // Force refresh function (no longer needed with real-time)
   const forceRefresh = useCallback(async () => {
