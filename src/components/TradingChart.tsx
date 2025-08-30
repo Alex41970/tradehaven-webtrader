@@ -7,10 +7,12 @@ interface TradingChartProps {
 export const TradingChart = ({ symbol }: TradingChartProps) => {
   const chartRef = useRef<HTMLDivElement>(null);
 
-  // Map asset symbols to proper TradingView symbols
+  // Map asset symbols to proper TradingView symbols (FREE WIDGET COMPATIBLE)
   const getProperSymbol = (symbol: string): string => {
+    console.log(`[TradingChart] Mapping symbol: ${symbol}`);
+    
     const symbolMappings: Record<string, string> = {
-      // Crypto
+      // Crypto (BINANCE works reliably in free widget)
       'BTCUSD': 'BINANCE:BTCUSDT',
       'ETHUSD': 'BINANCE:ETHUSDT', 
       'XRPUSD': 'BINANCE:XRPUSDT',
@@ -34,7 +36,7 @@ export const TradingChart = ({ symbol }: TradingChartProps) => {
       'LTCUSD': 'BINANCE:LTCUSDT',
       'MATICUSD': 'BINANCE:MATICUSDT',
       
-      // Stocks
+      // Major US Stocks (only widely available ones)
       'AAPL': 'NASDAQ:AAPL',
       'GOOGL': 'NASDAQ:GOOGL',
       'TSLA': 'NASDAQ:TSLA',
@@ -65,7 +67,7 @@ export const TradingChart = ({ symbol }: TradingChartProps) => {
       'CVX': 'NYSE:CVX',
       'COP': 'NYSE:COP',
       
-      // Forex
+      // Major Forex (FX: prefix works reliably)
       'EURUSD': 'FX:EURUSD',
       'GBPUSD': 'FX:GBPUSD',
       'USDJPY': 'FX:USDJPY',
@@ -88,7 +90,7 @@ export const TradingChart = ({ symbol }: TradingChartProps) => {
       'NZDJPY': 'FX:NZDJPY',
       'EURGBP': 'FX:EURGBP',
       
-      // Indices
+      // Major Global Indices (TVC: prefix for major ones)
       'US30': 'TVC:DJI',
       'DJ30': 'TVC:DJI',
       'SPX500': 'TVC:SPX',
@@ -102,51 +104,72 @@ export const TradingChart = ({ symbol }: TradingChartProps) => {
       'HK50': 'TVC:HSI',
       'CHN50': 'TVC:SHCOMP',
       'US2000': 'TVC:RUT',
-      'CAN60': 'TSX:XTSE',
       'VIX': 'TVC:VIX',
-      'AUS200': 'ASX:XJO',
       'JPN225': 'TVC:NI225',
+      // Fallback regional indices to major global ones
+      'CAN60': 'TVC:SPX', // Fallback to S&P 500
+      'AUS200': 'TVC:SPX', // Fallback to S&P 500
       
-      // Commodities - Metals (using more reliable symbols)
+      // Basic Commodities (TVC: spot prices only - no futures)
       'XAUUSD': 'TVC:GOLD',
       'XAGUSD': 'TVC:SILVER',
       'XPTUSD': 'TVC:PLATINUM',
       'XPDUSD': 'TVC:PALLADIUM',
-      'COPPER': 'COMEX:HG1!',
-      'ALUMINUM': 'COMEX:HG1!', // Fallback to copper for LME issues
-      'ZINC': 'COMEX:HG1!', // Fallback to copper for LME issues
+      'COPPER': 'TVC:COPPER',
+      'ALUMINUM': 'TVC:COPPER', // Fallback to copper
+      'ZINC': 'TVC:COPPER', // Fallback to copper  
       'PLATINUM': 'TVC:PLATINUM',
       'PALLADIUM': 'TVC:PALLADIUM',
       
-      // Commodities - Energy
+      // Energy Commodities (TVC: spot prices)
       'WTIUSD': 'TVC:USOIL',
       'BCOUSD': 'TVC:UKOIL',
       'NATGAS': 'TVC:NATURALGAS',
       'HEATING': 'TVC:USOIL', // Fallback to crude oil
       'GASOLINE': 'TVC:USOIL', // Fallback to crude oil
       
-      // Commodities - Agricultural
-      'WHEAT': 'CBOT:ZW1!',
-      'CORN': 'CBOT:ZC1!',
-      'SOYBEANS': 'CBOT:ZS1!',
+      // Agricultural Commodities (TVC: basic symbols)
+      'WHEAT': 'TVC:WHEAT',
+      'CORN': 'TVC:CORN',
+      'SOYBEANS': 'TVC:SOYBEAN',
       'SUGAR': 'TVC:SUGAR',
       'COFFEE': 'TVC:COFFEE',
       'COTTON': 'TVC:COTTON',
       'COCOA': 'TVC:COCOA',
     };
     
-    // Better fallback strategy - try multiple options
     const mappedSymbol = symbolMappings[symbol];
     if (mappedSymbol) {
+      console.log(`[TradingChart] Mapped ${symbol} -> ${mappedSymbol}`);
       return mappedSymbol;
     }
     
-    // Fallback logic based on symbol pattern
-    if (symbol.includes('USD')) {
-      return `FX:${symbol}`;
+    // Enhanced fallback logic
+    console.log(`[TradingChart] No mapping found for ${symbol}, using fallback logic`);
+    
+    // Crypto fallback - try BINANCE
+    if (symbol.includes('USD') && (symbol.includes('BTC') || symbol.includes('ETH') || symbol.length <= 6)) {
+      const fallback = `BINANCE:${symbol.replace('USD', 'USDT')}`;
+      console.log(`[TradingChart] Crypto fallback: ${fallback}`);
+      return fallback;
     }
     
-    // Default fallback to show at least something
+    // Forex fallback - try FX prefix
+    if (symbol.includes('USD') || symbol.length === 6) {
+      const fallback = `FX:${symbol}`;
+      console.log(`[TradingChart] Forex fallback: ${fallback}`);
+      return fallback;
+    }
+    
+    // Stock fallback - try NASDAQ for 3-4 letter symbols
+    if (symbol.length <= 4 && !symbol.includes('USD')) {
+      const fallback = `NASDAQ:${symbol}`;
+      console.log(`[TradingChart] Stock fallback: ${fallback}`);
+      return fallback;
+    }
+    
+    // Ultimate fallback - show S&P 500
+    console.log(`[TradingChart] Using ultimate fallback: TVC:SPX`);
     return 'TVC:SPX';
   };
 
