@@ -423,7 +423,7 @@ const Dashboard = () => {
                   </ToggleGroupItem>
                 </ToggleGroup>
                 
-                <div className="space-y-2 max-h-64 overflow-y-auto">
+                <div className="space-y-2 max-h-64 overflow-y-auto pr-4">
                   <div className="flex items-center justify-between">
                     <span className="text-xs text-muted-foreground flex items-center">
                       <BarChart3 className="w-3 h-3 mr-1" />
