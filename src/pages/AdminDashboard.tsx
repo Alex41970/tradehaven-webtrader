@@ -121,8 +121,8 @@ const AdminDashboard = () => {
       }
 
       // Check if user has admin role before proceeding
-      if (!isAdmin()) {
-        console.error('❌ AdminDashboard: User does not have admin role');
+      if (!role || (role !== 'admin' && role !== 'super_admin')) {
+        console.error('❌ AdminDashboard: User does not have admin role. Current role:', role);
         setError('Access denied. Admin role required.');
         setLoading(false);
         return;
@@ -130,19 +130,45 @@ const AdminDashboard = () => {
 
       console.log('✅ AdminDashboard: User authenticated as admin, fetching data...');
       console.log('AdminDashboard: Fetching users for admin:', user.id);
-      const { data: usersData, error: usersError } = await supabase
-        .from('user_profiles')
-        .select('*')
+      
+      // First get user IDs from admin_user_relationships
+      const { data: relationshipsData, error: relationshipsError } = await supabase
+        .from('admin_user_relationships')
+        .select('user_id')
         .eq('admin_id', user.id);
 
-      if (usersError) {
-        console.error('AdminDashboard: Error fetching users:', usersError);
+      if (relationshipsError) {
+        console.error('AdminDashboard: Error fetching user relationships:', relationshipsError);
         toast({
           title: "Error",
-          description: `Failed to fetch user data: ${usersError.message}`,
+          description: `Failed to fetch user relationships: ${relationshipsError.message}`,
           variant: "destructive",
         });
-        throw usersError;
+        throw relationshipsError;
+      }
+
+      // Get user IDs and fetch their profiles
+      const assignedUserIds = relationshipsData?.map(rel => rel.user_id) || [];
+      console.log('AdminDashboard: Found assigned user IDs:', assignedUserIds);
+
+      let usersData = [];
+      if (assignedUserIds.length > 0) {
+        const { data: profiles, error: usersError } = await supabase
+          .from('user_profiles')
+          .select('*')
+          .in('user_id', assignedUserIds);
+
+        if (usersError) {
+          console.error('AdminDashboard: Error fetching users:', usersError);
+          toast({
+            title: "Error",
+            description: `Failed to fetch user data: ${usersError.message}`,
+            variant: "destructive",
+          });
+          throw usersError;
+        }
+
+        usersData = profiles || [];
       }
 
       console.log('AdminDashboard: Found users:', usersData?.length || 0);
