@@ -190,7 +190,7 @@ export const useProfessionalMetrics = (trades: Trade[], balance: number) => {
     const returnStdDev = Math.sqrt(returnVariance);
     const sharpeRatio = returnStdDev > 0 ? avgReturn / returnStdDev : 0;
     
-    // Calculate consecutive win/loss streaks
+    // Calculate consecutive win/loss streaks - fixed logic
     let currentWinStreak = 0;
     let currentLossStreak = 0;
     let longestWinStreak = 0;
@@ -198,19 +198,38 @@ export const useProfessionalMetrics = (trades: Trade[], balance: number) => {
     let consecutiveWins = 0;
     let consecutiveLosses = 0;
     
-    for (let i = sortedTrades.length - 1; i >= 0; i--) {
+    // Go through trades in chronological order to track all streaks
+    for (let i = 0; i < sortedTrades.length; i++) {
       const pnl = sortedTrades[i].pnl || 0;
       
       if (pnl > 0) {
         currentWinStreak++;
         longestWinStreak = Math.max(longestWinStreak, currentWinStreak);
-        if (i === sortedTrades.length - 1) consecutiveWins = currentWinStreak;
         currentLossStreak = 0;
       } else if (pnl < 0) {
         currentLossStreak++;
         longestLossStreak = Math.max(longestLossStreak, currentLossStreak);
-        if (i === sortedTrades.length - 1) consecutiveLosses = currentLossStreak;
         currentWinStreak = 0;
+      }
+    }
+    
+    // For current consecutive streaks, check the most recent trades
+    // Go backwards from the last trade to find current streak
+    let i = sortedTrades.length - 1;
+    if (i >= 0) {
+      const lastPnl = sortedTrades[i].pnl || 0;
+      if (lastPnl > 0) {
+        // Last trade was winning, count back consecutive wins
+        while (i >= 0 && (sortedTrades[i].pnl || 0) > 0) {
+          consecutiveWins++;
+          i--;
+        }
+      } else if (lastPnl < 0) {
+        // Last trade was losing, count back consecutive losses
+        while (i >= 0 && (sortedTrades[i].pnl || 0) < 0) {
+          consecutiveLosses++;
+          i--;
+        }
       }
     }
     

@@ -26,6 +26,8 @@ import { useBotStatus } from "@/hooks/useBotStatus";
 import { useTransactionHistory, TransactionHistory } from "@/hooks/useTransactionHistory";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { useFixUserBalance } from "@/hooks/useFixUserBalance";
+import { useToast } from "@/hooks/use-toast";
 const Dashboard = () => {
   const { user, signOut } = useAuth();
   const { profile, loading: profileLoading, refetch: refetchProfile } = useUserProfile();
@@ -48,6 +50,20 @@ const Dashboard = () => {
   
   // Transaction history
   const { transactionHistory, loading: transactionLoading } = useTransactionHistory();
+  
+  // Balance fix functionality
+  const { fixUserBalance, isFixing } = useFixUserBalance();
+  const { toast } = useToast();
+
+  const handleFixBalance = async () => {
+    if (user?.id) {
+      const success = await fixUserBalance(user.id);
+      if (success) {
+        // Refresh profile data after successful balance fix
+        refetchProfile();
+      }
+    }
+  };
 
   const handleSignOut = async () => {
     if (signingOut) return;
@@ -345,6 +361,18 @@ const Dashboard = () => {
                   >
                     <Minus className="h-4 w-4 mr-2" />
                     Withdraw
+                  </Button>
+                  
+                  {/* Temporary Balance Fix Button */}
+                  <Button 
+                    variant="destructive" 
+                    size="sm" 
+                    className="w-full justify-start"
+                    onClick={handleFixBalance}
+                    disabled={isFixing}
+                  >
+                    <Activity className="h-4 w-4 mr-2" />
+                    {isFixing ? "Fixing..." : "Fix Balance"}
                   </Button>
                 </div>
 
