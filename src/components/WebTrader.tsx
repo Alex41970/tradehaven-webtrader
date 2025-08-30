@@ -19,7 +19,6 @@ import { PulsingPriceIndicator } from "@/components/PulsingPriceIndicator";
 
 export const WebTrader = () => {
   const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
-  const [tradeType, setTradeType] = useState<'BUY' | 'SELL'>('BUY');
   const [amount, setAmount] = useState<string>('1');
   const [leverage, setLeverage] = useState<number>(1);
   const [searchTerm, setSearchTerm] = useState('');
@@ -136,7 +135,7 @@ export const WebTrader = () => {
     }
   }, [selectedAsset?.price, selectedAsset?.contract_size, selectedAsset?.category, amount]);
 
-  const handleTrade = async () => {
+  const handleTrade = async (tradeType: 'BUY' | 'SELL') => {
     if (!selectedAsset || !profile) {
       toast({
         title: "Error",
@@ -487,45 +486,6 @@ export const WebTrader = () => {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="tradeType">Trade Type</Label>
-                  <Select value={tradeType} onValueChange={(value: 'BUY' | 'SELL') => setTradeType(value)}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="BUY">BUY</SelectItem>
-                      <SelectItem value="SELL">SELL</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div>
-                  <Label htmlFor="amount">
-                    {selectedAsset.category === 'forex' ? 'Trade Size' : 'Amount'}
-                  </Label>
-                  {selectedAsset.category === 'forex' ? (
-                    <div className="flex items-center h-10 px-3 py-2 border border-input bg-muted/20 rounded-md">
-                      <span className="text-sm">1 Standard Lot</span>
-                      <span className="text-xs text-muted-foreground ml-2">
-                        ({selectedAsset.contract_size.toLocaleString()} units)
-                      </span>
-                    </div>
-                  ) : (
-                    <Input
-                      id="amount"
-                      type="number"
-                      value={amount}
-                      onChange={(e) => setAmount(e.target.value)}
-                      placeholder="Enter amount"
-                      step={selectedAsset.min_trade_size}
-                      min={selectedAsset.min_trade_size}
-                    />
-                  )}
-                </div>
-              </div>
-
               <div>
                 <Label htmlFor="leverage">Leverage: {leverage}x</Label>
                 <Select value={leverage.toString()} onValueChange={(value) => setLeverage(parseInt(value))}>
@@ -540,6 +500,74 @@ export const WebTrader = () => {
                     ))}
                   </SelectContent>
                 </Select>
+              </div>
+
+              <div>
+                <Label htmlFor="amount">
+                  {selectedAsset.category === 'forex' ? 'Trade Size' : 'Amount'}
+                </Label>
+                {selectedAsset.category === 'forex' ? (
+                  <div className="flex items-center h-10 px-3 py-2 border border-input bg-muted/20 rounded-md">
+                    <span className="text-sm">1 Standard Lot</span>
+                    <span className="text-xs text-muted-foreground ml-2">
+                      ({selectedAsset.contract_size.toLocaleString()} units)
+                    </span>
+                  </div>
+                ) : (
+                  <Input
+                    id="amount"
+                    type="number"
+                    value={amount}
+                    onChange={(e) => setAmount(e.target.value)}
+                    placeholder="Enter amount"
+                    step={selectedAsset.min_trade_size}
+                    min={selectedAsset.min_trade_size}
+                  />
+                )}
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <Button
+                  onClick={() => handleTrade('BUY')}
+                  className="w-full"
+                  size="lg"
+                  variant="trading"
+                  disabled={
+                    isExecutingTrade ||
+                    (selectedAsset.category === 'forex' 
+                      ? calculateMargin > profile.available_margin
+                      : calculateMargin > profile.available_margin ||
+                        (parseFloat(amount) || 0) < selectedAsset.min_trade_size ||
+                        !amount)
+                  }
+                >
+                  {isExecutingTrade ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    `BUY ${selectedAsset.symbol}`
+                  )}
+                </Button>
+                
+                <Button
+                  onClick={() => handleTrade('SELL')}
+                  className="w-full"
+                  size="lg"
+                  variant="destructive"
+                  disabled={
+                    isExecutingTrade ||
+                    (selectedAsset.category === 'forex' 
+                      ? calculateMargin > profile.available_margin
+                      : calculateMargin > profile.available_margin ||
+                        (parseFloat(amount) || 0) < selectedAsset.min_trade_size ||
+                        !amount)
+                  }
+                >
+                  {isExecutingTrade ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    `SELL ${selectedAsset.symbol}`
+                  )}
+                </Button>
               </div>
 
               <div className="grid grid-cols-2 gap-4 p-4 bg-muted/20 rounded-lg border-l-4 border-l-primary/30 transition-all duration-300">
@@ -564,30 +592,6 @@ export const WebTrader = () => {
                   </div>
                 </div>
               </div>
-
-              <Button
-                onClick={handleTrade}
-                className="w-full"
-                size="lg"
-                variant={tradeType === 'BUY' ? 'trading' : 'destructive'}
-                disabled={
-                  isExecutingTrade ||
-                  (selectedAsset.category === 'forex' 
-                    ? calculateMargin > profile.available_margin
-                    : calculateMargin > profile.available_margin ||
-                      (parseFloat(amount) || 0) < selectedAsset.min_trade_size ||
-                      !amount)
-                }
-              >
-                {isExecutingTrade ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                    Executing...
-                  </>
-                ) : (
-                  `${tradeType} ${selectedAsset.symbol}`
-                )}
-              </Button>
             </CardContent>
           </Card>
         )}
