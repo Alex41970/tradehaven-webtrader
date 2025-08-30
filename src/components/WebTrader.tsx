@@ -452,22 +452,11 @@ export const WebTrader = () => {
                     <CardTitle className="text-lg">
                       {selectedAsset ? selectedAsset.symbol : 'Select Asset'}
                     </CardTitle>
-                     {profile && (
-                       <div className="flex items-center gap-2">
-                         <Badge variant="outline" className="text-xs">
-                           Balance: ${profile.balance.toFixed(2)}
-                         </Badge>
-                         <Button 
-                           variant="outline" 
-                           size="sm" 
-                           onClick={() => recalculateMargins()}
-                           className="text-xs px-2 py-1 h-6"
-                           title="Fix margin calculations"
-                         >
-                           Fix
-                         </Button>
-                       </div>
-                     )}
+                      {profile && (
+                        <Badge variant="outline" className="text-xs">
+                          Balance: ${profile.balance.toFixed(2)}
+                        </Badge>
+                      )}
                   </div>
                   <CardDescription className="flex items-center gap-2">
                     <div className={`h-2 w-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>

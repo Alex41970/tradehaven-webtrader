@@ -17,7 +17,7 @@ export const Portfolio = () => {
   // ALL HOOKS MUST BE CALLED FIRST - NO CONDITIONAL HOOK CALLS
   const { user } = useAuth();
   const { openTrades, closeTrade, loading: tradesLoading } = useTrades();
-  const { profile, loading: profileLoading, refetch: refetchProfile } = useUserProfile();
+  const { profile, loading: profileLoading, refetch: refetchProfile, recalculateMargins } = useUserProfile();
   const { assets, loading: assetsLoading } = useAssets();
   const { toast } = useToast();
   const { getUpdatedAssets } = useRealTimePrices();
@@ -126,6 +126,8 @@ export const Portfolio = () => {
       
       if (success) {
         console.log('Trade closed successfully from Portfolio');
+        // Recalculate margins to ensure accurate display
+        await recalculateMargins();
         // Trade will be removed from openTrades automatically via real-time updates
       } else {
         toast({
