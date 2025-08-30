@@ -112,7 +112,10 @@ async function handleAuth(socket: WebSocket, message: any) {
 
     console.log(`User ${user.id} authenticated via WebSocket`);
     
-    // Send authentication success and current user data
+    // Fix margins before sending initial data
+    await recalculateUserMargins(user.id);
+    
+    // Get fresh user data after margin fix
     const userProfile = await getUserProfile(user.id);
     const userTrades = await getUserTrades(user.id);
 
@@ -124,6 +127,18 @@ async function handleAuth(socket: WebSocket, message: any) {
       },
       profile: userProfile,
       trades: userTrades
+    }));
+
+    // Send specific margin update for real-time display
+    socket.send(JSON.stringify({
+      type: 'margin_update',
+      data: {
+        userId: user.id,
+        balance: userProfile?.balance || 0,
+        usedMargin: userProfile?.used_margin || 0,
+        availableMargin: userProfile?.available_margin || 0,
+        equity: userProfile?.equity || 0
+      }
     }));
 
   } catch (error) {
@@ -434,6 +449,18 @@ async function recalculateUserMargins(userId: string) {
       balance: newBalance,
       usedMargin: totalUsedMargin,
       availableMargin
+    });
+
+    // Broadcast margin update to connected user immediately
+    broadcastToUser(userId, {
+      type: 'margin_update',
+      data: {
+        userId,
+        balance: newBalance,
+        usedMargin: totalUsedMargin,
+        availableMargin,
+        equity: newBalance
+      }
     });
 
     return true;

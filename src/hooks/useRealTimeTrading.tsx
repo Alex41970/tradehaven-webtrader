@@ -73,6 +73,21 @@ export const useRealTimeTrading = () => {
       });
     };
 
+    const handleMarginUpdate = (message: TradingWebSocketMessage) => {
+      console.log('Margins updated via real-time:', message.data);
+      
+      // Update profile with new margin data
+      if (message.data) {
+        setProfile(prev => prev ? {
+          ...prev,
+          balance: message.data.balance,
+          used_margin: message.data.usedMargin,
+          available_margin: message.data.availableMargin,
+          equity: message.data.equity
+        } : null);
+      }
+    };
+
     const handleAuthError = (message: TradingWebSocketMessage) => {
       console.error('Real-time trading auth error:', message.message);
       setIsConnected(false);
@@ -149,6 +164,7 @@ export const useRealTimeTrading = () => {
     // Register event handlers
     tradingWebSocket.on('auth_success', handleAuthSuccess);
     tradingWebSocket.on('auth_error', handleAuthError);
+    tradingWebSocket.on('margin_update', handleMarginUpdate);
     tradingWebSocket.on('trade_opened', handleTradeOpened);
     tradingWebSocket.on('trade_closed', handleTradeClosed);
     tradingWebSocket.on('trade_error', handleTradeError);
@@ -160,6 +176,7 @@ export const useRealTimeTrading = () => {
     return () => {
       tradingWebSocket.off('auth_success', handleAuthSuccess);
       tradingWebSocket.off('auth_error', handleAuthError);
+      tradingWebSocket.off('margin_update', handleMarginUpdate);
       tradingWebSocket.off('trade_opened', handleTradeOpened);
       tradingWebSocket.off('trade_closed', handleTradeClosed);
       tradingWebSocket.off('trade_error', handleTradeError);
