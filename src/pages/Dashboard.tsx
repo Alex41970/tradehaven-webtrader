@@ -33,7 +33,7 @@ const Dashboard = () => {
   const [signingOut, setSigningOut] = useState(false);
   const [botModalOpen, setBotModalOpen] = useState(false);
   const [showPermissions, setShowPermissions] = useState(false);
-  const [showBotFullScreen, setShowBotFullScreen] = useState(true);
+  const [showBotFullScreen, setShowBotFullScreen] = useState(false);
   const [showDepositModal, setShowDepositModal] = useState(false);
   const [showWithdrawModal, setShowWithdrawModal] = useState(false);
   
