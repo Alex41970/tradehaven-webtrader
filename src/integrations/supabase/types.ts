@@ -718,6 +718,10 @@ export type Database = {
             }
         Returns: number
       }
+      deactivate_and_disconnect_license: {
+        Args: { _admin_id: string; _license_id: string }
+        Returns: Json
+      }
       gen_random_uuid: {
         Args: Record<PropertyKey, never>
         Returns: string

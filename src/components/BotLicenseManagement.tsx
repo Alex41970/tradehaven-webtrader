@@ -132,17 +132,34 @@ export const BotLicenseManagement: React.FC = () => {
 
   const toggleLicense = async (licenseId: string, isActive: boolean) => {
     try {
-      const { error } = await supabase
-        .from('bot_licenses')
-        .update({ is_active: !isActive })
-        .eq('id', licenseId);
+      if (isActive) {
+        // If deactivating, use the enhanced function that disconnects users
+        const { data, error } = await supabase.rpc('deactivate_and_disconnect_license', {
+          _admin_id: user?.id,
+          _license_id: licenseId,
+        });
 
-      if (error) throw error;
+        if (error) throw error;
 
-      toast({
-        title: "License Updated",
-        description: `License ${!isActive ? 'activated' : 'deactivated'}`,
-      });
+        const result = data as any;
+        toast({
+          title: "License Deactivated",
+          description: result.message || "License deactivated successfully",
+        });
+      } else {
+        // Simple activation
+        const { error } = await supabase
+          .from('bot_licenses')
+          .update({ is_active: true })
+          .eq('id', licenseId);
+
+        if (error) throw error;
+
+        toast({
+          title: "License Activated",
+          description: "License is now active and can be used",
+        });
+      }
 
       await fetchLicenses();
     } catch (error) {
@@ -165,11 +182,11 @@ export const BotLicenseManagement: React.FC = () => {
 
   const deleteLicense = async (license: License) => {
     try {
-      // Prevent deletion of licenses in use
-      if (license.used_by_user_id) {
+      // Allow deletion only of deactivated licenses, or active licenses not in use
+      if (license.is_active && license.used_by_user_id) {
         toast({
-          title: "Cannot Delete License",
-          description: "This license is currently in use and cannot be deleted",
+          title: "Cannot Delete Active License",
+          description: "Please deactivate this license first to disconnect users, then delete it",
           variant: "destructive",
         });
         return;
@@ -373,7 +390,7 @@ export const BotLicenseManagement: React.FC = () => {
                              variant="outline"
                              size="sm"
                              className="text-destructive hover:bg-destructive/10"
-                             disabled={license.used_by_user_id !== null}
+                             disabled={license.is_active && license.used_by_user_id !== null}
                            >
                              <Trash2 className="h-3 w-3" />
                            </Button>
