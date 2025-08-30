@@ -143,13 +143,16 @@ const AdminDashboard = () => {
         console.log('AdminDashboard: Found trades:', tradesData.length);
       }
 
-      // Fetch deposit requests for these users
+      // Fetch deposit requests for these users with user profile information
       let depositRequestsData = [];
       if (userIds.length > 0) {
         console.log('AdminDashboard: Fetching deposit requests for user IDs:', userIds);
         const { data: deposits, error: depositsError } = await supabase
           .from('deposit_requests')
-          .select('*')
+          .select(`
+            *,
+            user_profiles(first_name, surname, email, phone_number)
+          `)
           .in('user_id', userIds);
 
         if (depositsError) {
@@ -157,21 +160,20 @@ const AdminDashboard = () => {
           throw depositsError;
         }
         
-        // Add user email to deposit requests for easier display
-        depositRequestsData = (deposits || []).map(deposit => ({
-          ...deposit,
-          user_email: usersData?.find(u => u.user_id === deposit.user_id)?.email || 'Unknown'
-        }));
+        depositRequestsData = deposits || [];
         console.log('AdminDashboard: Found deposit requests:', depositRequestsData.length);
       }
 
-      // Fetch withdrawal requests for these users
+      // Fetch withdrawal requests for these users with user profile information
       let withdrawalRequestsData = [];
       if (userIds.length > 0) {
         console.log('AdminDashboard: Fetching withdrawal requests for user IDs:', userIds);
         const { data: withdrawals, error: withdrawalsError } = await supabase
           .from('withdrawal_requests')
-          .select('*')
+          .select(`
+            *,
+            user_profiles(first_name, surname, email, phone_number)
+          `)
           .in('user_id', userIds);
 
         if (withdrawalsError) {
@@ -179,11 +181,7 @@ const AdminDashboard = () => {
           throw withdrawalsError;
         }
         
-        // Add user email to withdrawal requests for easier display
-        withdrawalRequestsData = (withdrawals || []).map(withdrawal => ({
-          ...withdrawal,
-          user_email: usersData?.find(u => u.user_id === withdrawal.user_id)?.email || 'Unknown'
-        }));
+        withdrawalRequestsData = withdrawals || [];
         console.log('AdminDashboard: Found withdrawal requests:', withdrawalRequestsData.length);
       }
 
