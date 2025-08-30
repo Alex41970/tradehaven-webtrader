@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 import { toast } from "@/hooks/use-toast";
+import { useMarginManager } from "./useMarginManager";
 
 export interface Trade {
   id: string;
@@ -28,19 +29,7 @@ export const useTrades = () => {
   const { user } = useAuth();
   const [trades, setTrades] = useState<Trade[]>([]);
   const [loading, setLoading] = useState(true);
-  
-  // Import recalculateMargins for automatic margin management
-  const [recalculateMargins, setRecalculateMargins] = useState<(() => Promise<boolean>) | null>(null);
-  
-  // Get recalculateMargins function from useUserProfile when available
-  useEffect(() => {
-    if (user) {
-      import('./useUserProfile').then(module => {
-        const { useUserProfile } = module;
-        // We'll set this up properly below
-      });
-    }
-  }, [user]);
+  const { recalculateMargins } = useMarginManager();
 
   useEffect(() => {
     if (user) {
@@ -163,16 +152,14 @@ export const useTrades = () => {
       console.log('Trade opened successfully:', data);
       console.log('New trade ID:', data.id, 'Margin used:', marginUsed);
       
-      // Auto-recalculate margins after opening trade
+      // Database triggers will automatically handle margin recalculation
+      // But add a small delay to ensure the trigger completes
       setTimeout(async () => {
-        try {
-          const { useUserProfile } = await import('./useUserProfile');
-          // We need to get the recalculateMargins function from the hook
-          // This will be handled by the component that uses both hooks
-        } catch (error) {
-          console.error('Error auto-recalculating margins on trade open:', error);
+        const consistency = await recalculateMargins();
+        if (!consistency) {
+          console.warn('Margin recalculation may have failed after trade opening');
         }
-      }, 100);
+      }, 500);
       
       // Don't show toast here - let WebTrader handle it for better UX flow
       return data;
@@ -282,15 +269,14 @@ export const useTrades = () => {
         variant: pnlResult >= 0 ? "default" : "destructive",
       });
 
-      // Auto-recalculate margins after closing trade
+      // Database triggers will automatically handle margin recalculation
+      // But add a small delay to ensure the trigger completes and provide fallback
       setTimeout(async () => {
-        try {
-          const { useUserProfile } = await import('./useUserProfile');
-          // This will be handled by the component that uses both hooks
-        } catch (error) {
-          console.error('Error auto-recalculating margins on trade close:', error);
+        const consistency = await recalculateMargins();
+        if (!consistency) {
+          console.warn('Margin recalculation may have failed after trade closing');
         }
-      }, 100);
+      }, 500);
 
       return true;
     } catch (error) {
@@ -376,5 +362,6 @@ export const useTrades = () => {
     openTrade,
     closeTrade,
     updateTradePnL,
+    recalculateMargins, // Expose margin management function
   };
 };

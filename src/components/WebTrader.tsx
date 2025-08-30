@@ -24,7 +24,7 @@ import { SimplePriceIndicator } from "./SimplePriceIndicator";
 export const WebTrader = () => {
   const { assets, loading: assetsLoading } = useAssets();
   const { openTrade, closeTrade, openTrades, loading: tradesLoading } = useTrades();
-  const { profile, loading: profileLoading, refetch: refetchProfile, recalculateMargins } = useUserProfile();
+  const { profile, loading: profileLoading, refetch: refetchProfile } = useUserProfile();
   const { favorites, addFavorite, removeFavorite } = useFavorites();
   const { getUpdatedAssets, isConnected, lastUpdate } = useRealTimePrices();
   const { createOrder } = useTradeOrders();
@@ -164,9 +164,8 @@ export const WebTrader = () => {
           description: `${tradeType} order for ${selectedAsset.symbol} executed successfully`,
         });
         
-        // Recalculate margins to ensure accuracy
-        console.log('Recalculating margins after trade execution...');
-        await recalculateMargins();
+        // Database triggers will automatically handle margin recalculation
+        console.log('Trade executed successfully, margins will be auto-calculated by database triggers');
       }
     } catch (error) {
       console.error('Trade execution error:', error);
@@ -221,9 +220,8 @@ export const WebTrader = () => {
             title: "Market Order Executed",
             description: `${orderData.tradeType} order for ${selectedAsset.symbol} executed successfully`,
           });
-          // Recalculate margins to ensure accuracy
-          console.log('Recalculating margins after market order...');
-          await recalculateMargins();
+          // Database triggers will automatically handle margin recalculation
+          console.log('Market order executed successfully, margins will be auto-calculated by database triggers');
         }
       } else {
         // Create pending order
@@ -263,9 +261,8 @@ export const WebTrader = () => {
     setIsExecuting(true);
     try {
       await closeTrade(tradeId, closePrice);
-      // Recalculate margins to ensure accuracy after closing trade
-      console.log('Recalculating margins after trade close...');
-      await recalculateMargins();
+      // Database triggers will automatically handle margin recalculation
+      console.log('Trade closed successfully, margins will be auto-calculated by database triggers');
     } catch (error) {
       console.error('Error closing trade:', error);
     } finally {

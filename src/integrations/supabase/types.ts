@@ -693,6 +693,10 @@ export type Database = {
         Args: { _promo_code: string; _user_id: string }
         Returns: Json
       }
+      auto_recalculate_user_margins: {
+        Args: { _user_id: string }
+        Returns: undefined
+      }
       calculate_pnl: {
         Args:
           | {
@@ -781,6 +785,10 @@ export type Database = {
       transfer_user_to_admin: {
         Args: { _new_admin_id: string; _user_id: string }
         Returns: boolean
+      }
+      validate_margin_consistency: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
       }
     }
     Enums: {
