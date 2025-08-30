@@ -421,44 +421,46 @@ export const WebTrader = () => {
             </div>
 
             {/* Bottom Row: Trading Panel + Order Management */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
               {/* Trading Panel */}
-              <Card className="bg-card/80 backdrop-blur border-border/50">
-                <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-lg">
-                      {selectedAsset ? selectedAsset.symbol : 'Select Asset'}
-                    </CardTitle>
-                      {profile && (
-                        <Badge variant="outline" className="text-xs">
-                          Balance: ${profile.balance.toFixed(2)}
-                        </Badge>
-                      )}
-                  </div>
-                  <CardDescription className="flex items-center gap-2">
-                    <div className={`h-2 w-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                    <span className="text-xs">
-                      {isConnected ? 'Live Updates' : 'Disconnected'}
-                      {lastUpdate && ` • ${lastUpdate.toLocaleTimeString()}`}
-                    </span>
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <EnhancedTradingPanel
-                    selectedAsset={selectedAsset}
-                    amount={amount}
-                    leverage={leverage}
-                    onAmountChange={setAmount}
-                    onLeverageChange={setLeverage}
-                    onTrade={handleEnhancedTrade}
-                    userProfile={profile}
-                    isExecuting={isExecuting}
-                  />
-                </CardContent>
-              </Card>
+              <div className="lg:col-span-3">
+                <Card className="bg-card/80 backdrop-blur border-border/50">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-lg">
+                        {selectedAsset ? selectedAsset.symbol : 'Select Asset'}
+                      </CardTitle>
+                        {profile && (
+                          <Badge variant="outline" className="text-xs">
+                            Balance: ${profile.balance.toFixed(2)}
+                          </Badge>
+                        )}
+                    </div>
+                    <CardDescription className="flex items-center gap-2">
+                      <div className={`h-2 w-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                      <span className="text-xs">
+                        {isConnected ? 'Live Updates' : 'Disconnected'}
+                        {lastUpdate && ` • ${lastUpdate.toLocaleTimeString()}`}
+                      </span>
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <EnhancedTradingPanel
+                      selectedAsset={selectedAsset}
+                      amount={amount}
+                      leverage={leverage}
+                      onAmountChange={setAmount}
+                      onLeverageChange={setLeverage}
+                      onTrade={handleEnhancedTrade}
+                      userProfile={profile}
+                      isExecuting={isExecuting}
+                    />
+                  </CardContent>
+                </Card>
+              </div>
 
               {/* Order Management */}
-              <div className="flex">
+              <div className="lg:col-span-1">
                 <OrderManagement />
               </div>
             </div>
