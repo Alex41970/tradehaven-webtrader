@@ -140,7 +140,13 @@ const SuperAdminDashboard = () => {
 
       if (usersError) {
         console.error('SuperAdminDashboard: Error fetching user profiles:', usersError);
-        throw new Error(`User profiles error: ${usersError.message} (Code: ${usersError.code})`);
+        console.error('SuperAdminDashboard: Error details:', {
+          message: usersError.message,
+          code: usersError.code,
+          details: usersError.details,
+          hint: usersError.hint
+        });
+        throw new Error(`User profiles error: ${usersError.message} (Code: ${usersError.code}) - Details: ${usersError.details || 'None'}`);
       }
 
       console.log('SuperAdminDashboard: User profiles fetched successfully. Count:', usersData?.length || 0);
@@ -244,12 +250,32 @@ const SuperAdminDashboard = () => {
       setRetryCount(0); // Reset retry count on success
     } catch (error: any) {
       console.error('SuperAdminDashboard: Error fetching data:', error);
-      const errorMessage = error.message || 'Failed to load data';
+      console.error('SuperAdminDashboard: Error details:', {
+        message: error?.message,
+        code: error?.code,
+        details: error?.details,
+        hint: error?.hint,
+        stack: error?.stack
+      });
+      
+      let errorMessage = error?.message || 'Failed to load data';
+      
+      // Add more specific error context
+      if (error?.code) {
+        errorMessage += ` (Code: ${error.code})`;
+      }
+      if (error?.details) {
+        errorMessage += ` - ${error.details}`;
+      }
+      if (error?.hint) {
+        errorMessage += ` Hint: ${error.hint}`;
+      }
+      
       setError(errorMessage);
       
       // Retry logic - if it's an auth issue and we haven't retried too many times
-      if (retryCount < 2 && (errorMessage.includes('auth') || errorMessage.includes('session') || errorMessage.includes('JWT'))) {
-        console.log('SuperAdminDashboard: Auth error detected, retrying in 1.5 seconds...', errorMessage);
+      if (retryCount < 2 && (errorMessage.includes('auth') || errorMessage.includes('session') || errorMessage.includes('JWT') || error?.code === 'PGRST301')) {
+        console.log('SuperAdminDashboard: Auth/Permission error detected, retrying in 1.5 seconds...', errorMessage);
         setRetryCount(prev => prev + 1);
         setTimeout(() => {
           fetchSuperAdminData();
@@ -258,7 +284,7 @@ const SuperAdminDashboard = () => {
         console.error('SuperAdminDashboard: Max retries reached or non-auth error:', errorMessage);
         toast({
           title: "Error Loading Data", 
-          description: retryCount >= 2 ? "Authentication error. Please sign out and sign back in." : errorMessage,
+          description: retryCount >= 2 ? `Authentication/Permission error after ${retryCount + 1} attempts. Please sign out and sign back in.` : errorMessage,
           variant: "destructive"
         });
       }

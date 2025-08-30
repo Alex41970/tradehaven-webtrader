@@ -105,6 +105,18 @@ const AdminDashboard = () => {
     try {
       setLoading(true);
 
+      // Verify auth session is active
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      if (!session || sessionError) {
+        console.error('AdminDashboard: Session invalid:', sessionError);
+        toast({
+          title: "Authentication Error",
+          description: "Please sign out and sign back in.",
+          variant: "destructive",
+        });
+        return;
+      }
+
       // Fetch users under this admin
       console.log('AdminDashboard: Fetching users for admin:', user.id);
       const { data: usersData, error: usersError } = await supabase
@@ -114,6 +126,11 @@ const AdminDashboard = () => {
 
       if (usersError) {
         console.error('AdminDashboard: Error fetching users:', usersError);
+        toast({
+          title: "Error",
+          description: `Failed to fetch user data: ${usersError.message}`,
+          variant: "destructive",
+        });
         throw usersError;
       }
 
@@ -192,11 +209,29 @@ const AdminDashboard = () => {
       setWithdrawalRequests(withdrawalRequestsData || []);
       
       console.log('AdminDashboard: Successfully updated state with data');
-    } catch (error) {
+    } catch (error: any) {
       console.error('AdminDashboard: Error in fetchAdminData:', error);
+      console.error('AdminDashboard: Error details:', {
+        message: error?.message,
+        code: error?.code,
+        details: error?.details,
+        hint: error?.hint
+      });
+      
+      let errorMessage = "Failed to load admin data";
+      if (error?.message) {
+        errorMessage = `${errorMessage}: ${error.message}`;
+      }
+      if (error?.code) {
+        errorMessage += ` (Code: ${error.code})`;
+      }
+      if (error?.details) {
+        errorMessage += ` - ${error.details}`;
+      }
+      
       toast({
         title: "Error",
-        description: "Failed to load admin data",
+        description: errorMessage,
         variant: "destructive"
       });
     } finally {
