@@ -97,7 +97,7 @@ export const WebTrader = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [profile?.user_id, refetchProfile]);
+  }, [profile?.user_id]); // Removed refetchProfile to prevent infinite loop
 
   // Calculate margin required
   const calculateMargin = useMemo(() => {

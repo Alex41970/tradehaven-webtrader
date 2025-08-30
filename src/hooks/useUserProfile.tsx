@@ -182,7 +182,7 @@ export const useUserProfile = () => {
     }
   };
 
-  const recalculateMargins = async () => {
+  const recalculateMargins = useCallback(async () => {
     if (!user) {
       console.error('No user found for margin recalculation');
       return false;
@@ -208,32 +208,62 @@ export const useUserProfile = () => {
 
       if (result?.success) {
         console.log('Margins recalculated successfully:', result);
-        // Force refresh profile to get updated values
+        
+        // Force refresh the profile after successful recalculation
         await forceRefresh();
+        
         toast({
           title: "Success",
           description: "Margins recalculated successfully",
         });
         return true;
       } else {
-        console.error('Margin recalculation failed:', result?.error);
+        console.error('Failed to recalculate margins:', result?.error);
         toast({
-          title: "Error",
+          title: "Error", 
           description: result?.error || "Failed to recalculate margins",
           variant: "destructive",
         });
         return false;
       }
     } catch (error) {
-      console.error('Error during margin recalculation:', error);
+      console.error('Unexpected error during margin recalculation:', error);
       toast({
         title: "Error",
-        description: "Failed to recalculate margins",
+        description: "Unexpected error occurred",
         variant: "destructive",
       });
       return false;
     }
-  };
+  }, [user?.id, forceRefresh, toast]);
+
+  // Auto-fix margins on component mount if they seem incorrect
+  useEffect(() => {
+    if (profile && user?.id) {
+      // Check if margins need recalculation (e.g., if used_margin > 0 but no open trades)
+      const timeoutId = setTimeout(async () => {
+        try {
+          const { data: openTrades } = await supabase
+            .from('trades')
+            .select('id')
+            .eq('user_id', user.id)
+            .eq('status', 'open');
+
+          const hasOpenTrades = openTrades && openTrades.length > 0;
+          const hasIncorrectMargin = profile.used_margin > 0;
+
+          if (!hasOpenTrades && hasIncorrectMargin) {
+            console.log('Detected incorrect margin values, auto-fixing...');
+            await recalculateMargins();
+          }
+        } catch (error) {
+          console.error('Error checking margin consistency:', error);
+        }
+      }, 1000); // Small delay to ensure data is loaded
+
+      return () => clearTimeout(timeoutId);
+    }
+  }, [profile?.id, user?.id, recalculateMargins]);
 
   return {
     profile,
