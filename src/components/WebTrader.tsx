@@ -323,8 +323,8 @@ export const WebTrader = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background p-6">
-      <div className="mx-auto max-w-7xl">
+    <div className="min-h-screen bg-background p-0 md:p-6">
+      <div className="mx-auto max-w-none md:max-w-7xl">
         <div className="mb-6">
           <h1 className="text-3xl font-bold tracking-tight">Web Trading Platform</h1>
           <p className="text-muted-foreground">Advanced trading with real-time market data</p>

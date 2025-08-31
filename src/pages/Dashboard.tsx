@@ -706,13 +706,13 @@ const Dashboard = () => {
 
           {/* Main Trading Interface */}
           <Tabs defaultValue="trader" className="space-y-4">
-            <TabsList>
+            <TabsList className="w-full md:w-auto">
               <TabsTrigger value="trader">Web Trader</TabsTrigger>
               <TabsTrigger value="portfolio">Portfolio</TabsTrigger>
               <TabsTrigger value="history">Trading History</TabsTrigger>
             </TabsList>
             
-            <TabsContent value="trader">
+            <TabsContent value="trader" className="w-full">
               <WebTrader />
             </TabsContent>
             
