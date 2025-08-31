@@ -403,17 +403,52 @@ async function recalculateUserMargins(userId: string) {
     // Calculate totals
     let totalUsedMargin = 0;
     let totalClosedPnL = 0;
+    let totalUnrealizedPnL = 0;
     const baseBalance = 10000.00;
 
-    // Get open trades margin
+    // Get open trades with full details for unrealized PnL calculation
     const { data: openTrades, error: openError } = await supabase
       .from('trades')
-      .select('margin_used')
+      .select('margin_used, symbol, trade_type, amount, open_price, leverage')
       .eq('user_id', userId)
       .eq('status', 'open');
 
     if (!openError && openTrades) {
       totalUsedMargin = openTrades.reduce((sum, trade) => sum + (trade.margin_used || 0), 0);
+      
+      // Get current market prices for all symbols in open trades
+      if (openTrades.length > 0) {
+        const symbols = [...new Set(openTrades.map(trade => trade.symbol))];
+        const { data: assetPrices, error: priceError } = await supabase
+          .from('assets')
+          .select('symbol, price')
+          .in('symbol', symbols);
+
+        if (!priceError && assetPrices) {
+          const priceMap = new Map(assetPrices.map(asset => [asset.symbol, asset.price]));
+          
+          // Calculate unrealized PnL for each open trade
+          totalUnrealizedPnL = openTrades.reduce((sum, trade) => {
+            const currentPrice = priceMap.get(trade.symbol);
+            if (!currentPrice || isNaN(currentPrice) || !trade.open_price || isNaN(trade.open_price)) {
+              return sum;
+            }
+
+            const amount = Number(trade.amount);
+            const openPrice = Number(trade.open_price);
+            const leverage = Number(trade.leverage) || 1;
+
+            let pnl = 0;
+            if (trade.trade_type === 'BUY') {
+              pnl = amount * (currentPrice - openPrice) * leverage;
+            } else {
+              pnl = amount * (openPrice - currentPrice) * leverage;
+            }
+
+            return sum + pnl;
+          }, 0);
+        }
+      }
     }
 
     // Get closed trades P&L
@@ -428,6 +463,7 @@ async function recalculateUserMargins(userId: string) {
     }
 
     const newBalance = baseBalance + totalClosedPnL;
+    const equity = newBalance + totalUnrealizedPnL;
     const availableMargin = Math.max(newBalance - totalUsedMargin, 0);
 
     // Update user profile
@@ -435,7 +471,7 @@ async function recalculateUserMargins(userId: string) {
       .from('user_profiles')
       .update({
         balance: newBalance,
-        equity: newBalance,
+        equity: equity,
         used_margin: totalUsedMargin,
         available_margin: availableMargin,
         updated_at: new Date().toISOString()
@@ -450,8 +486,10 @@ async function recalculateUserMargins(userId: string) {
     console.log('Margins updated:', {
       userId,
       balance: newBalance,
+      equity: equity,
       usedMargin: totalUsedMargin,
-      availableMargin
+      availableMargin,
+      unrealizedPnL: totalUnrealizedPnL
     });
 
     // Broadcast margin update to connected user immediately
@@ -462,7 +500,7 @@ async function recalculateUserMargins(userId: string) {
         balance: newBalance,
         usedMargin: totalUsedMargin,
         availableMargin,
-        equity: newBalance
+        equity: equity
       }
     });
 

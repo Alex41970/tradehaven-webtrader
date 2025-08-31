@@ -338,6 +338,27 @@ serve(async (req) => {
 
     console.log('Price update completed successfully');
 
+    // After price updates, recalculate equity for all users with open trades
+    const { data: usersWithOpenTrades, error: usersError } = await supabase
+      .from('trades')
+      .select('user_id')
+      .eq('status', 'open');
+
+    if (!usersError && usersWithOpenTrades) {
+      const uniqueUserIds = [...new Set(usersWithOpenTrades.map(trade => trade.user_id))];
+      console.log(`Updating equity for ${uniqueUserIds.length} users with open trades`);
+      
+      for (const userId of uniqueUserIds) {
+        // Use the existing RPC function to recalculate margins/equity
+        const { error: recalcError } = await supabase
+          .rpc('auto_recalculate_user_margins', { _user_id: userId });
+        
+        if (recalcError) {
+          console.error(`Error recalculating equity for user ${userId}:`, recalcError);
+        }
+      }
+    }
+
     return new Response(
       JSON.stringify({ 
         success: true, 
