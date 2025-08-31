@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { TradingChart } from "./TradingChart";
 import { TradeRow } from "./TradeRow";
 import { TradingTabsInterface } from "./TradingTabsInterface";
-import { Star, StarIcon, TrendingUp, TrendingDown } from "lucide-react";
+import { Star, StarIcon, TrendingUp, TrendingDown, ChevronDown, ChevronUp } from "lucide-react";
 import { useAssets } from "@/hooks/useAssets";
 import { useTrades } from "@/hooks/useTrades";
 import { useUserProfile } from "@/hooks/useUserProfile";
@@ -19,6 +19,7 @@ import { useRealTimePrices } from "@/hooks/useRealTimePrices";
 import { useTradeOrders } from "@/hooks/useTradeOrders";
 import { toast } from "@/hooks/use-toast";
 import { PulsingPriceIndicator } from "./PulsingPriceIndicator";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 export const WebTrader = () => {
   const { assets, loading: assetsLoading } = useAssets();
@@ -34,6 +35,9 @@ export const WebTrader = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [isExecuting, setIsExecuting] = useState(false);
+  const [marketWatchCollapsed, setMarketWatchCollapsed] = useState(false);
+  
+  const isMobile = useIsMobile();
 
   // Get real-time price updates for assets
   const realtimeAssets = useMemo(() => {
@@ -331,79 +335,101 @@ export const WebTrader = () => {
         </div>
 
         {selectedAsset && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Left Column - Market Watch - Fixed Height */}
-            <div className="lg:col-span-1">
-              <Card className="bg-card/80 backdrop-blur border-border/50 h-[830px] flex flex-col">
-                <CardHeader className="pb-2 px-4 pt-4">
-                  <CardTitle className="text-lg">Market Watch</CardTitle>
-                  <CardDescription className="text-sm">Live market data</CardDescription>
-                </CardHeader>
-                <CardContent className="flex-1 flex flex-col space-y-3 px-4 pb-4">
-                  <div className="space-y-2">
-                    <Input
-                      placeholder="Search assets..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="bg-muted/20 h-9"
-                    />
-                    <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                      <SelectTrigger className="bg-muted/20 h-9">
-                        <SelectValue placeholder="Filter by category" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Categories</SelectItem>
-                        <SelectItem value="forex">Forex</SelectItem>
-                        <SelectItem value="crypto">Cryptocurrency</SelectItem>
-                        <SelectItem value="stocks">Stocks</SelectItem>
-                        <SelectItem value="commodities">Commodities</SelectItem>
-                        <SelectItem value="indices">Indices</SelectItem>
-                      </SelectContent>
-                    </Select>
+          <div className={isMobile ? "space-y-4" : "grid grid-cols-1 lg:grid-cols-3 gap-6"}>
+            {/* Market Watch Section - Responsive */}
+            <div className={isMobile ? "order-1" : "lg:col-span-1"}>
+              <Card className={`bg-card/80 backdrop-blur border-border/50 flex flex-col ${
+                isMobile 
+                  ? marketWatchCollapsed 
+                    ? "h-auto" 
+                    : "h-[300px]"
+                  : "h-[830px]"
+              }`}>
+                <CardHeader 
+                  className={`pb-2 px-4 pt-4 ${isMobile ? 'cursor-pointer' : ''}`}
+                  onClick={isMobile ? () => setMarketWatchCollapsed(!marketWatchCollapsed) : undefined}
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="text-lg">Market Watch</CardTitle>
+                      <CardDescription className="text-sm">Live market data</CardDescription>
+                    </div>
+                    {isMobile && (
+                      marketWatchCollapsed ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />
+                    )}
                   </div>
+                </CardHeader>
+                
+                {(!isMobile || !marketWatchCollapsed) && (
+                  <CardContent className="flex-1 flex flex-col space-y-3 px-4 pb-4">
+                    <div className="space-y-2">
+                      <Input
+                        placeholder="Search assets..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="bg-muted/20 h-9"
+                      />
+                      <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                        <SelectTrigger className="bg-muted/20 h-9">
+                          <SelectValue placeholder="Filter by category" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Categories</SelectItem>
+                          <SelectItem value="forex">Forex</SelectItem>
+                          <SelectItem value="crypto">Cryptocurrency</SelectItem>
+                          <SelectItem value="stocks">Stocks</SelectItem>
+                          <SelectItem value="commodities">Commodities</SelectItem>
+                          <SelectItem value="indices">Indices</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
 
-                  <Tabs defaultValue="all" className="flex-1 flex flex-col">
-                    <TabsList className="grid w-full grid-cols-2 h-9">
-                      <TabsTrigger value="all" className="text-xs">All</TabsTrigger>
-                      <TabsTrigger value="favorites" className="text-xs">Favorites</TabsTrigger>
-                    </TabsList>
-                    
-                    <TabsContent value="all" className="flex-1 mt-2">
-                       <div className="max-h-[530px] overflow-y-auto space-y-2 pr-2">
-                        {filteredAssets.map((asset) => (
-                          <AssetRow key={asset.id} asset={asset} />
-                        ))}
-                      </div>
-                    </TabsContent>
-                    
-                    <TabsContent value="favorites" className="flex-1 mt-2">
-                      <div className="max-h-[530px] overflow-y-auto space-y-2 pr-2">
-                        {favoriteAssets.length > 0 ? (
-                          favoriteAssets.map((asset) => (
+                    <Tabs defaultValue="all" className="flex-1 flex flex-col">
+                      <TabsList className="grid w-full grid-cols-2 h-9">
+                        <TabsTrigger value="all" className="text-xs">All</TabsTrigger>
+                        <TabsTrigger value="favorites" className="text-xs">Favorites</TabsTrigger>
+                      </TabsList>
+                      
+                      <TabsContent value="all" className="flex-1 mt-2">
+                        <div className={`overflow-y-auto space-y-2 pr-2 ${
+                          isMobile ? "max-h-[180px]" : "max-h-[530px]"
+                        }`}>
+                          {filteredAssets.map((asset) => (
                             <AssetRow key={asset.id} asset={asset} />
-                          ))
-                        ) : (
-                          <div className="text-center py-8 text-muted-foreground">
-                            <Star className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                            <p className="text-sm">No favorite assets</p>
-                          </div>
-                        )}
-                      </div>
-                    </TabsContent>
-                    
-                  </Tabs>
-                </CardContent>
+                          ))}
+                        </div>
+                      </TabsContent>
+                      
+                      <TabsContent value="favorites" className="flex-1 mt-2">
+                        <div className={`overflow-y-auto space-y-2 pr-2 ${
+                          isMobile ? "max-h-[180px]" : "max-h-[530px]"
+                        }`}>
+                          {favoriteAssets.length > 0 ? (
+                            favoriteAssets.map((asset) => (
+                              <AssetRow key={asset.id} asset={asset} />
+                            ))
+                          ) : (
+                            <div className="text-center py-8 text-muted-foreground">
+                              <Star className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                              <p className="text-sm">No favorite assets</p>
+                            </div>
+                          )}
+                        </div>
+                      </TabsContent>
+                    </Tabs>
+                  </CardContent>
+                )}
               </Card>
             </div>
 
-            {/* Right Column - Chart and Trading - Fixed Heights */}
-            <div className="lg:col-span-2 space-y-4">
-              {/* Chart Section - 400px Fixed Height */}
-              <div className="h-[400px]">
+            {/* Chart and Trading Section - Responsive */}
+            <div className={`space-y-4 ${isMobile ? "order-2" : "lg:col-span-2"}`}>
+              {/* Chart Section - Dynamic Height */}
+              <div className={isMobile ? "h-[60vh]" : "h-[400px]"}>
                 <TradingChart symbol={selectedAsset?.symbol || ''} />
               </div>
 
-              {/* Trading Tabs Interface - 200px Fixed Height */}
+              {/* Trading Tabs Interface - Dynamic Height */}
               <TradingTabsInterface
                 selectedAsset={selectedAsset}
                 amount={amount}
@@ -419,6 +445,7 @@ export const WebTrader = () => {
                   const asset = realtimeAssets.find(a => openTrades.find(t => t.id === tradeId)?.asset_id === a.id);
                   handleCloseTrade(tradeId, asset?.price || 0);
                 }}
+                isMobile={isMobile}
               />
             </div>
           </div>
