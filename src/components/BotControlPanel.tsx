@@ -60,14 +60,14 @@ export const BotControlPanel: React.FC<BotControlPanelProps> = ({
   };
 
   return (
-    <div className="space-y-4 md:space-y-6">
+    <div className="space-y-4 md:space-y-6 w-full min-w-0 overflow-x-hidden">
       {/* Main Bot Status Card */}
       <Card className="border-primary/20 bg-gradient-to-br from-card via-card/95 to-trading-primary/5 backdrop-blur-xl shadow-xl">
-        <CardHeader className="pb-4 md:pb-6">
-          <CardTitle className="flex items-center justify-between flex-wrap gap-4">
-            <div className="flex items-center gap-3 md:gap-4">
+        <CardHeader className="pb-4 md:pb-6 p-3 md:p-6">
+          <CardTitle className="flex items-center justify-between flex-wrap gap-2 md:gap-4">
+            <div className="flex items-center gap-3 md:gap-4 min-w-0 flex-1">
               {/* Enhanced Bot Avatar */}
-              <div className="relative">
+              <div className="relative flex-shrink-0">
                 <div className={`${isMobile ? 'w-12 h-12' : 'w-16 h-16'} rounded-full bg-gradient-to-br from-trading-primary to-trading-accent flex items-center justify-center shadow-lg`}>
                   <Bot className={`${isMobile ? 'h-6 w-6' : 'h-8 w-8'} text-white ${botStatus === 'active' ? 'animate-pulse' : ''}`} />
                 </div>
@@ -92,15 +92,15 @@ export const BotControlPanel: React.FC<BotControlPanelProps> = ({
                 )}
               </div>
 
-              <div>
-                <h2 className={`${isMobile ? 'text-lg' : 'text-2xl'} font-bold`}>Neural Trading Bot</h2>
-                <p className={`${isMobile ? 'text-xs' : 'text-sm'} text-muted-foreground`}>AI-Powered Market Analysis</p>
+              <div className="min-w-0 flex-1">
+                <h2 className={`${isMobile ? 'text-lg' : 'text-2xl'} font-bold truncate`}>Neural Trading Bot</h2>
+                <p className={`${isMobile ? 'text-xs' : 'text-sm'} text-muted-foreground truncate`}>AI-Powered Market Analysis</p>
               </div>
             </div>
 
             <Badge 
               variant={getStatusBadgeVariant()}
-              className={`${isMobile ? 'px-2 py-1 text-xs' : 'px-4 py-2 text-sm'} font-semibold ${getStatusColor()}`}
+              className={`${isMobile ? 'px-2 py-1 text-xs' : 'px-3 py-2 text-sm'} font-semibold ${getStatusColor()} flex-shrink-0`}
             >
               <Activity className={`${isMobile ? 'h-3 w-3 mr-1' : 'h-4 w-4 mr-2'}`} />
               {botStatus.toUpperCase()}
@@ -111,74 +111,74 @@ export const BotControlPanel: React.FC<BotControlPanelProps> = ({
 
       {/* Control Tabs */}
       <Tabs defaultValue="overview" className="space-y-4 md:space-y-6">
-        <TabsList className={`grid w-full ${isMobile ? 'grid-cols-4 gap-1' : 'grid-cols-4'} bg-card/50 backdrop-blur-sm`}>
-          <TabsTrigger value="overview" className={`flex items-center ${isMobile ? 'gap-1 px-2 py-2' : 'gap-2 px-3 py-2'}`}>
-            <BarChart3 className={`${isMobile ? 'h-3 w-3' : 'h-4 w-4'}`} />
-            {!isMobile && "Overview"}
+        <TabsList className={`grid w-full ${isMobile ? 'grid-cols-4 gap-0' : 'grid-cols-4'} bg-card/50 backdrop-blur-sm`}>
+          <TabsTrigger value="overview" className={`flex items-center justify-center ${isMobile ? 'gap-0 px-1 py-2 min-w-0' : 'gap-2 px-3 py-2'}`}>
+            <BarChart3 className={`${isMobile ? 'h-3 w-3' : 'h-4 w-4'} flex-shrink-0`} />
+            {!isMobile && <span className="truncate">Overview</span>}
           </TabsTrigger>
-          <TabsTrigger value="controls" className={`flex items-center ${isMobile ? 'gap-1 px-2 py-2' : 'gap-2 px-3 py-2'}`}>
-            <Settings className={`${isMobile ? 'h-3 w-3' : 'h-4 w-4'}`} />
-            {!isMobile && "Controls"}
+          <TabsTrigger value="controls" className={`flex items-center justify-center ${isMobile ? 'gap-0 px-1 py-2 min-w-0' : 'gap-2 px-3 py-2'}`}>
+            <Settings className={`${isMobile ? 'h-3 w-3' : 'h-4 w-4'} flex-shrink-0`} />
+            {!isMobile && <span className="truncate">Controls</span>}
           </TabsTrigger>
-          <TabsTrigger value="performance" className={`flex items-center ${isMobile ? 'gap-1 px-2 py-2' : 'gap-2 px-3 py-2'}`}>
-            <TrendingUp className={`${isMobile ? 'h-3 w-3' : 'h-4 w-4'}`} />
-            {!isMobile && "Performance"}
+          <TabsTrigger value="performance" className={`flex items-center justify-center ${isMobile ? 'gap-0 px-1 py-2 min-w-0' : 'gap-2 px-3 py-2'}`}>
+            <TrendingUp className={`${isMobile ? 'h-3 w-3' : 'h-4 w-4'} flex-shrink-0`} />
+            {!isMobile && <span className="truncate">Performance</span>}
           </TabsTrigger>
-          <TabsTrigger value="system" className={`flex items-center ${isMobile ? 'gap-1 px-2 py-2' : 'gap-2 px-3 py-2'}`}>
-            <Shield className={`${isMobile ? 'h-3 w-3' : 'h-4 w-4'}`} />
-            {!isMobile && "System"}
+          <TabsTrigger value="system" className={`flex items-center justify-center ${isMobile ? 'gap-0 px-1 py-2 min-w-0' : 'gap-2 px-3 py-2'}`}>
+            <Shield className={`${isMobile ? 'h-3 w-3' : 'h-4 w-4'} flex-shrink-0`} />
+            {!isMobile && <span className="truncate">System</span>}
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-3 md:space-y-4">
           {/* Quick Stats Grid */}
-          <div className={`grid ${isMobile ? 'grid-cols-1 gap-3' : 'grid-cols-2 md:grid-cols-4 gap-4'}`}>
-            <Card className="border-primary/20 bg-gradient-to-br from-card via-card/95 to-trading-success/5 backdrop-blur-xl">
+          <div className={`grid ${isMobile ? 'grid-cols-1 gap-2' : 'grid-cols-2 md:grid-cols-4 gap-3 md:gap-4'} w-full`}>
+            <Card className="border-primary/20 bg-gradient-to-br from-card via-card/95 to-trading-success/5 backdrop-blur-xl min-w-0">
               <CardContent className={`${isMobile ? 'p-3' : 'p-4'}`}>
-                <div className={`flex items-center ${isMobile ? 'gap-3' : 'gap-2'}`}>
-                  <CheckCircle2 className={`${isMobile ? 'h-6 w-6' : 'h-5 w-5'} text-trading-success`} />
-                  <div className="flex-1">
-                    <p className={`${isMobile ? 'text-sm' : 'text-xs'} text-muted-foreground`}>Total Trades</p>
-                    <p className={`${isMobile ? 'text-2xl' : 'text-xl'} font-bold`}>{botTrades.length}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="border-primary/20 bg-gradient-to-br from-card via-card/95 to-trading-accent/5 backdrop-blur-xl">
-              <CardContent className={`${isMobile ? 'p-3' : 'p-4'}`}>
-                <div className={`flex items-center ${isMobile ? 'gap-3' : 'gap-2'}`}>
-                  <Activity className={`${isMobile ? 'h-6 w-6' : 'h-5 w-5'} text-trading-accent`} />
-                  <div className="flex-1">
-                    <p className={`${isMobile ? 'text-sm' : 'text-xs'} text-muted-foreground`}>Active Trades</p>
-                    <p className={`${isMobile ? 'text-2xl' : 'text-xl'} font-bold`}>{openBotTrades.length}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="border-primary/20 bg-gradient-to-br from-card via-card/95 to-trading-success/5 backdrop-blur-xl">
-              <CardContent className={`${isMobile ? 'p-3' : 'p-4'}`}>
-                <div className={`flex items-center ${isMobile ? 'gap-3' : 'gap-2'}`}>
-                  <TrendingUp className={`${isMobile ? 'h-6 w-6' : 'h-5 w-5'} text-trading-success`} />
-                  <div className="flex-1">
-                    <p className={`${isMobile ? 'text-sm' : 'text-xs'} text-muted-foreground`}>Win Rate</p>
-                    <p className={`${isMobile ? 'text-2xl' : 'text-xl'} font-bold text-trading-success`}>{winRate.toFixed(1)}%</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="border-primary/20 bg-gradient-to-br from-card via-card/95 to-trading-primary/5 backdrop-blur-xl">
-              <CardContent className={`${isMobile ? 'p-3' : 'p-4'}`}>
-                <div className={`flex items-center ${isMobile ? 'gap-3' : 'gap-2'}`}>
-                  <BarChart3 className={`${isMobile ? 'h-6 w-6' : 'h-5 w-5'} text-trading-primary`} />
+                <div className={`flex items-center ${isMobile ? 'gap-2' : 'gap-2'} min-w-0`}>
+                  <CheckCircle2 className={`${isMobile ? 'h-5 w-5' : 'h-5 w-5'} text-trading-success flex-shrink-0`} />
                   <div className="flex-1 min-w-0">
-                    <p className={`${isMobile ? 'text-sm' : 'text-xs'} text-muted-foreground`}>Total P&L</p>
+                    <p className={`${isMobile ? 'text-xs' : 'text-xs'} text-muted-foreground truncate`}>Total Trades</p>
+                    <p className={`${isMobile ? 'text-xl' : 'text-xl'} font-bold truncate`}>{botTrades.length}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-primary/20 bg-gradient-to-br from-card via-card/95 to-trading-accent/5 backdrop-blur-xl min-w-0">
+              <CardContent className={`${isMobile ? 'p-3' : 'p-4'}`}>
+                <div className={`flex items-center ${isMobile ? 'gap-2' : 'gap-2'} min-w-0`}>
+                  <Activity className={`${isMobile ? 'h-5 w-5' : 'h-5 w-5'} text-trading-accent flex-shrink-0`} />
+                  <div className="flex-1 min-w-0">
+                    <p className={`${isMobile ? 'text-xs' : 'text-xs'} text-muted-foreground truncate`}>Active Trades</p>
+                    <p className={`${isMobile ? 'text-xl' : 'text-xl'} font-bold truncate`}>{openBotTrades.length}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-primary/20 bg-gradient-to-br from-card via-card/95 to-trading-success/5 backdrop-blur-xl min-w-0">
+              <CardContent className={`${isMobile ? 'p-3' : 'p-4'}`}>
+                <div className={`flex items-center ${isMobile ? 'gap-2' : 'gap-2'} min-w-0`}>
+                  <TrendingUp className={`${isMobile ? 'h-5 w-5' : 'h-5 w-5'} text-trading-success flex-shrink-0`} />
+                  <div className="flex-1 min-w-0">
+                    <p className={`${isMobile ? 'text-xs' : 'text-xs'} text-muted-foreground truncate`}>Win Rate</p>
+                    <p className={`${isMobile ? 'text-xl' : 'text-xl'} font-bold text-trading-success truncate`}>{winRate.toFixed(1)}%</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-primary/20 bg-gradient-to-br from-card via-card/95 to-trading-primary/5 backdrop-blur-xl min-w-0">
+              <CardContent className={`${isMobile ? 'p-3' : 'p-4'}`}>
+                <div className={`flex items-center ${isMobile ? 'gap-2' : 'gap-2'} min-w-0`}>
+                  <BarChart3 className={`${isMobile ? 'h-5 w-5' : 'h-5 w-5'} text-trading-primary flex-shrink-0`} />
+                  <div className="flex-1 min-w-0">
+                    <p className={`${isMobile ? 'text-xs' : 'text-xs'} text-muted-foreground truncate`}>Total P&L</p>
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <p className={`font-bold min-w-0 ${getResponsiveTextSize(totalPnL, isMobile ? 'text-2xl' : 'text-xl')} ${totalPnL >= 0 ? 'text-trading-success' : 'text-trading-danger'}`}>
+                          <p className={`font-bold min-w-0 truncate ${getResponsiveTextSize(totalPnL, isMobile ? 'text-xl' : 'text-xl')} ${totalPnL >= 0 ? 'text-trading-success' : 'text-trading-danger'}`}>
                             {formatPnL(totalPnL).display}
                           </p>
                         </TooltipTrigger>

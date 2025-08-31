@@ -27,7 +27,7 @@ export const BotActiveView: React.FC<BotActiveViewProps> = ({
   const { getUpdatedAsset } = useRealTimePrices();
 
   return (
-    <div className="min-h-screen bg-trading-pattern p-6 relative overflow-hidden">
+    <div className="min-h-screen bg-trading-pattern p-2 md:p-6 relative overflow-x-hidden">
       {/* Enhanced animated background */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         {/* Floating orbs with trading colors */}
@@ -39,17 +39,17 @@ export const BotActiveView: React.FC<BotActiveViewProps> = ({
         <div className="absolute inset-0 bg-grid-white/[0.02] bg-[size:60px_60px]"></div>
       </div>
 
-      <div className="relative z-10 max-w-7xl mx-auto space-y-8">
+        <div className="relative z-10 max-w-7xl mx-auto space-y-4 md:space-y-8 w-full min-w-0">
         {/* Enhanced Header */}
         <Card className="border-primary/20 bg-gradient-to-br from-card/90 via-card/95 to-trading-primary/5 backdrop-blur-xl shadow-2xl">
-          <CardHeader>
-            <CardTitle className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <h1 className="text-3xl font-bold bg-gradient-to-r from-trading-primary to-trading-accent bg-clip-text text-transparent">
+          <CardHeader className="p-3 md:p-6">
+            <CardTitle className="flex items-center justify-between flex-wrap gap-2 md:gap-4">
+              <div className="flex items-center gap-2 md:gap-4 min-w-0 flex-1">
+                <h1 className="text-xl md:text-3xl font-bold bg-gradient-to-r from-trading-primary to-trading-accent bg-clip-text text-transparent truncate">
                   Neural Trading Bot Dashboard
                 </h1>
-                <div className="h-8 w-px bg-border"></div>
-                <p className="text-muted-foreground">
+                <div className="h-6 md:h-8 w-px bg-border hidden sm:block"></div>
+                <p className="text-muted-foreground text-sm md:text-base hidden sm:block truncate">
                   Advanced AI Market Analysis System
                 </p>
               </div>
@@ -67,7 +67,7 @@ export const BotActiveView: React.FC<BotActiveViewProps> = ({
         </Card>
 
         {/* Main Content Grid */}
-        <div className="grid lg:grid-cols-3 gap-8">
+        <div className="grid lg:grid-cols-3 gap-4 md:gap-8 w-full min-w-0">
           {/* Left Column - Control Panel */}
           <div className="lg:col-span-1">
             <BotControlPanel
@@ -82,7 +82,7 @@ export const BotActiveView: React.FC<BotActiveViewProps> = ({
           </div>
 
           {/* Right Column - Charts and Terminal */}
-          <div className="lg:col-span-2 space-y-8">
+          <div className="lg:col-span-2 space-y-4 md:space-y-8 min-w-0">
             {/* Performance Charts */}
             <BotMetricsChart
               trades={closedBotTrades}
