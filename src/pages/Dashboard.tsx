@@ -13,7 +13,7 @@ import { WithdrawModal } from "@/components/WithdrawModal";
 import { TransactionHistoryPopup } from "@/components/TransactionHistoryPopup";
 import TradingStatusIndicator from "@/components/TradingStatusIndicator";
 import { ConnectionStatus } from "@/components/ConnectionStatus";
-import { LogOut, TrendingUp, DollarSign, Activity, ExternalLink, Plus, Minus, BarChart3, Target, Trophy, Shield, TrendingDown, Zap, Award, Bot, History, ArrowUpRight, ArrowDownLeft, Clock, CheckCircle, XCircle, Loader } from "lucide-react";
+import { LogOut, TrendingUp, DollarSign, Activity, ExternalLink, Plus, Minus, BarChart3, Target, Trophy, Shield, TrendingDown, Zap, Award, Bot, History, ArrowUpRight, ArrowDownLeft, Clock, CheckCircle, XCircle, Loader, Menu, User } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { useTrades } from "@/hooks/useTrades";
@@ -29,6 +29,8 @@ import { useTransactionHistory, TransactionHistory } from "@/hooks/useTransactio
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { useIsMobile } from "@/hooks/use-mobile";
 const Dashboard = () => {
   const { user, signOut } = useAuth();
   const { profile, loading: profileLoading, refetch: refetchProfile } = useUserProfile();
@@ -45,6 +47,8 @@ const Dashboard = () => {
   const [showWithdrawModal, setShowWithdrawModal] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState<TransactionHistory | null>(null);
   const [showTransactionPopup, setShowTransactionPopup] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const isMobile = useIsMobile();
   
   // Performance metrics
   const { metrics, selectedPeriod, setSelectedPeriod } = useProfessionalMetrics(trades, profile?.balance || 10000);
@@ -143,41 +147,161 @@ const Dashboard = () => {
       <div className="min-h-screen bg-background">
         {/* Header */}
         <header className="border-b bg-card">
-          <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-            <div className="flex items-center space-x-2">
-              <TrendingUp className="h-6 w-6 text-primary" />
-              <h1 className="text-2xl font-bold">TradeHaven</h1>
-            </div>
-            <div className="flex items-center space-x-4">
-              {botStatus.isConnected && !showBotFullScreen ? (
-                <Button 
-                  onClick={() => setShowBotFullScreen(true)}
-                  variant="outline"
-                  size="sm"
-                  className="border-primary text-primary hover:bg-primary hover:text-primary-foreground"
-                >
-                  <Bot className="w-4 h-4 mr-2" />
-                  <Activity className="w-3 h-3 mr-1" />
-                  Bot {botStatus.botStatus === 'active' ? 'Active' : 'Paused'}
-                </Button>
-              ) : !botStatus.isConnected ? (
-                <Button 
-                  onClick={handleBotConnect}
-                  variant="default"
-                  size="sm"
-                  className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
-                >
-                  <Bot className="w-4 h-4 mr-2" />
-                  Connect Your Trading Bot
-                </Button>
-              ) : null}
-              <ConnectionStatus />
-              <span className="text-sm text-muted-foreground">Welcome, {user?.email}</span>
-              <Button variant="outline" size="sm" onClick={handleSignOut} disabled={signingOut}>
-                <LogOut className="h-4 w-4 mr-2" />
-                {signingOut ? "Signing Out..." : "Sign Out"}
-              </Button>
-            </div>
+          <div className="container mx-auto px-4 py-3">
+            {isMobile ? (
+              /* Mobile Header */
+              <div className="flex justify-between items-center">
+                <div className="flex items-center space-x-2">
+                  <TrendingUp className="h-5 w-5 text-primary" />
+                  <h1 className="text-lg font-bold">TradeHaven</h1>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <ConnectionStatus />
+                  {botStatus.isConnected && !showBotFullScreen && (
+                    <Button 
+                      onClick={() => setShowBotFullScreen(true)}
+                      variant="outline"
+                      size="sm"
+                      className="border-primary text-primary hover:bg-primary hover:text-primary-foreground p-2"
+                    >
+                      <Bot className="w-4 h-4" />
+                    </Button>
+                  )}
+                  <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+                    <SheetTrigger asChild>
+                      <Button variant="outline" size="sm" className="p-2">
+                        <Menu className="h-4 w-4" />
+                      </Button>
+                    </SheetTrigger>
+                    <SheetContent side="right" className="w-80">
+                      <SheetHeader>
+                        <SheetTitle className="flex items-center space-x-2">
+                          <User className="h-5 w-5" />
+                          <span>Account Menu</span>
+                        </SheetTitle>
+                      </SheetHeader>
+                      <div className="mt-6 space-y-6">
+                        {/* User Info */}
+                        <div className="border-b pb-4">
+                          <p className="text-sm text-muted-foreground">Welcome back</p>
+                          <p className="font-medium truncate">{user?.email}</p>
+                        </div>
+
+                        {/* Bot Section */}
+                        <div className="space-y-3">
+                          <h3 className="text-sm font-medium text-muted-foreground">Trading Bot</h3>
+                          {botStatus.isConnected && !showBotFullScreen ? (
+                            <Button 
+                              onClick={() => {
+                                setShowBotFullScreen(true);
+                                setMobileMenuOpen(false);
+                              }}
+                              variant="outline"
+                              className="w-full justify-start border-primary text-primary hover:bg-primary hover:text-primary-foreground"
+                            >
+                              <Bot className="w-4 h-4 mr-2" />
+                              <Activity className="w-3 h-3 mr-2" />
+                              Bot {botStatus.botStatus === 'active' ? 'Active' : 'Paused'}
+                            </Button>
+                          ) : !botStatus.isConnected ? (
+                            <Button 
+                              onClick={() => {
+                                handleBotConnect();
+                                setMobileMenuOpen(false);
+                              }}
+                              className="w-full justify-start bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
+                            >
+                              <Bot className="w-4 h-4 mr-2" />
+                              Connect Your Trading Bot
+                            </Button>
+                          ) : null}
+                        </div>
+
+                        {/* Account Actions */}
+                        <div className="space-y-3">
+                          <h3 className="text-sm font-medium text-muted-foreground">Quick Actions</h3>
+                          <div className="space-y-2">
+                            <Button 
+                              variant="outline" 
+                              className="w-full justify-start"
+                              onClick={() => {
+                                setShowDepositModal(true);
+                                setMobileMenuOpen(false);
+                              }}
+                            >
+                              <Plus className="h-4 w-4 mr-2" />
+                              Deposit Funds
+                            </Button>
+                            <Button 
+                              variant="outline" 
+                              className="w-full justify-start"
+                              onClick={() => {
+                                setShowWithdrawModal(true);
+                                setMobileMenuOpen(false);
+                              }}
+                            >
+                              <Minus className="h-4 w-4 mr-2" />
+                              Withdraw Funds
+                            </Button>
+                          </div>
+                        </div>
+
+                        {/* Sign Out */}
+                        <div className="pt-4 border-t">
+                          <Button 
+                            variant="outline" 
+                            className="w-full justify-start text-destructive border-destructive hover:bg-destructive hover:text-destructive-foreground" 
+                            onClick={handleSignOut} 
+                            disabled={signingOut}
+                          >
+                            <LogOut className="h-4 w-4 mr-2" />
+                            {signingOut ? "Signing Out..." : "Sign Out"}
+                          </Button>
+                        </div>
+                      </div>
+                    </SheetContent>
+                  </Sheet>
+                </div>
+              </div>
+            ) : (
+              /* Desktop Header */
+              <div className="flex justify-between items-center">
+                <div className="flex items-center space-x-2">
+                  <TrendingUp className="h-6 w-6 text-primary" />
+                  <h1 className="text-2xl font-bold">TradeHaven</h1>
+                </div>
+                <div className="flex items-center space-x-4">
+                  {botStatus.isConnected && !showBotFullScreen ? (
+                    <Button 
+                      onClick={() => setShowBotFullScreen(true)}
+                      variant="outline"
+                      size="sm"
+                      className="border-primary text-primary hover:bg-primary hover:text-primary-foreground"
+                    >
+                      <Bot className="w-4 h-4 mr-2" />
+                      <Activity className="w-3 h-3 mr-1" />
+                      Bot {botStatus.botStatus === 'active' ? 'Active' : 'Paused'}
+                    </Button>
+                  ) : !botStatus.isConnected ? (
+                    <Button 
+                      onClick={handleBotConnect}
+                      variant="default"
+                      size="sm"
+                      className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
+                    >
+                      <Bot className="w-4 h-4 mr-2" />
+                      Connect Your Trading Bot
+                    </Button>
+                  ) : null}
+                  <ConnectionStatus />
+                  <span className="text-sm text-muted-foreground hidden lg:inline">Welcome, {user?.email}</span>
+                  <Button variant="outline" size="sm" onClick={handleSignOut} disabled={signingOut}>
+                    <LogOut className="h-4 w-4 mr-2" />
+                    {signingOut ? "Signing Out..." : "Sign Out"}
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
         </header>
 
