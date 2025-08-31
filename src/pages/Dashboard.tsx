@@ -119,6 +119,44 @@ const Dashboard = () => {
     return getUpdatedAssets(assets);
   }, [assets, getUpdatedAssets]);
 
+  // Calculate real-time total P&L from open trades (same logic as Portfolio)
+  const totalPnL = useMemo(() => {
+    if (!openTrades || openTrades.length === 0) {
+      return 0;
+    }
+    
+    // Calculate real-time P&L for each open trade
+    return openTrades.reduce((sum, trade) => {
+      // If trade is closed, use stored P&L
+      if (trade.status === 'closed') {
+        return sum + (trade.pnl || 0);
+      }
+
+      // For open trades, calculate real-time P&L if current price is available
+      const asset = updatedAssets.find(a => a.symbol === trade.symbol);
+      if (asset?.price) {
+        const realTimePnL = calculateRealTimePnL(
+          {
+            trade_type: trade.trade_type,
+            amount: trade.amount,
+            open_price: trade.open_price,
+            leverage: trade.leverage
+          },
+          asset.price
+        );
+        return sum + realTimePnL;
+      }
+
+      // Fall back to stored P&L if no real-time price
+      return sum + (trade.pnl || 0);
+    }, 0);
+  }, [openTrades, updatedAssets]);
+
+  // Calculate real-time equity: balance + unrealized P&L
+  const realTimeEquity = useMemo(() => {
+    return (profile?.balance || 0) + totalPnL;
+  }, [profile?.balance, totalPnL]);
+
   // Show bot interface if connected and in full screen mode
   if (botStatus.isConnected && !botStatus.loading && showBotFullScreen) {
     return (
@@ -372,17 +410,17 @@ const Dashboard = () => {
                       <TooltipProvider>
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <div className={`font-bold text-foreground min-w-0 ${getResponsiveTextSize(profile?.equity || 0, 'text-lg')}`}>
-                              {formatLargeNumber(profile?.equity || 0).display}
+                            <div className={`font-bold text-foreground min-w-0 animate-pulse-subtle ${getResponsiveTextSize(realTimeEquity, 'text-lg')}`}>
+                              {formatLargeNumber(realTimeEquity).display}
                             </div>
                           </TooltipTrigger>
                           <TooltipContent>
-                            <p>Active Equity: {formatLargeNumber(profile?.equity || 0).full}</p>
+                            <p>Real-time Equity: {formatLargeNumber(realTimeEquity).full}</p>
                           </TooltipContent>
                         </Tooltip>
                       </TooltipProvider>
                       <div className="text-xs text-muted-foreground">
-                        {profile?.balance ? formatPercentage((profile.equity / profile.balance) * 100) : '0.0%'} equity
+                        {profile?.balance ? formatPercentage((realTimeEquity / profile.balance) * 100) : '0.0%'} equity
                       </div>
                     </div>
                     
