@@ -400,7 +400,10 @@ export const WebTrader = () => {
             <div className="lg:col-span-2 space-y-4">
               {/* Chart Section - 400px Fixed Height */}
               <div className="h-[400px]">
-                <TradingChart symbol={selectedAsset?.symbol || ''} />
+                <TradingChart 
+                  key={selectedAsset?.id || 'no-asset'} 
+                  symbol={selectedAsset?.symbol || ''} 
+                />
               </div>
 
               {/* Trading Tabs Interface - 200px Fixed Height */}

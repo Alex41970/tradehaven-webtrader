@@ -6,6 +6,7 @@ interface TradingChartProps {
 
 export const TradingChart = ({ symbol }: TradingChartProps) => {
   const chartRef = useRef<HTMLDivElement>(null);
+  const widgetRef = useRef<any>(null);
 
   // Map asset symbols to proper TradingView symbols
   const getProperSymbol = (symbol: string): string => {
@@ -53,13 +54,51 @@ export const TradingChart = ({ symbol }: TradingChartProps) => {
   useEffect(() => {
     if (!chartRef.current) return;
 
-    // Create TradingView widget
-    const script = document.createElement("script");
-    script.src = "https://s3.tradingview.com/tv.js";
-    script.async = true;
-    script.onload = () => {
-      if (window.TradingView) {
-        new window.TradingView.widget({
+    // Cleanup previous widget
+    if (widgetRef.current) {
+      try {
+        widgetRef.current.remove();
+      } catch (error) {
+        console.log('Widget cleanup error:', error);
+      }
+      widgetRef.current = null;
+    }
+
+    // Clear the container
+    if (chartRef.current) {
+      chartRef.current.innerHTML = '<div class="text-center text-muted-foreground">Loading ' + symbol + ' chart...</div>';
+    }
+
+    // Check if TradingView is already loaded
+    if (window.TradingView) {
+      createWidget();
+    } else {
+      // Load TradingView script if not already loaded
+      const existingScript = document.querySelector('script[src*="tradingview.com/tv.js"]');
+      if (!existingScript) {
+        const script = document.createElement("script");
+        script.src = "https://s3.tradingview.com/tv.js";
+        script.async = true;
+        script.onload = createWidget;
+        document.head.appendChild(script);
+      } else {
+        // Script exists but TradingView might not be ready yet
+        const checkTradingView = () => {
+          if (window.TradingView) {
+            createWidget();
+          } else {
+            setTimeout(checkTradingView, 100);
+          }
+        };
+        checkTradingView();
+      }
+    }
+
+    function createWidget() {
+      if (!chartRef.current || !window.TradingView) return;
+      
+      try {
+        widgetRef.current = new window.TradingView.widget({
           autosize: true,
           symbol: getProperSymbol(symbol),
           interval: "1",
@@ -75,22 +114,27 @@ export const TradingChart = ({ symbol }: TradingChartProps) => {
           container_id: chartRef.current?.id || "tradingview_chart",
           height: 400,
         });
+      } catch (error) {
+        console.error('Error creating TradingView widget:', error);
       }
-    };
-
-    document.head.appendChild(script);
+    }
 
     return () => {
-      if (document.head.contains(script)) {
-        document.head.removeChild(script);
+      if (widgetRef.current) {
+        try {
+          widgetRef.current.remove();
+        } catch (error) {
+          console.log('Widget cleanup error:', error);
+        }
+        widgetRef.current = null;
       }
     };
   }, [symbol]);
 
   return (
-    <div className="w-full h-96 bg-muted/20 rounded-lg flex items-center justify-center">
+    <div className="w-full h-96 bg-muted/20 rounded-lg flex items-center justify-center animate-fade-in">
       <div id="tradingview_chart" ref={chartRef} className="w-full h-full">
-        <div className="text-center text-muted-foreground">
+        <div className="text-center text-muted-foreground animate-pulse">
           Loading {symbol} chart...
         </div>
       </div>

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -47,6 +47,13 @@ export const EnhancedTradingPanel: React.FC<EnhancedTradingPanelProps> = ({
   const [expiryHours, setExpiryHours] = useState<number>(24);
   const [riskManagementOpen, setRiskManagementOpen] = useState(false);
   const [orderDetailsOpen, setOrderDetailsOpen] = useState(false);
+
+  // Update price-dependent state when selectedAsset changes
+  useEffect(() => {
+    setTriggerPrice(selectedAsset.price);
+    setStopLoss(selectedAsset.price * 0.98);
+    setTakeProfit(selectedAsset.price * 1.03);
+  }, [selectedAsset.id, selectedAsset.price]);
 
   // Risk calculations
   const calculations = useMemo(() => {
