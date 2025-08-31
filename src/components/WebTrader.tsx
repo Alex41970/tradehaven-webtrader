@@ -332,9 +332,9 @@ export const WebTrader = () => {
 
         {selectedAsset && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Left Column - Market Watch - Responsive Height */}
-            <div className="w-full lg:col-span-1">
-              <Card className="bg-card/80 backdrop-blur border-border/50 h-auto lg:h-[830px] flex flex-col">
+            {/* Left Column - Market Watch - Fixed Height */}
+            <div className="lg:col-span-1">
+              <Card className="bg-card/80 backdrop-blur border-border/50 h-[830px] flex flex-col">
                 <CardHeader className="pb-2 px-4 pt-4">
                   <CardTitle className="text-lg">Market Watch</CardTitle>
                   <CardDescription className="text-sm">Live market data</CardDescription>
@@ -396,10 +396,10 @@ export const WebTrader = () => {
               </Card>
             </div>
 
-            {/* Right Column - Chart and Trading - Responsive Heights */}
-            <div className="w-full lg:col-span-2 space-y-4">
-              {/* Chart Section - Responsive Height */}
-              <div className="h-auto min-h-[300px] lg:h-[400px]">
+            {/* Right Column - Chart and Trading - Fixed Heights */}
+            <div className="lg:col-span-2 space-y-4">
+              {/* Chart Section - 400px Fixed Height */}
+              <div className="h-[400px]">
                 <TradingChart symbol={selectedAsset?.symbol || ''} />
               </div>
 
