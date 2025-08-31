@@ -13,7 +13,7 @@ import { WithdrawModal } from "@/components/WithdrawModal";
 import { TransactionHistoryPopup } from "@/components/TransactionHistoryPopup";
 import TradingStatusIndicator from "@/components/TradingStatusIndicator";
 import { ConnectionStatus } from "@/components/ConnectionStatus";
-import { LogOut, TrendingUp, DollarSign, Activity, ExternalLink, Plus, Minus, BarChart3, Target, Trophy, Shield, TrendingDown, Zap, Award, Bot, History, ArrowUpRight, ArrowDownLeft, Clock, CheckCircle, XCircle, Loader, Menu, User } from "lucide-react";
+import { LogOut, TrendingUp, DollarSign, Activity, ExternalLink, Plus, Minus, BarChart3, Target, Trophy, Shield, TrendingDown, Zap, Award, Bot, History, ArrowUpRight, ArrowDownLeft, Clock, CheckCircle, XCircle, Loader, Menu, User, CircleDollarSign } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { useTrades } from "@/hooks/useTrades";
@@ -156,6 +156,21 @@ const Dashboard = () => {
   const realTimeEquity = useMemo(() => {
     return (profile?.balance || 0) + totalPnL;
   }, [profile?.balance, totalPnL]);
+
+  // Calculate real-time used margin from all open trades
+  const totalUsedMargin = useMemo(() => {
+    if (!openTrades || openTrades.length === 0) {
+      return 0;
+    }
+    return openTrades.reduce((sum, trade) => {
+      return sum + (trade.margin_used || 0);
+    }, 0);
+  }, [openTrades]);
+
+  // Calculate free margin: equity - used margin
+  const freeMargin = useMemo(() => {
+    return realTimeEquity - totalUsedMargin;
+  }, [realTimeEquity, totalUsedMargin]);
 
   // Show bot interface if connected and in full screen mode
   if (botStatus.isConnected && !botStatus.loading && showBotFullScreen) {
@@ -426,23 +441,23 @@ const Dashboard = () => {
                     
                     <div className="bg-muted/30 rounded-lg p-3 border">
                       <div className="flex items-center space-x-2 mb-1">
-                        <Activity className="h-3 w-3 text-orange-500" />
-                        <span className="text-xs font-medium text-muted-foreground">In Use</span>
+                        <CircleDollarSign className="h-3 w-3 text-green-500" />
+                        <span className="text-xs font-medium text-muted-foreground">Free Margin</span>
                       </div>
                       <TooltipProvider>
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <div className={`font-bold text-foreground min-w-0 ${getResponsiveTextSize(profile?.used_margin || 0, 'text-lg')}`}>
-                              {formatLargeNumber(profile?.used_margin || 0).display}
+                            <div className={`font-bold text-foreground min-w-0 animate-pulse-subtle ${getResponsiveTextSize(freeMargin, 'text-lg')}`}>
+                              {formatLargeNumber(freeMargin).display}
                             </div>
                           </TooltipTrigger>
                           <TooltipContent>
-                            <p>{formatLargeNumber(profile?.used_margin || 0).full}</p>
+                            <p>Available margin for new trades: {formatLargeNumber(freeMargin).full}</p>
                           </TooltipContent>
                         </Tooltip>
                       </TooltipProvider>
                       <div className="text-xs text-muted-foreground">
-                        {profile?.balance ? formatPercentage((profile.used_margin / profile.balance) * 100) : '0.0%'} utilized
+                        {realTimeEquity > 0 ? formatPercentage((freeMargin / realTimeEquity) * 100) : '0.0%'} available
                       </div>
                     </div>
                   </div>
