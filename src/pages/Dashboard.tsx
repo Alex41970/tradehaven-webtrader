@@ -366,23 +366,23 @@ const Dashboard = () => {
                   <div className="grid grid-cols-2 gap-3">
                     <div className="bg-muted/30 rounded-lg p-3 border">
                       <div className="flex items-center space-x-2 mb-1">
-                        <TrendingUp className="h-3 w-3 text-green-500" />
-                        <span className="text-xs font-medium text-muted-foreground">Available</span>
+                        <Target className="h-3 w-3 text-blue-500" />
+                        <span className="text-xs font-medium text-muted-foreground">Margin</span>
                       </div>
                       <TooltipProvider>
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <div className={`font-bold text-foreground min-w-0 ${getResponsiveTextSize(profile?.available_margin || 0, 'text-lg')}`}>
-                              {formatLargeNumber(profile?.available_margin || 0).display}
+                            <div className={`font-bold text-foreground min-w-0 ${getResponsiveTextSize(profile?.equity || 0, 'text-lg')}`}>
+                              {formatLargeNumber(profile?.equity || 0).display}
                             </div>
                           </TooltipTrigger>
                           <TooltipContent>
-                            <p>{formatLargeNumber(profile?.available_margin || 0).full}</p>
+                            <p>Active Margin: {formatLargeNumber(profile?.equity || 0).full}</p>
                           </TooltipContent>
                         </Tooltip>
                       </TooltipProvider>
                       <div className="text-xs text-muted-foreground">
-                        {profile?.balance ? formatPercentage((profile.available_margin / profile.balance) * 100) : '0.0%'} free
+                        {profile?.balance ? formatPercentage((profile.equity / profile.balance) * 100) : '0.0%'} active
                       </div>
                     </div>
                     
