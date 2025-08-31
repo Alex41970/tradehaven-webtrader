@@ -126,30 +126,34 @@ export const BotTerminal: React.FC<BotTerminalProps> = ({ botStatus, botTrades }
       </div>
 
       <CardHeader className="bg-gradient-to-r from-trading-primary/20 to-transparent border-b border-primary/20 relative z-10">
-        <CardTitle className="flex items-center justify-between text-green-400 font-mono text-sm">
-          <div className="flex items-center gap-2">
-            <Terminal className="h-4 w-4" />
-            <span>BOT_NEURAL_NETWORK.EXE</span>
-            <Badge variant="outline" className="ml-2 bg-black/50">
+        <CardTitle className="flex items-center justify-between text-green-400 font-mono text-sm max-w-full overflow-hidden">
+          <div className="flex items-center gap-1 sm:gap-2 min-w-0 flex-shrink">
+            <Terminal className="h-4 w-4 flex-shrink-0" />
+            <span className="truncate text-xs sm:text-sm">BOT_NEURAL_NETWORK.EXE</span>
+            <Badge variant="outline" className="ml-1 sm:ml-2 bg-black/50 flex-shrink-0">
               <Activity className="h-3 w-3 mr-1" />
-              {botStatus.toUpperCase()}
+              <span className="hidden xs:inline">{botStatus.toUpperCase()}</span>
+              <span className="xs:hidden">{botStatus.charAt(0).toUpperCase()}</span>
             </Badge>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 flex-shrink-0">
             <Button
               variant="ghost"
               size="sm"
               onClick={() => setFilter(filter === 'all' ? 'trades' : filter === 'trades' ? 'system' : 'all')}
-              className="h-6 px-2 text-xs text-green-400 hover:bg-green-400/10"
+              className="h-6 px-1 sm:px-2 text-xs text-green-400 hover:bg-green-400/10 min-w-0"
             >
-              <Filter className="h-3 w-3 mr-1" />
-              {filter.toUpperCase()}
+              <Filter className="h-3 w-3 mr-1 flex-shrink-0" />
+              <span className="hidden sm:inline">{filter.toUpperCase()}</span>
+              <span className="sm:hidden">
+                {filter === 'all' ? 'A' : filter === 'trades' ? 'T' : 'S'}
+              </span>
             </Button>
             <Button
               variant="ghost"
               size="sm"
               onClick={() => setIsExpanded(!isExpanded)}
-              className="h-6 px-2 text-green-400 hover:bg-green-400/10"
+              className="h-6 px-1 sm:px-2 text-green-400 hover:bg-green-400/10 flex-shrink-0"
             >
               {isExpanded ? <Minimize2 className="h-3 w-3" /> : <Maximize2 className="h-3 w-3" />}
             </Button>
