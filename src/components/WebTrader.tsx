@@ -63,15 +63,19 @@ export const WebTrader = () => {
     }
   }, [realtimeAssets, selectedAsset]);
 
-  // Update selected asset with real-time data
+  // Update selected asset with real-time data - REMOVED selectedAsset from dependencies to prevent infinite loop
   useEffect(() => {
     if (selectedAsset) {
       const updatedAsset = realtimeAssets.find(a => a.id === selectedAsset.id);
-      if (updatedAsset) {
+      if (updatedAsset && (
+        updatedAsset.price !== selectedAsset.price || 
+        updatedAsset.change_24h !== selectedAsset.change_24h ||
+        updatedAsset.updated_at !== selectedAsset.updated_at
+      )) {
         setSelectedAsset(updatedAsset);
       }
     }
-  }, [realtimeAssets, selectedAsset]);
+  }, [realtimeAssets]); // Removed selectedAsset from dependencies
 
   // Real-time updates are now handled by WebSocket system, no need for Supabase subscriptions
 
