@@ -367,7 +367,7 @@ const Dashboard = () => {
                     <div className="bg-muted/30 rounded-lg p-3 border">
                       <div className="flex items-center space-x-2 mb-1">
                         <Target className="h-3 w-3 text-blue-500" />
-                        <span className="text-xs font-medium text-muted-foreground">Margin</span>
+                        <span className="text-xs font-medium text-muted-foreground">Equity</span>
                       </div>
                       <TooltipProvider>
                         <Tooltip>
@@ -377,12 +377,12 @@ const Dashboard = () => {
                             </div>
                           </TooltipTrigger>
                           <TooltipContent>
-                            <p>Active Margin: {formatLargeNumber(profile?.equity || 0).full}</p>
+                            <p>Active Equity: {formatLargeNumber(profile?.equity || 0).full}</p>
                           </TooltipContent>
                         </Tooltip>
                       </TooltipProvider>
                       <div className="text-xs text-muted-foreground">
-                        {profile?.balance ? formatPercentage((profile.equity / profile.balance) * 100) : '0.0%'} active
+                        {profile?.balance ? formatPercentage((profile.equity / profile.balance) * 100) : '0.0%'} equity
                       </div>
                     </div>
                     
