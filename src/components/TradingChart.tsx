@@ -88,7 +88,7 @@ export const TradingChart = ({ symbol }: TradingChartProps) => {
   }, [symbol]);
 
   return (
-    <div className="w-full h-full bg-muted/20 rounded-lg flex items-center justify-center">
+    <div className="w-full h-96 bg-muted/20 rounded-lg flex items-center justify-center">
       <div id="tradingview_chart" ref={chartRef} className="w-full h-full">
         <div className="text-center text-muted-foreground">
           Loading {symbol} chart...

@@ -18,7 +18,6 @@ interface TradingTabsInterfaceProps {
   openTrades: any[];
   realtimeAssets: any[];
   onCloseTrade: (tradeId: string) => void;
-  isMobile?: boolean;
 }
 
 export const TradingTabsInterface: React.FC<TradingTabsInterfaceProps> = ({
@@ -33,15 +32,14 @@ export const TradingTabsInterface: React.FC<TradingTabsInterfaceProps> = ({
   openTrades,
   realtimeAssets,
   onCloseTrade,
-  isMobile = false,
 }) => {
   return (
-    <div className={isMobile ? "h-[35vh]" : "h-[200px]"}>
+    <div className="h-[200px]">
       <Tabs defaultValue="trading" className="h-full flex flex-col">
         <TabsList className="grid w-full grid-cols-3 h-10 bg-muted/50 border border-border/30 rounded-lg shadow-sm">
-          <TabsTrigger value="trading" className={`${isMobile ? 'text-xs px-2' : 'text-xs'} font-medium`}>Trading Panel</TabsTrigger>
-          <TabsTrigger value="open-trades" className={`${isMobile ? 'text-xs px-2' : 'text-xs'} font-medium`}>Open Trades</TabsTrigger>
-          <TabsTrigger value="orders" className={`${isMobile ? 'text-xs px-2' : 'text-xs'} font-medium`}>Orders</TabsTrigger>
+          <TabsTrigger value="trading" className="text-xs font-medium">Trading Panel</TabsTrigger>
+          <TabsTrigger value="open-trades" className="text-xs font-medium">Open Trades</TabsTrigger>
+          <TabsTrigger value="orders" className="text-xs font-medium">Orders</TabsTrigger>
         </TabsList>
         
         {/* Trading Panel Tab */}
