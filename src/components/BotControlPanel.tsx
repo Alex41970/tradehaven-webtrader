@@ -60,12 +60,12 @@ export const BotControlPanel: React.FC<BotControlPanelProps> = ({
   };
 
   return (
-    <div className="space-y-4 md:space-y-6 w-full min-w-0 overflow-x-hidden">
+    <div className="space-y-4 md:space-y-6 w-full max-w-[100vw] min-w-0 overflow-x-hidden box-border">
       {/* Main Bot Status Card */}
-      <Card className="border-primary/20 bg-gradient-to-br from-card via-card/95 to-trading-primary/5 backdrop-blur-xl shadow-xl">
-        <CardHeader className="pb-4 md:pb-6 p-3 md:p-6">
-          <CardTitle className="flex items-center justify-between flex-wrap gap-2 md:gap-4">
-            <div className="flex items-center gap-3 md:gap-4 min-w-0 flex-1">
+      <Card className="border-primary/20 bg-gradient-to-br from-card via-card/95 to-trading-primary/5 backdrop-blur-xl shadow-xl w-full max-w-full box-border">
+        <CardHeader className="pb-4 md:pb-6 p-3 md:p-6 w-full max-w-full box-border">
+          <CardTitle className="flex items-center justify-between flex-wrap gap-2 md:gap-4 w-full max-w-full min-w-0">
+            <div className="flex items-center gap-3 md:gap-4 min-w-0 flex-1 max-w-full overflow-hidden">
               {/* Enhanced Bot Avatar */}
               <div className="relative flex-shrink-0">
                 <div className={`${isMobile ? 'w-12 h-12' : 'w-16 h-16'} rounded-full bg-gradient-to-br from-trading-primary to-trading-accent flex items-center justify-center shadow-lg`}>
@@ -111,31 +111,35 @@ export const BotControlPanel: React.FC<BotControlPanelProps> = ({
 
       {/* Control Tabs */}
       <Tabs defaultValue="overview" className="space-y-4 md:space-y-6">
-        <TabsList className={`grid w-full ${isMobile ? 'grid-cols-4 gap-0' : 'grid-cols-4'} bg-card/50 backdrop-blur-sm`}>
-          <TabsTrigger value="overview" className={`flex items-center justify-center ${isMobile ? 'gap-0 px-1 py-2 min-w-0' : 'gap-2 px-3 py-2'}`}>
+        <TabsList className={`grid w-full max-w-full ${isMobile ? 'grid-cols-4 gap-0 px-0' : 'grid-cols-4'} bg-card/50 backdrop-blur-sm box-border`}>
+          <TabsTrigger value="overview" className={`flex items-center justify-center ${isMobile ? 'gap-0 px-0.5 py-2 min-w-0 text-xs' : 'gap-2 px-3 py-2'} box-border`}>
             <BarChart3 className={`${isMobile ? 'h-3 w-3' : 'h-4 w-4'} flex-shrink-0`} />
             {!isMobile && <span className="truncate">Overview</span>}
+            {isMobile && <span className="sr-only">Overview</span>}
           </TabsTrigger>
-          <TabsTrigger value="controls" className={`flex items-center justify-center ${isMobile ? 'gap-0 px-1 py-2 min-w-0' : 'gap-2 px-3 py-2'}`}>
+          <TabsTrigger value="controls" className={`flex items-center justify-center ${isMobile ? 'gap-0 px-0.5 py-2 min-w-0 text-xs' : 'gap-2 px-3 py-2'} box-border`}>
             <Settings className={`${isMobile ? 'h-3 w-3' : 'h-4 w-4'} flex-shrink-0`} />
             {!isMobile && <span className="truncate">Controls</span>}
+            {isMobile && <span className="sr-only">Controls</span>}
           </TabsTrigger>
-          <TabsTrigger value="performance" className={`flex items-center justify-center ${isMobile ? 'gap-0 px-1 py-2 min-w-0' : 'gap-2 px-3 py-2'}`}>
+          <TabsTrigger value="performance" className={`flex items-center justify-center ${isMobile ? 'gap-0 px-0.5 py-2 min-w-0 text-xs' : 'gap-2 px-3 py-2'} box-border`}>
             <TrendingUp className={`${isMobile ? 'h-3 w-3' : 'h-4 w-4'} flex-shrink-0`} />
             {!isMobile && <span className="truncate">Performance</span>}
+            {isMobile && <span className="sr-only">Performance</span>}
           </TabsTrigger>
-          <TabsTrigger value="system" className={`flex items-center justify-center ${isMobile ? 'gap-0 px-1 py-2 min-w-0' : 'gap-2 px-3 py-2'}`}>
+          <TabsTrigger value="system" className={`flex items-center justify-center ${isMobile ? 'gap-0 px-0.5 py-2 min-w-0 text-xs' : 'gap-2 px-3 py-2'} box-border`}>
             <Shield className={`${isMobile ? 'h-3 w-3' : 'h-4 w-4'} flex-shrink-0`} />
             {!isMobile && <span className="truncate">System</span>}
+            {isMobile && <span className="sr-only">System</span>}
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-3 md:space-y-4">
           {/* Quick Stats Grid */}
-          <div className={`grid ${isMobile ? 'grid-cols-1 gap-2' : 'grid-cols-2 md:grid-cols-4 gap-3 md:gap-4'} w-full`}>
-            <Card className="border-primary/20 bg-gradient-to-br from-card via-card/95 to-trading-success/5 backdrop-blur-xl min-w-0">
-              <CardContent className={`${isMobile ? 'p-3' : 'p-4'}`}>
-                <div className={`flex items-center ${isMobile ? 'gap-2' : 'gap-2'} min-w-0`}>
+          <div className={`grid grid-cols-1 gap-2 w-full max-w-full`}>
+            <Card className="border-primary/20 bg-gradient-to-br from-card via-card/95 to-trading-success/5 backdrop-blur-xl min-w-0 w-full max-w-full box-border">
+              <CardContent className={`${isMobile ? 'p-2' : 'p-4'} w-full max-w-full box-border`}>
+                <div className={`flex items-center ${isMobile ? 'gap-2' : 'gap-2'} min-w-0 w-full max-w-full overflow-hidden`}>
                   <CheckCircle2 className={`${isMobile ? 'h-5 w-5' : 'h-5 w-5'} text-trading-success flex-shrink-0`} />
                   <div className="flex-1 min-w-0">
                     <p className={`${isMobile ? 'text-xs' : 'text-xs'} text-muted-foreground truncate`}>Total Trades</p>
@@ -145,9 +149,9 @@ export const BotControlPanel: React.FC<BotControlPanelProps> = ({
               </CardContent>
             </Card>
 
-            <Card className="border-primary/20 bg-gradient-to-br from-card via-card/95 to-trading-accent/5 backdrop-blur-xl min-w-0">
-              <CardContent className={`${isMobile ? 'p-3' : 'p-4'}`}>
-                <div className={`flex items-center ${isMobile ? 'gap-2' : 'gap-2'} min-w-0`}>
+            <Card className="border-primary/20 bg-gradient-to-br from-card via-card/95 to-trading-accent/5 backdrop-blur-xl min-w-0 w-full max-w-full box-border">
+              <CardContent className={`${isMobile ? 'p-2' : 'p-4'} w-full max-w-full box-border`}>
+                <div className={`flex items-center ${isMobile ? 'gap-2' : 'gap-2'} min-w-0 w-full max-w-full overflow-hidden`}>
                   <Activity className={`${isMobile ? 'h-5 w-5' : 'h-5 w-5'} text-trading-accent flex-shrink-0`} />
                   <div className="flex-1 min-w-0">
                     <p className={`${isMobile ? 'text-xs' : 'text-xs'} text-muted-foreground truncate`}>Active Trades</p>
@@ -157,9 +161,9 @@ export const BotControlPanel: React.FC<BotControlPanelProps> = ({
               </CardContent>
             </Card>
 
-            <Card className="border-primary/20 bg-gradient-to-br from-card via-card/95 to-trading-success/5 backdrop-blur-xl min-w-0">
-              <CardContent className={`${isMobile ? 'p-3' : 'p-4'}`}>
-                <div className={`flex items-center ${isMobile ? 'gap-2' : 'gap-2'} min-w-0`}>
+            <Card className="border-primary/20 bg-gradient-to-br from-card via-card/95 to-trading-success/5 backdrop-blur-xl min-w-0 w-full max-w-full box-border">
+              <CardContent className={`${isMobile ? 'p-2' : 'p-4'} w-full max-w-full box-border`}>
+                <div className={`flex items-center ${isMobile ? 'gap-2' : 'gap-2'} min-w-0 w-full max-w-full overflow-hidden`}>
                   <TrendingUp className={`${isMobile ? 'h-5 w-5' : 'h-5 w-5'} text-trading-success flex-shrink-0`} />
                   <div className="flex-1 min-w-0">
                     <p className={`${isMobile ? 'text-xs' : 'text-xs'} text-muted-foreground truncate`}>Win Rate</p>
@@ -169,9 +173,9 @@ export const BotControlPanel: React.FC<BotControlPanelProps> = ({
               </CardContent>
             </Card>
 
-            <Card className="border-primary/20 bg-gradient-to-br from-card via-card/95 to-trading-primary/5 backdrop-blur-xl min-w-0">
-              <CardContent className={`${isMobile ? 'p-3' : 'p-4'}`}>
-                <div className={`flex items-center ${isMobile ? 'gap-2' : 'gap-2'} min-w-0`}>
+            <Card className="border-primary/20 bg-gradient-to-br from-card via-card/95 to-trading-primary/5 backdrop-blur-xl min-w-0 w-full max-w-full box-border">
+              <CardContent className={`${isMobile ? 'p-2' : 'p-4'} w-full max-w-full box-border`}>
+                <div className={`flex items-center ${isMobile ? 'gap-2' : 'gap-2'} min-w-0 w-full max-w-full overflow-hidden`}>
                   <BarChart3 className={`${isMobile ? 'h-5 w-5' : 'h-5 w-5'} text-trading-primary flex-shrink-0`} />
                   <div className="flex-1 min-w-0">
                     <p className={`${isMobile ? 'text-xs' : 'text-xs'} text-muted-foreground truncate`}>Total P&L</p>
@@ -195,20 +199,20 @@ export const BotControlPanel: React.FC<BotControlPanelProps> = ({
         </TabsContent>
 
         <TabsContent value="controls" className="space-y-3 md:space-y-4">
-          <Card className="border-primary/20 bg-gradient-to-br from-card via-card/95 to-trading-secondary/5 backdrop-blur-xl">
-            <CardHeader className={`${isMobile ? 'pb-3' : 'pb-4'}`}>
+          <Card className="border-primary/20 bg-gradient-to-br from-card via-card/95 to-trading-secondary/5 backdrop-blur-xl w-full max-w-full box-border">
+            <CardHeader className={`${isMobile ? 'pb-3' : 'pb-4'} w-full max-w-full box-border`}>
               <CardTitle className={`flex items-center gap-2 ${isMobile ? 'text-lg' : 'text-xl'}`}>
                 <Settings className={`${isMobile ? 'h-4 w-4' : 'h-5 w-5'}`} />
                 Bot Control Center
               </CardTitle>
             </CardHeader>
-            <CardContent className={`space-y-3 ${isMobile ? 'px-4 pb-4' : 'space-y-4'}`}>
-              <div className={`flex ${isMobile ? 'flex-col gap-2' : 'flex-col sm:flex-row gap-3'}`}>
+            <CardContent className={`space-y-3 ${isMobile ? 'px-4 pb-4' : 'space-y-4'} w-full max-w-full box-border`}>
+              <div className={`flex ${isMobile ? 'flex-col gap-2' : 'flex-col sm:flex-row gap-3'} w-full max-w-full`}>
                 {botStatus === 'active' ? (
                   <Button 
                     onClick={onPause}
                     variant="outline"
-                    className={`flex items-center justify-center gap-2 border-trading-accent/50 hover:bg-trading-accent/10 ${isMobile ? 'h-12 text-sm' : ''}`}
+                    className={`flex items-center justify-center gap-2 border-trading-accent/50 hover:bg-trading-accent/10 ${isMobile ? 'h-12 text-sm' : ''} w-full max-w-full`}
                   >
                     <Pause className="h-4 w-4" />
                     {isMobile ? "Pause Bot" : "Pause Trading Bot"}
@@ -216,7 +220,7 @@ export const BotControlPanel: React.FC<BotControlPanelProps> = ({
                 ) : (
                   <Button 
                     onClick={onResume}
-                    className={`flex items-center justify-center gap-2 bg-trading-success hover:bg-trading-success/90 ${isMobile ? 'h-12 text-sm' : ''}`}
+                    className={`flex items-center justify-center gap-2 bg-trading-success hover:bg-trading-success/90 ${isMobile ? 'h-12 text-sm' : ''} w-full max-w-full`}
                   >
                     <Play className="h-4 w-4" />
                     {isMobile ? "Resume Bot" : "Resume Trading Bot"}
@@ -227,17 +231,17 @@ export const BotControlPanel: React.FC<BotControlPanelProps> = ({
                   <Button 
                     onClick={() => setConfirmDelete(true)}
                     variant="outline"
-                    className={`flex items-center justify-center gap-2 border-destructive/50 hover:bg-destructive/10 text-destructive ${isMobile ? 'h-12 text-sm' : ''}`}
+                    className={`flex items-center justify-center gap-2 border-destructive/50 hover:bg-destructive/10 text-destructive ${isMobile ? 'h-12 text-sm' : ''} w-full max-w-full`}
                   >
                     <Trash2 className="h-4 w-4" />
                     {isMobile ? "Disconnect" : "Disconnect Bot"}
                   </Button>
                 ) : (
-                  <div className={`flex ${isMobile ? 'flex-col gap-2' : 'gap-2'}`}>
+                  <div className={`flex ${isMobile ? 'flex-col gap-2' : 'gap-2'} w-full max-w-full`}>
                     <Button 
                       onClick={onDelete}
                       variant="destructive"
-                      className={`flex items-center gap-2 ${isMobile ? 'h-12 text-sm' : ''}`}
+                      className={`flex items-center gap-2 ${isMobile ? 'h-12 text-sm' : ''} w-full max-w-full`}
                     >
                       <AlertTriangle className="h-4 w-4" />
                       {isMobile ? "Confirm" : "Confirm Disconnect"}
@@ -245,7 +249,7 @@ export const BotControlPanel: React.FC<BotControlPanelProps> = ({
                     <Button 
                       onClick={() => setConfirmDelete(false)}
                       variant="outline"
-                      className={`${isMobile ? 'h-12 text-sm' : ''}`}
+                      className={`${isMobile ? 'h-12 text-sm' : ''} w-full max-w-full`}
                     >
                       Cancel
                     </Button>
@@ -253,7 +257,7 @@ export const BotControlPanel: React.FC<BotControlPanelProps> = ({
                 )}
               </div>
 
-              <div className={`${isMobile ? 'p-3' : 'p-4'} bg-muted/30 rounded-lg border border-border/50`}>
+              <div className={`${isMobile ? 'p-3' : 'p-4'} bg-muted/30 rounded-lg border border-border/50 w-full max-w-full box-border`}>
                 <p className={`${isMobile ? 'text-xs' : 'text-sm'} text-muted-foreground`}>
                   <strong>Note:</strong> {isMobile ? "Pausing stops new trades. Disconnecting closes all positions." : "Pausing the bot will stop new trade execution but keep existing positions open. Disconnecting will close all open positions and remove the bot license."}
                 </p>
@@ -263,21 +267,21 @@ export const BotControlPanel: React.FC<BotControlPanelProps> = ({
         </TabsContent>
 
         <TabsContent value="performance" className="space-y-3 md:space-y-4">
-          <Card className="border-primary/20 bg-gradient-to-br from-card via-card/95 to-trading-primary/5 backdrop-blur-xl">
-            <CardHeader className={`${isMobile ? 'pb-3' : 'pb-4'}`}>
-              <CardTitle className={`flex items-center gap-2 ${isMobile ? 'text-lg' : 'text-xl'}`}>
+          <Card className="border-primary/20 bg-gradient-to-br from-card via-card/95 to-trading-primary/5 backdrop-blur-xl w-full max-w-full box-border">
+            <CardHeader className={`${isMobile ? 'pb-2' : 'pb-4'} w-full max-w-full box-border`}>
+              <CardTitle className={`flex items-center gap-2 ${isMobile ? 'text-base' : 'text-xl'} truncate`}>
                 <TrendingUp className={`${isMobile ? 'h-4 w-4' : 'h-5 w-5'}`} />
                 Performance Metrics
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className={`grid ${isMobile ? 'grid-cols-1 gap-4' : 'grid-cols-2 gap-4'}`}>
-                <div className={`space-y-2 ${isMobile ? 'p-3 bg-muted/20 rounded-lg' : ''}`}>
+            <CardContent className="w-full max-w-full box-border overflow-hidden">
+              <div className={`grid grid-cols-1 gap-3 w-full max-w-full`}>
+                <div className={`space-y-2 ${isMobile ? 'p-3 bg-muted/20 rounded-lg' : ''} w-full max-w-full box-border`}>
                   <p className={`${isMobile ? 'text-sm' : 'text-sm'} text-muted-foreground`}>Best Trade</p>
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <p className={`font-semibold text-trading-success min-w-0 ${getResponsiveTextSize(Math.max(...closedBotTrades.map(t => t.pnl), 0), isMobile ? 'text-xl' : 'text-lg')}`}>
+                        <p className={`font-semibold text-trading-success min-w-0 truncate ${getResponsiveTextSize(Math.max(...closedBotTrades.map(t => t.pnl), 0), isMobile ? 'text-xl' : 'text-lg')}`}>
                           {formatLargeNumber(Math.max(...closedBotTrades.map(t => t.pnl), 0)).display}
                         </p>
                       </TooltipTrigger>
@@ -287,12 +291,12 @@ export const BotControlPanel: React.FC<BotControlPanelProps> = ({
                     </Tooltip>
                   </TooltipProvider>
                 </div>
-                <div className={`space-y-2 ${isMobile ? 'p-3 bg-muted/20 rounded-lg' : ''}`}>
+                <div className={`space-y-2 ${isMobile ? 'p-3 bg-muted/20 rounded-lg' : ''} w-full max-w-full box-border`}>
                   <p className={`${isMobile ? 'text-sm' : 'text-sm'} text-muted-foreground`}>Worst Trade</p>
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <p className={`font-semibold text-trading-danger min-w-0 ${getResponsiveTextSize(Math.abs(Math.min(...closedBotTrades.map(t => t.pnl), 0)), isMobile ? 'text-xl' : 'text-lg')}`}>
+                        <p className={`font-semibold text-trading-danger min-w-0 truncate ${getResponsiveTextSize(Math.abs(Math.min(...closedBotTrades.map(t => t.pnl), 0)), isMobile ? 'text-xl' : 'text-lg')}`}>
                           {formatLargeNumber(Math.min(...closedBotTrades.map(t => t.pnl), 0)).display}
                         </p>
                       </TooltipTrigger>
@@ -302,12 +306,12 @@ export const BotControlPanel: React.FC<BotControlPanelProps> = ({
                     </Tooltip>
                   </TooltipProvider>
                 </div>
-                <div className={`space-y-2 ${isMobile ? 'p-3 bg-muted/20 rounded-lg' : ''}`}>
+                <div className={`space-y-2 ${isMobile ? 'p-3 bg-muted/20 rounded-lg' : ''} w-full max-w-full box-border`}>
                   <p className={`${isMobile ? 'text-sm' : 'text-sm'} text-muted-foreground`}>Avg Trade Size</p>
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <p className={`font-semibold min-w-0 ${getResponsiveTextSize(botTrades.reduce((sum, t) => sum + t.amount, 0) / (botTrades.length || 1), isMobile ? 'text-xl' : 'text-lg')}`}>
+                        <p className={`font-semibold min-w-0 truncate ${getResponsiveTextSize(botTrades.reduce((sum, t) => sum + t.amount, 0) / (botTrades.length || 1), isMobile ? 'text-xl' : 'text-lg')}`}>
                           {formatLargeNumber(botTrades.reduce((sum, t) => sum + t.amount, 0) / (botTrades.length || 1)).display}
                         </p>
                       </TooltipTrigger>
@@ -317,9 +321,9 @@ export const BotControlPanel: React.FC<BotControlPanelProps> = ({
                     </Tooltip>
                   </TooltipProvider>
                 </div>
-                <div className={`space-y-2 ${isMobile ? 'p-3 bg-muted/20 rounded-lg' : ''}`}>
+                <div className={`space-y-2 ${isMobile ? 'p-3 bg-muted/20 rounded-lg' : ''} w-full max-w-full box-border`}>
                   <p className={`${isMobile ? 'text-sm' : 'text-sm'} text-muted-foreground`}>Success Streak</p>
-                  <p className={`${isMobile ? 'text-xl' : 'text-lg'} font-semibold`}>
+                  <p className={`${isMobile ? 'text-xl' : 'text-lg'} font-semibold truncate`}>
                     {closedBotTrades.filter(t => t.pnl > 0).length}
                   </p>
                 </div>
@@ -329,40 +333,51 @@ export const BotControlPanel: React.FC<BotControlPanelProps> = ({
         </TabsContent>
 
         <TabsContent value="system" className="space-y-3 md:space-y-4">
-          <Card className="border-primary/20 bg-gradient-to-br from-card via-card/95 to-trading-secondary/5 backdrop-blur-xl">
-            <CardHeader className={`${isMobile ? 'pb-3' : 'pb-4'}`}>
-              <CardTitle className={`flex items-center gap-2 ${isMobile ? 'text-lg' : 'text-xl'}`}>
+          <Card className="border-primary/20 bg-gradient-to-br from-card via-card/95 to-trading-secondary/5 backdrop-blur-xl w-full max-w-full box-border">
+            <CardHeader className={`${isMobile ? 'pb-3' : 'pb-4'} w-full max-w-full box-border`}>
+              <CardTitle className={`flex items-center gap-2 ${isMobile ? 'text-lg' : 'text-xl'} truncate`}>
                 <Shield className={`${isMobile ? 'h-4 w-4' : 'h-5 w-5'}`} />
                 System Health
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className={`space-y-3 ${isMobile ? 'space-y-4' : 'space-y-4'}`}>
-                <div className={`flex items-center justify-between ${isMobile ? 'p-3 bg-muted/20 rounded-lg' : ''}`}>
-                  <span className={`${isMobile ? 'text-sm font-medium' : 'text-sm'}`}>API Connection</span>
-                  <Badge variant="default" className={`bg-trading-success ${isMobile ? 'px-3 py-1' : ''}`}>
-                    <CheckCircle2 className="h-3 w-3 mr-1" />
+            <CardContent className="w-full max-w-full box-border overflow-hidden">
+              <div className={`grid grid-cols-1 gap-3 w-full max-w-full`}>
+                <div className={`flex items-center justify-between ${isMobile ? 'p-3 bg-muted/20 rounded-lg' : 'p-3 rounded-lg border'} w-full max-w-full box-border`}>
+                  <div className="flex items-center gap-2 min-w-0 flex-1">
+                    <CheckCircle2 className="h-4 w-4 text-trading-success flex-shrink-0" />
+                    <span className={`${isMobile ? 'text-sm' : 'text-sm'} truncate`}>{isMobile ? "API" : "API Connection"}</span>
+                  </div>
+                  <Badge variant="default" className={`${isMobile ? 'text-xs px-2 py-0.5' : 'text-sm'} bg-trading-success/20 text-trading-success flex-shrink-0`}>
                     Connected
                   </Badge>
                 </div>
-                <div className={`flex items-center justify-between ${isMobile ? 'p-3 bg-muted/20 rounded-lg' : ''}`}>
-                  <span className={`${isMobile ? 'text-sm font-medium' : 'text-sm'}`}>License Status</span>
-                  <Badge variant="default" className={`bg-trading-success ${isMobile ? 'px-3 py-1' : ''}`}>
-                    <CheckCircle2 className="h-3 w-3 mr-1" />
+
+                <div className={`flex items-center justify-between ${isMobile ? 'p-3 bg-muted/20 rounded-lg' : 'p-3 rounded-lg border'} w-full max-w-full box-border`}>
+                  <div className="flex items-center gap-2 min-w-0 flex-1">
+                    <Shield className="h-4 w-4 text-trading-success flex-shrink-0" />
+                    <span className={`${isMobile ? 'text-sm' : 'text-sm'} truncate`}>{isMobile ? "License" : "Bot License"}</span>
+                  </div>
+                  <Badge variant="default" className={`${isMobile ? 'text-xs px-2 py-0.5' : 'text-sm'} bg-trading-success/20 text-trading-success flex-shrink-0`}>
                     Active
                   </Badge>
                 </div>
-                <div className={`flex items-center justify-between ${isMobile ? 'p-3 bg-muted/20 rounded-lg' : ''}`}>
-                  <span className={`${isMobile ? 'text-sm font-medium' : 'text-sm'}`}>Risk Management</span>
-                  <Badge variant="default" className={`bg-trading-success ${isMobile ? 'px-3 py-1' : ''}`}>
-                    <Shield className="h-3 w-3 mr-1" />
-                    Enabled
+
+                <div className={`flex items-center justify-between ${isMobile ? 'p-3 bg-muted/20 rounded-lg' : 'p-3 rounded-lg border'} w-full max-w-full box-border`}>
+                  <div className="flex items-center gap-2 min-w-0 flex-1">
+                    <AlertTriangle className="h-4 w-4 text-trading-accent flex-shrink-0" />
+                    <span className={`${isMobile ? 'text-sm' : 'text-sm'} truncate`}>{isMobile ? "Risk Mgmt" : "Risk Management"}</span>
+                  </div>
+                  <Badge variant="secondary" className={`${isMobile ? 'text-xs px-2 py-0.5' : 'text-sm'} bg-trading-accent/20 text-trading-accent flex-shrink-0`}>
+                    Monitoring
                   </Badge>
                 </div>
-                <div className={`flex items-center justify-between ${isMobile ? 'p-3 bg-muted/20 rounded-lg' : ''}`}>
-                  <span className={`${isMobile ? 'text-sm font-medium' : 'text-sm'}`}>Market Data</span>
-                  <Badge variant="default" className={`bg-trading-success ${isMobile ? 'px-3 py-1' : ''}`}>
-                    <Activity className="h-3 w-3 mr-1" />
+
+                <div className={`flex items-center justify-between ${isMobile ? 'p-3 bg-muted/20 rounded-lg' : 'p-3 rounded-lg border'} w-full max-w-full box-border`}>
+                  <div className="flex items-center gap-2 min-w-0 flex-1">
+                    <Activity className="h-4 w-4 text-trading-success flex-shrink-0" />
+                    <span className={`${isMobile ? 'text-sm' : 'text-sm'} truncate`}>{isMobile ? "Market Data" : "Market Data Feed"}</span>
+                  </div>
+                  <Badge variant="default" className={`${isMobile ? 'text-xs px-2 py-0.5' : 'text-sm'} bg-trading-success/20 text-trading-success flex-shrink-0`}>
                     Live
                   </Badge>
                 </div>
