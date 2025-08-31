@@ -55,7 +55,10 @@ serve(async (req) => {
           await handleTradeAction(socket, message);
           break;
         case 'ping':
-          socket.send(JSON.stringify({ type: 'pong' }));
+          socket.send(JSON.stringify({ 
+            type: 'pong',
+            timestamp: message.timestamp || Date.now()
+          }));
           break;
         default:
           console.log("Unknown message type:", message.type);

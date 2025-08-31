@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { tradingWebSocket, TradingWebSocketMessage } from '@/services/TradingWebSocketService';
 import { useAuth } from './useAuth';
+import { useConnectionMonitor } from './useConnectionMonitor';
 import { toast } from '@/hooks/use-toast';
 
 export interface RealTimeUserProfile {
@@ -41,10 +42,12 @@ export interface RealTimeTrade {
 
 export const useRealTimeTrading = () => {
   const { user } = useAuth();
+  const { isOnline, isSlowConnection } = useConnectionMonitor();
   const [isConnected, setIsConnected] = useState(false);
   const [profile, setProfile] = useState<RealTimeUserProfile | null>(null);
   const [trades, setTrades] = useState<RealTimeTrade[]>([]);
   const [loading, setLoading] = useState(true);
+  const [connectionQuality, setConnectionQuality] = useState<'excellent' | 'good' | 'poor' | 'offline'>('offline');
   
   // Setup WebSocket event handlers
   useEffect(() => {
@@ -57,6 +60,7 @@ export const useRealTimeTrading = () => {
       console.log('Real-time trading authenticated');
       setIsConnected(true);
       setLoading(false);
+      setConnectionQuality('excellent');
       
       // Set initial data from authentication response
       if (message.profile) {
@@ -64,6 +68,15 @@ export const useRealTimeTrading = () => {
       }
       if (message.trades) {
         setTrades(message.trades);
+      }
+
+      // Show connection quality toast for slow connections
+      if (isSlowConnection) {
+        toast({
+          title: "Slow Connection Detected",
+          description: "Real-time updates may be delayed",
+          variant: "default",
+        });
       }
     };
 
@@ -147,12 +160,29 @@ export const useRealTimeTrading = () => {
     const handleDisconnect = () => {
       console.log('Real-time trading disconnected');
       setIsConnected(false);
+      setConnectionQuality('offline');
       
-      toast({
-        title: "Disconnected",
-        description: "Real-time trading connection lost",
-        variant: "destructive",
-      });
+      // Only show disconnect toast if we were previously connected
+      if (isConnected) {
+        toast({
+          title: "Connection Lost",
+          description: isOnline ? "Attempting to reconnect..." : "You are offline",
+          variant: "destructive",
+        });
+      }
+    };
+
+    const handleConnectionQualityUpdate = () => {
+      const state = tradingWebSocket.getConnectionState();
+      setConnectionQuality(state.quality);
+      
+      if (state.quality === 'poor' && state.latency > 1000) {
+        toast({
+          title: "Poor Connection",
+          description: "Real-time updates may be slow or delayed",
+          variant: "default",
+        });
+      }
     };
 
     // Register event handlers
@@ -162,18 +192,26 @@ export const useRealTimeTrading = () => {
     tradingWebSocket.on('trade_opened', handleTradeOpened);
     tradingWebSocket.on('trade_closed', handleTradeClosed);
     tradingWebSocket.on('trade_error', handleTradeError);
+    tradingWebSocket.on('pong', handleConnectionQualityUpdate);
 
     // Connect to WebSocket
     tradingWebSocket.connect();
 
+    // Periodic connection quality check
+    const qualityCheckInterval = setInterval(() => {
+      handleConnectionQualityUpdate();
+    }, 30000);
+
     // Cleanup on unmount
     return () => {
+      clearInterval(qualityCheckInterval);
       tradingWebSocket.off('auth_success', handleAuthSuccess);
       tradingWebSocket.off('auth_error', handleAuthError);
       tradingWebSocket.off('margin_update', handleMarginUpdate);
       tradingWebSocket.off('trade_opened', handleTradeOpened);
       tradingWebSocket.off('trade_closed', handleTradeClosed);
       tradingWebSocket.off('trade_error', handleTradeError);
+      tradingWebSocket.off('pong', handleConnectionQualityUpdate);
     };
   }, [user]);
 
@@ -237,6 +275,9 @@ export const useRealTimeTrading = () => {
     // Connection state
     isConnected,
     loading,
+    connectionQuality,
+    isOnline,
+    isSlowConnection,
     
     // Data
     profile,

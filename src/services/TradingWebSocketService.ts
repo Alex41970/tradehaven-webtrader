@@ -17,27 +17,51 @@ export interface TradeData {
 
 export type TradingWebSocketEventCallback = (message: TradingWebSocketMessage) => void;
 
+interface ConnectionState {
+  quality: 'excellent' | 'good' | 'poor' | 'offline';
+  lastPongTime: number;
+  latency: number;
+  missedPings: number;
+}
+
 export class TradingWebSocketService {
   private ws: WebSocket | null = null;
   private reconnectAttempts = 0;
-  private maxReconnectAttempts = 5;
   private reconnectTimeout: NodeJS.Timeout | null = null;
+  private keepAliveInterval: NodeJS.Timeout | null = null;
+  private pingTimeout: NodeJS.Timeout | null = null;
   private isAuthenticated = false;
   private eventHandlers = new Map<string, TradingWebSocketEventCallback[]>();
   private subscriptions = new Set<string>();
+  private connectionState: ConnectionState = {
+    quality: 'offline',
+    lastPongTime: 0,
+    latency: 0,
+    missedPings: 0
+  };
+  private visibilityChangeHandler: (() => void) | null = null;
+  private networkChangeHandler: (() => void) | null = null;
+  private isReconnecting = false;
+  private lastTokenRefresh = 0;
+  private circuitBreakerThreshold = 10;
+  private circuitBreakerResetTime = 5 * 60 * 1000; // 5 minutes
+  private lastCircuitBreakerReset = 0;
   
   private readonly wsUrl = `wss://stdfkfutgkmnaajixguz.functions.supabase.co/functions/v1/websocket-trading-updates`;
 
   constructor() {
     this.setupEventHandlers();
+    this.setupNetworkStateHandlers();
+    this.setupVisibilityHandlers();
   }
 
   private setupEventHandlers() {
-    // Setup default event handlers
     this.on('auth_success', (message) => {
       console.log('WebSocket authenticated successfully');
       this.isAuthenticated = true;
       this.reconnectAttempts = 0;
+      this.connectionState.quality = 'excellent';
+      this.startKeepAlive();
       
       // Subscribe to user-specific channels after authentication
       this.subscribe(['profile_updates', 'trade_updates', 'margin_updates']);
@@ -46,29 +70,154 @@ export class TradingWebSocketService {
     this.on('auth_error', (message) => {
       console.error('WebSocket authentication failed:', message.message);
       this.isAuthenticated = false;
+      this.connectionState.quality = 'offline';
+      this.stopKeepAlive();
     });
 
     this.on('error', (message) => {
       console.error('WebSocket error:', message.message);
+      this.connectionState.quality = 'poor';
     });
 
-    this.on('pong', () => {
-      // Keep connection alive
+    this.on('pong', (message) => {
+      const now = Date.now();
+      const pingTime = message.timestamp || now;
+      this.connectionState.lastPongTime = now;
+      this.connectionState.latency = now - pingTime;
+      this.connectionState.missedPings = 0;
+      
+      // Update connection quality based on latency
+      if (this.connectionState.latency < 100) {
+        this.connectionState.quality = 'excellent';
+      } else if (this.connectionState.latency < 300) {
+        this.connectionState.quality = 'good';
+      } else {
+        this.connectionState.quality = 'poor';
+      }
+      
+      console.log(`Connection latency: ${this.connectionState.latency}ms, quality: ${this.connectionState.quality}`);
     });
   }
 
+  private setupNetworkStateHandlers() {
+    if (typeof window !== 'undefined') {
+      this.networkChangeHandler = () => {
+        if (navigator.onLine) {
+          console.log('Network came back online, attempting immediate reconnect');
+          if (!this.isConnected() && !this.isReconnecting) {
+            this.reconnectAttempts = 0; // Reset attempts on network recovery
+            this.connect();
+          }
+        } else {
+          console.log('Network went offline');
+          this.connectionState.quality = 'offline';
+          this.stopKeepAlive();
+        }
+      };
+      
+      window.addEventListener('online', this.networkChangeHandler);
+      window.addEventListener('offline', this.networkChangeHandler);
+    }
+  }
+
+  private setupVisibilityHandlers() {
+    if (typeof document !== 'undefined') {
+      this.visibilityChangeHandler = () => {
+        if (document.visibilityState === 'visible') {
+          console.log('App became visible, checking connection');
+          if (!this.isConnected() && !this.isReconnecting && navigator.onLine) {
+            this.connect();
+          }
+        } else {
+          console.log('App became hidden, reducing activity');
+          // Keep connection but reduce ping frequency
+          this.stopKeepAlive();
+          this.startKeepAlive(60000); // Ping every minute when hidden
+        }
+      };
+      
+      document.addEventListener('visibilitychange', this.visibilityChangeHandler);
+    }
+  }
+
+  private startKeepAlive(interval = 30000) {
+    this.stopKeepAlive();
+    
+    this.keepAliveInterval = setInterval(() => {
+      if (this.isConnected()) {
+        const pingTime = Date.now();
+        this.ping(pingTime);
+        
+        // Set timeout for pong response
+        this.pingTimeout = setTimeout(() => {
+          this.connectionState.missedPings++;
+          console.warn(`Missed ping response, count: ${this.connectionState.missedPings}`);
+          
+          if (this.connectionState.missedPings >= 3) {
+            console.error('Connection appears dead, forcing reconnect');
+            this.connectionState.quality = 'offline';
+            this.disconnect();
+            this.handleReconnect();
+          }
+        }, 10000); // 10 second timeout for pong
+      }
+    }, interval);
+  }
+
+  private stopKeepAlive() {
+    if (this.keepAliveInterval) {
+      clearInterval(this.keepAliveInterval);
+      this.keepAliveInterval = null;
+    }
+    
+    if (this.pingTimeout) {
+      clearTimeout(this.pingTimeout);
+      this.pingTimeout = null;
+    }
+  }
+
   async connect() {
+    if (this.isReconnecting) {
+      console.log('Already attempting to reconnect, skipping');
+      return;
+    }
+
+    // Check circuit breaker
+    if (this.shouldCircuitBreakerActivate()) {
+      console.log('Circuit breaker activated, delaying reconnect');
+      const delay = this.circuitBreakerResetTime - (Date.now() - this.lastCircuitBreakerReset);
+      setTimeout(() => this.connect(), Math.max(delay, 60000));
+      return;
+    }
+
     try {
       if (this.ws && (this.ws.readyState === WebSocket.CONNECTING || this.ws.readyState === WebSocket.OPEN)) {
         console.log('WebSocket already connected or connecting');
         return;
       }
 
+      // Check if we're online
+      if (typeof navigator !== 'undefined' && !navigator.onLine) {
+        console.log('Device is offline, skipping connection attempt');
+        return;
+      }
+
+      this.isReconnecting = true;
       console.log('Connecting to trading WebSocket...');
       this.ws = new WebSocket(this.wsUrl);
 
+      // Connection timeout
+      const connectionTimeout = setTimeout(() => {
+        if (this.ws && this.ws.readyState === WebSocket.CONNECTING) {
+          console.log('Connection timeout, closing socket');
+          this.ws.close();
+        }
+      }, 15000);
+
       this.ws.onopen = async () => {
+        clearTimeout(connectionTimeout);
         console.log('Trading WebSocket connected');
+        this.isReconnecting = false;
         await this.authenticate();
       };
 
@@ -81,25 +230,61 @@ export class TradingWebSocketService {
         }
       };
 
-      this.ws.onclose = () => {
-        console.log('Trading WebSocket disconnected');
+      this.ws.onclose = (event) => {
+        clearTimeout(connectionTimeout);
+        console.log('Trading WebSocket disconnected', event.code, event.reason);
         this.isAuthenticated = false;
-        this.handleReconnect();
+        this.isReconnecting = false;
+        this.connectionState.quality = 'offline';
+        this.stopKeepAlive();
+        
+        // Don't reconnect if it was a manual close (code 1000)
+        if (event.code !== 1000) {
+          this.handleReconnect();
+        }
       };
 
       this.ws.onerror = (error) => {
+        clearTimeout(connectionTimeout);
         console.error('Trading WebSocket error:', error);
         this.isAuthenticated = false;
+        this.isReconnecting = false;
+        this.connectionState.quality = 'offline';
       };
 
     } catch (error) {
       console.error('Failed to connect to trading WebSocket:', error);
+      this.isReconnecting = false;
       this.handleReconnect();
     }
   }
 
+  private shouldCircuitBreakerActivate(): boolean {
+    if (this.reconnectAttempts < this.circuitBreakerThreshold) {
+      return false;
+    }
+
+    const timeSinceLastReset = Date.now() - this.lastCircuitBreakerReset;
+    if (timeSinceLastReset > this.circuitBreakerResetTime) {
+      console.log('Circuit breaker reset, allowing reconnection attempts');
+      this.reconnectAttempts = 0;
+      this.lastCircuitBreakerReset = Date.now();
+      return false;
+    }
+
+    return true;
+  }
+
   private async authenticate() {
     try {
+      // Check if token needs refresh
+      const now = Date.now();
+      if (now - this.lastTokenRefresh > 55 * 60 * 1000) { // Refresh every 55 minutes
+        console.log('Refreshing authentication token');
+        await supabase.auth.refreshSession();
+        this.lastTokenRefresh = now;
+      }
+
       const { data: { session } } = await supabase.auth.getSession();
       
       if (!session?.access_token) {
@@ -114,6 +299,8 @@ export class TradingWebSocketService {
 
     } catch (error) {
       console.error('Authentication failed:', error);
+      // Retry authentication after delay
+      setTimeout(() => this.authenticate(), 5000);
     }
   }
 
@@ -131,15 +318,22 @@ export class TradingWebSocketService {
   }
 
   private handleReconnect() {
-    if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-      console.error('Max reconnection attempts reached');
+    if (this.isReconnecting) {
       return;
     }
 
-    const delay = Math.pow(2, this.reconnectAttempts) * 1000; // Exponential backoff
-    this.reconnectAttempts++;
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      console.log('Device offline, skipping reconnect');
+      return;
+    }
 
-    console.log(`Attempting to reconnect in ${delay}ms (attempt ${this.reconnectAttempts})`);
+    // Calculate delay with jittered exponential backoff
+    const baseDelay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 30000);
+    const jitter = Math.random() * 1000; // Add up to 1 second jitter
+    const delay = baseDelay + jitter;
+
+    this.reconnectAttempts++;
+    console.log(`Attempting to reconnect in ${Math.round(delay)}ms (attempt ${this.reconnectAttempts})`);
     
     this.reconnectTimeout = setTimeout(() => {
       this.connect();
@@ -190,7 +384,7 @@ export class TradingWebSocketService {
     return new Promise((resolve, reject) => {
       const timeout = setTimeout(() => {
         reject(new Error('Trade open timeout'));
-      }, 10000); // 10 second timeout
+      }, 15000); // Increased timeout
 
       const handleResponse = (message: TradingWebSocketMessage) => {
         clearTimeout(timeout);
@@ -221,7 +415,7 @@ export class TradingWebSocketService {
     return new Promise((resolve, reject) => {
       const timeout = setTimeout(() => {
         reject(new Error('Trade close timeout'));
-      }, 10000); // 10 second timeout
+      }, 15000); // Increased timeout
 
       const handleResponse = (message: TradingWebSocketMessage) => {
         clearTimeout(timeout);
@@ -248,8 +442,11 @@ export class TradingWebSocketService {
     });
   }
 
-  ping() {
-    this.send({ type: 'ping' });
+  ping(timestamp?: number) {
+    this.send({ 
+      type: 'ping',
+      timestamp: timestamp || Date.now()
+    });
   }
 
   disconnect() {
@@ -258,17 +455,39 @@ export class TradingWebSocketService {
       this.reconnectTimeout = null;
     }
 
+    this.stopKeepAlive();
+
     if (this.ws) {
-      this.ws.close();
+      this.ws.close(1000, 'Manual disconnect'); // Normal closure
       this.ws = null;
     }
 
     this.isAuthenticated = false;
+    this.isReconnecting = false;
     this.reconnectAttempts = 0;
+    this.connectionState.quality = 'offline';
   }
 
   isConnected(): boolean {
     return this.ws?.readyState === WebSocket.OPEN && this.isAuthenticated;
+  }
+
+  getConnectionState(): ConnectionState {
+    return { ...this.connectionState };
+  }
+
+  // Cleanup method for component unmount
+  cleanup() {
+    this.disconnect();
+    
+    if (this.networkChangeHandler && typeof window !== 'undefined') {
+      window.removeEventListener('online', this.networkChangeHandler);
+      window.removeEventListener('offline', this.networkChangeHandler);
+    }
+    
+    if (this.visibilityChangeHandler && typeof document !== 'undefined') {
+      document.removeEventListener('visibilitychange', this.visibilityChangeHandler);
+    }
   }
 }
 
