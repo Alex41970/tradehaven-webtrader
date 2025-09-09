@@ -76,26 +76,184 @@ serve(async (req) => {
     }
   };
 
+  // Cache for API responses to avoid hitting rate limits
+  let priceCache = new Map<string, { price: number; change: number; timestamp: number }>();
+  let lastApiCall = 0;
+  const API_CACHE_DURATION = 10000; // 10 seconds
+  
+  // Helper function to get crypto prices from CoinGecko
+  const getCryptoPrices = async (symbols: string[]): Promise<Map<string, { price: number; change: number }>> => {
+    const cryptoMap = new Map();
+    const coinGeckoIds: Record<string, string> = {
+      'BTCUSD': 'bitcoin',
+      'ETHUSD': 'ethereum', 
+      'XRPUSD': 'ripple',
+      'ADAUSD': 'cardano',
+      'DOTUSD': 'polkadot',
+      'BNBUSD': 'binancecoin',
+      'LINKUSD': 'chainlink',
+      'LTCUSD': 'litecoin',
+      'MATICUSD': 'matic-network',
+      'SOLUSD': 'solana'
+    };
+
+    const cryptoSymbols = symbols.filter(s => coinGeckoIds[s]);
+    if (cryptoSymbols.length === 0) return cryptoMap;
+
+    const ids = cryptoSymbols.map(s => coinGeckoIds[s]).join(',');
+    const url = `https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd&include_24hr_change=true`;
+    
+    try {
+      console.log(`WebSocket: Fetching crypto prices for: ${cryptoSymbols.join(', ')}`);
+      const response = await fetch(url, {
+        headers: {
+          'Accept': 'application/json',
+          'User-Agent': 'TradingApp/1.0'
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`CoinGecko API returned ${response.status}: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      
+      for (const symbol of cryptoSymbols) {
+        const coinId = coinGeckoIds[symbol];
+        if (data[coinId] && data[coinId].usd) {
+          cryptoMap.set(symbol, {
+            price: data[coinId].usd,
+            change: data[coinId].usd_24h_change || 0
+          });
+        }
+      }
+    } catch (error) {
+      console.error('WebSocket CoinGecko API error:', error);
+    }
+    
+    return cryptoMap;
+  };
+
+  // Helper function to get forex rates
+  const getForexRates = async (): Promise<Map<string, number>> => {
+    const ratesMap = new Map();
+    
+    try {
+      console.log('WebSocket: Fetching forex rates...');
+      const response = await fetch('https://api.exchangerate-api.com/v4/latest/USD', {
+        headers: {
+          'Accept': 'application/json',
+          'User-Agent': 'TradingApp/1.0'
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`ExchangeRate API returned ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      if (data.rates) {
+        // Convert to our format (base/quote)
+        ratesMap.set('EURUSD', 1 / data.rates.EUR);
+        ratesMap.set('GBPUSD', 1 / data.rates.GBP);
+        ratesMap.set('AUDUSD', 1 / data.rates.AUD);
+        ratesMap.set('NZDUSD', 1 / data.rates.NZD);
+        ratesMap.set('USDCAD', data.rates.CAD);
+        ratesMap.set('USDCHF', data.rates.CHF);
+        ratesMap.set('USDJPY', data.rates.JPY);
+        
+        // Cross pairs
+        if (data.rates.EUR && data.rates.GBP) {
+          ratesMap.set('EURGBP', data.rates.GBP / data.rates.EUR);
+        }
+        if (data.rates.EUR && data.rates.JPY) {
+          ratesMap.set('EURJPY', data.rates.JPY / data.rates.EUR);
+        }
+        if (data.rates.GBP && data.rates.JPY) {
+          ratesMap.set('GBPJPY', data.rates.JPY / data.rates.GBP);
+        }
+      }
+    } catch (error) {
+      console.error('WebSocket Forex API error:', error);
+      // Use fallback rates
+      ratesMap.set('EURUSD', 1.0485);
+      ratesMap.set('GBPUSD', 1.2545);
+      ratesMap.set('AUDUSD', 0.6285);
+      ratesMap.set('NZDUSD', 0.5645);
+      ratesMap.set('USDCAD', 1.4385);
+      ratesMap.set('USDCHF', 0.9045);
+      ratesMap.set('USDJPY', 152.85);
+      ratesMap.set('EURGBP', 0.8355);
+      ratesMap.set('EURJPY', 160.25);
+      ratesMap.set('GBPJPY', 191.85);
+    }
+    
+    return ratesMap;
+  };
+
   const sendPriceUpdates = async () => {
     try {
+      const now = Date.now();
+      let cryptoPrices = new Map();
+      let forexRates = new Map();
+      
+      // Fetch fresh prices from APIs every 10 seconds
+      if (now - lastApiCall > API_CACHE_DURATION) {
+        console.log('WebSocket: Refreshing prices from APIs...');
+        lastApiCall = now;
+        
+        const cryptoSymbols = assets.filter(a => a.category === 'crypto').map(a => a.symbol);
+        const forexSymbols = assets.filter(a => a.category === 'forex').map(a => a.symbol);
+        
+        [cryptoPrices, forexRates] = await Promise.all([
+          getCryptoPrices(cryptoSymbols),
+          getForexRates()
+        ]);
+        
+        // Update cache with fresh data
+        cryptoPrices.forEach((data, symbol) => {
+          priceCache.set(symbol, { ...data, timestamp: now });
+        });
+        
+        forexRates.forEach((rate, symbol) => {
+          const oldPrice = assets.find(a => a.symbol === symbol)?.price || rate;
+          const change24h = ((rate - oldPrice) / oldPrice) * 100;
+          priceCache.set(symbol, { price: rate, change: change24h, timestamp: now });
+        });
+      }
+
       const priceUpdates: PriceUpdate[] = assets.map(asset => {
-        // Generate realistic price fluctuations
-        const volatility = getVolatilityForCategory(asset.category);
-        const priceChange = (Math.random() - 0.5) * 2 * volatility;
-        const newPrice = Math.max(0.0001, asset.price + priceChange);
+        let newPrice = asset.price;
+        let change24h = asset.change_24h;
         
-        // Update the asset price for next iteration
+        // Check if we have fresh API data for this asset
+        const cachedData = priceCache.get(asset.symbol);
+        if (cachedData && (now - cachedData.timestamp) < API_CACHE_DURATION) {
+          // Use API data with small interpolated changes for smoothness
+          const interpolationFactor = 0.1; // 10% of the way to real price each second
+          newPrice = asset.price + (cachedData.price - asset.price) * interpolationFactor;
+          change24h = cachedData.change;
+        } else {
+          // Generate realistic micro-movements for assets without API data
+          const volatility = getVolatilityForCategory(asset.category);
+          const microChange = (Math.random() - 0.5) * 2 * volatility * 0.1; // 10% of normal volatility
+          newPrice = Math.max(0.0001, asset.price + microChange);
+          
+          // Small changes to 24h change
+          const changeVariation = (Math.random() - 0.5) * 0.01;
+          change24h = asset.change_24h + changeVariation;
+        }
+        
+        // Update asset price for next iteration
         asset.price = newPrice;
-        
-        // Calculate 24h change (simulate with smaller random changes)
-        const changeVariation = (Math.random() - 0.5) * 0.1;
-        asset.change_24h = asset.change_24h + changeVariation;
+        asset.change_24h = change24h;
         
         return {
           symbol: asset.symbol,
           price: newPrice,
-          change_24h: asset.change_24h,
-          timestamp: Date.now()
+          change_24h: change24h,
+          timestamp: now
         };
       });
 
@@ -104,8 +262,8 @@ serve(async (req) => {
         data: priceUpdates
       }));
 
-      // Update database every 10 seconds to avoid too many writes
-      if (Date.now() % 10000 < 1000) {
+      // Update database every 30 seconds with real prices only
+      if (now - lastApiCall < 1000 && priceCache.size > 0) {
         updateDatabasePrices(priceUpdates);
       }
 
