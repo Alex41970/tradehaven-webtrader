@@ -206,7 +206,7 @@ const Dashboard = () => {
               <div className="flex justify-between items-center">
                 <div className="flex items-center space-x-2">
                   <TrendingUp className="h-5 w-5 text-primary" />
-                  <h1 className="text-lg font-bold">TradeHaven</h1>
+                  <h1 className="text-lg font-bold">LCI</h1>
                 </div>
                 <div className="flex items-center space-x-2">
                   <ConnectionStatus />
@@ -321,7 +321,7 @@ const Dashboard = () => {
               <div className="flex justify-between items-center">
                 <div className="flex items-center space-x-2">
                   <TrendingUp className="h-6 w-6 text-primary" />
-                  <h1 className="text-2xl font-bold">TradeHaven</h1>
+                  <h1 className="text-2xl font-bold">Lexington Capital Invest</h1>
                 </div>
                 <div className="flex items-center space-x-4">
                   {botStatus.isConnected && !showBotFullScreen ? (

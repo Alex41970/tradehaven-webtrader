@@ -14,7 +14,7 @@ const badges = [
   {
     icon: Award,
     title: "Award Winning",
-    description: "Best Trading Platform 2024"
+    description: "Best Investment Platform 2024"
   },
   {
     icon: Globe,

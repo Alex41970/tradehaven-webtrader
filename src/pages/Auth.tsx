@@ -126,9 +126,9 @@ const Auth = () => {
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle className="text-2xl text-center">TradeHaven</CardTitle>
+          <CardTitle className="text-2xl text-center">Lexington Capital Invest</CardTitle>
           <CardDescription className="text-center">
-            Your gateway to financial markets
+            Premium Investment Solutions
           </CardDescription>
         </CardHeader>
         <CardContent>

@@ -31,7 +31,8 @@ const Index = () => {
               <TrendingUp className="h-6 w-6 text-white" />
             </div>
             <h1 className="text-2xl font-bold bg-gradient-to-r from-trading-primary to-trading-accent bg-clip-text text-transparent">
-              TradeHaven
+              <span className="hidden md:inline">Lexington Capital Invest</span>
+              <span className="md:hidden">LCI</span>
             </h1>
           </div>
           <div className="flex items-center gap-4">
