@@ -10,7 +10,7 @@ import RoleBasedRoute from "@/components/RoleBasedRoute";
 import { PriceProvider } from "@/contexts/PriceContext";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
-import Dashboard from "./pages/Dashboard";
+import ModernDashboard from "./pages/ModernDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
 import SuperAdminDashboard from "./pages/SuperAdminDashboard";
 import NotFound from "./pages/NotFound";
@@ -31,7 +31,7 @@ const App = () => (
               <Route path="/auth" element={<Auth />} />
               <Route path="/dashboard" element={
                 <ProtectedRoute>
-                  <Dashboard />
+                  <ModernDashboard />
                 </ProtectedRoute>
               } />
               <Route path="/admin" element={
