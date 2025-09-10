@@ -350,20 +350,16 @@ const ModernDashboard = () => {
         onActivate={handleLicenseActivate}
         showPermissions={showPermissions}
         onAcceptPermissions={handleAcceptPermissions}
-        isConnected={botStatus.isConnected}
       />
 
       <DepositModal
         open={showDepositModal}
-        onClose={() => setShowDepositModal(false)}
-        onSuccess={refetchProfile}
+        onOpenChange={setShowDepositModal}
       />
 
       <WithdrawModal
         open={showWithdrawModal}
-        onClose={() => setShowWithdrawModal(false)}
-        onSuccess={refetchProfile}
-        availableBalance={profile?.balance || 0}
+        onOpenChange={setShowWithdrawModal}
       />
 
       {selectedTransaction && (
