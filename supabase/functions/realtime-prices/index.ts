@@ -60,12 +60,12 @@ serve(async (req) => {
         data: initialPrices
       }));
       
-      // Start real-time price updates (every 1 second)
+      // Start real-time price updates (every 3 seconds for better API management)
       priceInterval = setInterval(() => {
         if (isConnected) {
           sendPriceUpdates();
         }
-      }, 1000);
+      }, 3000);
       
     } catch (error) {
       console.error('Error fetching assets:', error);
@@ -79,7 +79,7 @@ serve(async (req) => {
   // Cache for API responses to avoid hitting rate limits
   let priceCache = new Map<string, { price: number; change: number; timestamp: number }>();
   let lastApiCall = 0;
-  const API_CACHE_DURATION = 10000; // 10 seconds
+  const API_CACHE_DURATION = 15000; // 15 seconds cache for real data
   
   // Helper function to get crypto prices from CoinGecko
   const getCryptoPrices = async (symbols: string[]): Promise<Map<string, { price: number; change: number }>> => {
@@ -104,7 +104,7 @@ serve(async (req) => {
     const url = `https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd&include_24hr_change=true`;
     
     try {
-      console.log(`WebSocket: Fetching crypto prices for: ${cryptoSymbols.join(', ')}`);
+      console.log(`Fetching REAL crypto prices for: ${cryptoSymbols.join(', ')}`);
       const response = await fetch(url, {
         headers: {
           'Accept': 'application/json',
@@ -125,21 +125,23 @@ serve(async (req) => {
             price: data[coinId].usd,
             change: data[coinId].usd_24h_change || 0
           });
+          console.log(`Real crypto: ${symbol} = $${data[coinId].usd} (${(data[coinId].usd_24h_change || 0).toFixed(2)}%)`);
         }
       }
     } catch (error) {
-      console.error('WebSocket CoinGecko API error:', error);
+      console.error('CoinGecko API error:', error);
+      throw error; // Don't use fallbacks, fail if no real data
     }
     
     return cryptoMap;
   };
 
-  // Helper function to get forex rates
+  // Helper function to get real forex rates
   const getForexRates = async (): Promise<Map<string, number>> => {
     const ratesMap = new Map();
     
     try {
-      console.log('WebSocket: Fetching forex rates...');
+      console.log('Fetching REAL forex rates...');
       const response = await fetch('https://api.exchangerate-api.com/v4/latest/USD', {
         headers: {
           'Accept': 'application/json',
@@ -173,272 +175,271 @@ serve(async (req) => {
         if (data.rates.GBP && data.rates.JPY) {
           ratesMap.set('GBPJPY', data.rates.JPY / data.rates.GBP);
         }
+        
+        console.log(`Real forex rates fetched: ${Array.from(ratesMap.keys()).join(', ')}`);
       }
     } catch (error) {
-      console.error('WebSocket Forex API error:', error);
-      // Use fallback rates
-      ratesMap.set('EURUSD', 1.0485);
-      ratesMap.set('GBPUSD', 1.2545);
-      ratesMap.set('AUDUSD', 0.6285);
-      ratesMap.set('NZDUSD', 0.5645);
-      ratesMap.set('USDCAD', 1.4385);
-      ratesMap.set('USDCHF', 0.9045);
-      ratesMap.set('USDJPY', 152.85);
-      ratesMap.set('EURGBP', 0.8355);
-      ratesMap.set('EURJPY', 160.25);
-      ratesMap.set('GBPJPY', 191.85);
+      console.error('Forex API error:', error);
+      throw error; // Don't use fallbacks, fail if no real data
     }
     
     return ratesMap;
   };
 
-  // Helper function to get real commodity prices from Alpha Vantage
+  // Helper function to get REAL commodity prices from multiple sources
   const getCommodityPrices = async (): Promise<Map<string, { price: number; change: number }>> => {
     const commodityMap = new Map();
-    const apiKey = Deno.env.get('ALPHA_VANTAGE_API_KEY');
     
-    if (!apiKey) {
-      console.log('WebSocket: No Alpha Vantage API key, applying fallback prices immediately');
-      // Use updated current market prices as fallback - THESE ARE THE CORRECT PRICES
-      const fallbackData = {
-        'XAUUSD': { price: 2662.34, change: 0.1 }, // Gold
-        'XAGUSD': { price: 31.42, change: -0.2 },  // Silver  
-        'WTIUSD': { price: 63.52, change: 0.15 },  // Crude Oil - CORRECT PRICE $63.52
-        'XPTUSD': { price: 965.00, change: -0.1 }, // Platinum
-        'XPDUSD': { price: 960.00, change: 0.15 }, // Palladium
-        'NATGAS': { price: 2.45, change: 0.35 },   // Natural Gas - CORRECT PRICE
-        'BCOUSD': { price: 73.85, change: 0.25 }   // Brent Oil - CORRECT PRICE
+    console.log('Fetching REAL commodity prices from multiple sources...');
+    
+    // Try multiple data sources for commodity prices
+    await Promise.allSettled([
+      fetchFromYahooFinance(commodityMap),
+      fetchFromAlphaVantage(commodityMap),
+      fetchFromFinnhub(commodityMap)
+    ]);
+    
+    // Validate we have real prices
+    const requiredCommodities = ['WTIUSD', 'BCOUSD', 'NATGAS', 'XAUUSD', 'XAGUSD', 'XPTUSD', 'XPDUSD'];
+    const missingData = requiredCommodities.filter(symbol => !commodityMap.has(symbol));
+    
+    if (missingData.length > 0) {
+      console.error(`Failed to fetch real prices for: ${missingData.join(', ')}`);
+      console.error('NO FALLBACK - REAL PRICES REQUIRED');
+      throw new Error(`Unable to fetch real commodity prices for: ${missingData.join(', ')}`);
+    }
+    
+    console.log('Successfully fetched REAL commodity prices:', 
+      Array.from(commodityMap.entries()).map(([symbol, data]) => `${symbol}: $${data.price}`).join(', '));
+    
+    return commodityMap;
+  };
+
+  // Fetch from Yahoo Finance API (free, reliable)
+  const fetchFromYahooFinance = async (commodityMap: Map<string, { price: number; change: number }>) => {
+    try {
+      const symbols = {
+        'CL=F': 'WTIUSD',    // WTI Crude Oil
+        'BZ=F': 'BCOUSD',    // Brent Oil
+        'NG=F': 'NATGAS',    // Natural Gas
+        'GC=F': 'XAUUSD',    // Gold
+        'SI=F': 'XAGUSD',    // Silver
+        'PL=F': 'XPTUSD',    // Platinum
+        'PA=F': 'XPDUSD'     // Palladium
       };
       
-      console.log('WebSocket: Using CORRECT fallback commodity prices:', fallbackData);
-      
-      Object.entries(fallbackData).forEach(([symbol, data]) => {
-        commodityMap.set(symbol, data);
-        console.log(`WebSocket: Set fallback ${symbol} = $${data.price}`);
-      });
-      
-      // Force immediate database update with correct prices
-      console.log('WebSocket: FORCE updating database with correct fallback commodity prices');
-      try {
-        const supabase = createClient(
-          Deno.env.get('SUPABASE_URL') ?? '',
-          Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-        );
-        
-        for (const [symbol, data] of Object.entries(fallbackData)) {
-          await supabase
-            .from('assets')
-            .update({
-              price: data.price,
-              change_24h: data.change,
-              updated_at: new Date().toISOString()
-            })
-            .eq('symbol', symbol);
-          console.log(`WebSocket: FORCED database update for ${symbol} = $${data.price}`);
+      for (const [yahooSymbol, ourSymbol] of Object.entries(symbols)) {
+        try {
+          const url = `https://query1.finance.yahoo.com/v8/finance/chart/${yahooSymbol}`;
+          const response = await fetch(url, {
+            headers: {
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+              'Accept': 'application/json'
+            }
+          });
+          
+          if (response.ok) {
+            const data = await response.json();
+            const result = data.chart?.result?.[0];
+            
+            if (result?.meta?.regularMarketPrice) {
+              const currentPrice = result.meta.regularMarketPrice;
+              const previousClose = result.meta.previousClose || currentPrice;
+              const change24h = ((currentPrice - previousClose) / previousClose) * 100;
+              
+              commodityMap.set(ourSymbol, { 
+                price: parseFloat(currentPrice.toFixed(4)), 
+                change: parseFloat(change24h.toFixed(2)) 
+              });
+              
+              console.log(`Yahoo Finance: ${ourSymbol} = $${currentPrice} (${change24h.toFixed(2)}%)`);
+            }
+          }
+        } catch (error) {
+          console.error(`Yahoo Finance error for ${ourSymbol}:`, error.message);
         }
-      } catch (dbError) {
-        console.error('WebSocket: Error forcing database update:', dbError);
       }
-      
-      return commodityMap;
+    } catch (error) {
+      console.error('Yahoo Finance API error:', error);
+    }
+  };
+
+  // Fetch from Alpha Vantage (backup)
+  const fetchFromAlphaVantage = async (commodityMap: Map<string, { price: number; change: number }>) => {
+    const apiKey = Deno.env.get('ALPHA_VANTAGE_API_KEY');
+    if (!apiKey) {
+      console.log('Alpha Vantage: No API key available');
+      return;
     }
 
     try {
-      // Fetch WTI Crude Oil
-      const wtiResponse = await fetch(`https://www.alphavantage.co/query?function=WTI&interval=daily&apikey=${apiKey}`);
-      if (wtiResponse.ok) {
-        const wtiData = await wtiResponse.json();
-        if (wtiData.data && wtiData.data.length > 0) {
-          const currentWTI = parseFloat(wtiData.data[0].value);
-          const previousWTI = wtiData.data.length > 1 ? parseFloat(wtiData.data[1].value) : currentWTI;
-          const change24h = ((currentWTI - previousWTI) / previousWTI) * 100;
-          
-          commodityMap.set('WTIUSD', { price: currentWTI, change: change24h });
-          console.log(`Real WTI price fetched: $${currentWTI} (${change24h.toFixed(2)}%)`);
-        }
-      }
-
-      // Fetch Brent Oil
-      const brentResponse = await fetch(`https://www.alphavantage.co/query?function=BRENT&interval=daily&apikey=${apiKey}`);
-      if (brentResponse.ok) {
-        const brentData = await brentResponse.json();
-        if (brentData.data && brentData.data.length > 0) {
-          const currentBrent = parseFloat(brentData.data[0].value);
-          const previousBrent = brentData.data.length > 1 ? parseFloat(brentData.data[1].value) : currentBrent;
-          const change24h = ((currentBrent - previousBrent) / previousBrent) * 100;
-          
-          commodityMap.set('BCOUSD', { price: currentBrent, change: change24h });
-          console.log(`Real Brent price fetched: $${currentBrent} (${change24h.toFixed(2)}%)`);
-        }
-      }
-
-      // Fetch Natural Gas
-      const gasResponse = await fetch(`https://www.alphavantage.co/query?function=NATURAL_GAS&interval=daily&apikey=${apiKey}`);
-      if (gasResponse.ok) {
-        const gasData = await gasResponse.json();
-        if (gasData.data && gasData.data.length > 0) {
-          const currentGas = parseFloat(gasData.data[0].value);
-          const previousGas = gasData.data.length > 1 ? parseFloat(gasData.data[1].value) : currentGas;
-          const change24h = ((currentGas - previousGas) / previousGas) * 100;
-          
-          commodityMap.set('NATGAS', { price: currentGas, change: change24h });
-          console.log(`Real Natural Gas price fetched: $${currentGas} (${change24h.toFixed(2)}%)`);
-        }
-      }
-      
-      // For precious metals, use fallback with current market prices since Alpha Vantage requires premium for these
-      const metalsFallback = {
-        'XAUUSD': { price: 2662.34, change: 0.1 }, // Gold
-        'XAGUSD': { price: 31.42, change: -0.2 },  // Silver  
-        'XPTUSD': { price: 965.00, change: -0.1 }, // Platinum
-        'XPDUSD': { price: 960.00, change: 0.15 }  // Palladium
+      // Alpha Vantage commodity functions
+      const endpoints = {
+        'WTIUSD': 'WTI',
+        'BCOUSD': 'BRENT', 
+        'NATGAS': 'NATURAL_GAS'
       };
       
-      Object.entries(metalsFallback).forEach(([symbol, data]) => {
-        if (!commodityMap.has(symbol)) {
-          commodityMap.set(symbol, data);
-        }
-      });
-
-    } catch (error) {
-      console.error('Error fetching commodity prices from Alpha Vantage:', error);
-      // Use fallback prices on error - THESE ARE THE CORRECT PRICES
-      const fallbackData = {
-        'XAUUSD': { price: 2662.34, change: 0.1 },  // Gold
-        'XAGUSD': { price: 31.42, change: -0.2 },   // Silver
-        'WTIUSD': { price: 63.52, change: 0.15 },   // Crude Oil - CORRECT PRICE $63.52
-        'XPTUSD': { price: 965.00, change: -0.1 },  // Platinum
-        'XPDUSD': { price: 960.00, change: 0.15 },  // Palladium
-        'NATGAS': { price: 2.45, change: 0.35 },    // Natural Gas - CORRECT PRICE
-        'BCOUSD': { price: 73.85, change: 0.25 }    // Brent Oil - CORRECT PRICE
-      };
-      
-      console.log('WebSocket: API Error - Using CORRECT fallback commodity prices:', fallbackData);
-      
-      Object.entries(fallbackData).forEach(([symbol, data]) => {
-        commodityMap.set(symbol, data);
-        console.log(`WebSocket: Set error fallback ${symbol} = $${data.price}`);
-      });
-      
-      // Force immediate database update with correct prices on API error too
-      console.log('WebSocket: FORCE updating database with correct prices after API error');
-      try {
-        const supabase = createClient(
-          Deno.env.get('SUPABASE_URL') ?? '',
-          Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-        );
+      for (const [symbol, func] of Object.entries(endpoints)) {
+        if (commodityMap.has(symbol)) continue; // Skip if already have data
         
-        for (const [symbol, data] of Object.entries(fallbackData)) {
-          await supabase
-            .from('assets')
-            .update({
-              price: data.price,
-              change_24h: data.change,
-              updated_at: new Date().toISOString()
-            })
-            .eq('symbol', symbol);
-          console.log(`WebSocket: FORCED database update after error for ${symbol} = $${data.price}`);
+        try {
+          const response = await fetch(
+            `https://www.alphavantage.co/query?function=${func}&interval=daily&apikey=${apiKey}`
+          );
+          
+          if (response.ok) {
+            const data = await response.json();
+            if (data.data && data.data.length > 0) {
+              const current = parseFloat(data.data[0].value);
+              const previous = data.data.length > 1 ? parseFloat(data.data[1].value) : current;
+              const change24h = ((current - previous) / previous) * 100;
+              
+              commodityMap.set(symbol, { price: current, change: change24h });
+              console.log(`Alpha Vantage: ${symbol} = $${current} (${change24h.toFixed(2)}%)`);
+            }
+          }
+        } catch (error) {
+          console.error(`Alpha Vantage error for ${symbol}:`, error.message);
         }
-      } catch (dbError) {
-        console.error('WebSocket: Error forcing database update after API error:', dbError);
       }
+    } catch (error) {
+      console.error('Alpha Vantage API error:', error);
     }
-    
-    return commodityMap;
+  };
+
+  // Fetch from Finnhub (another backup)
+  const fetchFromFinnhub = async (commodityMap: Map<string, { price: number; change: number }>) => {
+    try {
+      // Finnhub has free tier for basic commodity data
+      const symbols = {
+        'OANDA:WTIUSD': 'WTIUSD',
+        'OANDA:BCOUSD': 'BCOUSD', 
+        'OANDA:NATGASUSD': 'NATGAS',
+        'OANDA:XAUUSD': 'XAUUSD',
+        'OANDA:XAGUSD': 'XAGUSD'
+      };
+      
+      for (const [finnhubSymbol, ourSymbol] of Object.entries(symbols)) {
+        if (commodityMap.has(ourSymbol)) continue; // Skip if already have data
+        
+        try {
+          // Use demo token for now - users can add their own token as secret
+          const response = await fetch(
+            `https://finnhub.io/api/v1/quote?symbol=${finnhubSymbol}&token=demo`
+          );
+          
+          if (response.ok) {
+            const data = await response.json();
+            if (data.c && data.pc) {
+              const current = data.c; // Current price
+              const previousClose = data.pc; // Previous close
+              const change24h = ((current - previousClose) / previousClose) * 100;
+              
+              commodityMap.set(ourSymbol, { 
+                price: parseFloat(current.toFixed(4)), 
+                change: parseFloat(change24h.toFixed(2)) 
+              });
+              
+              console.log(`Finnhub: ${ourSymbol} = $${current} (${change24h.toFixed(2)}%)`);
+            }
+          }
+        } catch (error) {
+          console.error(`Finnhub error for ${ourSymbol}:`, error.message);
+        }
+      }
+    } catch (error) {
+      console.error('Finnhub API error:', error);
+    }
   };
 
   const sendPriceUpdates = async () => {
     try {
       const now = Date.now();
-      let cryptoPrices = new Map();
-      let forexRates = new Map();
       
-      // Fetch fresh prices from APIs every 10 seconds
+      // Fetch fresh REAL prices from APIs every 15 seconds
       if (now - lastApiCall > API_CACHE_DURATION) {
-        console.log('WebSocket: Refreshing prices from APIs...');
+        console.log('Refreshing REAL prices from APIs...');
         lastApiCall = now;
         
         const cryptoSymbols = assets.filter(a => a.category === 'crypto').map(a => a.symbol);
         const forexSymbols = assets.filter(a => a.category === 'forex').map(a => a.symbol);
         const commoditySymbols = assets.filter(a => a.category === 'commodities').map(a => a.symbol);
         
-        const [cryptoResult, forexResult, commodityResult] = await Promise.all([
-          getCryptoPrices(cryptoSymbols),
-          getForexRates(),
-          getCommodityPrices()
-        ]);
-        
-        cryptoPrices = cryptoResult;
-        forexRates = forexResult;
-        const commodityPrices = commodityResult;
-        
-        // Update cache with fresh data
-        cryptoPrices.forEach((data, symbol) => {
-          priceCache.set(symbol, { ...data, timestamp: now });
-        });
-        
-        forexRates.forEach((rate, symbol) => {
-          const oldPrice = assets.find(a => a.symbol === symbol)?.price || rate;
-          const change24h = ((rate - oldPrice) / oldPrice) * 100;
-          priceCache.set(symbol, { price: rate, change: change24h, timestamp: now });
-        });
-        
-        // Cache commodity prices and immediately update assets for instant correction
-        commodityPrices.forEach((data, symbol) => {
-          priceCache.set(symbol, { ...data, timestamp: now });
-          // Immediately correct asset prices for commodities to ensure instant updates
-          const assetIndex = assets.findIndex(a => a.symbol === symbol);
-          if (assetIndex !== -1) {
-            console.log(`Immediately correcting ${symbol}: ${assets[assetIndex].price} -> ${data.price}`);
-            assets[assetIndex].price = data.price;
-            assets[assetIndex].change_24h = data.change;
+        try {
+          // Fetch real prices from all sources
+          const results = await Promise.allSettled([
+            cryptoSymbols.length > 0 ? getCryptoPrices(cryptoSymbols) : Promise.resolve(new Map()),
+            forexSymbols.length > 0 ? getForexRates() : Promise.resolve(new Map()),
+            commoditySymbols.length > 0 ? getCommodityPrices() : Promise.resolve(new Map())
+          ]);
+          
+          const [cryptoResult, forexResult, commodityResult] = results;
+          
+          // Process crypto prices
+          if (cryptoResult.status === 'fulfilled') {
+            const cryptoPrices = cryptoResult.value;
+            cryptoPrices.forEach((data, symbol) => {
+              priceCache.set(symbol, { ...data, timestamp: now });
+              const assetIndex = assets.findIndex(a => a.symbol === symbol);
+              if (assetIndex !== -1) {
+                assets[assetIndex].price = data.price;
+                assets[assetIndex].change_24h = data.change;
+              }
+            });
+          } else {
+            console.error('Failed to fetch crypto prices:', cryptoResult.reason);
           }
-        });
+          
+          // Process forex rates
+          if (forexResult.status === 'fulfilled') {
+            const forexRates = forexResult.value;
+            forexRates.forEach((rate, symbol) => {
+              const oldPrice = assets.find(a => a.symbol === symbol)?.price || rate;
+              const change24h = ((rate - oldPrice) / oldPrice) * 100;
+              priceCache.set(symbol, { price: rate, change: change24h, timestamp: now });
+              const assetIndex = assets.findIndex(a => a.symbol === symbol);
+              if (assetIndex !== -1) {
+                assets[assetIndex].price = rate;
+                assets[assetIndex].change_24h = change24h;
+              }
+            });
+          } else {
+            console.error('Failed to fetch forex rates:', forexResult.reason);
+          }
+          
+          // Process commodity prices
+          if (commodityResult.status === 'fulfilled') {
+            const commodityPrices = commodityResult.value;
+            commodityPrices.forEach((data, symbol) => {
+              priceCache.set(symbol, { ...data, timestamp: now });
+              const assetIndex = assets.findIndex(a => a.symbol === symbol);
+              if (assetIndex !== -1) {
+                console.log(`REAL commodity price update: ${symbol} = $${data.price} (${data.change.toFixed(2)}%)`);
+                assets[assetIndex].price = data.price;
+                assets[assetIndex].change_24h = data.change;
+              }
+            });
+          } else {
+            console.error('Failed to fetch commodity prices:', commodityResult.reason);
+          }
+          
+        } catch (apiError) {
+          console.error('CRITICAL: Failed to fetch real prices from APIs:', apiError);
+          socket.send(JSON.stringify({
+            type: 'error',
+            message: 'Unable to fetch real market data. Please check your internet connection.'
+          }));
+          return;
+        }
       }
 
+      // Create price updates using only real data
       const priceUpdates: PriceUpdate[] = assets.map(asset => {
-        let newPrice = asset.price;
-        let change24h = asset.change_24h;
-        
-        // Check if we have fresh API data for this asset
-        const cachedData = priceCache.get(asset.symbol);
-        if (cachedData && (now - cachedData.timestamp) < API_CACHE_DURATION) {
-          // For commodities, apply prices immediately (100% interpolation) to fix incorrect prices
-          // For crypto/forex, use gradual interpolation for smoothness
-          let interpolationFactor = 0.1; // 10% for gradual changes
-          
-          if (asset.category === 'commodities') {
-            // Check if price needs immediate correction (significant difference)
-            const priceDifference = Math.abs(asset.price - cachedData.price) / asset.price;
-            if (priceDifference > 0.2) { // More than 20% difference, apply immediately
-              interpolationFactor = 1.0; // 100% immediate correction
-              console.log(`Immediate price correction for ${asset.symbol}: ${asset.price} -> ${cachedData.price}`);
-            } else {
-              interpolationFactor = 0.3; // Faster updates for commodities
-            }
-          }
-          
-          newPrice = asset.price + (cachedData.price - asset.price) * interpolationFactor;
-          change24h = cachedData.change;
-        } else {
-          // Generate realistic micro-movements for assets without API data
-          const volatility = getVolatilityForCategory(asset.category);
-          const microChange = (Math.random() - 0.5) * 2 * volatility * 0.1; // 10% of normal volatility
-          newPrice = Math.max(0.0001, asset.price + microChange);
-          
-          // Small changes to 24h change
-          const changeVariation = (Math.random() - 0.5) * 0.01;
-          change24h = asset.change_24h + changeVariation;
-        }
-        
-        // Update asset price for next iteration
-        asset.price = newPrice;
-        asset.change_24h = change24h;
-        
         return {
           symbol: asset.symbol,
-          price: newPrice,
-          change_24h: change24h,
+          price: asset.price,
+          change_24h: asset.change_24h,
           timestamp: now
         };
       });
@@ -448,25 +449,29 @@ serve(async (req) => {
         data: priceUpdates
       }));
 
-      // Update database immediately when we have fresh API data
-      if ((now - lastApiCall < 2000) && priceCache.size > 0) {
-        // Only update assets that have fresh cached data
+      // Update database with REAL prices only when we have fresh data
+      if ((now - lastApiCall < 5000) && priceCache.size > 0) {
         const updatesWithFreshData = priceUpdates.filter(update => {
           const cached = priceCache.get(update.symbol);
           return cached && (now - cached.timestamp) < API_CACHE_DURATION;
         });
         
         if (updatesWithFreshData.length > 0) {
-          console.log(`Updating database for ${updatesWithFreshData.length} assets with fresh data`);
-          updateDatabasePrices(updatesWithFreshData);
+          console.log(`Updating database with REAL market data for ${updatesWithFreshData.length} assets`);
+          await updateDatabasePrices(updatesWithFreshData);
         }
       }
 
     } catch (error) {
-      console.error('Error sending price updates:', error);
+      console.error('Error in sendPriceUpdates:', error);
+      socket.send(JSON.stringify({
+        type: 'error',
+        message: 'Failed to update market prices'
+      }));
     }
   };
 
+  // Update database with real prices
   const updateDatabasePrices = async (priceUpdates: PriceUpdate[]) => {
     try {
       for (const update of priceUpdates) {
@@ -479,25 +484,9 @@ serve(async (req) => {
           })
           .eq('symbol', update.symbol);
       }
+      console.log(`Updated ${priceUpdates.length} assets in database with REAL prices`);
     } catch (error) {
-      console.error('Error updating database:', error);
-    }
-  };
-
-  const getVolatilityForCategory = (category: string): number => {
-    switch (category) {
-      case 'crypto':
-        return 0.002; // Higher volatility for crypto
-      case 'forex':
-        return 0.0001; // Lower volatility for forex
-      case 'stocks':
-        return 0.001;
-      case 'commodities':
-        return 0.0015;
-      case 'indices':
-        return 0.0008;
-      default:
-        return 0.001;
+      console.error('Error updating database prices:', error);
     }
   };
 
@@ -506,6 +495,7 @@ serve(async (req) => {
     isConnected = false;
     if (priceInterval) {
       clearInterval(priceInterval);
+      priceInterval = null;
     }
   };
 
@@ -514,6 +504,7 @@ serve(async (req) => {
     isConnected = false;
     if (priceInterval) {
       clearInterval(priceInterval);
+      priceInterval = null;
     }
   };
 
