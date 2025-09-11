@@ -331,9 +331,16 @@ serve(async (req) => {
           priceCache.set(symbol, { price: rate, change: change24h, timestamp: now });
         });
         
-        // Cache commodity prices  
+        // Cache commodity prices and immediately update assets for instant correction
         commodityPrices.forEach((data, symbol) => {
           priceCache.set(symbol, { ...data, timestamp: now });
+          // Immediately correct asset prices for commodities to ensure instant updates
+          const assetIndex = assets.findIndex(a => a.symbol === symbol);
+          if (assetIndex !== -1) {
+            console.log(`Immediately correcting ${symbol}: ${assets[assetIndex].price} -> ${data.price}`);
+            assets[assetIndex].price = data.price;
+            assets[assetIndex].change_24h = data.change;
+          }
         });
       }
 
@@ -344,8 +351,21 @@ serve(async (req) => {
         // Check if we have fresh API data for this asset
         const cachedData = priceCache.get(asset.symbol);
         if (cachedData && (now - cachedData.timestamp) < API_CACHE_DURATION) {
-          // Use API data with small interpolated changes for smoothness
-          const interpolationFactor = 0.1; // 10% of the way to real price each second
+          // For commodities, apply prices immediately (100% interpolation) to fix incorrect prices
+          // For crypto/forex, use gradual interpolation for smoothness
+          let interpolationFactor = 0.1; // 10% for gradual changes
+          
+          if (asset.category === 'commodities') {
+            // Check if price needs immediate correction (significant difference)
+            const priceDifference = Math.abs(asset.price - cachedData.price) / asset.price;
+            if (priceDifference > 0.2) { // More than 20% difference, apply immediately
+              interpolationFactor = 1.0; // 100% immediate correction
+              console.log(`Immediate price correction for ${asset.symbol}: ${asset.price} -> ${cachedData.price}`);
+            } else {
+              interpolationFactor = 0.3; // Faster updates for commodities
+            }
+          }
+          
           newPrice = asset.price + (cachedData.price - asset.price) * interpolationFactor;
           change24h = cachedData.change;
         } else {
@@ -376,9 +396,18 @@ serve(async (req) => {
         data: priceUpdates
       }));
 
-      // Update database every 30 seconds with real prices only
-      if (now - lastApiCall < 1000 && priceCache.size > 0) {
-        updateDatabasePrices(priceUpdates);
+      // Update database immediately when we have fresh API data
+      if ((now - lastApiCall < 2000) && priceCache.size > 0) {
+        // Only update assets that have fresh cached data
+        const updatesWithFreshData = priceUpdates.filter(update => {
+          const cached = priceCache.get(update.symbol);
+          return cached && (now - cached.timestamp) < API_CACHE_DURATION;
+        });
+        
+        if (updatesWithFreshData.length > 0) {
+          console.log(`Updating database for ${updatesWithFreshData.length} assets with fresh data`);
+          updateDatabasePrices(updatesWithFreshData);
+        }
       }
 
     } catch (error) {
