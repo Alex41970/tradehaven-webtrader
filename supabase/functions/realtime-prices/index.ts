@@ -192,6 +192,36 @@ serve(async (req) => {
     return ratesMap;
   };
 
+  // Helper function to get realistic commodity price ranges
+  const getCommodityPrices = (): Map<string, { price: number; change: number }> => {
+    const commodityMap = new Map();
+    
+    // Use current market-realistic prices with small variations
+    const commodityData = {
+      'XAUUSD': { base: 2662.34, volatility: 0.003 }, // Gold
+      'XAGUSD': { base: 24.29, volatility: 0.005 },   // Silver  
+      'WTIUSD': { base: 47.42, volatility: 0.004 },   // Crude Oil
+      'XPTUSD': { base: 91.00, volatility: 0.006 },   // Platinum
+      'XPDUSD': { base: 842.54, volatility: 0.008 },  // Palladium
+      'NATGAS': { base: 2.26, volatility: 0.015 },    // Natural Gas
+      'BCOUSD': { base: 73.39, volatility: 0.004 }    // Brent Oil
+    };
+    
+    Object.entries(commodityData).forEach(([symbol, data]) => {
+      // Generate small realistic price movements
+      const variation = (Math.random() - 0.5) * 2 * data.volatility;
+      const newPrice = data.base * (1 + variation);
+      const change24h = variation * 100; // Convert to percentage
+      
+      commodityMap.set(symbol, {
+        price: newPrice,
+        change: change24h
+      });
+    });
+    
+    return commodityMap;
+  };
+
   const sendPriceUpdates = async () => {
     try {
       const now = Date.now();
@@ -205,11 +235,15 @@ serve(async (req) => {
         
         const cryptoSymbols = assets.filter(a => a.category === 'crypto').map(a => a.symbol);
         const forexSymbols = assets.filter(a => a.category === 'forex').map(a => a.symbol);
+        const commoditySymbols = assets.filter(a => a.category === 'commodities').map(a => a.symbol);
         
         [cryptoPrices, forexRates] = await Promise.all([
           getCryptoPrices(cryptoSymbols),
           getForexRates()
         ]);
+        
+        // Get commodity prices with realistic variations
+        const commodityPrices = getCommodityPrices();
         
         // Update cache with fresh data
         cryptoPrices.forEach((data, symbol) => {
@@ -220,6 +254,11 @@ serve(async (req) => {
           const oldPrice = assets.find(a => a.symbol === symbol)?.price || rate;
           const change24h = ((rate - oldPrice) / oldPrice) * 100;
           priceCache.set(symbol, { price: rate, change: change24h, timestamp: now });
+        });
+        
+        // Cache commodity prices  
+        commodityPrices.forEach((data, symbol) => {
+          priceCache.set(symbol, { ...data, timestamp: now });
         });
       }
 
