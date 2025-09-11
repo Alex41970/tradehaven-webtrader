@@ -192,32 +192,105 @@ serve(async (req) => {
     return ratesMap;
   };
 
-  // Helper function to get realistic commodity price ranges
-  const getCommodityPrices = (): Map<string, { price: number; change: number }> => {
+  // Helper function to get real commodity prices from Alpha Vantage
+  const getCommodityPrices = async (): Promise<Map<string, { price: number; change: number }>> => {
     const commodityMap = new Map();
+    const apiKey = Deno.env.get('ALPHA_VANTAGE_API_KEY');
     
-    // Use current market-realistic prices with small variations
-    const commodityData = {
-      'XAUUSD': { base: 2662.34, volatility: 0.003 }, // Gold
-      'XAGUSD': { base: 24.29, volatility: 0.005 },   // Silver  
-      'WTIUSD': { base: 47.42, volatility: 0.004 },   // Crude Oil
-      'XPTUSD': { base: 91.00, volatility: 0.006 },   // Platinum
-      'XPDUSD': { base: 842.54, volatility: 0.008 },  // Palladium
-      'NATGAS': { base: 2.26, volatility: 0.015 },    // Natural Gas
-      'BCOUSD': { base: 73.39, volatility: 0.004 }    // Brent Oil
-    };
-    
-    Object.entries(commodityData).forEach(([symbol, data]) => {
-      // Generate small realistic price movements
-      const variation = (Math.random() - 0.5) * 2 * data.volatility;
-      const newPrice = data.base * (1 + variation);
-      const change24h = variation * 100; // Convert to percentage
+    if (!apiKey) {
+      console.log('No Alpha Vantage API key, using fallback prices');
+      // Use updated current market prices as fallback
+      const fallbackData = {
+        'XAUUSD': { price: 2662.34, change: 0.1 }, // Gold
+        'XAGUSD': { price: 31.42, change: -0.2 },  // Silver  
+        'WTIUSD': { price: 63.52, change: 0.3 },   // Crude Oil - CORRECT PRICE
+        'XPTUSD': { price: 965.00, change: -0.1 }, // Platinum
+        'XPDUSD': { price: 960.00, change: 0.15 }, // Palladium
+        'NATGAS': { price: 3.15, change: 0.8 },    // Natural Gas
+        'BCOUSD': { price: 66.84, change: 0.2 }    // Brent Oil
+      };
       
-      commodityMap.set(symbol, {
-        price: newPrice,
-        change: change24h
+      Object.entries(fallbackData).forEach(([symbol, data]) => {
+        commodityMap.set(symbol, data);
       });
-    });
+      
+      return commodityMap;
+    }
+
+    try {
+      // Fetch WTI Crude Oil
+      const wtiResponse = await fetch(`https://www.alphavantage.co/query?function=WTI&interval=daily&apikey=${apiKey}`);
+      if (wtiResponse.ok) {
+        const wtiData = await wtiResponse.json();
+        if (wtiData.data && wtiData.data.length > 0) {
+          const currentWTI = parseFloat(wtiData.data[0].value);
+          const previousWTI = wtiData.data.length > 1 ? parseFloat(wtiData.data[1].value) : currentWTI;
+          const change24h = ((currentWTI - previousWTI) / previousWTI) * 100;
+          
+          commodityMap.set('WTIUSD', { price: currentWTI, change: change24h });
+          console.log(`Real WTI price fetched: $${currentWTI} (${change24h.toFixed(2)}%)`);
+        }
+      }
+
+      // Fetch Brent Oil
+      const brentResponse = await fetch(`https://www.alphavantage.co/query?function=BRENT&interval=daily&apikey=${apiKey}`);
+      if (brentResponse.ok) {
+        const brentData = await brentResponse.json();
+        if (brentData.data && brentData.data.length > 0) {
+          const currentBrent = parseFloat(brentData.data[0].value);
+          const previousBrent = brentData.data.length > 1 ? parseFloat(brentData.data[1].value) : currentBrent;
+          const change24h = ((currentBrent - previousBrent) / previousBrent) * 100;
+          
+          commodityMap.set('BCOUSD', { price: currentBrent, change: change24h });
+          console.log(`Real Brent price fetched: $${currentBrent} (${change24h.toFixed(2)}%)`);
+        }
+      }
+
+      // Fetch Natural Gas
+      const gasResponse = await fetch(`https://www.alphavantage.co/query?function=NATURAL_GAS&interval=daily&apikey=${apiKey}`);
+      if (gasResponse.ok) {
+        const gasData = await gasResponse.json();
+        if (gasData.data && gasData.data.length > 0) {
+          const currentGas = parseFloat(gasData.data[0].value);
+          const previousGas = gasData.data.length > 1 ? parseFloat(gasData.data[1].value) : currentGas;
+          const change24h = ((currentGas - previousGas) / previousGas) * 100;
+          
+          commodityMap.set('NATGAS', { price: currentGas, change: change24h });
+          console.log(`Real Natural Gas price fetched: $${currentGas} (${change24h.toFixed(2)}%)`);
+        }
+      }
+      
+      // For precious metals, use fallback with current market prices since Alpha Vantage requires premium for these
+      const metalsFallback = {
+        'XAUUSD': { price: 2662.34, change: 0.1 }, // Gold
+        'XAGUSD': { price: 31.42, change: -0.2 },  // Silver  
+        'XPTUSD': { price: 965.00, change: -0.1 }, // Platinum
+        'XPDUSD': { price: 960.00, change: 0.15 }  // Palladium
+      };
+      
+      Object.entries(metalsFallback).forEach(([symbol, data]) => {
+        if (!commodityMap.has(symbol)) {
+          commodityMap.set(symbol, data);
+        }
+      });
+
+    } catch (error) {
+      console.error('Error fetching commodity prices from Alpha Vantage:', error);
+      // Use fallback prices on error
+      const fallbackData = {
+        'XAUUSD': { price: 2662.34, change: 0.1 },
+        'XAGUSD': { price: 31.42, change: -0.2 },
+        'WTIUSD': { price: 63.52, change: 0.3 },   // Correct WTI price
+        'XPTUSD': { price: 965.00, change: -0.1 },
+        'XPDUSD': { price: 960.00, change: 0.15 },
+        'NATGAS': { price: 3.15, change: 0.8 },
+        'BCOUSD': { price: 66.84, change: 0.2 }
+      };
+      
+      Object.entries(fallbackData).forEach(([symbol, data]) => {
+        commodityMap.set(symbol, data);
+      });
+    }
     
     return commodityMap;
   };
@@ -237,13 +310,15 @@ serve(async (req) => {
         const forexSymbols = assets.filter(a => a.category === 'forex').map(a => a.symbol);
         const commoditySymbols = assets.filter(a => a.category === 'commodities').map(a => a.symbol);
         
-        [cryptoPrices, forexRates] = await Promise.all([
+        const [cryptoResult, forexResult, commodityResult] = await Promise.all([
           getCryptoPrices(cryptoSymbols),
-          getForexRates()
+          getForexRates(),
+          getCommodityPrices()
         ]);
         
-        // Get commodity prices with realistic variations
-        const commodityPrices = getCommodityPrices();
+        cryptoPrices = cryptoResult;
+        forexRates = forexResult;
+        const commodityPrices = commodityResult;
         
         // Update cache with fresh data
         cryptoPrices.forEach((data, symbol) => {
