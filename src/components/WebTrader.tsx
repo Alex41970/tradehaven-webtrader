@@ -108,6 +108,12 @@ export const WebTrader = () => {
     }
   }, [selectedAsset, amount, leverage]);
 
+  // Calculate total P&L for mobile header
+  const totalPnL = useMemo(() => {
+    if (!openTrades || openTrades.length === 0) return 0;
+    return openTrades.reduce((sum, trade) => sum + (trade.pnl || 0), 0);
+  }, [openTrades]);
+
   const handleTrade = async (tradeType: 'BUY' | 'SELL') => {
     if (!selectedAsset || !profile) return;
     
@@ -335,10 +341,6 @@ export const WebTrader = () => {
     );
   }
 
-  // Calculate total P&L for mobile header
-  const totalPnL = useMemo(() => {
-    return openTrades.reduce((sum, trade) => sum + (trade.pnl || 0), 0);
-  }, [openTrades]);
 
   // Mobile Market Watch Component
   const MobileMarketWatch = () => (
