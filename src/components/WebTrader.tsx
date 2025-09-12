@@ -267,8 +267,9 @@ export const WebTrader = () => {
   };
 
   // Asset row component for market watch
+  // Asset row component for market watch - SAFE VERSION
   const AssetRow = React.memo(({ asset }: { asset: any }) => {
-    const isFavorited = favorites.some(f => f.asset_id === asset.id);
+    const isFavorited = favorites && favorites.some(f => f.asset_id === asset.id);
     
     return (
       <div 
@@ -313,6 +314,7 @@ export const WebTrader = () => {
     );
   });
 
+  // NOW WE CAN DO CONDITIONAL RENDERING - ALL HOOKS CALLED ABOVE
   if (assetsLoading || profileLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
