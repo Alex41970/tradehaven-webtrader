@@ -7,16 +7,19 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { TradingChart } from "./TradingChart";
 import { TradeRow } from "./TradeRow";
 import { TradingTabsInterface } from "./TradingTabsInterface";
-import { Star, StarIcon, TrendingUp, TrendingDown } from "lucide-react";
+import { Star, StarIcon, TrendingUp, TrendingDown, Menu, Wallet, History } from "lucide-react";
 import { useAssets } from "@/hooks/useAssets";
 import { useTrades } from "@/hooks/useTrades";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { useFavorites } from "@/hooks/useFavorites";
 import { useRealTimePrices } from "@/hooks/useRealTimePrices";
 import { useTradeOrders } from "@/hooks/useTradeOrders";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { useNavigate } from "react-router-dom";
 import { toast } from "@/hooks/use-toast";
 import { PulsingPriceIndicator } from "./PulsingPriceIndicator";
 
@@ -27,6 +30,8 @@ export const WebTrader = () => {
   const { favorites, addFavorite, removeFavorite } = useFavorites();
   const { getUpdatedAssets, isConnected, lastUpdate } = useRealTimePrices();
   const { createOrder } = useTradeOrders();
+  const isMobile = useIsMobile();
+  const navigate = useNavigate();
 
   const [selectedAsset, setSelectedAsset] = useState(null);
   const [amount, setAmount] = useState(1);
