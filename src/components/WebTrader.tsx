@@ -109,7 +109,7 @@ export const WebTrader = () => {
   }, [selectedAsset, amount, leverage]);
 
   // Calculate total P&L for mobile header
-  const totalPnL = useMemo(() => {
+  const mobileTotalPnL = useMemo(() => {
     if (!openTrades || openTrades.length === 0) return 0;
     return openTrades.reduce((sum, trade) => sum + (trade.pnl || 0), 0);
   }, [openTrades]);
@@ -456,8 +456,8 @@ export const WebTrader = () => {
               <div className="text-sm font-medium">
                 ${profile?.balance?.toFixed(2) || '0.00'}
               </div>
-              <div className={`text-xs font-medium ${totalPnL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                {totalPnL >= 0 ? '+' : ''}${totalPnL.toFixed(2)}
+              <div className={`text-xs font-medium ${mobileTotalPnL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                {mobileTotalPnL >= 0 ? '+' : ''}${mobileTotalPnL.toFixed(2)}
               </div>
             </div>
           </div>
@@ -472,7 +472,7 @@ export const WebTrader = () => {
                   className="h-8 w-8"
                   onClick={() => toggleFavorite(selectedAsset)}
                 >
-                  <Heart className={`h-4 w-4 ${favorites.some(f => f.asset_id === selectedAsset.id) ? 'fill-current text-red-500' : ''}`} />
+                  <Heart className={`h-4 w-4 ${(favorites && favorites.some(f => f.asset_id === selectedAsset.id)) ? 'fill-current text-red-500' : ''}`} />
                 </Button>
                 <div className="text-sm font-medium px-2">
                   {selectedAsset.symbol}
