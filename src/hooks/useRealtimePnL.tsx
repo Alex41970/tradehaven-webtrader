@@ -17,13 +17,16 @@ export const useRealtimePnL = (trades: Trade[]) => {
   const { prices } = useRealTimePrices();
   const [lastPnL, setLastPnL] = useState<Record<string, number>>({});
   const [pnLUpdatedAt, setPnLUpdatedAt] = useState<Date | null>(null);
+  const [lastPrices, setLastPrices] = useState<Record<string, number>>({});
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Calculate P&L every 500ms for smooth updates
+  // Calculate P&L every 250ms for ultra-responsive updates
   useEffect(() => {
     const calculatePnL = () => {
       const newPnL: Record<string, number> = {};
+      const newPrices: Record<string, number> = {};
       let priceUpdateCount = 0;
+      let hasAnyPriceChange = false;
 
       trades.forEach(trade => {
         if (trade.status === 'closed') {
@@ -37,6 +40,15 @@ export const useRealtimePnL = (trades: Trade[]) => {
 
         if (currentPrice && currentPrice > 0) {
           priceUpdateCount++;
+          
+          // Track price changes for even tiny movements
+          const previousPrice = lastPrices[trade.symbol];
+          if (previousPrice && Math.abs(currentPrice - previousPrice) >= 0.001) {
+            hasAnyPriceChange = true;
+          }
+          newPrices[trade.symbol] = currentPrice;
+
+          // Calculate with higher precision for micro-changes
           const realTimePnL = calculateRealTimePnL(
             {
               trade_type: trade.trade_type,
@@ -47,33 +59,38 @@ export const useRealtimePnL = (trades: Trade[]) => {
             currentPrice
           );
           
-          newPnL[trade.id] = realTimePnL;
+          // Round to 4 decimal places for precision
+          newPnL[trade.id] = Math.round(realTimePnL * 10000) / 10000;
         } else {
           // Fall back to stored P&L if no real-time price
           newPnL[trade.id] = trade.pnl;
         }
       });
 
-      // Always update state every tick for smooth real-time feedback
-      if (Object.keys(lastPnL).length !== Object.keys(newPnL).length) {
-        console.log('📊 P&L Updated (size change):', Object.keys(newPnL).length, 'trades,', priceUpdateCount, 'with real-time prices');
-      }
+      // Update prices tracking
+      setLastPrices(newPrices);
+
+      // Always update state for ultra-responsive feedback
       setLastPnL(newPnL);
       setPnLUpdatedAt(new Date());
+
+      if (hasAnyPriceChange) {
+        console.log('📊 P&L Updated (price change detected):', Object.keys(newPnL).length, 'trades,', priceUpdateCount, 'with real-time prices');
+      }
     };
 
     // Calculate immediately
     calculatePnL();
 
-    // Set up interval for every 500ms updates (faster than before)
-    intervalRef.current = setInterval(calculatePnL, 500);
+    // Set up interval for every 250ms updates (ultra-fast)
+    intervalRef.current = setInterval(calculatePnL, 250);
 
     return () => {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
       }
     };
-  }, [trades, prices]); // Removed lastPnL from dependencies to prevent infinite loop
+  }, [trades, prices, lastPrices]); // Include lastPrices for price change detection
 
   // Calculate total P&L
   const totalPnL = Object.values(lastPnL).reduce((sum, pnl) => sum + pnl, 0);
