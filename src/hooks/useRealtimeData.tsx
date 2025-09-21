@@ -33,6 +33,8 @@ export const useRealtimeData = () => {
       subscriptionsRef.current.delete(channelName);
     }
 
+    console.log(`🔌 Setting up real-time subscription for: ${table}`, { filter });
+
     // Simplified channel setup with better error handling
     const channel = supabase
       .channel(channelName, {
@@ -51,6 +53,8 @@ export const useRealtimeData = () => {
           ...(filter && { filter })
         },
         (payload) => {
+          console.log(`📡 Real-time ${payload.eventType} on ${table}:`, payload);
+
           switch (payload.eventType) {
             case 'INSERT':
               onInsert?.(payload);
@@ -65,10 +69,16 @@ export const useRealtimeData = () => {
         }
       )
       .subscribe((status) => {
-        if (status === 'CHANNEL_ERROR') {
+        console.log(`📊 Subscription status for ${table}:`, status);
+        
+        if (status === 'SUBSCRIBED') {
+          console.log(`✅ Successfully connected to real-time updates for ${table}`);
+        } else if (status === 'CHANNEL_ERROR') {
           console.error(`❌ Failed to connect real-time updates for ${table}`);
         } else if (status === 'TIMED_OUT') {
           console.error(`⏰ Real-time connection timed out for ${table}`);
+        } else if (status === 'CLOSED') {
+          console.log(`🔌 Real-time connection closed for ${table}`);
         }
       });
 
@@ -79,12 +89,14 @@ export const useRealtimeData = () => {
   const unsubscribe = useCallback((subscriptionId: string) => {
     const channel = subscriptionsRef.current.get(subscriptionId);
     if (channel) {
+      console.log(`🔌 Unsubscribing from: ${subscriptionId}`);
       supabase.removeChannel(channel);
       subscriptionsRef.current.delete(subscriptionId);
     }
   }, []);
 
   const unsubscribeAll = useCallback(() => {
+    console.log('🔌 Unsubscribing from all real-time channels');
     subscriptionsRef.current.forEach((channel) => {
       supabase.removeChannel(channel);
     });
@@ -128,10 +140,14 @@ export const useRealtimeUserProfile = (userId?: string) => {
       unsubscribe(subscriptionIdRef.current);
     }
 
+    console.log(`🔄 Setting up profile subscription for user: ${userId}`);
+
     const subscriptionId = subscribe({
       table: 'user_profiles',
       filter: `user_id=eq.${userId}`,
       onUpdate: (payload) => {
+        console.log('🔄 Profile updated in real-time:', payload.new);
+        
         // Trigger custom event for components to listen to
         window.dispatchEvent(new CustomEvent('profile_updated', {
           detail: payload.new
@@ -143,6 +159,7 @@ export const useRealtimeUserProfile = (userId?: string) => {
 
     return () => {
       if (subscriptionIdRef.current) {
+        console.log(`🔌 Cleaning up profile subscription for user: ${userId}`);
         unsubscribe(subscriptionIdRef.current);
         subscriptionIdRef.current = null;
       }
@@ -164,16 +181,19 @@ export const useRealtimeTrades = (userId?: string) => {
       table: 'trades',
       filter: `user_id=eq.${userId}`,
       onInsert: (payload) => {
+        console.log('📈 New trade created:', payload.new);
         window.dispatchEvent(new CustomEvent('trade_created', {
           detail: payload.new
         }));
       },
       onUpdate: (payload) => {
+        console.log('📊 Trade updated:', payload.new);
         window.dispatchEvent(new CustomEvent('trade_updated', {
           detail: { old: payload.old, new: payload.new }
         }));
       },
       onDelete: (payload) => {
+        console.log('🗑️ Trade deleted:', payload.old);
         window.dispatchEvent(new CustomEvent('trade_deleted', {
           detail: payload.old
         }));
@@ -201,6 +221,7 @@ export const useRealtimeAssets = () => {
     const subscriptionId = subscribe({
       table: 'assets',
       onUpdate: (payload) => {
+        console.log('💰 Asset price updated:', payload.new);
         window.dispatchEvent(new CustomEvent('asset_updated', {
           detail: payload.new
         }));

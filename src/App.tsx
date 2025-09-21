@@ -14,9 +14,7 @@ import Dashboard from "./pages/Dashboard";
 import AdminDashboard from "./pages/AdminDashboard";
 import SuperAdminDashboard from "./pages/SuperAdminDashboard";
 import NotFound from "./pages/NotFound";
-import { WebTrader } from "./components/WebTrader";
-import { MobilePortfolio } from "./pages/MobilePortfolio";
-import { MobileTradingHistory } from "./pages/MobileTradingHistory";
+import WebTrader from "./pages/WebTrader";
 
 const queryClient = new QueryClient();
 
@@ -49,16 +47,6 @@ const App = () => (
               <Route path="/webtrader" element={
                 <ProtectedRoute>
                   <WebTrader />
-                </ProtectedRoute>
-              } />
-              <Route path="/webtrader/portfolio" element={
-                <ProtectedRoute>
-                  <MobilePortfolio />
-                </ProtectedRoute>
-              } />
-              <Route path="/webtrader/trading-history" element={
-                <ProtectedRoute>
-                  <MobileTradingHistory />
                 </ProtectedRoute>
               } />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
