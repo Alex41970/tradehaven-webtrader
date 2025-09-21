@@ -3,8 +3,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TradeRow } from "./TradeRow";
 import { EnhancedTradingPanel } from "./EnhancedTradingPanel";
 import { OrderManagement } from "./OrderManagement";
-import { TrendingUp } from "lucide-react";
-import { calculateRealTimePnL } from "@/utils/pnlCalculator";
+import { TrendingUp, Clock } from "lucide-react";
+import { useRealtimePnL } from "@/hooks/useRealtimePnL";
+import { PulsingPnLIndicator } from "./PulsingPnLIndicator";
 
 interface TradingTabsInterfaceProps {
   selectedAsset: any;
@@ -33,6 +34,8 @@ export const TradingTabsInterface: React.FC<TradingTabsInterfaceProps> = ({
   realtimeAssets,
   onCloseTrade,
 }) => {
+  // Get real-time P&L updates every 500ms
+  const { tradePnL, totalPnL, lastUpdated } = useRealtimePnL(openTrades);
   return (
     <div className="h-[200px]">
       <Tabs defaultValue="trading" className="h-full flex flex-col">
@@ -69,19 +72,26 @@ export const TradingTabsInterface: React.FC<TradingTabsInterfaceProps> = ({
           <div className="h-full overflow-y-auto">
             {openTrades.length > 0 ? (
               <div className="space-y-1">
-                {/* Header */}
+                {/* Header with real-time indicator */}
                 <div className="grid grid-cols-12 gap-2 px-3 py-2 text-xs font-medium text-muted-foreground bg-muted/30 rounded-lg">
                   <div className="col-span-2">Symbol</div>
                   <div className="col-span-2">Type</div>
                   <div className="col-span-2">Entry</div>
                   <div className="col-span-2">Current</div>
-                  <div className="col-span-2">P&L</div>
+                  <div className="col-span-2 flex items-center gap-1">
+                    P&L
+                    {lastUpdated && (
+                      <Clock className="h-3 w-3 text-primary animate-pulse" />
+                    )}
+                  </div>
                   <div className="col-span-2">Action</div>
                 </div>
                 
-                {/* Trades */}
+                {/* Trades with real-time P&L */}
                 {openTrades.map((trade) => {
                   const asset = realtimeAssets.find(a => a.id === trade.asset_id);
+                  const realTimePnL = tradePnL[trade.id] ?? trade.pnl ?? 0;
+                  
                   return (
                     <div key={trade.id} className="grid grid-cols-12 gap-2 px-3 py-2 bg-card/50 border border-border/50 rounded-lg hover:bg-card/80 transition-colors">
                       <div className="col-span-2">
@@ -103,17 +113,10 @@ export const TradingTabsInterface: React.FC<TradingTabsInterfaceProps> = ({
                         )}
                       </div>
                       <div className="col-span-2">
-                        {(() => {
-                          // Calculate real-time P&L if asset price is available
-                          const realTimePnL = asset ? calculateRealTimePnL(trade, asset.price) : trade.pnl;
-                          const displayPnL = realTimePnL ?? trade.pnl ?? 0;
-                          
-                          return (
-                            <div className={`text-sm font-medium ${displayPnL >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                              {displayPnL >= 0 ? '+' : ''}${displayPnL.toFixed(2)}
-                            </div>
-                          );
-                        })()}
+                        <PulsingPnLIndicator 
+                          pnl={realTimePnL} 
+                          showIcon={true}
+                        />
                       </div>
                       <div className="col-span-2">
                         <button
