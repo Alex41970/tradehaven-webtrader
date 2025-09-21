@@ -210,6 +210,33 @@ export type Database = {
           },
         ]
       }
+      price_history: {
+        Row: {
+          change_24h: number
+          created_at: string
+          id: string
+          price: number
+          snapshot_date: string
+          symbol: string
+        }
+        Insert: {
+          change_24h?: number
+          created_at?: string
+          id?: string
+          price: number
+          snapshot_date?: string
+          symbol: string
+        }
+        Update: {
+          change_24h?: number
+          created_at?: string
+          id?: string
+          price?: number
+          snapshot_date?: string
+          symbol?: string
+        }
+        Relationships: []
+      }
       promo_codes: {
         Row: {
           admin_id: string

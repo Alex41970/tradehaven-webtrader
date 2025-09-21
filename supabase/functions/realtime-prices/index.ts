@@ -81,6 +81,33 @@ serve(async (req) => {
   let lastApiCall = 0;
   const API_CACHE_DURATION = 15000; // 15 seconds cache for real data
   
+  // Helper function to get yesterday's price from our database as fallback
+  const getYesterdayPriceFromDB = async (symbol: string): Promise<number | null> => {
+    try {
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      const yesterdayDate = yesterday.toISOString().split('T')[0];
+      
+      const { data, error } = await supabase
+        .from('price_history')
+        .select('price')
+        .eq('symbol', symbol)
+        .eq('snapshot_date', yesterdayDate)
+        .single();
+      
+      if (error || !data) {
+        console.log(`No historical data found for ${symbol} on ${yesterdayDate}`);
+        return null;
+      }
+      
+      console.log(`Using historical fallback for ${symbol}: yesterday price = ${data.price}`);
+      return data.price;
+    } catch (error) {
+      console.error(`Error fetching historical price for ${symbol}:`, error);
+      return null;
+    }
+  };
+  
   // Helper function to get crypto prices from Yahoo Finance (no rate limits)
   const getCryptoPrices = async (symbols: string[]): Promise<Map<string, { price: number; change: number }>> => {
     const cryptoMap = new Map();
@@ -120,7 +147,19 @@ serve(async (req) => {
             
             if (result?.meta?.regularMarketPrice) {
               const currentPrice = result.meta.regularMarketPrice;
-              const previousClose = result.meta.previousClose || currentPrice;
+              let previousClose = result.meta.previousClose;
+              
+              // Fallback: Use our historical data if Yahoo doesn't have previousClose
+              if (!previousClose || previousClose === currentPrice) {
+                console.log(`No previousClose for ${symbol}, trying historical fallback...`);
+                const historicalPrice = await getYesterdayPriceFromDB(symbol);
+                if (historicalPrice) {
+                  previousClose = historicalPrice;
+                } else {
+                  previousClose = currentPrice; // Last resort: no change
+                }
+              }
+              
               const change24h = ((currentPrice - previousClose) / previousClose) * 100;
               
               cryptoMap.set(symbol, { 
@@ -143,8 +182,8 @@ serve(async (req) => {
     return cryptoMap;
   };
 
-  // Helper function to get real forex rates from Yahoo Finance
-  const getForexRates = async (): Promise<Map<string, number>> => {
+  // Helper function to get real forex rates with 24h change from Yahoo Finance
+  const getForexRates = async (): Promise<Map<string, { price: number; change: number }>> => {
     const ratesMap = new Map();
     
     try {
@@ -179,8 +218,27 @@ serve(async (req) => {
             
             if (result?.meta?.regularMarketPrice) {
               const currentPrice = result.meta.regularMarketPrice;
-              ratesMap.set(symbol, parseFloat(currentPrice.toFixed(5)));
-              console.log(`Yahoo Finance forex: ${symbol} = ${currentPrice.toFixed(5)}`);
+              let previousClose = result.meta.previousClose;
+              
+              // Fallback: Use our historical data if Yahoo doesn't have previousClose
+              if (!previousClose || previousClose === currentPrice) {
+                console.log(`No previousClose for ${symbol}, trying historical fallback...`);
+                const historicalPrice = await getYesterdayPriceFromDB(symbol);
+                if (historicalPrice) {
+                  previousClose = historicalPrice;
+                } else {
+                  previousClose = currentPrice; // Last resort: no change
+                }
+              }
+              
+              const change24h = ((currentPrice - previousClose) / previousClose) * 100;
+              
+              ratesMap.set(symbol, { 
+                price: parseFloat(currentPrice.toFixed(5)), 
+                change: parseFloat(change24h.toFixed(4)) 
+              });
+              
+              console.log(`Yahoo Finance forex: ${symbol} = ${currentPrice.toFixed(5)} (${change24h.toFixed(2)}%)`);
             }
           }
         } catch (error) {
@@ -255,7 +313,19 @@ serve(async (req) => {
             
             if (result?.meta?.regularMarketPrice) {
               const currentPrice = result.meta.regularMarketPrice;
-              const previousClose = result.meta.previousClose || currentPrice;
+              let previousClose = result.meta.previousClose;
+              
+              // Fallback: Use our historical data if Yahoo doesn't have previousClose
+              if (!previousClose || previousClose === currentPrice) {
+                console.log(`No previousClose for ${ourSymbol}, trying historical fallback...`);
+                const historicalPrice = await getYesterdayPriceFromDB(ourSymbol);
+                if (historicalPrice) {
+                  previousClose = historicalPrice;
+                } else {
+                  previousClose = currentPrice; // Last resort: no change
+                }
+              }
+              
               const change24h = ((currentPrice - previousClose) / previousClose) * 100;
               
               commodityMap.set(ourSymbol, { 
@@ -405,14 +475,13 @@ serve(async (req) => {
           // Process forex rates
           if (forexResult.status === 'fulfilled') {
             const forexRates = forexResult.value;
-            forexRates.forEach((rate, symbol) => {
-              const oldPrice = assets.find(a => a.symbol === symbol)?.price || rate;
-              const change24h = ((rate - oldPrice) / oldPrice) * 100;
-              priceCache.set(symbol, { price: rate, change: change24h, timestamp: now });
+            forexRates.forEach((data, symbol) => {
+              priceCache.set(symbol, { price: data.price, change: data.change, timestamp: now });
               const assetIndex = assets.findIndex(a => a.symbol === symbol);
               if (assetIndex !== -1) {
-                assets[assetIndex].price = rate;
-                assets[assetIndex].change_24h = change24h;
+                console.log(`REAL forex rate update: ${symbol} = ${data.price} (${data.change.toFixed(2)}%)`);
+                assets[assetIndex].price = data.price;
+                assets[assetIndex].change_24h = data.change;
               }
             });
           } else {
