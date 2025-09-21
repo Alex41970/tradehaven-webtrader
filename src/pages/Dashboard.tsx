@@ -34,11 +34,13 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { useRealtimeAccountMetrics } from "@/hooks/useRealtimeAccountMetrics";
 const Dashboard = () => {
   const { user, signOut } = useAuth();
+  const navigate = useNavigate();
   const { profile, loading: profileLoading, refetch: refetchProfile } = useUserProfile();
   const { trades, openTrades } = useTrades();
   const { assets, loading: assetsLoading } = useAssets();
   const { getUpdatedAssets } = useRealTimePrices();
   const { botStatus, activateLicense, pauseBot, resumeBot, disconnectBot } = useBotStatus();
+  const isMobile = useIsMobile();
   
   // Real-time account metrics
   const { 
@@ -50,7 +52,7 @@ const Dashboard = () => {
     isUpdating: metricsUpdating
   } = useRealtimeAccountMetrics();
   
-  const navigate = useNavigate();
+  // State variables
   const [signingOut, setSigningOut] = useState(false);
   const [botModalOpen, setBotModalOpen] = useState(false);
   const [showPermissions, setShowPermissions] = useState(false);
@@ -60,7 +62,6 @@ const Dashboard = () => {
   const [selectedTransaction, setSelectedTransaction] = useState<TransactionHistory | null>(null);
   const [showTransactionPopup, setShowTransactionPopup] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const isMobile = useIsMobile();
   
   // Performance metrics with real-time equity
   const { metrics, selectedPeriod, setSelectedPeriod, lastUpdated: metricsCalculatedAt } = useProfessionalMetrics(trades, realTimeEquity);
