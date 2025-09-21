@@ -22,6 +22,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { useNavigate } from "react-router-dom";
 import { toast } from "@/hooks/use-toast";
 import { PulsingPriceIndicator } from "./PulsingPriceIndicator";
+import { PriceConnectionStatus } from "./PriceConnectionStatus";
 
 export const WebTrader = () => {
   const { assets, loading: assetsLoading } = useAssets();
@@ -345,8 +346,13 @@ export const WebTrader = () => {
             <div className="lg:col-span-1">
               <Card className="bg-card/80 backdrop-blur border-border/50 h-[830px] flex flex-col">
                 <CardHeader className="pb-2 px-4 pt-4">
-                  <CardTitle className="text-lg">Market Watch</CardTitle>
-                  <CardDescription className="text-sm">Live market data</CardDescription>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="text-lg">Market Watch</CardTitle>
+                      <CardDescription className="text-sm">Live market data</CardDescription>
+                    </div>
+                    <PriceConnectionStatus />
+                  </div>
                 </CardHeader>
                 <CardContent className="flex-1 flex flex-col space-y-3 px-4 pb-4">
                   <div className="space-y-2">

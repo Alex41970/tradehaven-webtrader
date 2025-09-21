@@ -38,9 +38,26 @@ export const PriceProvider = ({ children }: PriceProviderProps) => {
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const reconnectAttempts = useRef(0);
 
+  const connectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
   const connectWebSocket = () => {
     try {
       setConnectionStatus('connecting');
+      
+      // Clear any existing connection timeout
+      if (connectTimeoutRef.current) {
+        clearTimeout(connectTimeoutRef.current);
+      }
+      
+      // Set connection timeout (10 seconds)
+      connectTimeoutRef.current = setTimeout(() => {
+        if (wsRef.current?.readyState === WebSocket.CONNECTING) {
+          console.log('Price WebSocket connection timeout, falling back to database mode');
+          wsRef.current?.close();
+          setConnectionStatus('error');
+          setIsConnected(false);
+        }
+      }, 10000);
       
       // Use the full WebSocket URL for the edge function
       const wsUrl = `wss://stdfkfutgkmnaajixguz.functions.supabase.co/functions/v1/realtime-prices`;
@@ -51,6 +68,12 @@ export const PriceProvider = ({ children }: PriceProviderProps) => {
         setIsConnected(true);
         setConnectionStatus('connected');
         reconnectAttempts.current = 0;
+        
+        // Clear connection timeout on successful connection
+        if (connectTimeoutRef.current) {
+          clearTimeout(connectTimeoutRef.current);
+          connectTimeoutRef.current = null;
+        }
       };
 
       wsRef.current.onmessage = (event) => {
@@ -80,19 +103,33 @@ export const PriceProvider = ({ children }: PriceProviderProps) => {
         setIsConnected(false);
         setConnectionStatus('disconnected');
         
-        // Attempt to reconnect with exponential backoff
-        if (reconnectAttempts.current < 5) {
+        // Clear connection timeout
+        if (connectTimeoutRef.current) {
+          clearTimeout(connectTimeoutRef.current);
+          connectTimeoutRef.current = null;
+        }
+        
+        // Attempt to reconnect with exponential backoff (max 3 attempts)
+        if (reconnectAttempts.current < 3) {
           const delay = Math.pow(2, reconnectAttempts.current) * 1000;
           reconnectTimeoutRef.current = setTimeout(() => {
             reconnectAttempts.current++;
             connectWebSocket();
           }, delay);
+        } else {
+          console.log('Max reconnect attempts reached, staying in database mode');
         }
       };
 
       wsRef.current.onerror = (error) => {
         console.error('Price WebSocket error:', error);
         setConnectionStatus('error');
+        
+        // Clear connection timeout on error
+        if (connectTimeoutRef.current) {
+          clearTimeout(connectTimeoutRef.current);
+          connectTimeoutRef.current = null;
+        }
       };
 
     } catch (error) {
@@ -110,6 +147,9 @@ export const PriceProvider = ({ children }: PriceProviderProps) => {
       }
       if (reconnectTimeoutRef.current) {
         clearTimeout(reconnectTimeoutRef.current);
+      }
+      if (connectTimeoutRef.current) {
+        clearTimeout(connectTimeoutRef.current);
       }
     };
   }, []);
