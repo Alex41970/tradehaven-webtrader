@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { TrendingUp, TrendingDown, Loader2 } from "lucide-react";
-import { SimplePriceIndicator } from "@/components/SimplePriceIndicator";
+import { PulsingPriceIndicator } from "@/components/PulsingPriceIndicator";
 import { formatPnL, calculateRealTimePnL } from "@/utils/pnlCalculator";
 import { Trade } from "@/hooks/useTrades";
 
@@ -91,8 +91,9 @@ export const TradeRow = ({ trade, asset, onCloseTrade, isClosing }: TradeRowProp
         <div>
           <div className="text-xs text-muted-foreground mb-1">Current Price</div>
           {asset && asset.price && !isLocalClosed ? (
-            <SimplePriceIndicator 
+            <PulsingPriceIndicator 
               price={currentPrice}
+              change={asset.change_24h}
               symbol={trade.symbol}
             />
           ) : (

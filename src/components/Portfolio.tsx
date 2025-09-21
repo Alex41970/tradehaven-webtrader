@@ -7,6 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2, Shield, AlertTriangle } from "lucide-react";
 import { useMemo, useState, useCallback } from "react";
 import { useRealTimePrices } from "@/hooks/useRealTimePrices";
+import { useRealtimePnL } from "@/hooks/useRealtimePnL";
 import { TradeRow } from "@/components/TradeRow";
 import { calculateRealTimePnL } from "@/utils/pnlCalculator";
 
@@ -17,6 +18,7 @@ export const Portfolio = () => {
   const { assets, loading: assetsLoading } = useAssets();
   const { toast } = useToast();
   const { getUpdatedAssets } = useRealTimePrices();
+  const { totalPnL: realtimeTotalPnL, lastUpdated } = useRealtimePnL(openTrades || []);
   const [closingTrades, setClosingTrades] = useState<Set<string>>(new Set());
 
   // ALL useMemo hooks must be called here, before any conditional logic
@@ -32,37 +34,8 @@ export const Portfolio = () => {
     }
   }, [assets, getUpdatedAssets]);
 
-  const totalPnL = useMemo(() => {
-    if (!openTrades || openTrades.length === 0) {
-      return 0;
-    }
-    
-    // Calculate real-time P&L for each open trade
-    return openTrades.reduce((sum, trade) => {
-      // If trade is closed, use stored P&L
-      if (trade.status === 'closed') {
-        return sum + (trade.pnl || 0);
-      }
-
-      // For open trades, calculate real-time P&L if current price is available
-      const asset = updatedAssets.find(a => a.symbol === trade.symbol);
-      if (asset?.price) {
-        const realTimePnL = calculateRealTimePnL(
-          {
-            trade_type: trade.trade_type,
-            amount: trade.amount,
-            open_price: trade.open_price,
-            leverage: trade.leverage
-          },
-          asset.price
-        );
-        return sum + realTimePnL;
-      }
-
-      // Fall back to stored P&L if no real-time price
-      return sum + (trade.pnl || 0);
-    }, 0);
-  }, [openTrades, updatedAssets]);
+  // Use real-time P&L hook for faster updates (every second)
+  const totalPnL = realtimeTotalPnL;
 
   // Calculate risk metrics
   const riskMetrics = useMemo(() => {
@@ -177,9 +150,14 @@ export const Portfolio = () => {
             <CardTitle className="text-lg">Total P&L</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className={`text-2xl font-bold animate-pulse-subtle ${totalPnL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+            <div className={`text-2xl font-bold ${totalPnL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
               {totalPnL >= 0 ? '+' : ''}${totalPnL.toFixed(2)}
             </div>
+            {lastUpdated && (
+              <p className="text-xs text-muted-foreground mt-1">
+                Updated: {lastUpdated.toLocaleTimeString()}
+              </p>
+            )}
           </CardContent>
         </Card>
         <Card>
