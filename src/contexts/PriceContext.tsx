@@ -71,15 +71,21 @@ export const PriceProvider = ({ children }: PriceProviderProps) => {
       wsRef.current.onmessage = (event) => {
         try {
           const message = JSON.parse(event.data);
+          console.log('🔄 WebSocket message received:', message.type, message.data?.length, 'updates');
           
           if (message.type === 'initial_prices' || message.type === 'price_update') {
-            const newPrices = new Map(prices);
-            
-            message.data.forEach((update: PriceUpdate) => {
-              newPrices.set(update.symbol, update);
+            setPrices(prevPrices => {
+              const newPrices = new Map(prevPrices);
+              let updateCount = 0;
+              
+              message.data.forEach((update: PriceUpdate) => {
+                newPrices.set(update.symbol, update);
+                updateCount++;
+              });
+              
+              console.log('💹 Updated', updateCount, 'prices in Map, total symbols:', newPrices.size);
+              return newPrices;
             });
-            
-            setPrices(newPrices);
             setLastUpdate(new Date());
           } else if (message.type === 'error') {
             console.error('Price service error:', message.message);

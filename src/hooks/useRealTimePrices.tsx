@@ -5,7 +5,11 @@ export const useRealTimePrices = () => {
   const { prices, isConnected, lastUpdate, connectionStatus } = usePrices();
 
   const getPriceForAsset = (symbol: string) => {
-    return prices.get(symbol);
+    const priceData = prices.get(symbol);
+    if (priceData) {
+      console.log('🔍 Price found for', symbol, ':', priceData.price);
+    }
+    return priceData;
   };
 
   const getUpdatedAsset = (asset: Asset): Asset => {

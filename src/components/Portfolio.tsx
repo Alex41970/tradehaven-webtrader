@@ -9,6 +9,7 @@ import { useMemo, useState, useCallback } from "react";
 import { useRealTimePrices } from "@/hooks/useRealTimePrices";
 import { useRealtimePnL } from "@/hooks/useRealtimePnL";
 import { TradeRow } from "@/components/TradeRow";
+import { PriceDebugPanel } from "@/components/PriceDebugPanel";
 import { calculateRealTimePnL } from "@/utils/pnlCalculator";
 
 export const Portfolio = () => {
@@ -135,6 +136,9 @@ export const Portfolio = () => {
 
   return (
     <div className="space-y-6">
+      {/* Debug Panel - Remove this in production */}
+      <PriceDebugPanel />
+      
       {/* Portfolio Summary */}
       <div className="grid md:grid-cols-3 gap-4">
         <Card>
