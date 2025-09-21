@@ -3,9 +3,10 @@ interface Trade {
   amount: number;
   open_price: number;
   leverage?: number;
+  contract_size?: number;
 }
 
-export const calculateRealTimePnL = (trade: Trade, currentPrice: number): number => {
+export const calculateRealTimePnL = (trade: Trade, currentPrice: number, contractSize: number = 1): number => {
   const amount = Number(trade.amount);
   const openPrice = Number(trade.open_price);
   const leverage = Number(trade.leverage) || 1;
@@ -15,14 +16,16 @@ export const calculateRealTimePnL = (trade: Trade, currentPrice: number): number
     return 0;
   }
 
+  // Use contract_size for forex calculations (default 1 for other assets)
+  const effectiveContractSize = contractSize || trade.contract_size || 1;
   let pnl = 0;
   
   if (trade.trade_type === 'BUY') {
     // For BUY trades: profit when current price > open price
-    pnl = amount * (current - openPrice) * leverage;
+    pnl = amount * (current - openPrice) * leverage * effectiveContractSize;
   } else {
     // For SELL trades: profit when current price < open price  
-    pnl = amount * (openPrice - current) * leverage;
+    pnl = amount * (openPrice - current) * leverage * effectiveContractSize;
   }
 
   return pnl;

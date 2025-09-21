@@ -18,7 +18,7 @@ interface RealtimeAccountMetrics {
 export const useRealtimeAccountMetrics = (): RealtimeAccountMetrics => {
   const { profile } = useUserProfile();
   const { openTrades } = useTrades();
-  const { totalPnL, lastUpdated: pnlLastUpdated } = useRealtimePnL(openTrades || []);
+  const { totalPnL, lastUpdated: pnlLastUpdated } = useRealtimePnL(openTrades || [], []);
   
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);

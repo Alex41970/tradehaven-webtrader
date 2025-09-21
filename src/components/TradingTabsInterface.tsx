@@ -34,8 +34,8 @@ export const TradingTabsInterface: React.FC<TradingTabsInterfaceProps> = ({
   realtimeAssets,
   onCloseTrade,
 }) => {
-  // Get real-time P&L updates every 500ms
-  const { tradePnL, totalPnL, lastUpdated } = useRealtimePnL(openTrades);
+  // Get real-time P&L updates with asset contract sizes
+  const { tradePnL, totalPnL, lastUpdated } = useRealtimePnL(openTrades, realtimeAssets);
   return (
     <div className="h-[200px]">
       <Tabs defaultValue="trading" className="h-full flex flex-col">

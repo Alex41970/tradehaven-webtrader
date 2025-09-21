@@ -13,7 +13,13 @@ interface Trade {
   pnl: number;
 }
 
-export const useRealtimePnL = (trades: Trade[]) => {
+interface Asset {
+  symbol: string;
+  contract_size: number;
+  category: string;
+}
+
+export const useRealtimePnL = (trades: Trade[], assets: Asset[] = []) => {
   const { prices } = useRealTimePrices();
   const [lastPnL, setLastPnL] = useState<Record<string, number>>({});
   const [pnLUpdatedAt, setPnLUpdatedAt] = useState<Date | null>(null);
@@ -48,15 +54,21 @@ export const useRealtimePnL = (trades: Trade[]) => {
           }
           newPrices[trade.symbol] = currentPrice;
 
+          // Find asset for contract_size (important for forex)
+          const asset = assets.find(a => a.symbol === trade.symbol);
+          const contractSize = asset?.contract_size || 1;
+          
           // Calculate with higher precision for micro-changes
           const realTimePnL = calculateRealTimePnL(
             {
               trade_type: trade.trade_type,
               amount: trade.amount,
               open_price: trade.open_price,
-              leverage: trade.leverage
+              leverage: trade.leverage,
+              contract_size: contractSize
             },
-            currentPrice
+            currentPrice,
+            contractSize
           );
           
           // Round to 4 decimal places for precision
@@ -70,12 +82,15 @@ export const useRealtimePnL = (trades: Trade[]) => {
       // Update prices tracking
       setLastPrices(newPrices);
 
-      // Always update state for ultra-responsive feedback
-      setLastPnL(newPnL);
-      setPnLUpdatedAt(new Date());
-
-      if (hasAnyPriceChange) {
-        console.log('📊 P&L Updated (price change detected):', Object.keys(newPnL).length, 'trades,', priceUpdateCount, 'with real-time prices');
+      // Only update state if there are meaningful changes
+      const hasSignificantChange = Object.keys(newPnL).some(tradeId => 
+        Math.abs((newPnL[tradeId] || 0) - (lastPnL[tradeId] || 0)) >= 0.01
+      );
+      
+      if (hasAnyPriceChange || hasSignificantChange) {
+        setLastPnL(newPnL);
+        setPnLUpdatedAt(new Date());
+        console.log('📊 P&L Updated (change detected):', Object.keys(newPnL).length, 'trades,', priceUpdateCount, 'with real-time prices');
       }
     };
 
@@ -90,7 +105,7 @@ export const useRealtimePnL = (trades: Trade[]) => {
         clearInterval(intervalRef.current);
       }
     };
-  }, [trades, prices, lastPrices]); // Include lastPrices for price change detection
+  }, [trades, prices, assets]); // Remove lastPrices to prevent infinite loops
 
   // Calculate total P&L
   const totalPnL = Object.values(lastPnL).reduce((sum, pnl) => sum + pnl, 0);

@@ -19,7 +19,7 @@ export const Portfolio = () => {
   const { assets, loading: assetsLoading } = useAssets();
   const { toast } = useToast();
   const { getUpdatedAssets } = useRealTimePrices();
-  const { totalPnL: realtimeTotalPnL, lastUpdated } = useRealtimePnL(openTrades || []);
+  const { totalPnL: realtimeTotalPnL, lastUpdated } = useRealtimePnL(openTrades || [], assets);
   const [closingTrades, setClosingTrades] = useState<Set<string>>(new Set());
 
   // ALL useMemo hooks must be called here, before any conditional logic

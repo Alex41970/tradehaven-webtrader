@@ -14,32 +14,33 @@ export const PulsingPriceIndicator = ({ price, change, symbol, className }: Puls
   const [prevPrice, setPrevPrice] = useState(price);
 
   useEffect(() => {
-    if (price !== prevPrice && !isNaN(price) && !isNaN(prevPrice)) {
+    // Detect meaningful price changes with better precision
+    const priceDiff = Math.abs(price - prevPrice);
+    const threshold = symbol.includes('JPY') ? 0.001 : 0.0001; // More sensitive for non-JPY pairs
+    
+    if (priceDiff >= threshold && !isNaN(price) && !isNaN(prevPrice)) {
       setIsPulsing(true);
       setPrevPrice(price);
       
       const timer = setTimeout(() => {
         setIsPulsing(false);
-      }, 1000);
+      }, 800); // Shorter pulse duration
 
       return () => clearTimeout(timer);
     }
-  }, [price, prevPrice]);
+    // Update prevPrice even for non-pulsing changes
+    if (price !== prevPrice && !isNaN(price)) {
+      setPrevPrice(price);
+    }
+  }, [price, prevPrice, symbol]);
 
   // Add safety checks for price and change values
   const safePrice = isNaN(price) ? 0 : price;
   const safeChange = isNaN(change) ? 0 : change;
   const isPositive = safeChange >= 0;
   
-  let changePercent = '0.00';
-  try {
-    const basePrice = safePrice - safeChange;
-    if (basePrice !== 0) {
-      changePercent = ((safeChange / basePrice) * 100).toFixed(2);
-    }
-  } catch (error) {
-    console.error('Error calculating change percent:', error);
-  }
+  // Use change_24h directly as it's already a percentage from our price feed
+  const changePercent = Math.abs(safeChange) < 0.01 ? '0.00' : safeChange.toFixed(2);
 
   return (
     <div className={cn("flex items-center gap-2", className)}>
