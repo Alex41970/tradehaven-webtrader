@@ -49,15 +49,7 @@ export const PriceProvider = ({ children }: PriceProviderProps) => {
         clearTimeout(connectTimeoutRef.current);
       }
       
-      // Set connection timeout (10 seconds)
-      connectTimeoutRef.current = setTimeout(() => {
-        if (wsRef.current?.readyState === WebSocket.CONNECTING) {
-          console.log('Price WebSocket connection timeout, falling back to database mode');
-          wsRef.current?.close();
-          setConnectionStatus('error');
-          setIsConnected(false);
-        }
-      }, 10000);
+      // Remove connection timeout to prevent frequent disconnections
       
       // Use the full WebSocket URL for the edge function
       const wsUrl = `wss://stdfkfutgkmnaajixguz.functions.supabase.co/functions/v1/realtime-prices`;
