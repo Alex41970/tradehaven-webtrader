@@ -57,6 +57,7 @@ export class TradingWebSocketService {
 
   private setupEventHandlers() {
     this.on('auth_success', (message) => {
+      console.log('WebSocket authenticated successfully');
       this.isAuthenticated = true;
       this.reconnectAttempts = 0;
       this.connectionState.quality = 'excellent';
@@ -93,6 +94,8 @@ export class TradingWebSocketService {
       } else {
         this.connectionState.quality = 'poor';
       }
+      
+      console.log(`Connection latency: ${this.connectionState.latency}ms, quality: ${this.connectionState.quality}`);
     });
   }
 
@@ -100,11 +103,13 @@ export class TradingWebSocketService {
     if (typeof window !== 'undefined') {
       this.networkChangeHandler = () => {
         if (navigator.onLine) {
+          console.log('Network came back online, attempting immediate reconnect');
           if (!this.isConnected() && !this.isReconnecting) {
             this.reconnectAttempts = 0; // Reset attempts on network recovery
             this.connect();
           }
         } else {
+          console.log('Network went offline');
           this.connectionState.quality = 'offline';
           this.stopKeepAlive();
         }
@@ -119,10 +124,12 @@ export class TradingWebSocketService {
     if (typeof document !== 'undefined') {
       this.visibilityChangeHandler = () => {
         if (document.visibilityState === 'visible') {
+          console.log('App became visible, checking connection');
           if (!this.isConnected() && !this.isReconnecting && navigator.onLine) {
             this.connect();
           }
         } else {
+          console.log('App became hidden, reducing activity');
           // Keep connection but reduce ping frequency
           this.stopKeepAlive();
           this.startKeepAlive(60000); // Ping every minute when hidden
@@ -144,8 +151,10 @@ export class TradingWebSocketService {
         // Set timeout for pong response
         this.pingTimeout = setTimeout(() => {
           this.connectionState.missedPings++;
+          console.warn(`Missed ping response, count: ${this.connectionState.missedPings}`);
           
           if (this.connectionState.missedPings >= 3) {
+            console.error('Connection appears dead, forcing reconnect');
             this.connectionState.quality = 'offline';
             this.disconnect();
             this.handleReconnect();
@@ -169,11 +178,13 @@ export class TradingWebSocketService {
 
   async connect() {
     if (this.isReconnecting) {
+      console.log('Already attempting to reconnect, skipping');
       return;
     }
 
     // Check circuit breaker
     if (this.shouldCircuitBreakerActivate()) {
+      console.log('Circuit breaker activated, delaying reconnect');
       const delay = this.circuitBreakerResetTime - (Date.now() - this.lastCircuitBreakerReset);
       setTimeout(() => this.connect(), Math.max(delay, 60000));
       return;
@@ -181,26 +192,31 @@ export class TradingWebSocketService {
 
     try {
       if (this.ws && (this.ws.readyState === WebSocket.CONNECTING || this.ws.readyState === WebSocket.OPEN)) {
+        console.log('WebSocket already connected or connecting');
         return;
       }
 
       // Check if we're online
       if (typeof navigator !== 'undefined' && !navigator.onLine) {
+        console.log('Device is offline, skipping connection attempt');
         return;
       }
 
       this.isReconnecting = true;
+      console.log('Connecting to trading WebSocket...');
       this.ws = new WebSocket(this.wsUrl);
 
       // Connection timeout
       const connectionTimeout = setTimeout(() => {
         if (this.ws && this.ws.readyState === WebSocket.CONNECTING) {
+          console.log('Connection timeout, closing socket');
           this.ws.close();
         }
       }, 15000);
 
       this.ws.onopen = async () => {
         clearTimeout(connectionTimeout);
+        console.log('Trading WebSocket connected');
         this.isReconnecting = false;
         await this.authenticate();
       };
@@ -216,6 +232,7 @@ export class TradingWebSocketService {
 
       this.ws.onclose = (event) => {
         clearTimeout(connectionTimeout);
+        console.log('Trading WebSocket disconnected', event.code, event.reason);
         this.isAuthenticated = false;
         this.isReconnecting = false;
         this.connectionState.quality = 'offline';
@@ -249,6 +266,7 @@ export class TradingWebSocketService {
 
     const timeSinceLastReset = Date.now() - this.lastCircuitBreakerReset;
     if (timeSinceLastReset > this.circuitBreakerResetTime) {
+      console.log('Circuit breaker reset, allowing reconnection attempts');
       this.reconnectAttempts = 0;
       this.lastCircuitBreakerReset = Date.now();
       return false;
@@ -262,6 +280,7 @@ export class TradingWebSocketService {
       // Check if token needs refresh
       const now = Date.now();
       if (now - this.lastTokenRefresh > 55 * 60 * 1000) { // Refresh every 55 minutes
+        console.log('Refreshing authentication token');
         await supabase.auth.refreshSession();
         this.lastTokenRefresh = now;
       }
@@ -285,7 +304,9 @@ export class TradingWebSocketService {
     }
   }
 
-  private handleMessage(message: TradingWebSocketMessage) {    
+  private handleMessage(message: TradingWebSocketMessage) {
+    console.log('Received WebSocket message:', message.type);
+    
     const handlers = this.eventHandlers.get(message.type) || [];
     handlers.forEach(handler => {
       try {
@@ -302,6 +323,7 @@ export class TradingWebSocketService {
     }
 
     if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      console.log('Device offline, skipping reconnect');
       return;
     }
 
@@ -311,6 +333,7 @@ export class TradingWebSocketService {
     const delay = baseDelay + jitter;
 
     this.reconnectAttempts++;
+    console.log(`Attempting to reconnect in ${Math.round(delay)}ms (attempt ${this.reconnectAttempts})`);
     
     this.reconnectTimeout = setTimeout(() => {
       this.connect();
@@ -319,6 +342,7 @@ export class TradingWebSocketService {
 
   private subscribe(channels: string[]) {
     if (!this.isAuthenticated) {
+      console.warn('Cannot subscribe: not authenticated');
       return;
     }
 
@@ -333,6 +357,8 @@ export class TradingWebSocketService {
   private send(message: any) {
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
       this.ws.send(JSON.stringify(message));
+    } else {
+      console.warn('WebSocket not connected, cannot send message:', message.type);
     }
   }
 
