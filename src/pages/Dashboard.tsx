@@ -31,6 +31,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { useToast } from "@/hooks/use-toast";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useRealtimeAccountMetrics } from "@/hooks/useRealtimeAccountMetrics";
 const Dashboard = () => {
   const { user, signOut } = useAuth();
   const { profile, loading: profileLoading, refetch: refetchProfile } = useUserProfile();
@@ -38,6 +39,17 @@ const Dashboard = () => {
   const { assets, loading: assetsLoading } = useAssets();
   const { getUpdatedAssets } = useRealTimePrices();
   const { botStatus, activateLicense, pauseBot, resumeBot, disconnectBot } = useBotStatus();
+  
+  // Real-time account metrics
+  const { 
+    realTimeBalance, 
+    realTimeEquity, 
+    realTimeFreeMargin, 
+    totalUsedMargin,
+    lastUpdated: metricsLastUpdated,
+    isUpdating: metricsUpdating
+  } = useRealtimeAccountMetrics();
+  
   const navigate = useNavigate();
   const [signingOut, setSigningOut] = useState(false);
   const [botModalOpen, setBotModalOpen] = useState(false);
@@ -50,8 +62,8 @@ const Dashboard = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const isMobile = useIsMobile();
   
-  // Performance metrics
-  const { metrics, selectedPeriod, setSelectedPeriod } = useProfessionalMetrics(trades, profile?.balance || 10000);
+  // Performance metrics with real-time equity
+  const { metrics, selectedPeriod, setSelectedPeriod, lastUpdated: metricsCalculatedAt } = useProfessionalMetrics(trades, realTimeEquity);
   
   // Transaction history
   const { transactionHistory, loading: transactionLoading } = useTransactionHistory();
@@ -118,59 +130,6 @@ const Dashboard = () => {
   const updatedAssets = useMemo(() => {
     return getUpdatedAssets(assets);
   }, [assets, getUpdatedAssets]);
-
-  // Calculate real-time total P&L from open trades (same logic as Portfolio)
-  const totalPnL = useMemo(() => {
-    if (!openTrades || openTrades.length === 0) {
-      return 0;
-    }
-    
-    // Calculate real-time P&L for each open trade
-    return openTrades.reduce((sum, trade) => {
-      // If trade is closed, use stored P&L
-      if (trade.status === 'closed') {
-        return sum + (trade.pnl || 0);
-      }
-
-      // For open trades, calculate real-time P&L if current price is available
-      const asset = updatedAssets.find(a => a.symbol === trade.symbol);
-      if (asset?.price) {
-        const realTimePnL = calculateRealTimePnL(
-          {
-            trade_type: trade.trade_type,
-            amount: trade.amount,
-            open_price: trade.open_price,
-            leverage: trade.leverage
-          },
-          asset.price
-        );
-        return sum + realTimePnL;
-      }
-
-      // Fall back to stored P&L if no real-time price
-      return sum + (trade.pnl || 0);
-    }, 0);
-  }, [openTrades, updatedAssets]);
-
-  // Calculate real-time equity: balance + unrealized P&L
-  const realTimeEquity = useMemo(() => {
-    return (profile?.balance || 0) + totalPnL;
-  }, [profile?.balance, totalPnL]);
-
-  // Calculate real-time used margin from all open trades
-  const totalUsedMargin = useMemo(() => {
-    if (!openTrades || openTrades.length === 0) {
-      return 0;
-    }
-    return openTrades.reduce((sum, trade) => {
-      return sum + (trade.margin_used || 0);
-    }, 0);
-  }, [openTrades]);
-
-  // Calculate free margin: equity - used margin
-  const freeMargin = useMemo(() => {
-    return realTimeEquity - totalUsedMargin;
-  }, [realTimeEquity, totalUsedMargin]);
 
   // Show bot interface if connected and in full screen mode
   if (botStatus.isConnected && !botStatus.loading && showBotFullScreen) {
@@ -398,20 +357,21 @@ const Dashboard = () => {
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <div className={`font-bold text-foreground mb-1 min-w-0 ${getResponsiveTextSize(profile?.balance || 0, 'text-3xl')}`}>
+                          <div className={`font-bold text-foreground mb-1 min-w-0 ${metricsUpdating ? 'animate-pulse' : ''} ${getResponsiveTextSize(realTimeBalance, 'text-3xl')}`}>
                             {(() => {
-                              const formatted = formatLargeNumber(profile?.balance || 0);
+                              const formatted = formatLargeNumber(realTimeBalance);
                               return formatted.display;
                             })()}
                           </div>
                         </TooltipTrigger>
                         <TooltipContent>
-                          <p>{formatLargeNumber(profile?.balance || 0).full}</p>
+                          <p>{formatLargeNumber(realTimeBalance).full}</p>
                         </TooltipContent>
                       </Tooltip>
                     </TooltipProvider>
                     <div className="text-xs text-muted-foreground">
-                      Last updated: {new Date().toLocaleTimeString()}
+                      Last updated: {metricsLastUpdated?.toLocaleTimeString() || 'Never'}
+                      {metricsUpdating && <span className="ml-2 inline-flex items-center"><span className="animate-pulse">●</span></span>}
                     </div>
                   </div>
 
@@ -425,7 +385,7 @@ const Dashboard = () => {
                       <TooltipProvider>
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <div className={`font-bold text-foreground min-w-0 animate-pulse-subtle ${getResponsiveTextSize(realTimeEquity, 'text-lg')}`}>
+                            <div className={`font-bold text-foreground min-w-0 ${metricsUpdating ? 'animate-pulse' : 'animate-pulse-subtle'} ${getResponsiveTextSize(realTimeEquity, 'text-lg')}`}>
                               {formatLargeNumber(realTimeEquity).display}
                             </div>
                           </TooltipTrigger>
@@ -435,7 +395,8 @@ const Dashboard = () => {
                         </Tooltip>
                       </TooltipProvider>
                       <div className="text-xs text-muted-foreground">
-                        {profile?.balance ? formatPercentage((realTimeEquity / profile.balance) * 100) : '0.0%'} equity
+                        {profile?.balance ? formatPercentage((realTimeEquity / profile.balance) * 100) : '0.0%'} of base balance
+                        {metricsUpdating && <span className="ml-2 text-primary animate-pulse">●</span>}
                       </div>
                     </div>
                     
@@ -447,17 +408,18 @@ const Dashboard = () => {
                       <TooltipProvider>
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <div className={`font-bold text-foreground min-w-0 animate-pulse-subtle ${getResponsiveTextSize(freeMargin, 'text-lg')}`}>
-                              {formatLargeNumber(freeMargin).display}
+                            <div className={`font-bold text-foreground min-w-0 ${metricsUpdating ? 'animate-pulse' : ''} ${getResponsiveTextSize(realTimeFreeMargin, 'text-lg')}`}>
+                              {formatLargeNumber(realTimeFreeMargin).display}
                             </div>
                           </TooltipTrigger>
                           <TooltipContent>
-                            <p>Available margin for new trades: {formatLargeNumber(freeMargin).full}</p>
+                            <p>Available margin for new trades: {formatLargeNumber(realTimeFreeMargin).full}</p>
                           </TooltipContent>
                         </Tooltip>
                       </TooltipProvider>
                       <div className="text-xs text-muted-foreground">
-                        {realTimeEquity > 0 ? formatPercentage((freeMargin / realTimeEquity) * 100) : '0.0%'} available
+                        {realTimeEquity > 0 ? formatPercentage((realTimeFreeMargin / realTimeEquity) * 100) : '0.0%'} available
+                        {metricsUpdating && <span className="ml-2 text-primary animate-pulse">●</span>}
                       </div>
                     </div>
                   </div>
@@ -467,14 +429,14 @@ const Dashboard = () => {
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-xs font-medium text-muted-foreground">Margin Level</span>
                       <span className={`text-xs font-bold ${
-                        profile?.used_margin && profile?.balance && (profile.balance / profile.used_margin) > 2 
+                        totalUsedMargin && realTimeEquity && (realTimeEquity / totalUsedMargin) > 2 
                           ? 'text-green-500' 
-                          : profile?.used_margin && profile?.balance && (profile.balance / profile.used_margin) > 1.5
+                          : totalUsedMargin && realTimeEquity && (realTimeEquity / totalUsedMargin) > 1.5
                           ? 'text-yellow-500'
                           : 'text-red-500'
                       }`}>
-                        {profile?.used_margin && profile?.used_margin > 0 && profile?.balance 
-                          ? formatPercentage((profile.balance / profile.used_margin) * 100, 0)
+                        {totalUsedMargin && totalUsedMargin > 0 && realTimeEquity 
+                          ? formatPercentage((realTimeEquity / totalUsedMargin) * 100, 0)
                           : '∞'
                         }
                       </span>
@@ -482,15 +444,15 @@ const Dashboard = () => {
                     <div className="w-full bg-muted rounded-full h-2">
                       <div 
                         className={`h-2 rounded-full transition-all duration-300 ${
-                          profile?.used_margin && profile?.balance && (profile.balance / profile.used_margin) > 2
+                          totalUsedMargin && realTimeEquity && (realTimeEquity / totalUsedMargin) > 2
                             ? 'bg-green-500'
-                            : profile?.used_margin && profile?.balance && (profile.balance / profile.used_margin) > 1.5
+                            : totalUsedMargin && realTimeEquity && (realTimeEquity / totalUsedMargin) > 1.5
                             ? 'bg-yellow-500'
                             : 'bg-red-500'
                         }`}
                         style={{
-                          width: profile?.used_margin && profile?.used_margin > 0 && profile?.balance
-                            ? `${Math.min((profile.balance / profile.used_margin) * 10, 100)}%`
+                          width: totalUsedMargin && totalUsedMargin > 0 && realTimeEquity
+                            ? `${Math.min((realTimeEquity / totalUsedMargin) * 10, 100)}%`
                             : '100%'
                         }}
                       />
@@ -688,8 +650,9 @@ const Dashboard = () => {
                       <BarChart3 className="w-3 h-3 mr-1" />
                       Profit Factor
                     </span>
-                    <span className={`text-sm font-medium ${metrics.profitFactor >= 1.5 ? 'text-trading-success' : metrics.profitFactor >= 1.0 ? 'text-yellow-500' : 'text-trading-danger'}`}>
+                    <span className={`text-sm font-medium ${metrics.profitFactor >= 1.5 ? 'text-trading-success' : metrics.profitFactor >= 1.0 ? 'text-yellow-500' : 'text-trading-danger'} ${metricsCalculatedAt ? 'animate-pulse-subtle' : ''}`}>
                       {metrics.profitFactor.toFixed(2)}
+                      {metricsCalculatedAt && <span className="ml-1 text-xs text-primary animate-pulse">●</span>}
                     </span>
                   </div>
                   
@@ -698,8 +661,9 @@ const Dashboard = () => {
                       <Shield className="w-3 h-3 mr-1" />
                       Sharpe Ratio
                     </span>
-                    <span className={`text-sm font-medium ${metrics.sharpeRatio >= 1.0 ? 'text-trading-success' : metrics.sharpeRatio >= 0 ? 'text-yellow-500' : 'text-trading-danger'}`}>
+                    <span className={`text-sm font-medium ${metrics.sharpeRatio >= 1.0 ? 'text-trading-success' : metrics.sharpeRatio >= 0 ? 'text-yellow-500' : 'text-trading-danger'} ${metricsCalculatedAt ? 'animate-pulse-subtle' : ''}`}>
                       {metrics.sharpeRatio.toFixed(2)}
+                      {metricsCalculatedAt && <span className="ml-1 text-xs text-primary animate-pulse">●</span>}
                     </span>
                   </div>
                   
@@ -718,8 +682,9 @@ const Dashboard = () => {
                       <Target className="w-3 h-3 mr-1" />
                       Win Rate
                     </span>
-                    <span className={`text-sm font-medium ${metrics.winRate >= 60 ? 'text-trading-success' : metrics.winRate >= 40 ? 'text-yellow-500' : 'text-trading-danger'}`}>
+                    <span className={`text-sm font-medium ${metrics.winRate >= 60 ? 'text-trading-success' : metrics.winRate >= 40 ? 'text-yellow-500' : 'text-trading-danger'} ${metricsCalculatedAt ? 'animate-pulse-subtle' : ''}`}>
                       {metrics.winRate.toFixed(1)}%
+                      {metricsCalculatedAt && <span className="ml-1 text-xs text-primary animate-pulse">●</span>}
                     </span>
                   </div>
                   
@@ -728,8 +693,9 @@ const Dashboard = () => {
                       <Zap className="w-3 h-3 mr-1" />
                       Expectancy
                     </span>
-                    <span className={`text-sm font-medium ${metrics.expectancy >= 0 ? 'text-trading-success' : 'text-trading-danger'}`}>
+                    <span className={`text-sm font-medium ${metrics.expectancy >= 0 ? 'text-trading-success' : 'text-trading-danger'} ${metricsCalculatedAt ? 'animate-pulse-subtle' : ''}`}>
                       ${metrics.expectancy.toFixed(2)}
+                      {metricsCalculatedAt && <span className="ml-1 text-xs text-primary animate-pulse">●</span>}
                     </span>
                   </div>
                   

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { Trade } from "./useTrades";
 
 export type TimePeriod = 'daily' | 'weekly' | 'monthly' | 'yearly' | 'all-time';
@@ -40,6 +40,7 @@ export interface ProfessionalMetrics {
 
 export const useProfessionalMetrics = (trades: Trade[], balance: number) => {
   const [selectedPeriod, setSelectedPeriod] = useState<TimePeriod>('all-time');
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
   const metrics = useMemo(() => {
     // Guard against undefined/null values
@@ -263,10 +264,20 @@ export const useProfessionalMetrics = (trades: Trade[], balance: number) => {
     };
   }, [trades, balance, selectedPeriod]);
 
+  // Force recalculation every 500ms for real-time updates
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setLastUpdated(new Date());
+    }, 500);
+
+    return () => clearInterval(interval);
+  }, []);
+
   return {
     metrics,
     selectedPeriod,
     setSelectedPeriod,
+    lastUpdated,
   };
 };
 

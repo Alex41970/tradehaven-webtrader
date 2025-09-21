@@ -154,12 +154,13 @@ export const Portfolio = () => {
             <CardTitle className="text-lg">Total P&L</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className={`text-2xl font-bold ${totalPnL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+            <div className={`text-2xl font-bold animate-pulse-subtle ${totalPnL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
               {totalPnL >= 0 ? '+' : ''}${totalPnL.toFixed(2)}
             </div>
             {lastUpdated && (
               <p className="text-xs text-muted-foreground mt-1">
                 Updated: {lastUpdated.toLocaleTimeString()}
+                <span className="ml-2 text-primary animate-pulse">●</span>
               </p>
             )}
           </CardContent>
