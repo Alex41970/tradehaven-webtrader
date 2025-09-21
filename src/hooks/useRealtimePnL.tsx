@@ -23,7 +23,6 @@ export const useRealtimePnL = (trades: Trade[]) => {
   useEffect(() => {
     const calculatePnL = () => {
       const newPnL: Record<string, number> = {};
-      let hasChanges = false;
       let priceUpdateCount = 0;
 
       trades.forEach(trade => {
@@ -34,7 +33,7 @@ export const useRealtimePnL = (trades: Trade[]) => {
 
         // Get current price from real-time prices
         const priceUpdate = prices.get(trade.symbol);
-        const currentPrice = priceUpdate?.price;
+        const currentPrice = Number(priceUpdate?.price);
 
         if (currentPrice && currentPrice > 0) {
           priceUpdateCount++;
@@ -49,23 +48,18 @@ export const useRealtimePnL = (trades: Trade[]) => {
           );
           
           newPnL[trade.id] = realTimePnL;
-          
-          // Check if P&L has changed significantly (>$0.01)
-          if (Math.abs((lastPnL[trade.id] || 0) - realTimePnL) > 0.01) {
-            hasChanges = true;
-          }
         } else {
           // Fall back to stored P&L if no real-time price
           newPnL[trade.id] = trade.pnl;
         }
       });
 
-      // Only update state if there are significant changes
-      if (hasChanges || Object.keys(lastPnL).length !== Object.keys(newPnL).length) {
-        console.log('📊 P&L Updated:', Object.keys(newPnL).length, 'trades,', priceUpdateCount, 'with real-time prices');
-        setLastPnL(newPnL);
-        setPnLUpdatedAt(new Date());
+      // Always update state every tick for smooth real-time feedback
+      if (Object.keys(lastPnL).length !== Object.keys(newPnL).length) {
+        console.log('📊 P&L Updated (size change):', Object.keys(newPnL).length, 'trades,', priceUpdateCount, 'with real-time prices');
       }
+      setLastPnL(newPnL);
+      setPnLUpdatedAt(new Date());
     };
 
     // Calculate immediately
