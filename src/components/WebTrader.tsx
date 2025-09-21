@@ -7,13 +7,11 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Drawer, DrawerContent, DrawerTrigger, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { TradingChart } from "./TradingChart";
 import { TradeRow } from "./TradeRow";
 import { TradingTabsInterface } from "./TradingTabsInterface";
-import { Portfolio } from "./Portfolio";
-import { TradingHistory } from "./TradingHistory";
-import { Star, StarIcon, TrendingUp, TrendingDown, Menu, Wifi, WifiOff, Bell, Heart } from "lucide-react";
+import { Star, StarIcon, TrendingUp, TrendingDown, Menu, Wallet, History } from "lucide-react";
 import { useAssets } from "@/hooks/useAssets";
 import { useTrades } from "@/hooks/useTrades";
 import { useUserProfile } from "@/hooks/useUserProfile";
@@ -21,8 +19,10 @@ import { useFavorites } from "@/hooks/useFavorites";
 import { useRealTimePrices } from "@/hooks/useRealTimePrices";
 import { useTradeOrders } from "@/hooks/useTradeOrders";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useNavigate } from "react-router-dom";
 import { toast } from "@/hooks/use-toast";
 import { PulsingPriceIndicator } from "./PulsingPriceIndicator";
+import { PriceConnectionStatus } from "./PriceConnectionStatus";
 
 export const WebTrader = () => {
   const { assets, loading: assetsLoading } = useAssets();
@@ -32,6 +32,7 @@ export const WebTrader = () => {
   const { getUpdatedAssets, isConnected, lastUpdate } = useRealTimePrices();
   const { createOrder } = useTradeOrders();
   const isMobile = useIsMobile();
+  const navigate = useNavigate();
 
   const [selectedAsset, setSelectedAsset] = useState(null);
   const [amount, setAmount] = useState(1);
@@ -39,8 +40,6 @@ export const WebTrader = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [isExecuting, setIsExecuting] = useState(false);
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  const [activeDrawerTab, setActiveDrawerTab] = useState("market");
 
   // Get real-time price updates for assets
   const realtimeAssets = useMemo(() => {
@@ -107,12 +106,6 @@ export const WebTrader = () => {
       return amount * selectedAsset.price * leverage;
     }
   }, [selectedAsset, amount, leverage]);
-
-  // Calculate total P&L for mobile header
-  const mobileTotalPnL = useMemo(() => {
-    if (!openTrades || openTrades.length === 0) return 0;
-    return openTrades.reduce((sum, trade) => sum + (trade.pnl || 0), 0);
-  }, [openTrades]);
 
   const handleTrade = async (tradeType: 'BUY' | 'SELL') => {
     if (!selectedAsset || !profile) return;
@@ -273,9 +266,8 @@ export const WebTrader = () => {
   };
 
   // Asset row component for market watch
-  // Asset row component for market watch - SAFE VERSION
   const AssetRow = React.memo(({ asset }: { asset: any }) => {
-    const isFavorited = favorites && favorites.some(f => f.asset_id === asset.id);
+    const isFavorited = favorites.some(f => f.asset_id === asset.id);
     
     return (
       <div 
@@ -320,7 +312,6 @@ export const WebTrader = () => {
     );
   });
 
-  // NOW WE CAN DO CONDITIONAL RENDERING - ALL HOOKS CALLED ABOVE
   if (assetsLoading || profileLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -341,297 +332,115 @@ export const WebTrader = () => {
     );
   }
 
-
-  // Mobile Market Watch Component
-  const MobileMarketWatch = () => (
-    <div className="space-y-3">
-      <div className="space-y-2">
-        <Input
-          placeholder="Search assets..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="bg-muted/20 h-9"
-        />
-        <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-          <SelectTrigger className="bg-muted/20 h-9">
-            <SelectValue placeholder="Filter by category" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Categories</SelectItem>
-            <SelectItem value="forex">Forex</SelectItem>
-            <SelectItem value="crypto">Cryptocurrency</SelectItem>
-            <SelectItem value="stocks">Stocks</SelectItem>
-            <SelectItem value="commodities">Commodities</SelectItem>
-            <SelectItem value="indices">Indices</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-
-      <Tabs defaultValue="all" className="flex-1 flex flex-col">
-        <TabsList className="grid w-full grid-cols-2 h-9">
-          <TabsTrigger value="all" className="text-xs">All</TabsTrigger>
-          <TabsTrigger value="favorites" className="text-xs">Favorites</TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="all" className="flex-1 mt-2">
-          <div className="max-h-[400px] overflow-y-auto space-y-2 pr-2">
-            {filteredAssets.map((asset) => (
-              <AssetRow key={asset.id} asset={asset} />
-            ))}
-          </div>
-        </TabsContent>
-        
-        <TabsContent value="favorites" className="flex-1 mt-2">
-          <div className="max-h-[400px] overflow-y-auto space-y-2 pr-2">
-            {favoriteAssets.length > 0 ? (
-              favoriteAssets.map((asset) => (
-                <AssetRow key={asset.id} asset={asset} />
-              ))
-            ) : (
-              <div className="text-center py-8 text-muted-foreground">
-                <Star className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                <p className="text-sm">No favorite assets</p>
-              </div>
-            )}
-          </div>
-        </TabsContent>
-      </Tabs>
-    </div>
-  );
-
   return (
-    <div className="min-h-screen bg-background">
-      {/* Mobile Header */}
-      {isMobile && (
-        <div className="sticky top-0 z-50 bg-background/95 backdrop-blur border-b">
-          <div className="flex items-center justify-between p-4">
-            <div className="flex items-center gap-3">
-              <Drawer open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
-                <DrawerTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-8 w-8">
-                    <Menu className="h-4 w-4" />
-                  </Button>
-                </DrawerTrigger>
-                <DrawerContent className="h-[85vh]">
-                  <DrawerHeader className="text-left">
-                    <DrawerTitle>Trading Tools</DrawerTitle>
-                  </DrawerHeader>
-                  <div className="px-4 pb-4 flex-1 overflow-hidden">
-                    <Tabs value={activeDrawerTab} onValueChange={setActiveDrawerTab} className="h-full flex flex-col">
-                      <TabsList className="grid w-full grid-cols-3 mb-4">
-                        <TabsTrigger value="market">Market</TabsTrigger>
-                        <TabsTrigger value="portfolio">Portfolio</TabsTrigger>
-                        <TabsTrigger value="history">History</TabsTrigger>
-                      </TabsList>
-                      
-                      <TabsContent value="market" className="flex-1 overflow-y-auto">
-                        <MobileMarketWatch />
-                      </TabsContent>
-                      
-                      <TabsContent value="portfolio" className="flex-1 overflow-y-auto">
-                        <Portfolio />
-                      </TabsContent>
-                      
-                      <TabsContent value="history" className="flex-1 overflow-y-auto">
-                        <TradingHistory />
-                      </TabsContent>
-                    </Tabs>
-                  </div>
-                </DrawerContent>
-              </Drawer>
-              
-              <div className="flex items-center gap-2">
-                {isConnected ? (
-                  <Wifi className="h-4 w-4 text-green-500" />
-                ) : (
-                  <WifiOff className="h-4 w-4 text-red-500" />
-                )}
-                <span className="text-xs text-muted-foreground">
-                  {isConnected ? 'Live' : 'Offline'}
-                </span>
-              </div>
-            </div>
-            
-            <div className="text-right">
-              <div className="text-sm font-medium">
-                ${profile?.balance?.toFixed(2) || '0.00'}
-              </div>
-              <div className={`text-xs font-medium ${mobileTotalPnL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                {mobileTotalPnL >= 0 ? '+' : ''}${mobileTotalPnL.toFixed(2)}
-              </div>
-            </div>
-          </div>
-          
-          {/* Quick Actions Bar */}
-          <div className="flex items-center justify-center gap-2 px-4 pb-2">
-            {selectedAsset && (
-              <>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={() => toggleFavorite(selectedAsset)}
-                >
-                  <Heart className={`h-4 w-4 ${(favorites && favorites.some(f => f.asset_id === selectedAsset.id)) ? 'fill-current text-red-500' : ''}`} />
-                </Button>
-                <div className="text-sm font-medium px-2">
-                  {selectedAsset.symbol}
-                </div>
-                <PulsingPriceIndicator 
-                  price={selectedAsset.price} 
-                  change={selectedAsset.change_24h}
-                  symbol={selectedAsset.symbol} 
-                />
-              </>
-            )}
-          </div>
+    <div className="min-h-screen bg-background p-0 md:p-6">
+      <div className="mx-auto max-w-none md:max-w-7xl">
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold tracking-tight">Web Trading Platform</h1>
+          <p className="text-muted-foreground">Advanced trading with real-time market data</p>
         </div>
-      )}
 
-      {/* Desktop Header */}
-      {!isMobile && (
-        <div className="p-6 pb-0">
-          <div className="mb-6">
-            <h1 className="text-3xl font-bold tracking-tight">Web Trading Platform</h1>
-            <p className="text-muted-foreground">Advanced trading with real-time market data</p>
-          </div>
-        </div>
-      )}
-
-      <div className={isMobile ? "p-0" : "p-6 pt-0"}>
-        <div className={isMobile ? "mx-auto max-w-none" : "mx-auto max-w-7xl"}>
-          {selectedAsset && (
-            <>
-              {/* Desktop Layout */}
-              {!isMobile && (
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                  {/* Left Column - Market Watch - Fixed Height */}
-                  <div className="lg:col-span-1">
-                    <Card className="bg-card/80 backdrop-blur border-border/50 h-[830px] flex flex-col">
-                      <CardHeader className="pb-2 px-4 pt-4">
-                        <CardTitle className="text-lg">Market Watch</CardTitle>
-                        <CardDescription className="text-sm">Live market data</CardDescription>
-                      </CardHeader>
-                      <CardContent className="flex-1 flex flex-col space-y-3 px-4 pb-4">
-                        <div className="space-y-2">
-                          <Input
-                            placeholder="Search assets..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="bg-muted/20 h-9"
-                          />
-                          <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                            <SelectTrigger className="bg-muted/20 h-9">
-                              <SelectValue placeholder="Filter by category" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="all">All Categories</SelectItem>
-                              <SelectItem value="forex">Forex</SelectItem>
-                              <SelectItem value="crypto">Cryptocurrency</SelectItem>
-                              <SelectItem value="stocks">Stocks</SelectItem>
-                              <SelectItem value="commodities">Commodities</SelectItem>
-                              <SelectItem value="indices">Indices</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-
-                        <Tabs defaultValue="all" className="flex-1 flex flex-col">
-                          <TabsList className="grid w-full grid-cols-2 h-9">
-                            <TabsTrigger value="all" className="text-xs">All</TabsTrigger>
-                            <TabsTrigger value="favorites" className="text-xs">Favorites</TabsTrigger>
-                          </TabsList>
-                          
-                          <TabsContent value="all" className="flex-1 mt-2">
-                            <div className="max-h-[530px] overflow-y-auto space-y-2 pr-2">
-                              {filteredAssets.map((asset) => (
-                                <AssetRow key={asset.id} asset={asset} />
-                              ))}
-                            </div>
-                          </TabsContent>
-                          
-                          <TabsContent value="favorites" className="flex-1 mt-2">
-                            <div className="max-h-[530px] overflow-y-auto space-y-2 pr-2">
-                              {favoriteAssets.length > 0 ? (
-                                favoriteAssets.map((asset) => (
-                                  <AssetRow key={asset.id} asset={asset} />
-                                ))
-                              ) : (
-                                <div className="text-center py-8 text-muted-foreground">
-                                  <Star className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                                  <p className="text-sm">No favorite assets</p>
-                                </div>
-                              )}
-                            </div>
-                          </TabsContent>
-                        </Tabs>
-                      </CardContent>
-                    </Card>
-                  </div>
-
-                  {/* Right Column - Chart and Trading - Fixed Heights */}
-                  <div className="lg:col-span-2 space-y-4">
-                    {/* Chart Section - 400px Fixed Height */}
-                    <div className="h-[400px]">
-                      <TradingChart 
-                        key={selectedAsset?.id || 'no-asset'} 
-                        symbol={selectedAsset?.symbol || ''} 
-                      />
+        {selectedAsset && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Left Column - Market Watch - Fixed Height */}
+            <div className="lg:col-span-1">
+              <Card className="bg-card/80 backdrop-blur border-border/50 h-[830px] flex flex-col">
+                <CardHeader className="pb-2 px-4 pt-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="text-lg">Market Watch</CardTitle>
+                      <CardDescription className="text-sm">Live market data</CardDescription>
                     </div>
-
-                    {/* Trading Tabs Interface - 200px Fixed Height */}
-                    <TradingTabsInterface
-                      selectedAsset={selectedAsset}
-                      amount={amount}
-                      leverage={leverage}
-                      onAmountChange={setAmount}
-                      onLeverageChange={setLeverage}
-                      onTrade={handleEnhancedTrade}
-                      userProfile={profile}
-                      isExecuting={isExecuting}
-                      openTrades={openTrades}
-                      realtimeAssets={realtimeAssets}
-                      onCloseTrade={(tradeId) => {
-                        const asset = realtimeAssets.find(a => openTrades.find(t => t.id === tradeId)?.asset_id === a.id);
-                        handleCloseTrade(tradeId, asset?.price || 0);
-                      }}
-                    />
+                    <PriceConnectionStatus />
                   </div>
-                </div>
-              )}
-
-              {/* Mobile Layout */}
-              {isMobile && (
-                <div className="space-y-4 px-4 pb-4">
-                  {/* Chart Section */}
-                  <div className="h-[350px]">
-                    <TradingChart 
-                      key={selectedAsset?.id || 'no-asset'} 
-                      symbol={selectedAsset?.symbol || ''} 
+                </CardHeader>
+                <CardContent className="flex-1 flex flex-col space-y-3 px-4 pb-4">
+                  <div className="space-y-2">
+                    <Input
+                      placeholder="Search assets..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="bg-muted/20 h-9"
                     />
+                    <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                      <SelectTrigger className="bg-muted/20 h-9">
+                        <SelectValue placeholder="Filter by category" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Categories</SelectItem>
+                        <SelectItem value="forex">Forex</SelectItem>
+                        <SelectItem value="crypto">Cryptocurrency</SelectItem>
+                        <SelectItem value="stocks">Stocks</SelectItem>
+                        <SelectItem value="commodities">Commodities</SelectItem>
+                        <SelectItem value="indices">Indices</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
 
-                  {/* Trading Tabs Interface */}
-                  <TradingTabsInterface
-                    selectedAsset={selectedAsset}
-                    amount={amount}
-                    leverage={leverage}
-                    onAmountChange={setAmount}
-                    onLeverageChange={setLeverage}
-                    onTrade={handleEnhancedTrade}
-                    userProfile={profile}
-                    isExecuting={isExecuting}
-                    openTrades={openTrades}
-                    realtimeAssets={realtimeAssets}
-                    onCloseTrade={(tradeId) => {
-                      const asset = realtimeAssets.find(a => openTrades.find(t => t.id === tradeId)?.asset_id === a.id);
-                      handleCloseTrade(tradeId, asset?.price || 0);
-                    }}
-                  />
-                </div>
-              )}
-            </>
-          )}
-        </div>
+                  <Tabs defaultValue="all" className="flex-1 flex flex-col">
+                    <TabsList className="grid w-full grid-cols-2 h-9">
+                      <TabsTrigger value="all" className="text-xs">All</TabsTrigger>
+                      <TabsTrigger value="favorites" className="text-xs">Favorites</TabsTrigger>
+                    </TabsList>
+                    
+                    <TabsContent value="all" className="flex-1 mt-2">
+                       <div className="max-h-[530px] overflow-y-auto space-y-2 pr-2">
+                        {filteredAssets.map((asset) => (
+                          <AssetRow key={asset.id} asset={asset} />
+                        ))}
+                      </div>
+                    </TabsContent>
+                    
+                    <TabsContent value="favorites" className="flex-1 mt-2">
+                      <div className="max-h-[530px] overflow-y-auto space-y-2 pr-2">
+                        {favoriteAssets.length > 0 ? (
+                          favoriteAssets.map((asset) => (
+                            <AssetRow key={asset.id} asset={asset} />
+                          ))
+                        ) : (
+                          <div className="text-center py-8 text-muted-foreground">
+                            <Star className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                            <p className="text-sm">No favorite assets</p>
+                          </div>
+                        )}
+                      </div>
+                    </TabsContent>
+                    
+                  </Tabs>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Right Column - Chart and Trading - Fixed Heights */}
+            <div className="lg:col-span-2 space-y-4">
+              {/* Chart Section - 400px Fixed Height */}
+              <div className="h-[400px]">
+                <TradingChart 
+                  key={selectedAsset?.id || 'no-asset'} 
+                  symbol={selectedAsset?.symbol || ''} 
+                />
+              </div>
+
+              {/* Trading Tabs Interface - 200px Fixed Height */}
+              <TradingTabsInterface
+                selectedAsset={selectedAsset}
+                amount={amount}
+                leverage={leverage}
+                onAmountChange={setAmount}
+                onLeverageChange={setLeverage}
+                onTrade={handleEnhancedTrade}
+                userProfile={profile}
+                isExecuting={isExecuting}
+                openTrades={openTrades}
+                realtimeAssets={realtimeAssets}
+                onCloseTrade={(tradeId) => {
+                  const asset = realtimeAssets.find(a => openTrades.find(t => t.id === tradeId)?.asset_id === a.id);
+                  handleCloseTrade(tradeId, asset?.price || 0);
+                }}
+              />
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
