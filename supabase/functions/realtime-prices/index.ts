@@ -60,12 +60,12 @@ serve(async (req) => {
         data: initialPrices
       }));
       
-      // Start real-time price updates (every 2 seconds for faster P&L updates)
+      // Start real-time price updates (every 3 seconds for better API management)
       priceInterval = setInterval(() => {
         if (isConnected) {
           sendPriceUpdates();
         }
-      }, 2000);
+      }, 3000);
       
     } catch (error) {
       console.error('Error fetching assets:', error);
@@ -81,117 +81,106 @@ serve(async (req) => {
   let lastApiCall = 0;
   const API_CACHE_DURATION = 15000; // 15 seconds cache for real data
   
-  // Helper function to get crypto prices from Yahoo Finance (no rate limits)
+  // Helper function to get crypto prices from CoinGecko
   const getCryptoPrices = async (symbols: string[]): Promise<Map<string, { price: number; change: number }>> => {
     const cryptoMap = new Map();
-    const yahooSymbols: Record<string, string> = {
-      'BTCUSD': 'BTC-USD',
-      'ETHUSD': 'ETH-USD', 
-      'XRPUSD': 'XRP-USD',
-      'ADAUSD': 'ADA-USD',
-      'DOTUSD': 'DOT-USD',
-      'BNBUSD': 'BNB-USD',
-      'LINKUSD': 'LINK-USD',
-      'LTCUSD': 'LTC-USD',
-      'MATICUSD': 'MATIC-USD',
-      'SOLUSD': 'SOL-USD'
+    const coinGeckoIds: Record<string, string> = {
+      'BTCUSD': 'bitcoin',
+      'ETHUSD': 'ethereum', 
+      'XRPUSD': 'ripple',
+      'ADAUSD': 'cardano',
+      'DOTUSD': 'polkadot',
+      'BNBUSD': 'binancecoin',
+      'LINKUSD': 'chainlink',
+      'LTCUSD': 'litecoin',
+      'MATICUSD': 'matic-network',
+      'SOLUSD': 'solana'
     };
 
-    const cryptoSymbols = symbols.filter(s => yahooSymbols[s]);
+    const cryptoSymbols = symbols.filter(s => coinGeckoIds[s]);
     if (cryptoSymbols.length === 0) return cryptoMap;
+
+    const ids = cryptoSymbols.map(s => coinGeckoIds[s]).join(',');
+    const url = `https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd&include_24hr_change=true`;
     
     try {
       console.log(`Fetching REAL crypto prices for: ${cryptoSymbols.join(', ')}`);
+      const response = await fetch(url, {
+        headers: {
+          'Accept': 'application/json',
+          'User-Agent': 'TradingApp/1.0'
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`CoinGecko API returned ${response.status}: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
       
       for (const symbol of cryptoSymbols) {
-        const yahooSymbol = yahooSymbols[symbol];
-        try {
-          const url = `https://query1.finance.yahoo.com/v8/finance/chart/${yahooSymbol}`;
-          const response = await fetch(url, {
-            headers: {
-              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-              'Accept': 'application/json'
-            }
+        const coinId = coinGeckoIds[symbol];
+        if (data[coinId] && data[coinId].usd) {
+          cryptoMap.set(symbol, {
+            price: data[coinId].usd,
+            change: data[coinId].usd_24h_change || 0
           });
-          
-          if (response.ok) {
-            const data = await response.json();
-            const result = data.chart?.result?.[0];
-            
-            if (result?.meta?.regularMarketPrice) {
-              const currentPrice = result.meta.regularMarketPrice;
-              const previousClose = result.meta.previousClose || currentPrice;
-              const change24h = ((currentPrice - previousClose) / previousClose) * 100;
-              
-              cryptoMap.set(symbol, { 
-                price: parseFloat(currentPrice.toFixed(6)), 
-                change: parseFloat(change24h.toFixed(2)) 
-              });
-              
-              console.log(`Yahoo Finance crypto: ${symbol} = $${currentPrice} (${change24h.toFixed(2)}%)`);
-            }
-          }
-        } catch (error) {
-          console.error(`Yahoo Finance crypto error for ${symbol}:`, error.message);
+          console.log(`Real crypto: ${symbol} = $${data[coinId].usd} (${(data[coinId].usd_24h_change || 0).toFixed(2)}%)`);
         }
       }
     } catch (error) {
-      console.error('Yahoo Finance crypto API error:', error);
-      throw error;
+      console.error('CoinGecko API error:', error);
+      throw error; // Don't use fallbacks, fail if no real data
     }
     
     return cryptoMap;
   };
 
-  // Helper function to get real forex rates from Yahoo Finance
+  // Helper function to get real forex rates
   const getForexRates = async (): Promise<Map<string, number>> => {
     const ratesMap = new Map();
     
     try {
-      console.log('Fetching REAL forex rates from Yahoo Finance...');
-      
-      const forexPairs = {
-        'EURUSD': 'EURUSD=X',
-        'GBPUSD': 'GBPUSD=X',
-        'AUDUSD': 'AUDUSD=X',
-        'NZDUSD': 'NZDUSD=X',
-        'USDCAD': 'USDCAD=X',
-        'USDCHF': 'USDCHF=X',
-        'USDJPY': 'USDJPY=X',
-        'EURGBP': 'EURGBP=X',
-        'EURJPY': 'EURJPY=X',
-        'GBPJPY': 'GBPJPY=X'
-      };
-
-      for (const [symbol, yahooSymbol] of Object.entries(forexPairs)) {
-        try {
-          const url = `https://query1.finance.yahoo.com/v8/finance/chart/${yahooSymbol}`;
-          const response = await fetch(url, {
-            headers: {
-              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-              'Accept': 'application/json'
-            }
-          });
-          
-          if (response.ok) {
-            const data = await response.json();
-            const result = data.chart?.result?.[0];
-            
-            if (result?.meta?.regularMarketPrice) {
-              const currentPrice = result.meta.regularMarketPrice;
-              ratesMap.set(symbol, parseFloat(currentPrice.toFixed(5)));
-              console.log(`Yahoo Finance forex: ${symbol} = ${currentPrice.toFixed(5)}`);
-            }
-          }
-        } catch (error) {
-          console.error(`Yahoo Finance forex error for ${symbol}:`, error.message);
+      console.log('Fetching REAL forex rates...');
+      const response = await fetch('https://api.exchangerate-api.com/v4/latest/USD', {
+        headers: {
+          'Accept': 'application/json',
+          'User-Agent': 'TradingApp/1.0'
         }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`ExchangeRate API returned ${response.status}`);
       }
       
-      console.log(`Yahoo Finance forex rates fetched: ${Array.from(ratesMap.keys()).join(', ')}`);
+      const data = await response.json();
+      
+      if (data.rates) {
+        // Convert to our format (base/quote)
+        ratesMap.set('EURUSD', 1 / data.rates.EUR);
+        ratesMap.set('GBPUSD', 1 / data.rates.GBP);
+        ratesMap.set('AUDUSD', 1 / data.rates.AUD);
+        ratesMap.set('NZDUSD', 1 / data.rates.NZD);
+        ratesMap.set('USDCAD', data.rates.CAD);
+        ratesMap.set('USDCHF', data.rates.CHF);
+        ratesMap.set('USDJPY', data.rates.JPY);
+        
+        // Cross pairs
+        if (data.rates.EUR && data.rates.GBP) {
+          ratesMap.set('EURGBP', data.rates.GBP / data.rates.EUR);
+        }
+        if (data.rates.EUR && data.rates.JPY) {
+          ratesMap.set('EURJPY', data.rates.JPY / data.rates.EUR);
+        }
+        if (data.rates.GBP && data.rates.JPY) {
+          ratesMap.set('GBPJPY', data.rates.JPY / data.rates.GBP);
+        }
+        
+        console.log(`Real forex rates fetched: ${Array.from(ratesMap.keys()).join(', ')}`);
+      }
     } catch (error) {
-      console.error('Yahoo Finance forex API error:', error);
-      throw error;
+      console.error('Forex API error:', error);
+      throw error; // Don't use fallbacks, fail if no real data
     }
     
     return ratesMap;
