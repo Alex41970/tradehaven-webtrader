@@ -369,11 +369,11 @@ const Dashboard = () => {
         <div className="container mx-auto px-4 py-6">
           {/* Quick Stats */}
           <div className="grid md:grid-cols-3 gap-6 mb-6">
-            <Card className="bg-gradient-to-br from-card via-card to-card/95 border-2 border-primary/10 shadow-lg hover:shadow-xl transition-shadow duration-300">
+            <Card className="bg-gradient-to-br from-card via-card to-card/95 border-2 border-primary/20 shadow-lg hover:shadow-xl hover:shadow-primary/10 transition-all duration-500 hover:-translate-y-1 animate-fade-in">
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
-                    <div className="p-2 bg-primary/10 rounded-full">
+                    <div className="p-2 bg-primary/20 rounded-full animate-bounce-gentle">
                       <DollarSign className="h-5 w-5 text-primary" />
                     </div>
                     <div>
