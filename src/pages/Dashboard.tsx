@@ -33,7 +33,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useRealtimeAccountMetrics } from "@/hooks/useRealtimeAccountMetrics";
 import { PriceDebugPanel } from "@/components/PriceDebugPanel";
-import { TradingBurgerMenu } from "@/components/TradingBurgerMenu";
+
 const Dashboard = () => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
@@ -230,6 +230,46 @@ const Dashboard = () => {
                               Connect Your Trading Bot
                             </Button>
                           ) : null}
+                        </div>
+
+                        {/* Trading Tools */}
+                        <div className="space-y-3">
+                          <h3 className="text-sm font-medium text-muted-foreground">Trading Tools</h3>
+                          <div className="space-y-2">
+                            <Button 
+                              variant="outline" 
+                              className="w-full justify-start"
+                              onClick={() => {
+                                navigate('/webtrader');
+                                setMobileMenuOpen(false);
+                              }}
+                            >
+                              <TrendingUp className="h-4 w-4 mr-2" />
+                              Web Trader
+                            </Button>
+                            <Button 
+                              variant="outline" 
+                              className="w-full justify-start"
+                              onClick={() => {
+                                navigate('/webtrader/portfolio');
+                                setMobileMenuOpen(false);
+                              }}
+                            >
+                              <BarChart3 className="h-4 w-4 mr-2" />
+                              Portfolio
+                            </Button>
+                            <Button 
+                              variant="outline" 
+                              className="w-full justify-start"
+                              onClick={() => {
+                                navigate('/webtrader/trading-history');
+                                setMobileMenuOpen(false);
+                              }}
+                            >
+                              <History className="h-4 w-4 mr-2" />
+                              Trading History
+                            </Button>
+                          </div>
                         </div>
 
                         {/* Account Actions */}
@@ -726,8 +766,27 @@ const Dashboard = () => {
             </Card>
           </div>
 
-          {/* Trading Tools Burger Menu */}
-          <TradingBurgerMenu />
+          {/* Main Trading Interface - Desktop Only */}
+          <Tabs defaultValue="trader" className="space-y-4 hidden md:block">
+            <TabsList className="w-full md:w-auto">
+              <TabsTrigger value="trader">Web Trader</TabsTrigger>
+              <TabsTrigger value="portfolio">Portfolio</TabsTrigger>
+              <TabsTrigger value="history">Trading History</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="trader" className="w-full">
+              <WebTrader />
+            </TabsContent>
+            
+            <TabsContent value="portfolio">
+              <PriceDebugPanel />
+              <Portfolio />
+            </TabsContent>
+            
+            <TabsContent value="history">
+              <TradingHistory />
+            </TabsContent>
+          </Tabs>
         </div>
 
         {/* Trading Bot Modal */}
