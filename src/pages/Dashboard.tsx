@@ -33,6 +33,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useRealtimeAccountMetrics } from "@/hooks/useRealtimeAccountMetrics";
 import { PriceDebugPanel } from "@/components/PriceDebugPanel";
+import { TradingBurgerMenu } from "@/components/TradingBurgerMenu";
 const Dashboard = () => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
@@ -725,27 +726,8 @@ const Dashboard = () => {
             </Card>
           </div>
 
-          {/* Main Trading Interface */}
-          <Tabs defaultValue="trader" className="space-y-4">
-            <TabsList className="w-full md:w-auto">
-              <TabsTrigger value="trader">Web Trader</TabsTrigger>
-              <TabsTrigger value="portfolio">Portfolio</TabsTrigger>
-              <TabsTrigger value="history">Trading History</TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="trader" className="w-full">
-              <WebTrader />
-            </TabsContent>
-            
-            <TabsContent value="portfolio">
-              <PriceDebugPanel />
-              <Portfolio />
-            </TabsContent>
-            
-            <TabsContent value="history">
-              <TradingHistory />
-            </TabsContent>
-          </Tabs>
+          {/* Trading Tools Burger Menu */}
+          <TradingBurgerMenu />
         </div>
 
         {/* Trading Bot Modal */}
