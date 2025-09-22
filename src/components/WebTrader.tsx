@@ -397,16 +397,16 @@ export const WebTrader = () => {
                       <TabsTrigger value="favorites" className="text-xs">Favorites</TabsTrigger>
                     </TabsList>
                     
-                    <TabsContent value="all" className="flex-1 mt-2">
-                        <div className="max-h-[530px] overflow-y-auto space-y-2 pr-2">
+                    <TabsContent value="all" className="mt-2">
+                        <div className="max-h-[400px] overflow-y-auto space-y-2 pr-2">
                          {(isMobile ? filteredAssets.slice(0, 4) : filteredAssets).map((asset) => (
                            <AssetRow key={asset.id} asset={asset} />
                          ))}
                       </div>
                     </TabsContent>
                     
-                    <TabsContent value="favorites" className="flex-1 mt-2">
-                      <div className="max-h-[530px] overflow-y-auto space-y-2 pr-2">
+                    <TabsContent value="favorites" className="mt-2">
+                      <div className="max-h-[400px] overflow-y-auto space-y-2 pr-2">
                         {favoriteAssets.length > 0 ? (
                            (isMobile ? favoriteAssets.slice(0, 4) : favoriteAssets).map((asset) => (
                              <AssetRow key={asset.id} asset={asset} />
