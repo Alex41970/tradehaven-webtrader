@@ -398,19 +398,19 @@ export const WebTrader = () => {
                     </TabsList>
                     
                     <TabsContent value="all" className="flex-1 mt-2">
-                       <div className="max-h-[530px] overflow-y-auto space-y-2 pr-2">
-                        {filteredAssets.map((asset) => (
-                          <AssetRow key={asset.id} asset={asset} />
-                        ))}
+                        <div className="max-h-[530px] overflow-y-auto space-y-2 pr-2">
+                         {(isMobile ? filteredAssets.slice(0, 4) : filteredAssets).map((asset) => (
+                           <AssetRow key={asset.id} asset={asset} />
+                         ))}
                       </div>
                     </TabsContent>
                     
                     <TabsContent value="favorites" className="flex-1 mt-2">
                       <div className="max-h-[530px] overflow-y-auto space-y-2 pr-2">
                         {favoriteAssets.length > 0 ? (
-                          favoriteAssets.map((asset) => (
-                            <AssetRow key={asset.id} asset={asset} />
-                          ))
+                           (isMobile ? favoriteAssets.slice(0, 4) : favoriteAssets).map((asset) => (
+                             <AssetRow key={asset.id} asset={asset} />
+                           ))
                         ) : (
                           <div className="text-center py-8 text-muted-foreground">
                             <Star className="h-8 w-8 mx-auto mb-2 opacity-50" />
