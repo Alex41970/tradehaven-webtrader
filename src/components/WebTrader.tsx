@@ -399,7 +399,7 @@ export const WebTrader = () => {
                     
                     <TabsContent value="all" className="mt-2">
                         <div className="max-h-[400px] overflow-y-auto space-y-2 pr-2">
-                         {(isMobile ? filteredAssets.slice(0, 4) : filteredAssets).map((asset) => (
+                         {(isMobile ? filteredAssets.slice(0, 4) : filteredAssets.slice(0, 8)).map((asset) => (
                            <AssetRow key={asset.id} asset={asset} />
                          ))}
                       </div>
@@ -408,7 +408,7 @@ export const WebTrader = () => {
                     <TabsContent value="favorites" className="mt-2">
                       <div className="max-h-[400px] overflow-y-auto space-y-2 pr-2">
                         {favoriteAssets.length > 0 ? (
-                           (isMobile ? favoriteAssets.slice(0, 4) : favoriteAssets).map((asset) => (
+                           (isMobile ? favoriteAssets.slice(0, 4) : favoriteAssets.slice(0, 8)).map((asset) => (
                              <AssetRow key={asset.id} asset={asset} />
                            ))
                         ) : (
