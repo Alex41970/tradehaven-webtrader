@@ -32,7 +32,6 @@ import { useToast } from "@/hooks/use-toast";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useRealtimeAccountMetrics } from "@/hooks/useRealtimeAccountMetrics";
-import { PriceDebugPanel } from "@/components/PriceDebugPanel";
 
 const Dashboard = () => {
   const { user, signOut } = useAuth();
@@ -785,7 +784,6 @@ const Dashboard = () => {
             </TabsContent>
             
             <TabsContent value="portfolio">
-              <PriceDebugPanel />
               <Portfolio />
             </TabsContent>
             
