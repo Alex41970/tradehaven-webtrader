@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { useTheme } from "next-themes";
 
 interface TradingChartProps {
   symbol: string;
@@ -7,6 +8,7 @@ interface TradingChartProps {
 export const TradingChart = ({ symbol }: TradingChartProps) => {
   const chartRef = useRef<HTMLDivElement>(null);
   const widgetRef = useRef<any>(null);
+  const { theme } = useTheme();
 
   // Map asset symbols to proper TradingView symbols
   const getProperSymbol = (symbol: string): string => {
@@ -98,15 +100,16 @@ export const TradingChart = ({ symbol }: TradingChartProps) => {
       if (!chartRef.current || !window.TradingView) return;
       
       try {
+        const isDark = theme === 'dark';
         widgetRef.current = new window.TradingView.widget({
           autosize: true,
           symbol: getProperSymbol(symbol),
           interval: "1",
           timezone: "Etc/UTC",
-          theme: document.documentElement.classList.contains('dark') ? "dark" : "light",
+          theme: isDark ? "dark" : "light",
           style: "1", 
           locale: "en",
-          toolbar_bg: document.documentElement.classList.contains('dark') ? "#1f2937" : "#f1f3f6",
+          toolbar_bg: isDark ? "#1f2937" : "#f1f3f6",
           enable_publishing: false,
           withdateranges: true,
           hide_side_toolbar: false,
@@ -129,7 +132,7 @@ export const TradingChart = ({ symbol }: TradingChartProps) => {
         widgetRef.current = null;
       }
     };
-  }, [symbol]);
+  }, [symbol, theme]);
 
   return (
     <div className="w-full h-96 bg-muted/20 rounded-lg flex items-center justify-center animate-fade-in">
