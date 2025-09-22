@@ -358,7 +358,7 @@ export const WebTrader = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Left Column - Market Watch - Fixed Height */}
             <div className="lg:col-span-1">
-              <Card className="bg-card/80 backdrop-blur border-border/50 h-[830px] flex flex-col">
+              <Card className="bg-card/80 backdrop-blur border-border/50">
                 <CardHeader className="pb-2 px-4 pt-4">
                   <div className="flex items-center justify-between">
                     <div>
@@ -368,7 +368,7 @@ export const WebTrader = () => {
                     <PriceConnectionStatus />
                   </div>
                 </CardHeader>
-                <CardContent className="flex-1 flex flex-col space-y-3 px-4 pb-4">
+                <CardContent className="space-y-3 px-4 pb-4">
                   <div className="space-y-2">
                     <Input
                       placeholder="Search assets..."
@@ -391,7 +391,7 @@ export const WebTrader = () => {
                     </Select>
                   </div>
 
-                  <Tabs defaultValue="all" className="flex-1 flex flex-col">
+                  <Tabs defaultValue="all" className="">
                     <TabsList className="grid w-full grid-cols-2 h-9">
                       <TabsTrigger value="all" className="text-xs">All</TabsTrigger>
                       <TabsTrigger value="favorites" className="text-xs">Favorites</TabsTrigger>
