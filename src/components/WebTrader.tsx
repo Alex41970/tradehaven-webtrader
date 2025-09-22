@@ -11,15 +11,15 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { TradingChart } from "./TradingChart";
 import { TradeRow } from "./TradeRow";
 import { TradingTabsInterface } from "./TradingTabsInterface";
-import { Star, StarIcon, TrendingUp, TrendingDown, Menu, Wallet, History } from "lucide-react";
+import { Star, StarIcon, TrendingUp, TrendingDown, Menu, Wallet, History, ArrowLeft } from "lucide-react";
 import { useAssets } from "@/hooks/useAssets";
 import { useTrades } from "@/hooks/useTrades";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { useFavorites } from "@/hooks/useFavorites";
 import { useRealTimePrices } from "@/hooks/useRealTimePrices";
 import { useTradeOrders } from "@/hooks/useTradeOrders";
-import { useIsMobile } from "@/hooks/use-mobile";
 import { useNavigate } from "react-router-dom";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { toast } from "@/hooks/use-toast";
 import { PulsingPriceIndicator } from "./PulsingPriceIndicator";
 import { PriceConnectionStatus } from "./PriceConnectionStatus";
@@ -336,8 +336,22 @@ export const WebTrader = () => {
     <div className="min-h-screen bg-background p-0 md:p-6">
       <div className="mx-auto max-w-none md:max-w-7xl">
         <div className="mb-6">
-          <h1 className="text-3xl font-bold tracking-tight">Web Trading Platform</h1>
-          <p className="text-muted-foreground">Advanced trading with real-time market data</p>
+          <div className="flex items-center justify-between mb-2">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => navigate('/dashboard')}
+              className="flex items-center gap-2 hover:bg-primary hover:text-primary-foreground transition-colors"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              <span className="hidden sm:inline">Back to Dashboard</span>
+              <span className="sm:hidden">Back</span>
+            </Button>
+            <div className="text-right">
+              <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Web Trading Platform</h1>
+              <p className="text-muted-foreground text-sm md:text-base">Advanced trading with real-time market data</p>
+            </div>
+          </div>
         </div>
 
         {selectedAsset && (
