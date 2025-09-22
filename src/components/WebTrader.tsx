@@ -341,7 +341,7 @@ export const WebTrader = () => {
               variant="ghost" 
               size="sm" 
               onClick={() => navigate('/dashboard')}
-              className="self-start flex items-center gap-2 text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+              className="md:hidden self-start flex items-center gap-2 text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
             >
               <ArrowLeft className="h-4 w-4" />
               <span className="hidden sm:inline">Back to Dashboard</span>
