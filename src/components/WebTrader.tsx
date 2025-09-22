@@ -336,20 +336,20 @@ export const WebTrader = () => {
     <div className="min-h-screen bg-background p-0 md:p-6">
       <div className="mx-auto max-w-none md:max-w-7xl">
         <div className="mb-6">
-          <div className="flex items-center justify-between mb-2">
+          <div className="flex flex-col gap-3 mb-2">
             <Button 
-              variant="outline" 
+              variant="ghost" 
               size="sm" 
               onClick={() => navigate('/dashboard')}
-              className="flex items-center gap-2 hover:bg-primary hover:text-primary-foreground transition-colors"
+              className="self-start flex items-center gap-2 text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
             >
               <ArrowLeft className="h-4 w-4" />
               <span className="hidden sm:inline">Back to Dashboard</span>
               <span className="sm:hidden">Back</span>
             </Button>
-            <div className="text-right">
+            <div className="text-center">
               <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Web Trading Platform</h1>
-              <p className="text-muted-foreground text-sm md:text-base">Advanced trading with real-time market data</p>
+              <p className="text-muted-foreground text-sm md:text-base mt-1">Advanced trading with real-time market data</p>
             </div>
           </div>
         </div>
