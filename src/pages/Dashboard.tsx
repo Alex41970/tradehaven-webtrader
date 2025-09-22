@@ -184,22 +184,28 @@ const Dashboard = () => {
                   )}
                   <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
                     <SheetTrigger asChild>
-                      <Button variant="outline" size="sm" className="p-2">
-                        <Menu className="h-4 w-4" />
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="relative h-10 w-10 rounded-lg bg-background/80 backdrop-blur-sm border border-border/50 hover:bg-accent hover:border-border transition-all duration-200 hover:shadow-sm hover:scale-105 active:scale-95"
+                      >
+                        <Menu className="h-5 w-5 text-foreground" />
                       </Button>
                     </SheetTrigger>
-                    <SheetContent side="right" className="w-80">
-                      <SheetHeader>
-                        <SheetTitle className="flex items-center space-x-2">
-                          <User className="h-5 w-5" />
-                          <span>Account Menu</span>
+                    <SheetContent side="right" className="w-80 bg-background/95 backdrop-blur-md border-l border-border/50">
+                      <SheetHeader className="border-b border-border/50 pb-4">
+                        <SheetTitle className="flex items-center space-x-3">
+                          <div className="p-2 rounded-lg bg-primary/10 border border-primary/20">
+                            <User className="h-4 w-4 text-primary" />
+                          </div>
+                          <span className="text-lg font-semibold">Account Menu</span>
                         </SheetTitle>
                       </SheetHeader>
                       <div className="mt-6 space-y-6">
                         {/* User Info */}
-                        <div className="border-b pb-4">
-                          <p className="text-sm text-muted-foreground">Welcome back</p>
-                          <p className="font-medium truncate">{user?.email}</p>
+                        <div className="rounded-lg border border-border/50 bg-muted/30 p-4">
+                          <p className="text-sm text-muted-foreground mb-1">Welcome back</p>
+                          <p className="font-medium truncate text-foreground">{user?.email}</p>
                         </div>
 
                         {/* Bot Section */}
