@@ -33,24 +33,24 @@ export const PulsingPnLIndicator: React.FC<PulsingPnLIndicatorProps> = ({
   const displayPnL = isNaN(pnl) ? 0 : pnl;
 
   const colorClass = isPositive 
-    ? 'text-trading-success' 
-    : 'text-trading-danger';
+    ? 'text-green-600 dark:text-green-400' 
+    : 'text-red-600 dark:text-red-400';
 
   const pulseClass = isPulsing 
-    ? 'animate-bounce-gentle ring-2 ring-opacity-60 shadow-lg ' + 
-      (isPositive ? 'ring-trading-success/50 bg-trading-success/5' : 'ring-trading-danger/50 bg-trading-danger/5') 
+    ? 'animate-[pulse_0.5s_ease-in-out] ring-2 ring-opacity-50 ' + 
+      (isPositive ? 'ring-green-400' : 'ring-red-400') 
     : '';
 
   return (
-    <div className={`inline-flex items-center gap-1 transition-all duration-300 rounded-md px-2 py-1 ${pulseClass} ${className}`}>
+    <div className={`inline-flex items-center gap-1 transition-all duration-200 rounded px-1 ${pulseClass} ${className}`}>
       {showIcon && (
         isPositive ? (
-          <TrendingUp className={`h-3 w-3 ${isPulsing ? 'animate-bounce-gentle' : ''} ${colorClass} drop-shadow-sm`} />
+          <TrendingUp className={`h-3 w-3 ${isPulsing ? 'animate-pulse' : ''} ${colorClass}`} />
         ) : (
-          <TrendingDown className={`h-3 w-3 ${isPulsing ? 'animate-bounce-gentle' : ''} ${colorClass} drop-shadow-sm`} />
+          <TrendingDown className={`h-3 w-3 ${isPulsing ? 'animate-pulse' : ''} ${colorClass}`} />
         )
       )}
-      <span className={`text-sm font-semibold ${colorClass} drop-shadow-sm`}>
+      <span className={`text-sm font-medium ${colorClass}`}>
         {displayPnL >= 0 ? '+' : ''}${displayPnL.toFixed(2)}
       </span>
     </div>

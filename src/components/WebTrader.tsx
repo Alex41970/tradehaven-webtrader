@@ -11,7 +11,6 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { TradingChart } from "./TradingChart";
 import { TradeRow } from "./TradeRow";
 import { TradingTabsInterface } from "./TradingTabsInterface";
-import { FloatingActionButton } from "./FloatingActionButton";
 import { Star, StarIcon, TrendingUp, TrendingDown, Menu, Wallet, History, ArrowLeft } from "lucide-react";
 import { useAssets } from "@/hooks/useAssets";
 import { useTrades } from "@/hooks/useTrades";
@@ -266,39 +265,40 @@ export const WebTrader = () => {
     }
   };
 
+  // Asset row component for market watch
   const AssetRow = React.memo(({ asset }: { asset: any }) => {
     const isFavorited = favorites.some(f => f.asset_id === asset.id);
     
     return (
       <div 
-        className={`p-3 rounded-lg border cursor-pointer transition-all duration-300 hover:scale-[1.02] group ${
+        className={`p-3 rounded-lg border cursor-pointer transition-all duration-200 ${
           selectedAsset?.id === asset.id 
-            ? 'bg-gradient-to-r from-primary/20 to-primary/10 border-primary/40 shadow-lg shadow-primary/20' 
-            : 'bg-muted/20 border-muted/30 hover:bg-muted/40 hover:border-muted/50 hover:shadow-md'
+            ? 'bg-primary/10 border-primary/30' 
+            : 'bg-muted/20 border-muted/30 hover:bg-muted/40'
         }`}
         onClick={() => setSelectedAsset(asset)}
       >
         <div className="flex items-center justify-between">
           <div className="flex-1">
             <div className="flex items-center gap-2">
-              <span className="font-medium text-sm group-hover:text-foreground transition-colors">{asset.symbol}</span>
+              <span className="font-medium text-sm">{asset.symbol}</span>
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-6 w-6 hover:scale-110 transition-transform duration-200"
+                className="h-6 w-6"
                 onClick={(e) => {
                   e.stopPropagation();
                   toggleFavorite(asset);
                 }}
               >
                 {isFavorited ? (
-                  <StarIcon className="h-3 w-3 fill-current text-yellow-500 animate-bounce-gentle" />
+                  <StarIcon className="h-3 w-3 fill-current text-yellow-500" />
                 ) : (
-                  <Star className="h-3 w-3 opacity-60 group-hover:opacity-100 transition-opacity" />
+                  <Star className="h-3 w-3" />
                 )}
               </Button>
             </div>
-            <div className="text-xs text-muted-foreground/70 truncate group-hover:text-muted-foreground transition-colors">{asset.name}</div>
+            <div className="text-xs text-muted-foreground truncate">{asset.name}</div>
           </div>
           <div className="text-right">
             <PulsingPriceIndicator 
@@ -314,17 +314,8 @@ export const WebTrader = () => {
 
   if (assetsLoading || profileLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-background">
-        <div className="text-center space-y-4 animate-fade-in">
-          <div className="relative">
-            <div className="animate-spin rounded-full h-16 w-16 border-4 border-primary/20 border-t-primary mx-auto"></div>
-            <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-primary/20 to-transparent animate-pulse"></div>
-          </div>
-          <div className="space-y-2">
-            <p className="text-lg font-medium text-foreground">Loading Trading Platform</p>
-            <p className="text-sm text-muted-foreground animate-pulse">Preparing your market data...</p>
-          </div>
-        </div>
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       </div>
     );
   }
@@ -342,7 +333,7 @@ export const WebTrader = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background p-0 md:p-6 relative">
+    <div className="min-h-screen bg-background p-0 md:p-6">
       <div className="mx-auto max-w-none md:max-w-7xl">
         <div className="mb-6">
           <div className="flex flex-col gap-3 mb-2">
@@ -350,15 +341,15 @@ export const WebTrader = () => {
               variant="ghost" 
               size="sm" 
               onClick={() => navigate('/dashboard')}
-              className="md:hidden self-start flex items-center gap-2 text-muted-foreground hover:text-foreground hover:bg-accent transition-all duration-300 hover:scale-105 group"
+              className="md:hidden self-start flex items-center gap-2 text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
             >
-              <ArrowLeft className="h-4 w-4 group-hover:-translate-x-1 transition-transform" />
+              <ArrowLeft className="h-4 w-4" />
               <span className="hidden sm:inline">Back to Dashboard</span>
               <span className="sm:hidden">Back</span>
             </Button>
-            <div className="text-center animate-fade-in-up">
-              <h1 className="text-2xl md:text-3xl font-bold tracking-tight bg-gradient-to-r from-foreground via-foreground to-foreground/70 bg-clip-text">Web Trading Platform</h1>
-              <p className="text-muted-foreground/80 text-sm md:text-base mt-1">Advanced trading with real-time market data</p>
+            <div className="text-center">
+              <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Web Trading Platform</h1>
+              <p className="text-muted-foreground text-sm md:text-base mt-1">Advanced trading with real-time market data</p>
             </div>
           </div>
         </div>
@@ -367,16 +358,14 @@ export const WebTrader = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Left Column - Market Watch - Fixed Height */}
             <div className="lg:col-span-1">
-              <Card className="bg-card/90 backdrop-blur-lg border-border/60 shadow-lg hover:shadow-xl hover:shadow-primary/10 transition-all duration-500 hover:-translate-y-1">
+              <Card className="bg-card/80 backdrop-blur border-border/50">
                 <CardHeader className="pb-2 px-4 pt-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <CardTitle className="text-lg bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text">Market Watch</CardTitle>
-                      <CardDescription className="text-sm text-muted-foreground/80">Live market data</CardDescription>
+                      <CardTitle className="text-lg">Market Watch</CardTitle>
+                      <CardDescription className="text-sm">Live market data</CardDescription>
                     </div>
-                    <div className="animate-pulse">
-                      <PriceConnectionStatus />
-                    </div>
+                    <PriceConnectionStatus />
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-3 px-4 pb-4">
@@ -436,21 +425,14 @@ export const WebTrader = () => {
               </Card>
             </div>
 
-            {/* Floating Action Button */}
-            <FloatingActionButton
-              onTrade={() => navigate('/webtrader')}
-            />
-
             {/* Right Column - Chart and Trading - Fixed Heights */}
             <div className="lg:col-span-2 space-y-4">
               {/* Chart Section - 400px Fixed Height */}
-              <div className="h-[400px] animate-fade-in">
-                <div className="rounded-lg border bg-card/90 backdrop-blur-lg shadow-lg hover:shadow-xl transition-all duration-500 h-full overflow-hidden">
-                  <TradingChart 
-                    key={selectedAsset?.id || 'no-asset'} 
-                    symbol={selectedAsset?.symbol || ''} 
-                  />
-                </div>
+              <div className="h-[400px]">
+                <TradingChart 
+                  key={selectedAsset?.id || 'no-asset'} 
+                  symbol={selectedAsset?.symbol || ''} 
+                />
               </div>
 
               {/* Trading Tabs Interface - 200px Fixed Height */}
