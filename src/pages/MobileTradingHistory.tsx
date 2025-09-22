@@ -7,18 +7,6 @@ import { useIsMobile } from "@/hooks/use-mobile";
 
 export const MobileTradingHistory = () => {
   const navigate = useNavigate();
-  const isMobile = useIsMobile();
-
-  // Redirect desktop users to main WebTrader
-  React.useEffect(() => {
-    if (!isMobile) {
-      navigate("/webtrader");
-    }
-  }, [isMobile, navigate]);
-
-  if (!isMobile) {
-    return null;
-  }
 
   return (
     <div className="min-h-screen bg-background p-4">
@@ -27,11 +15,11 @@ export const MobileTradingHistory = () => {
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => navigate("/webtrader")}
+          onClick={() => navigate("/dashboard")}
           className="flex items-center gap-2"
         >
           <ArrowLeft className="h-4 w-4" />
-          Back to WebTrader
+          Back to Dashboard
         </Button>
         <h1 className="text-xl font-semibold">Trading History</h1>
         <div></div> {/* Spacer for center alignment */}
