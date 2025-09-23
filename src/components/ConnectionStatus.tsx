@@ -32,32 +32,25 @@ export const ConnectionStatus: React.FC = () => {
     );
   }
 
-  // Desktop: Keep current badge layout
+  // Desktop: Use same icon approach as mobile for cleaner header
   if (loading) {
     return (
-      <Badge variant="secondary" className="flex items-center gap-1 text-xs">
-        <Loader2 className="h-3 w-3 animate-spin" />
-        Connecting...
-      </Badge>
+      <Loader2 
+        className="h-4 w-4 text-yellow-500 animate-spin" 
+        aria-label="Connecting to real-time data"
+      />
     );
   }
 
-  return (
-    <Badge 
-      variant={isConnected ? "default" : "secondary"} 
-      className="flex items-center gap-1 text-xs"
-    >
-      {isConnected ? (
-        <>
-          <Wifi className="h-3 w-3" />
-          Real-time Active
-        </>
-      ) : (
-        <>
-          <WifiOff className="h-3 w-3" />
-          Database Mode
-        </>
-      )}
-    </Badge>
+  return isConnected ? (
+    <Wifi 
+      className="h-4 w-4 text-green-500" 
+      aria-label="Real-time connection active"
+    />
+  ) : (
+    <WifiOff 
+      className="h-4 w-4 text-red-500" 
+      aria-label="Real-time connection inactive"
+    />
   );
 };

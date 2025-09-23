@@ -13,7 +13,7 @@ import { WithdrawModal } from "@/components/WithdrawModal";
 import { TransactionHistoryPopup } from "@/components/TransactionHistoryPopup";
 import TradingStatusIndicator from "@/components/TradingStatusIndicator";
 import { ConnectionStatus } from "@/components/ConnectionStatus";
-import { LogOut, TrendingUp, DollarSign, Activity, ExternalLink, Plus, Minus, BarChart3, Target, Trophy, Shield, TrendingDown, Zap, Award, Bot, History, ArrowUpRight, ArrowDownLeft, Clock, CheckCircle, XCircle, Loader, Menu, User, CircleDollarSign } from "lucide-react";
+import { LogOut, TrendingUp, DollarSign, Activity, ExternalLink, Plus, Minus, BarChart3, Target, Trophy, Shield, TrendingDown, Zap, Award, Bot, History, ArrowUpRight, ArrowDownLeft, Clock, CheckCircle, XCircle, Loader, Menu, User, CircleDollarSign, MessageCircle, Settings } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { useTrades } from "@/hooks/useTrades";
@@ -32,6 +32,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useRealtimeAccountMetrics } from "@/hooks/useRealtimeAccountMetrics";
+import { ContactSupportModal } from "@/components/ContactSupportModal";
 
 const Dashboard = () => {
   const { user, signOut } = useAuth();
@@ -63,6 +64,7 @@ const Dashboard = () => {
   const [selectedTransaction, setSelectedTransaction] = useState<TransactionHistory | null>(null);
   const [showTransactionPopup, setShowTransactionPopup] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [showContactSupport, setShowContactSupport] = useState(false);
   
   // Performance metrics with real-time equity
   const { metrics, selectedPeriod, setSelectedPeriod, lastUpdated: metricsCalculatedAt } = useProfessionalMetrics(trades, realTimeEquity);
@@ -303,6 +305,17 @@ const Dashboard = () => {
                               <Minus className="h-4 w-4 mr-2" />
                               Withdraw Funds
                             </Button>
+                            <Button 
+                              variant="outline" 
+                              className="w-full justify-start"
+                              onClick={() => {
+                                setShowContactSupport(true);
+                                setMobileMenuOpen(false);
+                              }}
+                            >
+                              <MessageCircle className="h-4 w-4 mr-2" />
+                              Contact Support
+                            </Button>
                           </div>
                         </div>
 
@@ -354,7 +367,15 @@ const Dashboard = () => {
                     </Button>
                   ) : null}
                   <ConnectionStatus />
-                  <span className="text-sm text-muted-foreground hidden lg:inline">Welcome, {user?.email}</span>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setShowContactSupport(true)}
+                    className="flex items-center gap-1"
+                  >
+                    <MessageCircle className="h-4 w-4" />
+                    Support
+                  </Button>
                   <Button variant="outline" size="sm" onClick={handleSignOut} disabled={signingOut}>
                     <LogOut className="h-4 w-4 mr-2" />
                     {signingOut ? "Signing Out..." : "Sign Out"}
@@ -819,6 +840,12 @@ const Dashboard = () => {
           transaction={selectedTransaction}
           isOpen={showTransactionPopup}
           onClose={handleCloseTransactionPopup}
+        />
+
+        {/* Contact Support Modal */}
+        <ContactSupportModal 
+          isOpen={showContactSupport}
+          onClose={() => setShowContactSupport(false)}
         />
       </div>
   );
