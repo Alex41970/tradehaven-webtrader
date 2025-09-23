@@ -1,6 +1,6 @@
 import React from 'react';
 import { Badge } from '@/components/ui/badge';
-import { Wifi, WifiOff, Loader2 } from 'lucide-react';
+import { Wifi, WifiOff } from 'lucide-react';
 import { useRealTimeTrading } from '@/hooks/useRealTimeTrading';
 import { useIsMobile } from '@/hooks/use-mobile';
 
@@ -35,8 +35,8 @@ export const ConnectionStatus: React.FC = () => {
   // Desktop: Use same icon approach as mobile for cleaner header
   if (loading) {
     return (
-      <Loader2 
-        className="h-4 w-4 text-yellow-500 animate-spin" 
+      <Wifi 
+        className="h-4 w-4 text-yellow-500" 
         aria-label="Connecting to real-time data"
       />
     );
