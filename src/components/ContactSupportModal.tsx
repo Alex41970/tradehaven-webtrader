@@ -62,12 +62,12 @@ export const ContactSupportModal: React.FC<ContactSupportModalProps> = ({ isOpen
 
         <div className="grid gap-6">
           {/* Quick Contact Options */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             <Card>
               <CardContent className="p-4 text-center">
                 <Mail className="h-6 w-6 mx-auto mb-2 text-primary" />
                 <h4 className="font-semibold text-sm">Email Support</h4>
-                <p className="text-xs text-muted-foreground">support@lexingtoncapitalinvesting.com</p>
+                <p className="text-xs text-muted-foreground break-all">support@lexingtoncapitalinvesting.com</p>
               </CardContent>
             </Card>
 
