@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "./useAuth";
 import { toast } from "@/hooks/use-toast";
 import { useRealTimeTrading } from './useRealTimeTrading';
+import { useRealtimeUserProfile } from './useRealtimeData';
 import { supabase } from "@/integrations/supabase/client";
 
 export interface UserProfile {
@@ -26,8 +27,11 @@ export const useUserProfile = () => {
   
   const { profile: realtimeProfile, loading: realtimeLoading, isConnected } = useRealTimeTrading();
   
+  // Subscribe to DB realtime updates as fallback
+  useRealtimeUserProfile(user?.id);
+  
   // Use real-time data if connected, fallback to database data
-  const profile = (isConnected && realtimeProfile) ? realtimeProfile as UserProfile : dbProfile;
+  const profile = (isConnected && realtimeProfile) ? (realtimeProfile as UserProfile) : dbProfile;
   const loading = isConnected ? realtimeLoading : dbLoading;
 
   // Fallback database fetch
@@ -59,6 +63,26 @@ export const useUserProfile = () => {
   useEffect(() => {
     fetchProfile();
   }, [fetchProfile]);
+
+  // Subscribe to DB realtime updates for profile as fallback
+  useEffect(() => {
+    const onProfileUpdated = (e: any) => {
+      const updated = e.detail as Partial<UserProfile> | undefined;
+      if (updated && (updated as any).user_id) {
+        setDbProfile(prev => {
+          if (!prev) return updated as UserProfile;
+          if (prev.user_id === (updated as any).user_id) {
+            return { ...prev, ...(updated as any) } as UserProfile;
+          }
+          return prev;
+        });
+      }
+    };
+    window.addEventListener('profile_updated', onProfileUpdated as EventListener);
+    return () => {
+      window.removeEventListener('profile_updated', onProfileUpdated as EventListener);
+    };
+  }, []);
 
   // Force refresh function (no longer needed with real-time)
   const forceRefresh = useCallback(async () => {
