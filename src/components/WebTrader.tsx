@@ -271,23 +271,37 @@ export const WebTrader = () => {
   const AssetRow = React.memo(({ asset }: { asset: any }) => {
     const isFavorited = favorites.some(f => f.asset_id === asset.id);
     
+    const handleAssetSelect = useCallback((e: React.MouseEvent) => {
+      e.preventDefault();
+      setSelectedAsset(asset);
+    }, [asset]);
+
+    const handlePointerDown = useCallback((e: React.PointerEvent) => {
+      if (e.target === e.currentTarget || (e.target as Element).closest('.asset-row-main')) {
+        setSelectedAsset(asset);
+      }
+    }, [asset]);
+    
     return (
       <div 
-        className={`p-3 rounded-lg border cursor-pointer transition-all duration-200 ${
+        className={`p-3 rounded-lg border cursor-pointer transition-all duration-200 touch-manipulation ${
           selectedAsset?.id === asset.id 
             ? 'bg-primary/10 border-primary/30' 
             : 'bg-muted/20 border-muted/30 hover:bg-muted/40'
         }`}
-        onClick={() => setSelectedAsset(asset)}
+        onClick={handleAssetSelect}
+        onPointerDown={handlePointerDown}
+        role="button"
+        tabIndex={0}
       >
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between asset-row-main pointer-events-none">
           <div className="flex-1">
             <div className="flex items-center gap-2">
               <span className="font-medium text-sm">{asset.symbol}</span>
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-6 w-6"
+                className="h-6 w-6 pointer-events-auto"
                 onClick={(e) => {
                   e.stopPropagation();
                   toggleFavorite(asset);
