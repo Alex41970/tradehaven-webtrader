@@ -22,7 +22,11 @@ export const useRealtimeAccountMetrics = (): RealtimeAccountMetrics => {
   const { assets } = useAssets();
   
   // Stabilize openTrades dependency to prevent unnecessary re-calculations
-  const memoizedOpenTrades = useMemo(() => openTrades || [], [openTrades?.length, openTrades?.map(t => t.id).join(',')]);
+  const memoizedOpenTrades = useMemo(() => {
+    if (!openTrades) return [];
+    return openTrades;
+  }, [openTrades?.length]);
+  
   const { totalPnL, lastUpdated: pnlLastUpdated } = useRealtimePnL(memoizedOpenTrades, assets);
   
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
