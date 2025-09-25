@@ -1,8 +1,7 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "./useAuth";
 import { useRealTimeTrading } from './useRealTimeTrading';
 import { useRealTimePrices } from './useRealTimePrices';
-import { useRealtimeTrades } from './useRealtimeData';
 import { supabase } from "@/integrations/supabase/client";
 import { calculateRealTimePnL } from '@/utils/pnlCalculator';
 
@@ -72,63 +71,9 @@ export const useTrades = () => {
     fetchTrades();
   }, [fetchTrades]);
 
-  // Subscribe to Supabase realtime trades as a fallback when WS is disconnected
-  useRealtimeTrades(user?.id);
-
-  // Keep dbTrades in sync with realtime DB events
-  useEffect(() => {
-    const onCreated = (e: any) => {
-      const t = e.detail;
-      if (!t) return;
-      setDbTrades(prev => [t as Trade, ...prev.filter(p => p.id !== t.id)]);
-    };
-    const onUpdated = (e: any) => {
-      const t = (e.detail?.new ?? e.detail) as Trade;
-      if (!t) return;
-      setDbTrades(prev => prev.map(p => (p.id === t.id ? t : p)));
-    };
-    const onDeleted = (e: any) => {
-      const t = e.detail as Trade;
-      if (!t) return;
-      setDbTrades(prev => prev.filter(p => p.id !== t.id));
-    };
-    window.addEventListener('trade_created', onCreated as EventListener);
-    window.addEventListener('trade_updated', onUpdated as EventListener);
-    window.addEventListener('trade_deleted', onDeleted as EventListener);
-    return () => {
-      window.removeEventListener('trade_created', onCreated as EventListener);
-      window.removeEventListener('trade_updated', onUpdated as EventListener);
-      window.removeEventListener('trade_deleted', onDeleted as EventListener);
-    };
-  }, []);
-
-  // Merge WebSocket and DB data intelligently - freshest wins by ID
-  const trades = useMemo(() => {
-    if (!isConnected || realtimeTrades.length === 0) {
-      return dbTrades;
-    }
-    
-    if (dbTrades.length === 0) {
-      return realtimeTrades;
-    }
-    
-    // Merge both sources - WebSocket takes precedence for existing IDs
-    const mergedMap = new Map<string, Trade>();
-    
-    // Start with DB trades
-    dbTrades.forEach(trade => mergedMap.set(trade.id, trade));
-    
-    // Override with WebSocket trades (fresher data)
-    realtimeTrades.forEach(trade => mergedMap.set(trade.id, trade));
-    
-    const merged = Array.from(mergedMap.values()).sort((a, b) => 
-      new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-    );
-    
-    return merged;
-  }, [isConnected, realtimeTrades, dbTrades]);
-  
-  const loading = realtimeLoading || dbLoading;
+  // Use real-time data if connected, fallback to database data
+  const trades = isConnected && realtimeTrades.length > 0 ? realtimeTrades : dbTrades;
+  const loading = isConnected ? realtimeLoading : dbLoading;
 
   // Derived data
   const openTrades = trades.filter(trade => trade.status === 'open');
@@ -228,16 +173,7 @@ export const useTrades = () => {
 
         if (error) throw error;
         
-        // Recalculate margins server-side and let realtime profile update propagate
-        try {
-          if (user?.id) {
-            await supabase.functions.invoke('fix-user-margins', { body: { user_id: user.id } });
-          }
-        } catch (e) {
-          console.error('Error invoking fix-user-margins:', e);
-        }
-        
-        // Refresh database data as a safety net
+        // Refresh database data
         await fetchTrades();
       }
       
