@@ -223,7 +223,9 @@ export const useRealTimeTrading = () => {
     amount: number,
     leverage: number,
     openPrice: number,
-    marginUsed: number
+    marginUsed: number,
+    stopLoss?: number,
+    takeProfit?: number
   ) => {
     if (!tradingWebSocket.isConnected()) {
       throw new Error('Not connected to real-time trading');
@@ -237,7 +239,9 @@ export const useRealTimeTrading = () => {
         amount,
         leverage,
         openPrice,
-        marginUsed
+        marginUsed,
+        stopLoss,
+        takeProfit
       });
       
       return true;

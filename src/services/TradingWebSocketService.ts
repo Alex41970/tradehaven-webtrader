@@ -13,6 +13,8 @@ export interface TradeData {
   leverage: number;
   openPrice: number;
   marginUsed: number;
+  stopLoss?: number;
+  takeProfit?: number;
 }
 
 export type TradingWebSocketEventCallback = (message: TradingWebSocketMessage) => void;

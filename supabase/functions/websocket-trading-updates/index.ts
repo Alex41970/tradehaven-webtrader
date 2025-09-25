@@ -246,12 +246,14 @@ async function handleOpenTrade(connection: ClientConnection, data: any) {
       amount,
       leverage,
       openPrice,
-      marginUsed
+      marginUsed,
+      stopLoss,
+      takeProfit
     } = data;
 
-    console.log('Opening trade via WebSocket:', { symbol, tradeType, amount, leverage });
+    console.log('Opening trade via WebSocket:', { symbol, tradeType, amount, leverage, stopLoss, takeProfit });
 
-    // Insert trade into database
+    // Insert trade into database with stop-loss and take-profit
     const { data: newTrade, error: tradeError } = await supabase
       .from('trades')
       .insert({
@@ -264,6 +266,8 @@ async function handleOpenTrade(connection: ClientConnection, data: any) {
         open_price: openPrice,
         current_price: openPrice,
         margin_used: marginUsed,
+        stop_loss_price: stopLoss,
+        take_profit_price: takeProfit,
         status: 'open',
         trade_source: 'user'
       })

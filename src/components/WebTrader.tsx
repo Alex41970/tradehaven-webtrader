@@ -198,7 +198,9 @@ export const WebTrader = () => {
           tradeAmount,
           leverage,
           selectedAsset.price,
-          calculateMargin
+          calculateMargin,
+          orderData.stopLoss,
+          orderData.takeProfit
         );
 
         if (success) {

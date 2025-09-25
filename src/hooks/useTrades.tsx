@@ -92,15 +92,17 @@ export const useTrades = () => {
     amount: number,
     leverage: number,
     openPrice: number,
-    marginUsed: number
+    marginUsed: number,
+    stopLoss?: number,
+    takeProfit?: number
   ) => {
     if (!user) return null;
 
     try {
       // Try WebSocket first if connected
       if (isConnected) {
-        console.log('Opening trade via WebSocket:', { assetId, symbol, tradeType, amount, leverage, openPrice, marginUsed });
-        await realtimeOpenTrade(assetId, symbol, tradeType, amount, leverage, openPrice, marginUsed);
+        console.log('Opening trade via WebSocket:', { assetId, symbol, tradeType, amount, leverage, openPrice, marginUsed, stopLoss, takeProfit });
+        await realtimeOpenTrade(assetId, symbol, tradeType, amount, leverage, openPrice, marginUsed, stopLoss, takeProfit);
       } else {
         // Fallback to direct database insertion
         console.log('Opening trade via database (WebSocket not connected)');
@@ -116,6 +118,8 @@ export const useTrades = () => {
             open_price: openPrice,
             current_price: openPrice,
             margin_used: marginUsed,
+            stop_loss_price: stopLoss,
+            take_profit_price: takeProfit,
             status: 'open',
             trade_source: 'user',
             pnl: 0
