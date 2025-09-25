@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useRealTimePrices } from './useRealTimePrices';
 import { calculateRealTimePnL } from '@/utils/pnlCalculator';
 
@@ -26,7 +26,11 @@ export const useRealtimePnL = (trades: Trade[], assets: Asset[] = []) => {
   const [lastPrices, setLastPrices] = useState<Record<string, number>>({});
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Calculate P&L every 250ms for ultra-responsive updates
+  // Memoize trades and assets to prevent unnecessary recalculations
+  const memoizedTrades = useMemo(() => trades, [trades.length, trades.map(t => `${t.id}-${t.symbol}-${t.status}`).join(',')]);
+  const memoizedAssets = useMemo(() => assets, [assets.length, assets.map(a => a.symbol).join(',')]);
+
+  // Calculate P&L every 500ms for responsive updates (reduced from 250ms)
   useEffect(() => {
     const calculatePnL = () => {
       const newPnL: Record<string, number> = {};
@@ -34,7 +38,7 @@ export const useRealtimePnL = (trades: Trade[], assets: Asset[] = []) => {
       let priceUpdateCount = 0;
       let hasAnyPriceChange = false;
 
-      trades.forEach(trade => {
+      memoizedTrades.forEach(trade => {
         if (trade.status === 'closed') {
           newPnL[trade.id] = trade.pnl;
           return;
@@ -55,7 +59,7 @@ export const useRealtimePnL = (trades: Trade[], assets: Asset[] = []) => {
           newPrices[trade.symbol] = currentPrice;
 
           // Find asset for contract_size (important for forex)
-          const asset = assets.find(a => a.symbol === trade.symbol);
+          const asset = memoizedAssets.find(a => a.symbol === trade.symbol);
           const contractSize = asset?.contract_size || 1;
           
           // Calculate with higher precision for micro-changes
@@ -82,30 +86,29 @@ export const useRealtimePnL = (trades: Trade[], assets: Asset[] = []) => {
       // Update prices tracking
       setLastPrices(newPrices);
 
-      // Only update state if there are meaningful changes
+      // Only update state if there are meaningful changes (increased threshold for performance)
       const hasSignificantChange = Object.keys(newPnL).some(tradeId => 
-        Math.abs((newPnL[tradeId] || 0) - (lastPnL[tradeId] || 0)) >= 0.01
+        Math.abs((newPnL[tradeId] || 0) - (lastPnL[tradeId] || 0)) >= 0.10
       );
       
       if (hasAnyPriceChange || hasSignificantChange) {
         setLastPnL(newPnL);
         setPnLUpdatedAt(new Date());
-        console.log('📊 P&L Updated (change detected):', Object.keys(newPnL).length, 'trades,', priceUpdateCount, 'with real-time prices');
       }
     };
 
     // Calculate immediately
     calculatePnL();
 
-    // Set up interval for every 250ms updates (ultra-fast)
-    intervalRef.current = setInterval(calculatePnL, 250);
+    // Set up interval for every 500ms updates (optimized for performance)
+    intervalRef.current = setInterval(calculatePnL, 500);
 
     return () => {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
       }
     };
-  }, [trades, prices, assets]); // Remove lastPrices to prevent infinite loops
+  }, [memoizedTrades, prices, memoizedAssets]);
 
   // Calculate total P&L
   const totalPnL = Object.values(lastPnL).reduce((sum, pnl) => sum + pnl, 0);

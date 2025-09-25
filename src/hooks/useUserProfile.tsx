@@ -33,12 +33,10 @@ export const useUserProfile = () => {
   // Merge WebSocket and DB profile data - freshest wins
   const profile = useMemo(() => {
     if (!isConnected || !realtimeProfile) {
-      console.log('👤 Using DB profile only');
       return dbProfile;
     }
     
     if (!dbProfile) {
-      console.log('👤 Using WebSocket profile only');
       return realtimeProfile as UserProfile;
     }
     
@@ -49,14 +47,6 @@ export const useUserProfile = () => {
       // Ensure we preserve all fields that might be missing from WebSocket
       updated_at: new Date().toISOString()
     };
-    
-    console.log('👤 Merged profile:', {
-      hasDb: !!dbProfile,
-      hasWs: !!realtimeProfile,
-      isConnected,
-      balance: merged.balance,
-      equity: merged.equity || 'undefined'
-    });
     
     return merged;
   }, [isConnected, realtimeProfile, dbProfile]);

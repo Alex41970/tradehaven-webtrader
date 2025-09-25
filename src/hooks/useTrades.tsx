@@ -105,12 +105,10 @@ export const useTrades = () => {
   // Merge WebSocket and DB data intelligently - freshest wins by ID
   const trades = useMemo(() => {
     if (!isConnected || realtimeTrades.length === 0) {
-      console.log('📊 Using DB trades only:', dbTrades.length);
       return dbTrades;
     }
     
     if (dbTrades.length === 0) {
-      console.log('📊 Using WebSocket trades only:', realtimeTrades.length);
       return realtimeTrades;
     }
     
@@ -126,13 +124,6 @@ export const useTrades = () => {
     const merged = Array.from(mergedMap.values()).sort((a, b) => 
       new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
     );
-    
-    console.log('📊 Merged trades:', {
-      db: dbTrades.length,
-      ws: realtimeTrades.length, 
-      merged: merged.length,
-      isConnected
-    });
     
     return merged;
   }, [isConnected, realtimeTrades, dbTrades]);

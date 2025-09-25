@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useUserProfile } from './useUserProfile';
 import { useTrades } from './useTrades';
 import { useRealtimePnL } from './useRealtimePnL';
+import { useAssets } from './useAssets';
 
 interface RealtimeAccountMetrics {
   // Real-time values
@@ -18,17 +19,21 @@ interface RealtimeAccountMetrics {
 export const useRealtimeAccountMetrics = (): RealtimeAccountMetrics => {
   const { profile } = useUserProfile();
   const { openTrades } = useTrades();
-  const { totalPnL, lastUpdated: pnlLastUpdated } = useRealtimePnL(openTrades || [], []);
+  const { assets } = useAssets();
+  
+  // Stabilize openTrades dependency to prevent unnecessary re-calculations
+  const memoizedOpenTrades = useMemo(() => openTrades || [], [openTrades?.length, openTrades?.map(t => t.id).join(',')]);
+  const { totalPnL, lastUpdated: pnlLastUpdated } = useRealtimePnL(memoizedOpenTrades, assets);
   
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
 
-  // Calculate real-time values with enhanced logging
+  // Calculate real-time values
   const metrics = useMemo(() => {
     const accountBalance = profile?.balance || 0;
     
     // Calculate used margin from all open trades
-    const totalUsedMargin = (openTrades || []).reduce((sum, trade) => {
+    const totalUsedMargin = memoizedOpenTrades.reduce((sum, trade) => {
       return sum + (trade.margin_used || 0);
     }, 0);
 
@@ -41,25 +46,15 @@ export const useRealtimeAccountMetrics = (): RealtimeAccountMetrics => {
     // Free margin = equity - used margin
     const realTimeFreeMargin = Math.max(0, realTimeEquity - totalUsedMargin);
 
-    console.log('💰 Account metrics calculated:', {
-      balance: realTimeBalance,
-      equity: realTimeEquity,
-      freeMargin: realTimeFreeMargin,
-      usedMargin: totalUsedMargin,
-      totalPnL,
-      openTradesCount: openTrades?.length || 0,
-      profileBalance: profile?.balance
-    });
-
     return {
       realTimeBalance,
       realTimeEquity,
       realTimeFreeMargin,
       totalUsedMargin,
     };
-  }, [profile?.balance, totalPnL, openTrades]);
+  }, [profile?.balance, totalPnL, memoizedOpenTrades]);
 
-  // Update timestamps and indicators when values change
+  // Update timestamps and indicators when values change (debounced)
   useEffect(() => {
     if (pnlLastUpdated) {
       setIsUpdating(true);
@@ -68,11 +63,11 @@ export const useRealtimeAccountMetrics = (): RealtimeAccountMetrics => {
       // Clear updating indicator after short delay for visual feedback
       const timeout = setTimeout(() => {
         setIsUpdating(false);
-      }, 200);
+      }, 300);
       
       return () => clearTimeout(timeout);
     }
-  }, [pnlLastUpdated, metrics.realTimeBalance, metrics.realTimeEquity]);
+  }, [pnlLastUpdated]);
 
   return {
     ...metrics,
