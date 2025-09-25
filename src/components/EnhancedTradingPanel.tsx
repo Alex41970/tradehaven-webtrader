@@ -4,10 +4,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { ChevronDown, ChevronUp, Calculator, Target, Shield, Clock, RotateCcw } from 'lucide-react';
+import { ChevronDown, ChevronUp, Calculator, Target, Shield, Clock } from 'lucide-react';
 import { Asset } from '@/hooks/useAssets';
 
 interface EnhancedTradingPanelProps {
@@ -40,8 +40,8 @@ export const EnhancedTradingPanel: React.FC<EnhancedTradingPanelProps> = ({
 }) => {
   const [orderType, setOrderType] = useState<'market' | 'limit' | 'stop'>('market');
   const [triggerPrice, setTriggerPrice] = useState<number>(selectedAsset.price);
-  const [stopLossStrategy, setStopLossStrategy] = useState<'BUY' | 'SELL' | null>(null);
-  const [takeProfitStrategy, setTakeProfitStrategy] = useState<'BUY' | 'SELL' | null>(null);
+  const [useStopLoss, setUseStopLoss] = useState(false);
+  const [useTakeProfit, setUseTakeProfit] = useState(false);
   const [stopLoss, setStopLoss] = useState<number>(selectedAsset.price * 0.98);
   const [takeProfit, setTakeProfit] = useState<number>(selectedAsset.price * 1.03);
   const [expiryHours, setExpiryHours] = useState<number>(24);
@@ -51,7 +51,6 @@ export const EnhancedTradingPanel: React.FC<EnhancedTradingPanelProps> = ({
   // Update price-dependent state when selectedAsset changes
   useEffect(() => {
     setTriggerPrice(selectedAsset.price);
-    // Always set default SL/TP values (2% SL, 3% TP for BUY direction)
     setStopLoss(selectedAsset.price * 0.98);
     setTakeProfit(selectedAsset.price * 1.03);
   }, [selectedAsset.id, selectedAsset.price]);
@@ -68,8 +67,8 @@ export const EnhancedTradingPanel: React.FC<EnhancedTradingPanelProps> = ({
 
     const availableAfterTrade = userProfile ? userProfile.available_margin - marginRequired : 0;
     
-    const stopLossRisk = stopLossStrategy ? Math.abs((stopLoss - selectedAsset.price) / selectedAsset.price) * 100 : 0;
-    const takeProfitReward = takeProfitStrategy ? Math.abs((takeProfit - selectedAsset.price) / selectedAsset.price) * 100 : 0;
+    const stopLossRisk = useStopLoss ? Math.abs((stopLoss - selectedAsset.price) / selectedAsset.price) * 100 : 0;
+    const takeProfitReward = useTakeProfit ? Math.abs((takeProfit - selectedAsset.price) / selectedAsset.price) * 100 : 0;
     
     const riskRewardRatio = stopLossRisk > 0 ? takeProfitReward / stopLossRisk : 0;
 
@@ -81,7 +80,7 @@ export const EnhancedTradingPanel: React.FC<EnhancedTradingPanelProps> = ({
       takeProfitReward,
       riskRewardRatio,
     };
-  }, [selectedAsset, amount, leverage, stopLossStrategy, takeProfitStrategy, stopLoss, takeProfit, userProfile]);
+  }, [selectedAsset, amount, leverage, useStopLoss, useTakeProfit, stopLoss, takeProfit, userProfile]);
 
   const handleQuickRiskSetup = (type: 'conservative' | 'balanced' | 'aggressive') => {
     const configs = {
@@ -93,30 +92,8 @@ export const EnhancedTradingPanel: React.FC<EnhancedTradingPanelProps> = ({
     const config = configs[type];
     setStopLoss(selectedAsset.price * (1 - config.stopLoss / 100));
     setTakeProfit(selectedAsset.price * (1 + config.takeProfit / 100));
-    setStopLossStrategy('BUY');
-    setTakeProfitStrategy('BUY');
-  };
-
-  const handleReverseSlTp = () => {
-    // Swap strategies (BUY ↔ SELL)
-    const newSlStrategy = stopLossStrategy === 'BUY' ? 'SELL' : 'BUY';
-    const newTpStrategy = takeProfitStrategy === 'BUY' ? 'SELL' : 'BUY';
-    
-    setStopLossStrategy(newSlStrategy);
-    setTakeProfitStrategy(newTpStrategy);
-    
-    // Update prices based on new strategy
-    if (newSlStrategy === 'BUY') {
-      setStopLoss(selectedAsset.price * 0.98);
-    } else {
-      setStopLoss(selectedAsset.price * 1.02);
-    }
-    
-    if (newTpStrategy === 'BUY') {
-      setTakeProfit(selectedAsset.price * 1.03);
-    } else {
-      setTakeProfit(selectedAsset.price * 0.97);
-    }
+    setUseStopLoss(true);
+    setUseTakeProfit(true);
   };
 
   const handleTrade = (tradeType: 'BUY' | 'SELL') => {
@@ -124,8 +101,8 @@ export const EnhancedTradingPanel: React.FC<EnhancedTradingPanelProps> = ({
       orderType,
       tradeType,
       triggerPrice: orderType !== 'market' ? triggerPrice : undefined,
-      stopLoss: stopLossStrategy ? stopLoss : undefined,
-      takeProfit: takeProfitStrategy ? takeProfit : undefined,
+      stopLoss: useStopLoss ? stopLoss : undefined,
+      takeProfit: useTakeProfit ? takeProfit : undefined,
       expiresAt: orderType !== 'market' ? new Date(Date.now() + expiryHours * 60 * 60 * 1000) : undefined,
     };
     
@@ -275,166 +252,60 @@ export const EnhancedTradingPanel: React.FC<EnhancedTradingPanelProps> = ({
               </Button>
             </div>
 
-            {/* Stop Loss Strategy */}
-            <div className="space-y-3">
-              <Label className="text-sm font-medium">Stop Loss Strategy</Label>
-              <div className="flex gap-2">
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant={stopLossStrategy === 'BUY' ? 'default' : 'outline'}
-                        size="sm"
-                        onClick={() => {
-                          setStopLossStrategy('BUY');
-                          setStopLoss(selectedAsset.price * 0.98);
-                        }}
-                        className={`flex-1 ${
-                          stopLossStrategy === 'BUY' 
-                            ? 'bg-trading-success hover:bg-trading-success/90 text-white' 
-                            : 'hover:bg-trading-success/10'
-                        }`}
-                      >
-                        <ChevronUp className="h-4 w-4 mr-1" />
-                        Conservative
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>Buy strategy - Stop Loss below current price</TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-                
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant={stopLossStrategy === 'SELL' ? 'default' : 'outline'}
-                        size="sm"
-                        onClick={() => {
-                          setStopLossStrategy('SELL');
-                          setStopLoss(selectedAsset.price * 1.02);
-                        }}
-                        className={`flex-1 ${
-                          stopLossStrategy === 'SELL' 
-                            ? 'bg-trading-danger hover:bg-trading-danger/90 text-white' 
-                            : 'hover:bg-trading-danger/10'
-                        }`}
-                      >
-                        <ChevronDown className="h-4 w-4 mr-1" />
-                        Conservative
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>Sell strategy - Stop Loss above current price</TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </div>
-              
-              {stopLossStrategy && (
-                <div className="space-y-2">
-                  <Input
-                    type="number"
-                    value={stopLoss}
-                    onChange={(e) => setStopLoss(parseFloat(e.target.value) || 0)}
-                    className="bg-trading-secondary/20 border-trading-secondary/30"
-                    step="0.00001"
-                    placeholder={`${selectedAsset.price * 0.98}`}
-                  />
-                  <div className="text-xs text-muted-foreground">
-                    Risk: <span className={getRiskColor(calculations.stopLossRisk)}>
-                      {calculations.stopLossRisk.toFixed(2)}%
-                    </span>
-                  </div>
+            {/* Stop Loss */}
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="useStopLoss"
+                checked={useStopLoss}
+                onCheckedChange={setUseStopLoss}
+              />
+              <Label htmlFor="useStopLoss" className="flex-1">Stop Loss</Label>
+            </div>
+            {useStopLoss && (
+              <div className="space-y-2">
+                <Input
+                  type="number"
+                  value={stopLoss}
+                  onChange={(e) => setStopLoss(parseFloat(e.target.value) || 0)}
+                  className="bg-trading-secondary/20 border-trading-secondary/30"
+                  step="0.00001"
+                />
+                <div className="text-xs text-muted-foreground">
+                  Risk: <span className={getRiskColor(calculations.stopLossRisk)}>
+                    {calculations.stopLossRisk.toFixed(2)}%
+                  </span>
                 </div>
-              )}
-            </div>
-
-            {/* Reverse Button */}
-            <div className="flex justify-center py-2">
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={handleReverseSlTp}
-                className="h-8 w-8 p-0 rounded-full bg-trading-accent/10 hover:bg-trading-accent/20 border border-trading-accent/30 transition-all duration-200 hover:scale-105 group"
-                title="Reverse Stop Loss & Take Profit"
-              >
-                <RotateCcw className="h-4 w-4 text-trading-accent transition-transform duration-200 group-hover:rotate-180" />
-              </Button>
-            </div>
-
-            {/* Take Profit Strategy */}
-            <div className="space-y-3">
-              <Label className="text-sm font-medium">Take Profit Strategy</Label>
-              <div className="flex gap-2">
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant={takeProfitStrategy === 'BUY' ? 'default' : 'outline'}
-                        size="sm"
-                        onClick={() => {
-                          setTakeProfitStrategy('BUY');
-                          setTakeProfit(selectedAsset.price * 1.03);
-                        }}
-                        className={`flex-1 ${
-                          takeProfitStrategy === 'BUY' 
-                            ? 'bg-trading-success hover:bg-trading-success/90 text-white' 
-                            : 'hover:bg-trading-success/10'
-                        }`}
-                      >
-                        <ChevronUp className="h-4 w-4 mr-1" />
-                        Aggressive
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>Buy strategy - Take Profit above current price</TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-                
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant={takeProfitStrategy === 'SELL' ? 'default' : 'outline'}
-                        size="sm"
-                        onClick={() => {
-                          setTakeProfitStrategy('SELL');
-                          setTakeProfit(selectedAsset.price * 0.97);
-                        }}
-                        className={`flex-1 ${
-                          takeProfitStrategy === 'SELL' 
-                            ? 'bg-trading-danger hover:bg-trading-danger/90 text-white' 
-                            : 'hover:bg-trading-danger/10'
-                        }`}
-                      >
-                        <ChevronDown className="h-4 w-4 mr-1" />
-                        Aggressive
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>Sell strategy - Take Profit below current price</TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
               </div>
-              
-              {takeProfitStrategy && (
-                <div className="space-y-2">
-                  <Input
-                    type="number"
-                    value={takeProfit}
-                    onChange={(e) => setTakeProfit(parseFloat(e.target.value) || 0)}
-                    className="bg-trading-secondary/20 border-trading-secondary/30"
-                    step="0.00001"
-                    placeholder={`${selectedAsset.price * 1.03}`}
-                  />
-                  <div className="text-xs text-muted-foreground">
-                    Reward: <span className="text-trading-success">
-                      {calculations.takeProfitReward.toFixed(2)}%
-                    </span>
-                  </div>
-                </div>
-              )}
+            )}
+
+            {/* Take Profit */}
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="useTakeProfit"
+                checked={useTakeProfit}
+                onCheckedChange={setUseTakeProfit}
+              />
+              <Label htmlFor="useTakeProfit" className="flex-1">Take Profit</Label>
             </div>
+            {useTakeProfit && (
+              <div className="space-y-2">
+                <Input
+                  type="number"
+                  value={takeProfit}
+                  onChange={(e) => setTakeProfit(parseFloat(e.target.value) || 0)}
+                  className="bg-trading-secondary/20 border-trading-secondary/30"
+                  step="0.00001"
+                />
+                <div className="text-xs text-muted-foreground">
+                  Reward: <span className="text-trading-success">
+                    {calculations.takeProfitReward.toFixed(2)}%
+                  </span>
+                </div>
+              </div>
+            )}
 
             {/* Risk/Reward Ratio */}
-            {stopLossStrategy && takeProfitStrategy && (
+            {useStopLoss && useTakeProfit && (
               <div className="p-3 bg-trading-secondary/10 rounded-lg">
                 <div className="text-sm font-medium">Risk/Reward Ratio</div>
                 <div className={`text-lg font-bold ${
