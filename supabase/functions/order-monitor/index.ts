@@ -17,8 +17,38 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const startTime = Date.now();
+  
   try {
     console.log('🔍 Starting order monitor cycle...');
+    
+    // Early exit if no trades or orders need monitoring (performance optimization)
+    const { data: quickCheck } = await supabase
+      .from('trades')
+      .select('id', { count: 'exact', head: true })
+      .eq('status', 'open')
+      .or('stop_loss_price.not.is.null,take_profit_price.not.is.null');
+    
+    const { data: orderCheck } = await supabase
+      .from('trade_orders')
+      .select('id', { count: 'exact', head: true })
+      .eq('status', 'pending')
+      .not('expires_at', 'is', null);
+    
+    // If no SL/TP trades and no pending orders, exit early
+    if ((!quickCheck || quickCheck.length === 0) && (!orderCheck || orderCheck.length === 0)) {
+      const executionTime = Date.now() - startTime;
+      console.log(`⚡ No monitoring needed - early exit (${executionTime}ms)`);
+      return new Response(JSON.stringify({
+        success: true,
+        ordersProcessed: 0,
+        tradesProcessed: 0,
+        executionTime,
+        message: 'No monitoring required - system idle'
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
     
     // Get all pending orders
     const { data: pendingOrders, error: ordersError } = await supabase
@@ -130,11 +160,15 @@ serve(async (req) => {
 
     console.log(`✅ Order monitoring complete: ${ordersProcessed} orders executed, ${tradesProcessed} trades closed`);
 
+    const executionTime = Date.now() - startTime;
+    console.log(`⚡ Monitor cycle completed in ${executionTime}ms`);
+
     return new Response(JSON.stringify({
       success: true,
       ordersProcessed,
       tradesProcessed,
-      message: 'Order monitoring completed successfully'
+      executionTime,
+      message: `Order monitoring completed successfully in ${executionTime}ms`
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
