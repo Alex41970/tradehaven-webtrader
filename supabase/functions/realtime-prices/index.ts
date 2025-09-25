@@ -145,7 +145,7 @@ serve(async (req) => {
           // Small delay to respect rate limits
           await new Promise(resolve => setTimeout(resolve, 50));
         } catch (error) {
-          console.log(`AllTick error for ${symbol}:`, error.message);
+          console.log(`AllTick error for ${symbol}:`, error instanceof Error ? error.message : String(error));
         }
       }
     } catch (error) {
@@ -245,7 +245,7 @@ serve(async (req) => {
             }
           }
         } catch (error) {
-          console.error(`Yahoo Finance crypto error for ${symbol}:`, error.message);
+          console.error(`Yahoo Finance crypto error for ${symbol}:`, error instanceof Error ? error.message : String(error));
         }
       }
     } catch (error) {
@@ -315,7 +315,7 @@ serve(async (req) => {
             }
           }
         } catch (error) {
-          console.error(`Yahoo Finance forex error for ${symbol}:`, error.message);
+          console.error(`Yahoo Finance forex error for ${symbol}:`, error instanceof Error ? error.message : String(error));
         }
       }
       
@@ -399,7 +399,7 @@ serve(async (req) => {
             }
           }
         } catch (error) {
-          console.error(`Yahoo Finance error for ${ourSymbol}:`, error.message);
+          console.error(`Yahoo Finance error for ${ourSymbol}:`, error instanceof Error ? error.message : String(error));
         }
       }
     } catch (error) {
@@ -443,7 +443,7 @@ serve(async (req) => {
             }
           }
         } catch (error) {
-          console.error(`Alpha Vantage error for ${symbol}:`, error.message);
+          console.error(`Alpha Vantage error for ${symbol}:`, error instanceof Error ? error.message : String(error));
         }
       }
     } catch (error) {
@@ -488,7 +488,7 @@ serve(async (req) => {
             }
           }
         } catch (error) {
-          console.error(`Finnhub error for ${ourSymbol}:`, error.message);
+          console.error(`Finnhub error for ${ourSymbol}:`, error instanceof Error ? error.message : String(error));
         }
       }
     } catch (error) {
