@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { ChevronDown, ChevronUp, Calculator, Target, Shield, Clock } from 'lucide-react';
+import { ChevronDown, ChevronUp, Calculator, Target, Shield, Clock, RotateCcw } from 'lucide-react';
 import { Asset } from '@/hooks/useAssets';
 
 interface EnhancedTradingPanelProps {
@@ -51,6 +51,7 @@ export const EnhancedTradingPanel: React.FC<EnhancedTradingPanelProps> = ({
   // Update price-dependent state when selectedAsset changes
   useEffect(() => {
     setTriggerPrice(selectedAsset.price);
+    // Always set default SL/TP values (2% SL, 3% TP for BUY direction)
     setStopLoss(selectedAsset.price * 0.98);
     setTakeProfit(selectedAsset.price * 1.03);
   }, [selectedAsset.id, selectedAsset.price]);
@@ -92,6 +93,20 @@ export const EnhancedTradingPanel: React.FC<EnhancedTradingPanelProps> = ({
     const config = configs[type];
     setStopLoss(selectedAsset.price * (1 - config.stopLoss / 100));
     setTakeProfit(selectedAsset.price * (1 + config.takeProfit / 100));
+    setUseStopLoss(true);
+    setUseTakeProfit(true);
+  };
+
+  const handleReverseSlTp = () => {
+    const currentSl = stopLoss;
+    const currentTp = takeProfit;
+    const currentPrice = selectedAsset.price;
+    
+    // Swap the values intelligently
+    setStopLoss(currentTp);
+    setTakeProfit(currentSl);
+    
+    // Auto-enable both switches when reversed
     setUseStopLoss(true);
     setUseTakeProfit(true);
   };
@@ -261,22 +276,35 @@ export const EnhancedTradingPanel: React.FC<EnhancedTradingPanelProps> = ({
               />
               <Label htmlFor="useStopLoss" className="flex-1">Stop Loss</Label>
             </div>
-            {useStopLoss && (
-              <div className="space-y-2">
-                <Input
-                  type="number"
-                  value={stopLoss}
-                  onChange={(e) => setStopLoss(parseFloat(e.target.value) || 0)}
-                  className="bg-trading-secondary/20 border-trading-secondary/30"
-                  step="0.00001"
-                />
-                <div className="text-xs text-muted-foreground">
-                  Risk: <span className={getRiskColor(calculations.stopLossRisk)}>
-                    {calculations.stopLossRisk.toFixed(2)}%
-                  </span>
-                </div>
+            <div className="space-y-2">
+              <Input
+                type="number"
+                value={stopLoss}
+                onChange={(e) => setStopLoss(parseFloat(e.target.value) || 0)}
+                className="bg-trading-secondary/20 border-trading-secondary/30"
+                step="0.00001"
+                placeholder={`${selectedAsset.price * 0.98}`}
+              />
+              <div className="text-xs text-muted-foreground">
+                Risk: <span className={getRiskColor(calculations.stopLossRisk)}>
+                  {calculations.stopLossRisk.toFixed(2)}%
+                </span>
               </div>
-            )}
+            </div>
+
+            {/* Reverse Button */}
+            <div className="flex justify-center py-2">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={handleReverseSlTp}
+                className="h-8 w-8 p-0 rounded-full bg-trading-accent/10 hover:bg-trading-accent/20 border border-trading-accent/30 transition-all duration-200 hover:scale-105 group"
+                title="Reverse Stop Loss & Take Profit"
+              >
+                <RotateCcw className="h-4 w-4 text-trading-accent transition-transform duration-200 group-hover:rotate-180" />
+              </Button>
+            </div>
 
             {/* Take Profit */}
             <div className="flex items-center space-x-2">
@@ -287,22 +315,21 @@ export const EnhancedTradingPanel: React.FC<EnhancedTradingPanelProps> = ({
               />
               <Label htmlFor="useTakeProfit" className="flex-1">Take Profit</Label>
             </div>
-            {useTakeProfit && (
-              <div className="space-y-2">
-                <Input
-                  type="number"
-                  value={takeProfit}
-                  onChange={(e) => setTakeProfit(parseFloat(e.target.value) || 0)}
-                  className="bg-trading-secondary/20 border-trading-secondary/30"
-                  step="0.00001"
-                />
-                <div className="text-xs text-muted-foreground">
-                  Reward: <span className="text-trading-success">
-                    {calculations.takeProfitReward.toFixed(2)}%
-                  </span>
-                </div>
+            <div className="space-y-2">
+              <Input
+                type="number"
+                value={takeProfit}
+                onChange={(e) => setTakeProfit(parseFloat(e.target.value) || 0)}
+                className="bg-trading-secondary/20 border-trading-secondary/30"
+                step="0.00001"
+                placeholder={`${selectedAsset.price * 1.03}`}
+              />
+              <div className="text-xs text-muted-foreground">
+                Reward: <span className="text-trading-success">
+                  {calculations.takeProfitReward.toFixed(2)}%
+                </span>
               </div>
-            )}
+            </div>
 
             {/* Risk/Reward Ratio */}
             {useStopLoss && useTakeProfit && (
