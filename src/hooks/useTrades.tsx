@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useAuth } from "./useAuth";
 import { useRealTimeTrading } from './useRealTimeTrading';
 import { useRealTimePrices } from './useRealTimePrices';
@@ -102,9 +102,42 @@ export const useTrades = () => {
     };
   }, []);
 
-  // Use real-time data if connected, fallback to database data
-  const trades = isConnected ? realtimeTrades : dbTrades;
-  const loading = isConnected ? realtimeLoading : dbLoading;
+  // Merge WebSocket and DB data intelligently - freshest wins by ID
+  const trades = useMemo(() => {
+    if (!isConnected || realtimeTrades.length === 0) {
+      console.log('📊 Using DB trades only:', dbTrades.length);
+      return dbTrades;
+    }
+    
+    if (dbTrades.length === 0) {
+      console.log('📊 Using WebSocket trades only:', realtimeTrades.length);
+      return realtimeTrades;
+    }
+    
+    // Merge both sources - WebSocket takes precedence for existing IDs
+    const mergedMap = new Map<string, Trade>();
+    
+    // Start with DB trades
+    dbTrades.forEach(trade => mergedMap.set(trade.id, trade));
+    
+    // Override with WebSocket trades (fresher data)
+    realtimeTrades.forEach(trade => mergedMap.set(trade.id, trade));
+    
+    const merged = Array.from(mergedMap.values()).sort((a, b) => 
+      new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    );
+    
+    console.log('📊 Merged trades:', {
+      db: dbTrades.length,
+      ws: realtimeTrades.length, 
+      merged: merged.length,
+      isConnected
+    });
+    
+    return merged;
+  }, [isConnected, realtimeTrades, dbTrades]);
+  
+  const loading = realtimeLoading || dbLoading;
 
   // Derived data
   const openTrades = trades.filter(trade => trade.status === 'open');

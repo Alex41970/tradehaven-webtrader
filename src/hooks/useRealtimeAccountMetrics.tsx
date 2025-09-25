@@ -23,7 +23,7 @@ export const useRealtimeAccountMetrics = (): RealtimeAccountMetrics => {
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
 
-  // Calculate real-time values
+  // Calculate real-time values with enhanced logging
   const metrics = useMemo(() => {
     const accountBalance = profile?.balance || 0;
     
@@ -40,6 +40,16 @@ export const useRealtimeAccountMetrics = (): RealtimeAccountMetrics => {
     
     // Free margin = equity - used margin
     const realTimeFreeMargin = Math.max(0, realTimeEquity - totalUsedMargin);
+
+    console.log('💰 Account metrics calculated:', {
+      balance: realTimeBalance,
+      equity: realTimeEquity,
+      freeMargin: realTimeFreeMargin,
+      usedMargin: totalUsedMargin,
+      totalPnL,
+      openTradesCount: openTrades?.length || 0,
+      profileBalance: profile?.balance
+    });
 
     return {
       realTimeBalance,

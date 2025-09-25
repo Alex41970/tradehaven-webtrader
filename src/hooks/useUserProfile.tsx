@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useAuth } from "./useAuth";
 import { toast } from "@/hooks/use-toast";
 import { useRealTimeTrading } from './useRealTimeTrading';
@@ -30,9 +30,38 @@ export const useUserProfile = () => {
   // Subscribe to DB realtime updates as fallback
   useRealtimeUserProfile(user?.id);
   
-  // Use real-time data if connected, fallback to database data
-  const profile = (isConnected && realtimeProfile) ? (realtimeProfile as UserProfile) : dbProfile;
-  const loading = isConnected ? realtimeLoading : dbLoading;
+  // Merge WebSocket and DB profile data - freshest wins
+  const profile = useMemo(() => {
+    if (!isConnected || !realtimeProfile) {
+      console.log('👤 Using DB profile only');
+      return dbProfile;
+    }
+    
+    if (!dbProfile) {
+      console.log('👤 Using WebSocket profile only');
+      return realtimeProfile as UserProfile;
+    }
+    
+    // Use WebSocket as primary, but merge any missing fields from DB
+    const merged = {
+      ...dbProfile,
+      ...(realtimeProfile as UserProfile),
+      // Ensure we preserve all fields that might be missing from WebSocket
+      updated_at: new Date().toISOString()
+    };
+    
+    console.log('👤 Merged profile:', {
+      hasDb: !!dbProfile,
+      hasWs: !!realtimeProfile,
+      isConnected,
+      balance: merged.balance,
+      equity: merged.equity || 'undefined'
+    });
+    
+    return merged;
+  }, [isConnected, realtimeProfile, dbProfile]);
+  
+  const loading = realtimeLoading || dbLoading;
 
   // Fallback database fetch
   const fetchProfile = useCallback(async () => {
