@@ -25,18 +25,18 @@ export const useRealtimeAccountMetrics = (): RealtimeAccountMetrics => {
 
   // Calculate real-time values
   const metrics = useMemo(() => {
-    const baseBalance = profile?.balance || 0;
+    const accountBalance = profile?.balance ?? 0;
     
     // Calculate used margin from all open trades
     const totalUsedMargin = (openTrades || []).reduce((sum, trade) => {
       return sum + (trade.margin_used || 0);
     }, 0);
 
-    // Real-time balance = base balance + unrealized P&L
-    const realTimeBalance = baseBalance + totalPnL;
+    // Balance is static (closed P&L only)
+    const realTimeBalance = accountBalance;
     
-    // Equity equals balance in this case (already includes unrealized P&L)
-    const realTimeEquity = realTimeBalance;
+    // Equity = Balance + Unrealized P&L from open trades
+    const realTimeEquity = accountBalance + totalPnL;
     
     // Free margin = equity - used margin
     const realTimeFreeMargin = Math.max(0, realTimeEquity - totalUsedMargin);
