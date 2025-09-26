@@ -163,13 +163,14 @@ export const TradeRow = ({ trade, asset, onCloseTrade, isClosing }: TradeRowProp
         
         <div>
           <div className="text-xs text-muted-foreground mb-1">Current Price</div>
-          {asset && asset.price && !isLocalClosed ? (
-            <PulsingPriceIndicator 
-              price={currentPrice}
-              change={asset.change_24h}
-              symbol={trade.symbol}
-            />
-          ) : (
+           {asset && asset.price && !isLocalClosed ? (
+             <PulsingPriceIndicator 
+               price={currentPrice}
+               change={asset.change_24h}
+               symbol={trade.symbol}
+               showPercentage={false}
+             />
+           ) : (
             <div className="font-mono">
               {currentPrice.toFixed(trade.symbol.includes('JPY') ? 2 : 4)}
             </div>

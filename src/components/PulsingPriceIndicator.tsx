@@ -7,9 +7,10 @@ interface PulsingPriceIndicatorProps {
   change: number;
   symbol: string;
   className?: string;
+  showPercentage?: boolean;
 }
 
-export const PulsingPriceIndicator = ({ price, change, symbol, className }: PulsingPriceIndicatorProps) => {
+export const PulsingPriceIndicator = ({ price, change, symbol, className, showPercentage = true }: PulsingPriceIndicatorProps) => {
   const [isPulsing, setIsPulsing] = useState(false);
   const [prevPrice, setPrevPrice] = useState(price);
 
@@ -57,15 +58,17 @@ export const PulsingPriceIndicator = ({ price, change, symbol, className }: Puls
           {safePrice.toFixed(symbol.includes('JPY') ? 2 : 4)}
         </span>
       </div>
-      <div className={cn(
-        "flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-all duration-300",
-        isPositive 
-          ? "bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400" 
-          : "bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-400",
-        isPulsing ? "ring-2 ring-primary/30" : ""
-      )}>
-        <span>{isPositive ? '+' : ''}{changePercent}%</span>
-      </div>
+      {showPercentage && (
+        <div className={cn(
+          "flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-all duration-300",
+          isPositive 
+            ? "bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400" 
+            : "bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-400",
+          isPulsing ? "ring-2 ring-primary/30" : ""
+        )}>
+          <span>{isPositive ? '+' : ''}{changePercent}%</span>
+        </div>
+      )}
     </div>
   );
 };
