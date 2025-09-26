@@ -48,6 +48,7 @@ export class TradingWebSocketService {
   private circuitBreakerThreshold = 10;
   private circuitBreakerResetTime = 5 * 60 * 1000; // 5 minutes
   private lastCircuitBreakerReset = 0;
+  private isUserActive = true;
   
   private readonly wsUrl = `wss://stdfkfutgkmnaajixguz.functions.supabase.co/functions/v1/websocket-trading-updates`;
 
@@ -139,7 +140,7 @@ export class TradingWebSocketService {
     this.stopKeepAlive();
     
     this.keepAliveInterval = setInterval(() => {
-      if (this.isConnected()) {
+      if (this.isConnected() && this.isUserActive) {
         const pingTime = Date.now();
         this.ping(pingTime);
         
@@ -153,6 +154,8 @@ export class TradingWebSocketService {
             this.handleReconnect();
           }
         }, 10000); // 10 second timeout for pong
+      } else if (!this.isUserActive) {
+        console.log('⏸️ Trading WebSocket: Skipping ping - user is inactive');
       }
     }, interval);
   }
@@ -171,6 +174,12 @@ export class TradingWebSocketService {
 
   async connect() {
     if (this.isReconnecting) {
+      return;
+    }
+
+    // Don't connect if user is inactive
+    if (!this.isUserActive) {
+      console.log('⏸️ Trading WebSocket: Skipping connection - user is inactive');
       return;
     }
 
@@ -304,6 +313,12 @@ export class TradingWebSocketService {
     }
 
     if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      return;
+    }
+
+    // Don't reconnect if user is inactive
+    if (!this.isUserActive) {
+      console.log('⏸️ Trading WebSocket: Not reconnecting - user is inactive');
       return;
     }
 
@@ -450,6 +465,26 @@ export class TradingWebSocketService {
 
   getConnectionState(): ConnectionState {
     return { ...this.connectionState };
+  }
+
+  // Activity management methods
+  setUserActivity(isActive: boolean) {
+    const wasActive = this.isUserActive;
+    this.isUserActive = isActive;
+
+    if (isActive && !wasActive) {
+      console.log('🔄 Trading WebSocket: User became active, resuming operations');
+      if (!this.isConnected()) {
+        this.connect();
+      } else {
+        // Resume normal keep-alive frequency
+        this.startKeepAlive(60000);
+      }
+    } else if (!isActive && wasActive) {
+      console.log('⏸️ Trading WebSocket: User became inactive, reducing operations');
+      // Reduce keep-alive frequency but maintain connection for essential auth
+      this.startKeepAlive(300000); // Ping every 5 minutes when inactive
+    }
   }
 
   // Cleanup method for component unmount

@@ -1,20 +1,22 @@
 import { useEffect, useState } from 'react';
 import { Zap } from 'lucide-react';
 import { useRealTimePrices } from '@/hooks/useRealTimePrices';
+import { useActivity } from '@/contexts/ActivityContext';
 
 export const MarketTickIndicator = () => {
-  const { lastUpdate, isConnected } = useRealTimePrices();
+  const { lastUpdate, isConnected, isPaused } = useRealTimePrices();
+  const { isUserActive } = useActivity();
   const [isFlashing, setIsFlashing] = useState(false);
 
   useEffect(() => {
-    if (lastUpdate && isConnected) {
+    if (lastUpdate && isConnected && !isPaused && isUserActive) {
       setIsFlashing(true);
       const timer = setTimeout(() => setIsFlashing(false), 300);
       return () => clearTimeout(timer);
     }
-  }, [lastUpdate, isConnected]);
+  }, [lastUpdate, isConnected, isPaused, isUserActive]);
 
-  if (!isConnected) return null;
+  if (!isConnected || isPaused || !isUserActive) return null;
 
   return (
     <div className="flex items-center gap-1 px-2 py-1">

@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { tradingWebSocket, TradingWebSocketMessage } from '@/services/TradingWebSocketService';
 import { useAuth } from './useAuth';
 import { useConnectionMonitor } from './useConnectionMonitor';
+import { useActivity } from '@/contexts/ActivityContext';
 import { toast } from '@/hooks/use-toast';
 
 export interface RealTimeUserProfile {
@@ -43,11 +44,17 @@ export interface RealTimeTrade {
 export const useRealTimeTrading = () => {
   const { user } = useAuth();
   const { isOnline, isSlowConnection } = useConnectionMonitor();
+  const { isUserActive } = useActivity();
   const [isConnected, setIsConnected] = useState(false);
   const [profile, setProfile] = useState<RealTimeUserProfile | null>(null);
   const [trades, setTrades] = useState<RealTimeTrade[]>([]);
   const [loading, setLoading] = useState(true);
   const [connectionQuality, setConnectionQuality] = useState<'excellent' | 'good' | 'poor' | 'offline'>('offline');
+
+  // Sync activity state with trading WebSocket service
+  useEffect(() => {
+    tradingWebSocket.setUserActivity(isUserActive);
+  }, [isUserActive]);
   
   // Setup WebSocket event handlers
   useEffect(() => {

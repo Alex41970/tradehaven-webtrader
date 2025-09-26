@@ -8,6 +8,7 @@ import { AuthProvider } from "@/hooks/useAuth";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import RoleBasedRoute from "@/components/RoleBasedRoute";
 import { PriceProvider } from "@/contexts/PriceContext";
+import { ActivityProvider } from "@/contexts/ActivityContext";
 import { ThemeProvider } from "next-themes";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
@@ -25,50 +26,52 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
       <AuthProvider>
-        <PriceProvider>
-          <TooltipProvider>
-            <Toaster />
-            <Sonner />
-            <BrowserRouter>
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/auth" element={<Auth />} />
-              <Route path="/dashboard" element={
-                <ProtectedRoute>
-                  <Dashboard />
-                </ProtectedRoute>
-              } />
-              <Route path="/admin" element={
-                <RoleBasedRoute allowedRoles={['admin', 'super_admin']}>
-                  <AdminDashboard />
-                </RoleBasedRoute>
-              } />
-              <Route path="/super-admin" element={
-                <RoleBasedRoute allowedRoles={['super_admin']}>
-                  <SuperAdminDashboard />
-                </RoleBasedRoute>
-              } />
-              <Route path="/webtrader" element={
-                <ProtectedRoute>
-                  <WebTrader />
-                </ProtectedRoute>
-              } />
-              <Route path="/webtrader/portfolio" element={
-                <ProtectedRoute>
-                  <MobilePortfolio />
-                </ProtectedRoute>
-              } />
-              <Route path="/webtrader/trading-history" element={
-                <ProtectedRoute>
-                  <MobileTradingHistory />
-                </ProtectedRoute>
-              } />
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </BrowserRouter>
-        </TooltipProvider>
-      </PriceProvider>
+        <ActivityProvider>
+          <PriceProvider>
+            <TooltipProvider>
+              <Toaster />
+              <Sonner />
+              <BrowserRouter>
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/auth" element={<Auth />} />
+                <Route path="/dashboard" element={
+                  <ProtectedRoute>
+                    <Dashboard />
+                  </ProtectedRoute>
+                } />
+                <Route path="/admin" element={
+                  <RoleBasedRoute allowedRoles={['admin', 'super_admin']}>
+                    <AdminDashboard />
+                  </RoleBasedRoute>
+                } />
+                <Route path="/super-admin" element={
+                  <RoleBasedRoute allowedRoles={['super_admin']}>
+                    <SuperAdminDashboard />
+                  </RoleBasedRoute>
+                } />
+                <Route path="/webtrader" element={
+                  <ProtectedRoute>
+                    <WebTrader />
+                  </ProtectedRoute>
+                } />
+                <Route path="/webtrader/portfolio" element={
+                  <ProtectedRoute>
+                    <MobilePortfolio />
+                  </ProtectedRoute>
+                } />
+                <Route path="/webtrader/trading-history" element={
+                  <ProtectedRoute>
+                    <MobileTradingHistory />
+                  </ProtectedRoute>
+                } />
+                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </BrowserRouter>
+          </TooltipProvider>
+        </PriceProvider>
+      </ActivityProvider>
     </AuthProvider>
     </ThemeProvider>
   </QueryClientProvider>

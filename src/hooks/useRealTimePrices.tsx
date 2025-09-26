@@ -2,7 +2,7 @@ import { usePrices } from '@/contexts/PriceContext';
 import { Asset } from './useAssets';
 
 export const useRealTimePrices = () => {
-  const { prices, isConnected, lastUpdate, connectionStatus } = usePrices();
+  const { prices, isConnected, lastUpdate, connectionStatus, isPaused } = usePrices();
 
   const getPriceForAsset = (symbol: string) => {
     const priceData = prices.get(symbol);
@@ -34,6 +34,7 @@ export const useRealTimePrices = () => {
     isConnected,
     lastUpdate,
     connectionStatus,
+    isPaused,
     getPriceForAsset,
     getUpdatedAsset,
     getUpdatedAssets,
