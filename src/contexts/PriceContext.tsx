@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { toast } from '@/hooks/use-toast';
-import { useActivity } from './ActivityContext';
 
 interface PriceUpdate {
   symbol: string;
@@ -32,7 +31,6 @@ interface PriceProviderProps {
 }
 
 export const PriceProvider = ({ children }: PriceProviderProps) => {
-  const { isUserActive } = useActivity();
   const [prices, setPrices] = useState<Map<string, PriceUpdate>>(new Map());
   const [isConnected, setIsConnected] = useState(false);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
@@ -43,32 +41,6 @@ export const PriceProvider = ({ children }: PriceProviderProps) => {
   const reconnectAttempts = useRef(0);
   const connectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isPageVisible = useRef(true);
-  const wasUserActiveRef = useRef(true);
-
-  // Activity-based connection management
-  useEffect(() => {
-    const wasActive = wasUserActiveRef.current;
-    wasUserActiveRef.current = isUserActive;
-
-    if (isUserActive && !wasActive) {
-      // User became active - resume connection
-      console.log('🔄 Price WebSocket: User became active, resuming connection');
-      setIsPaused(false);
-      if (!isConnected && !wsRef.current) {
-        connectWebSocket();
-      }
-    } else if (!isUserActive && wasActive) {
-      // User became inactive - pause connection
-      console.log('⏸️ Price WebSocket: User became inactive, pausing connection');
-      setIsPaused(true);
-      setConnectionStatus('paused');
-      if (wsRef.current) {
-        wsRef.current.close();
-        wsRef.current = null;
-      }
-      setIsConnected(false);
-    }
-  }, [isUserActive]);
 
   // Page visibility optimization to reduce messages when tab is hidden
   useEffect(() => {
@@ -84,14 +56,6 @@ export const PriceProvider = ({ children }: PriceProviderProps) => {
   }, []);
 
   const connectWebSocket = () => {
-    // Don't connect if user is inactive
-    if (!isUserActive) {
-      console.log('⏸️ Price WebSocket: Skipping connection - user is inactive');
-      setConnectionStatus('paused');
-      setIsPaused(true);
-      return;
-    }
-
     try {
       setConnectionStatus('connecting');
       setIsPaused(false);
@@ -119,9 +83,9 @@ export const PriceProvider = ({ children }: PriceProviderProps) => {
       };
 
       wsRef.current.onmessage = (event) => {
-        // Skip processing price updates when tab is hidden or user is inactive
-        if (!isPageVisible.current || !isUserActive) {
-          console.log('Skipping price update processing - tab hidden or user inactive');
+        // Skip processing price updates when tab is hidden
+        if (!isPageVisible.current) {
+          console.log('Skipping price update processing - tab hidden');
           return;
         }
 
@@ -163,17 +127,13 @@ export const PriceProvider = ({ children }: PriceProviderProps) => {
           connectTimeoutRef.current = null;
         }
         
-        // Only attempt to reconnect if user is still active
-        if (isUserActive && reconnectAttempts.current < 3) {
+        // Attempt to reconnect with exponential backoff (max 3 attempts)
+        if (reconnectAttempts.current < 3) {
           const delay = Math.pow(2, reconnectAttempts.current) * 1000;
           reconnectTimeoutRef.current = setTimeout(() => {
             reconnectAttempts.current++;
             connectWebSocket();
           }, delay);
-        } else if (!isUserActive) {
-          console.log('Not reconnecting - user is inactive');
-          setConnectionStatus('paused');
-          setIsPaused(true);
         } else {
           console.log('Max reconnect attempts reached, staying in database mode');
         }
@@ -197,13 +157,7 @@ export const PriceProvider = ({ children }: PriceProviderProps) => {
   };
 
   useEffect(() => {
-    // Only connect if user is active on initial mount
-    if (isUserActive) {
-      connectWebSocket();
-    } else {
-      setConnectionStatus('paused');
-      setIsPaused(true);
-    }
+    connectWebSocket();
 
     return () => {
       if (wsRef.current) {
@@ -216,7 +170,7 @@ export const PriceProvider = ({ children }: PriceProviderProps) => {
         clearTimeout(connectTimeoutRef.current);
       }
     };
-  }, []); // Remove isUserActive dependency to prevent reconnection loops
+  }, []);
 
   return (
     <PriceContext.Provider value={{
