@@ -5,8 +5,11 @@ export class UserActivityManager {
   private isActive = true;
   private lastActivity = new Date();
   private inactivityTimer: NodeJS.Timeout | null = null;
+  private disconnectTimer: NodeJS.Timeout | null = null;
   private callbacks: ActivityCallback[] = [];
   private readonly INACTIVITY_TIMEOUT = 5 * 60 * 1000; // 5 minutes
+  private readonly DISCONNECT_TIMEOUT = 30 * 60 * 1000; // 30 minutes
+  private isCompletelyDisconnected = false;
   
   private eventListeners: Array<{
     element: EventTarget;
@@ -16,6 +19,7 @@ export class UserActivityManager {
 
   constructor() {
     this.setupEventListeners();
+    this.setupPageUnloadDetection();
     this.resetInactivityTimer();
   }
 
@@ -66,11 +70,40 @@ export class UserActivityManager {
     console.log('🔔 UserActivityManager: Listening for user interactions');
   }
 
+  private setupPageUnloadDetection() {
+    if (typeof window === 'undefined') return;
+
+    const handlePageUnload = () => {
+      console.log('📄 Page unloading - triggering immediate disconnect');
+      this.triggerCompleteDisconnect();
+    };
+
+    window.addEventListener('beforeunload', handlePageUnload);
+    window.addEventListener('pagehide', handlePageUnload);
+    
+    this.eventListeners.push(
+      { element: window, event: 'beforeunload', handler: handlePageUnload },
+      { element: window, event: 'pagehide', handler: handlePageUnload }
+    );
+  }
+
   private handleUserActivity = () => {
     const wasActive = this.isActive;
+    const wasDisconnected = this.isCompletelyDisconnected;
+    
     this.isActive = true;
+    this.isCompletelyDisconnected = false;
     this.lastActivity = new Date();
     this.resetInactivityTimer();
+
+    // If coming back from complete disconnection, trigger page reload
+    if (wasDisconnected) {
+      console.log('🔄 User returned from complete disconnection - reloading page');
+      setTimeout(() => {
+        window.location.reload();
+      }, 100);
+      return;
+    }
 
     // Only notify if state changed from inactive to active
     if (!wasActive) {
@@ -80,10 +113,15 @@ export class UserActivityManager {
   };
 
   private resetInactivityTimer() {
+    // Clear existing timers
     if (this.inactivityTimer) {
       clearTimeout(this.inactivityTimer);
     }
+    if (this.disconnectTimer) {
+      clearTimeout(this.disconnectTimer);
+    }
 
+    // Set inactivity timer (5 minutes)
     this.inactivityTimer = setTimeout(() => {
       const wasActive = this.isActive;
       this.isActive = false;
@@ -93,6 +131,35 @@ export class UserActivityManager {
         this.notifyCallbacks();
       }
     }, this.INACTIVITY_TIMEOUT);
+
+    // Set disconnect timer (30 minutes)
+    this.disconnectTimer = setTimeout(() => {
+      if (!this.isActive) {
+        this.triggerCompleteDisconnect();
+      }
+    }, this.DISCONNECT_TIMEOUT);
+  }
+
+  private triggerCompleteDisconnect() {
+    if (this.isCompletelyDisconnected) return;
+    
+    this.isCompletelyDisconnected = true;
+    this.isActive = false;
+    
+    console.log('🔌 Triggering COMPLETE DISCONNECT after 30 minutes of inactivity');
+    
+    // Notify all callbacks about disconnection
+    this.notifyCallbacks();
+    
+    // Clear all timers
+    if (this.inactivityTimer) {
+      clearTimeout(this.inactivityTimer);
+      this.inactivityTimer = null;
+    }
+    if (this.disconnectTimer) {
+      clearTimeout(this.disconnectTimer);
+      this.disconnectTimer = null;
+    }
   }
 
   private notifyCallbacks() {
@@ -124,6 +191,7 @@ export class UserActivityManager {
   public getState() {
     return {
       isActive: this.isActive,
+      isCompletelyDisconnected: this.isCompletelyDisconnected,
       lastActivity: this.lastActivity,
       minutesSinceLastActivity: Math.floor((Date.now() - this.lastActivity.getTime()) / (1000 * 60))
     };
@@ -137,6 +205,11 @@ export class UserActivityManager {
     if (this.inactivityTimer) {
       clearTimeout(this.inactivityTimer);
       this.inactivityTimer = null;
+    }
+    
+    if (this.disconnectTimer) {
+      clearTimeout(this.disconnectTimer);
+      this.disconnectTimer = null;
     }
 
     this.eventListeners.forEach(({ element, event, handler }) => {

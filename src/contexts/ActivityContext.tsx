@@ -3,6 +3,7 @@ import { userActivityManager } from '@/services/UserActivityManager';
 
 interface ActivityContextType {
   isUserActive: boolean;
+  isCompletelyDisconnected: boolean;
   lastActivity: Date;
   minutesSinceLastActivity: number;
   forceActive: () => void;
@@ -24,24 +25,29 @@ interface ActivityProviderProps {
 
 export const ActivityProvider = ({ children }: ActivityProviderProps) => {
   const [isUserActive, setIsUserActive] = useState(true);
+  const [isCompletelyDisconnected, setIsCompletelyDisconnected] = useState(false);
   const [lastActivity, setLastActivity] = useState(new Date());
   const [minutesSinceLastActivity, setMinutesSinceLastActivity] = useState(0);
 
   useEffect(() => {
     const unsubscribe = userActivityManager.subscribe((isActive, lastActivityTime) => {
+      const state = userActivityManager.getState();
       setIsUserActive(isActive);
+      setIsCompletelyDisconnected(state.isCompletelyDisconnected);
       setLastActivity(lastActivityTime);
       
       const minutesSince = Math.floor((Date.now() - lastActivityTime.getTime()) / (1000 * 60));
       setMinutesSinceLastActivity(minutesSince);
 
-      console.log(`🎯 Activity state changed: ${isActive ? 'ACTIVE' : 'INACTIVE'} (${minutesSince}m ago)`);
+      const status = state.isCompletelyDisconnected ? 'DISCONNECTED' : (isActive ? 'ACTIVE' : 'INACTIVE');
+      console.log(`🎯 Activity state changed: ${status} (${minutesSince}m ago)`);
     });
 
     // Update minutes counter every minute
     const minuteInterval = setInterval(() => {
       const state = userActivityManager.getState();
       setMinutesSinceLastActivity(state.minutesSinceLastActivity);
+      setIsCompletelyDisconnected(state.isCompletelyDisconnected);
     }, 60000);
 
     return () => {
@@ -57,6 +63,7 @@ export const ActivityProvider = ({ children }: ActivityProviderProps) => {
   return (
     <ActivityContext.Provider value={{
       isUserActive,
+      isCompletelyDisconnected,
       lastActivity,
       minutesSinceLastActivity,
       forceActive
