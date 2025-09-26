@@ -5,6 +5,7 @@ import { TrendingUp, TrendingDown, Loader2 } from "lucide-react";
 import { PulsingPriceIndicator } from "@/components/PulsingPriceIndicator";
 import { formatPnL, calculateRealTimePnL } from "@/utils/pnlCalculator";
 import { Trade } from "@/hooks/useTrades";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface TradeRowProps {
   trade: Trade;
@@ -19,6 +20,7 @@ interface TradeRowProps {
 
 export const TradeRow = ({ trade, asset, onCloseTrade, isClosing }: TradeRowProps) => {
   const [isLocalClosed, setIsLocalClosed] = useState(trade.status === 'closed');
+  const isMobile = useIsMobile();
 
   // Calculate real-time P&L when trade is open and asset price is available
   const realTimePnL = useMemo(() => {
@@ -65,11 +67,82 @@ export const TradeRow = ({ trade, asset, onCloseTrade, isClosing }: TradeRowProp
   }
 
   const currentPrice = asset?.price || trade.current_price || trade.open_price || 0;
-  const change24h = asset?.change_24h || 0;
+
+  if (isMobile) {
+    return (
+      <div key={trade.id} className="border rounded-lg p-4 space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="font-medium">{trade.symbol}</div>
+            <Badge variant={trade.trade_type === "BUY" ? "default" : "destructive"} className="text-xs">
+              {trade.trade_type}
+            </Badge>
+          </div>
+        </div>
+        
+        <div className="grid grid-cols-2 gap-3 text-sm">
+          <div>
+            <div className="text-xs text-muted-foreground mb-1">Amount</div>
+            <div className="font-medium">${Number(trade.amount).toFixed(2)}</div>
+          </div>
+          <div>
+            <div className="text-xs text-muted-foreground mb-1">Open Price</div>
+            <div className="font-mono">{Number(trade.open_price).toFixed(trade.symbol.includes('JPY') ? 2 : 4)}</div>
+          </div>
+        </div>
+
+        <div>
+          <div className="text-xs text-muted-foreground mb-1">Current Price</div>
+          {asset && asset.price && !isLocalClosed ? (
+            <PulsingPriceIndicator 
+              price={currentPrice}
+              change={asset.change_24h}
+              symbol={trade.symbol}
+            />
+          ) : (
+            <div className="font-mono">
+              {currentPrice.toFixed(trade.symbol.includes('JPY') ? 2 : 4)}
+            </div>
+          )}
+        </div>
+
+        <div>
+          <div className="text-xs text-muted-foreground mb-1">P&L</div>
+          <div className={`font-medium flex items-center gap-1 transition-colors duration-300 ${realTimePnL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+            {realTimePnL >= 0 ? (
+              <TrendingUp className="h-4 w-4" />
+            ) : (
+              <TrendingDown className="h-4 w-4" />
+            )}
+            <span className={!isLocalClosed ? "animate-pulse-subtle" : ""}>{formatPnL(realTimePnL)}</span>
+          </div>
+        </div>
+        
+        <Button 
+          size="sm" 
+          variant="destructive"
+          onClick={handleCloseClick}
+          className="w-full"
+          disabled={isClosing || isLocalClosed}
+        >
+          {isClosing ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin mr-1" />
+              Closing...
+            </>
+          ) : isLocalClosed ? (
+            'Closing...'
+          ) : (
+            'Close Position'
+          )}
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <div key={trade.id} className="border rounded-lg p-4">
-      <div className="grid md:grid-cols-8 gap-3 items-center text-sm">
+      <div className="grid md:grid-cols-7 gap-3 items-center text-sm">
         <div>
           <div className="text-xs text-muted-foreground mb-1">Symbol</div>
           <div className="font-medium">{trade.symbol}</div>
@@ -103,19 +176,6 @@ export const TradeRow = ({ trade, asset, onCloseTrade, isClosing }: TradeRowProp
           )}
         </div>
 
-        <div>
-          <div className="text-xs text-muted-foreground mb-1">24h Change</div>
-          <div className={`flex items-center gap-1 ${change24h >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-            {change24h >= 0 ? (
-              <TrendingUp className="h-3 w-3" />
-            ) : (
-              <TrendingDown className="h-3 w-3" />
-            )}
-            <span className="font-mono text-xs">
-              {change24h >= 0 ? '+' : ''}{change24h.toFixed(trade.symbol.includes('JPY') ? 2 : 4)}
-            </span>
-          </div>
-        </div>
         
         <div>
           <div className="text-xs text-muted-foreground mb-1">P&L</div>
