@@ -125,9 +125,9 @@ export class TradingWebSocketService {
             this.connect();
           }
         } else {
-          // Keep connection but reduce ping frequency
+          // Keep connection but reduce ping frequency significantly when hidden
           this.stopKeepAlive();
-          this.startKeepAlive(60000); // Ping every minute when hidden
+          this.startKeepAlive(120000); // Ping every 2 minutes when hidden
         }
       };
       
@@ -135,7 +135,7 @@ export class TradingWebSocketService {
     }
   }
 
-  private startKeepAlive(interval = 30000) {
+  private startKeepAlive(interval = 60000) {
     this.stopKeepAlive();
     
     this.keepAliveInterval = setInterval(() => {

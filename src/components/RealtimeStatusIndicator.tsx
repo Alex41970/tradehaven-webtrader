@@ -1,15 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Wifi, WifiOff } from 'lucide-react';
-import { useRealtimeData } from '@/hooks/useRealtimeData';
+import { useRealTimeTrading } from '@/hooks/useRealTimeTrading';
+import { usePrices } from '@/contexts/PriceContext';
 
 const RealtimeStatusIndicator: React.FC = () => {
-  const { activeSubscriptions } = useRealtimeData();
-  const [isConnected, setIsConnected] = useState(false);
-
-  useEffect(() => {
-    setIsConnected(activeSubscriptions > 0);
-  }, [activeSubscriptions]);
+  const { isConnected: tradingConnected } = useRealTimeTrading();
+  const { isConnected: pricesConnected } = usePrices();
+  
+  // Consider connected if either trading or prices are connected
+  const isConnected = tradingConnected || pricesConnected;
+  const connectionCount = (tradingConnected ? 1 : 0) + (pricesConnected ? 1 : 0);
 
   return (
     <Badge 
@@ -19,7 +20,7 @@ const RealtimeStatusIndicator: React.FC = () => {
       {isConnected ? (
         <>
           <Wifi className="h-3 w-3" />
-          Live ({activeSubscriptions})
+          Live ({connectionCount})
         </>
       ) : (
         <>

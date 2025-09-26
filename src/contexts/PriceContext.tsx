@@ -37,8 +37,21 @@ export const PriceProvider = ({ children }: PriceProviderProps) => {
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const reconnectAttempts = useRef(0);
-
   const connectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const isPageVisible = useRef(true);
+
+  // Page visibility optimization to reduce messages when tab is hidden
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      isPageVisible.current = !document.hidden;
+      console.log('Price updates', document.hidden ? 'paused (tab hidden)' : 'resumed (tab visible)');
+    };
+
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', handleVisibilityChange);
+      return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+    }
+  }, []);
 
   const connectWebSocket = () => {
     try {
@@ -69,6 +82,12 @@ export const PriceProvider = ({ children }: PriceProviderProps) => {
       };
 
       wsRef.current.onmessage = (event) => {
+        // Skip processing price updates when tab is hidden to reduce CPU usage
+        if (!isPageVisible.current) {
+          console.log('Skipping price update processing - tab is hidden');
+          return;
+        }
+
         try {
           const message = JSON.parse(event.data);
           console.log('🔄 WebSocket message received:', message.type, message.data?.length, 'updates');
