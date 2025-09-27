@@ -53,3 +53,6 @@ verify_jwt = false
 
 [functions.update-prices]
 verify_jwt = false
+
+[functions.alltick-diagnostics]
+verify_jwt = false

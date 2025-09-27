@@ -1,10 +1,15 @@
+import { useState } from 'react';
 import { usePrices } from '@/contexts/PriceContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Wifi, WifiOff, Loader2, AlertTriangle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Wifi, WifiOff, Loader2, AlertTriangle, TestTube2 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 export const PriceDebugPanel = () => {
   const { prices, isConnected, lastUpdate, connectionStatus } = usePrices();
+  const [diagnosticResults, setDiagnosticResults] = useState<any>(null);
+  const [isRunningDiagnostics, setIsRunningDiagnostics] = useState(false);
 
   const getStatusColor = () => {
     switch (connectionStatus) {
@@ -24,6 +29,20 @@ export const PriceDebugPanel = () => {
     }
   };
 
+  const runAllTickDiagnostics = async () => {
+    setIsRunningDiagnostics(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('alltick-diagnostics');
+      if (error) throw error;
+      setDiagnosticResults(data);
+    } catch (error) {
+      console.error('Diagnostics failed:', error);
+      setDiagnosticResults({ error: error instanceof Error ? error.message : String(error) });
+    } finally {
+      setIsRunningDiagnostics(false);
+    }
+  };
+
   return (
     <Card className="mb-4">
       <CardHeader>
@@ -40,6 +59,38 @@ export const PriceDebugPanel = () => {
         <div>Prices in Map: {prices.size}</div>
         <div>Last Update: {lastUpdate ? lastUpdate.toLocaleTimeString() : 'Never'}</div>
         <div>Connection Status: {connectionStatus}</div>
+        <div>Source: {isConnected ? 'AllTick-RT' : 'Yahoo (Fallback)'}</div>
+        
+        <Button
+          onClick={runAllTickDiagnostics}
+          disabled={isRunningDiagnostics}
+          size="sm"
+          variant="outline"
+          className="w-full mt-2"
+        >
+          <TestTube2 className="h-3 w-3 mr-2" />
+          {isRunningDiagnostics ? 'Testing...' : 'Test AllTick Config'}
+        </Button>
+
+        {diagnosticResults && (
+          <div className="mt-2 p-2 bg-muted rounded text-xs">
+            {diagnosticResults.error ? (
+              <div className="text-red-500">Error: {diagnosticResults.error}</div>
+            ) : (
+              <div>
+                <div className="font-medium mb-1">
+                  Tests: {diagnosticResults.summary?.successful || 0}/{diagnosticResults.summary?.total || 0} passed
+                </div>
+                {diagnosticResults.results?.filter((r: any) => r.success).slice(0, 3).map((result: any, i: number) => (
+                  <div key={i} className="text-green-600">✓ {result.test}</div>
+                ))}
+                {diagnosticResults.results?.filter((r: any) => !r.success).slice(0, 2).map((result: any, i: number) => (
+                  <div key={i} className="text-red-500">✗ {result.test}</div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
         {prices.size > 0 && (
           <details className="mt-2">
             <summary className="cursor-pointer">View Price Data ({prices.size} symbols)</summary>
