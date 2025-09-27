@@ -115,7 +115,7 @@ serve(async (req) => {
         if (isConnected) {
           sendPriceUpdates();
         }
-      }, 10000);
+      }, 1000); // 1-second updates for active users
     }
   }, 30000); // Check every 30 seconds
 
@@ -133,7 +133,7 @@ serve(async (req) => {
         if (isConnected) {
           sendPriceUpdates();
         }
-      }, 10000);
+      }, 1000); // 1-second updates for active users
       
     } catch (error) {
       console.error('Error fetching assets:', error);
@@ -147,7 +147,7 @@ serve(async (req) => {
   // Optimized cache for reduced message volume 
   let priceCache = new Map<string, { price: number; change: number; timestamp: number }>();
   let lastApiCall = 0;
-  const API_CACHE_DURATION = 10000; // 10 seconds for optimized updates
+  const API_CACHE_DURATION = 1000; // 1 second for ultra-fast AllTick updates
   const PRICE_CHANGE_THRESHOLD = 0.01; // Only send updates if price changed by 0.01% or more
   
   // AllTick API integration for ultra-high frequency data (170ms latency)
@@ -572,7 +572,7 @@ serve(async (req) => {
     try {
       const now = Date.now();
       
-      // Fetch fresh REAL prices from APIs with optimized frequency (every 10 seconds)
+      // Fetch fresh REAL prices from APIs with ultra-fast frequency (every 1 second)
       if (now - lastApiCall > API_CACHE_DURATION) {
         console.log('Refreshing REAL prices from APIs with AllTick priority...');
         lastApiCall = now;
@@ -703,8 +703,8 @@ serve(async (req) => {
         console.log('No significant price changes - skipping WebSocket message to reduce traffic');
       }
 
-      // Update database only when we have significant fresh data
-      if ((now - lastApiCall < 5000) && priceCache.size > 0 && significantPriceUpdates.length > 0) {
+      // Update database only when we have significant fresh data (every 5 seconds max)
+      if ((now - lastApiCall < 2000) && priceCache.size > 0 && significantPriceUpdates.length > 0) {
         const updatesWithFreshData = significantPriceUpdates.filter(update => {
           const cached = priceCache.get(update.symbol);
           return cached && (now - cached.timestamp) < API_CACHE_DURATION;
