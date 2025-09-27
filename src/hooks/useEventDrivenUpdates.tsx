@@ -30,9 +30,17 @@ export const useEventDrivenUpdates = () => {
 
   // Auto-refresh when WebSocket reconnects (to sync any missed updates)
   useEffect(() => {
-    if (isConnected) {
+    let hasTriggered = false;
+    
+    if (isConnected && !hasTriggered) {
       console.log('🔌 Trading WebSocket reconnected - syncing profile data');
-      refreshProfile();
+      hasTriggered = true;
+      
+      // Add small delay to prevent multiple rapid calls
+      setTimeout(() => {
+        refreshProfile();
+        hasTriggered = false;
+      }, 1000);
     }
   }, [isConnected, refreshProfile]);
 

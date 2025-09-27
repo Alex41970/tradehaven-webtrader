@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useRealTimePrices } from './useRealTimePrices';
 import { calculateRealTimePnL } from '@/utils/pnlCalculator';
 
@@ -27,8 +27,11 @@ export const useRealtimePnL = (trades: Trade[], assets: Asset[] = []) => {
   const lastPricesRef = useRef<Record<string, number>>({});
   const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Circuit breaker: only calculate if there are open trades
-  const openTrades = trades.filter(trade => trade.status === 'open');
+  // Memoize open trades to prevent recalculation
+  const openTrades = useMemo(() => 
+    trades.filter(trade => trade.status === 'open'), 
+    [trades]
+  );
   const hasOpenTrades = openTrades.length > 0;
 
   const calculatePnL = useCallback(() => {
@@ -41,11 +44,9 @@ export const useRealtimePnL = (trades: Trade[], assets: Asset[] = []) => {
     const newPrices: Record<string, number> = {};
     let hasSignificantChange = false;
 
-    trades.forEach(trade => {
-      if (trade.status === 'closed') {
-        newPnL[trade.id] = trade.pnl;
-        return;
-      }
+    // Only process open trades for performance
+    openTrades.forEach(trade => {
+      // Skip closed trades (already filtered out by openTrades)
 
       // Get current price from real-time prices
       const priceUpdate = prices.get(trade.symbol);
@@ -104,7 +105,7 @@ export const useRealtimePnL = (trades: Trade[], assets: Asset[] = []) => {
         console.log('📊 P&L Updated:', Object.keys(newPnL).length, 'trades');
       }, 100); // 100ms debounce
     }
-  }, [trades, prices, assets, hasOpenTrades, lastPnL]);
+  }, [openTrades, prices, assets, hasOpenTrades, lastPnL]);
 
   // Ultra-fast update frequency: 1 second for active trading
   useEffect(() => {
@@ -135,8 +136,11 @@ export const useRealtimePnL = (trades: Trade[], assets: Asset[] = []) => {
     };
   }, [calculatePnL, hasOpenTrades]);
 
-  // Calculate total P&L
-  const totalPnL = Object.values(lastPnL).reduce((sum, pnl) => sum + pnl, 0);
+  // Memoize total P&L calculation
+  const totalPnL = useMemo(() => 
+    Object.values(lastPnL).reduce((sum, pnl) => sum + pnl, 0), 
+    [lastPnL]
+  );
 
   return {
     tradePnL: lastPnL,

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { TrendingUp, TrendingDown, Loader2 } from "lucide-react";
@@ -18,7 +18,7 @@ interface TradeRowProps {
   isClosing: boolean;
 }
 
-export const TradeRow = ({ trade, asset, onCloseTrade, isClosing }: TradeRowProps) => {
+const TradeRowComponent = ({ trade, asset, onCloseTrade, isClosing }: TradeRowProps) => {
   const [isLocalClosed, setIsLocalClosed] = useState(trade.status === 'closed');
   const isMobile = useIsMobile();
 
@@ -215,3 +215,16 @@ export const TradeRow = ({ trade, asset, onCloseTrade, isClosing }: TradeRowProp
     </div>
   );
 };
+
+// Memoize the component to prevent unnecessary re-renders
+export const TradeRow = React.memo(TradeRowComponent, (prevProps, nextProps) => {
+  // Custom comparison for better performance
+  return (
+    prevProps.trade.id === nextProps.trade.id &&
+    prevProps.trade.status === nextProps.trade.status &&
+    prevProps.trade.pnl === nextProps.trade.pnl &&
+    prevProps.asset?.price === nextProps.asset?.price &&
+    prevProps.asset?.change_24h === nextProps.asset?.change_24h &&
+    prevProps.isClosing === nextProps.isClosing
+  );
+});

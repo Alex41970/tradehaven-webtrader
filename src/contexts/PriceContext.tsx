@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { toast } from '@/hooks/use-toast';
+import { useOptimizedPriceUpdates } from '@/hooks/useOptimizedPriceUpdates';
 
 interface PriceUpdate {
   symbol: string;
@@ -31,9 +32,8 @@ interface PriceProviderProps {
 }
 
 export const PriceProvider = ({ children }: PriceProviderProps) => {
-  const [prices, setPrices] = useState<Map<string, PriceUpdate>>(new Map());
+  const { prices, lastUpdate, addPriceUpdates } = useOptimizedPriceUpdates();
   const [isConnected, setIsConnected] = useState(false);
-  const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
   const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'disconnected' | 'error' | 'paused'>('disconnected');
   const [isPaused, setIsPaused] = useState(false);
   const wsRef = useRef<WebSocket | null>(null);
@@ -94,19 +94,8 @@ export const PriceProvider = ({ children }: PriceProviderProps) => {
           console.log('🔄 WebSocket message received:', message.type, message.data?.length, 'updates');
           
           if (message.type === 'initial_prices' || message.type === 'price_update') {
-            setPrices(prevPrices => {
-              const newPrices = new Map(prevPrices);
-              let updateCount = 0;
-              
-              message.data.forEach((update: PriceUpdate) => {
-                newPrices.set(update.symbol, update);
-                updateCount++;
-              });
-              
-              console.log('💹 Updated', updateCount, 'prices in Map, total symbols:', newPrices.size);
-              return newPrices;
-            });
-            setLastUpdate(new Date());
+            // Use optimized batching instead of direct state updates
+            addPriceUpdates(message.data);
           } else if (message.type === 'error') {
             console.error('Price service error:', message.message);
             setConnectionStatus('error');
