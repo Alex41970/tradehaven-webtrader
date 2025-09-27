@@ -18,22 +18,7 @@ interface PriceUpdate {
   source?: string;
 }
 
-interface CandlestickData {
-  symbol: string;
-  open: number;
-  high: number;
-  low: number;
-  close: number;
-  volume: number;
-  timestamp: number;
-}
-
-interface OrderBookData {
-  symbol: string;
-  bids: Array<[number, number]>; // [price, quantity]
-  asks: Array<[number, number]>; // [price, quantity]
-  timestamp: number;
-}
+// Removed CandlestickData and OrderBookData interfaces - only using price updates
 
 serve(async (req) => {
   const { headers } = req;
@@ -166,10 +151,8 @@ serve(async (req) => {
     }
   };
 
-  // Enhanced cache for real-time tick-by-tick data
+  // Enhanced cache for real-time price data only
   let priceCache = new Map<string, PriceUpdate>();
-  let candlestickCache = new Map<string, CandlestickData>();
-  let orderBookCache = new Map<string, OrderBookData>();
   const PRICE_CHANGE_THRESHOLD = 0.001; // Ultra-sensitive for high-frequency trading
   
   // AllTick WebSocket for real-time tick-by-tick data
@@ -177,8 +160,6 @@ serve(async (req) => {
     private ws: WebSocket | null = null;
     private isConnected = false;
     private subscribers = new Set<(data: PriceUpdate) => void>();
-    private candlestickSubscribers = new Set<(data: CandlestickData) => void>();
-    private orderBookSubscribers = new Set<(data: OrderBookData) => void>();
     private reconnectAttempts = 0;
     private maxReconnectAttempts = 5;
     private seqId = 1;
@@ -237,10 +218,10 @@ serve(async (req) => {
         this.ws = new WebSocket(`wss://quote.alltick.io/quote-stock-b-ws-api?token=${apiKey}`);
         
         this.ws.onopen = () => {
-          console.log(`✅ AllTick WebSocket connected - subscribing to ${this.symbolList.length} symbols`);
+          console.log(`✅ AllTick WebSocket connected - subscribing to ${this.symbolList.length} symbols for price updates only`);
           this.isConnected = true;
           this.reconnectAttempts = 0;
-          this.subscribeToAllData();
+          this.subscribeToPriceUpdatesOnly();
         };
 
         this.ws.onmessage = (event) => {
@@ -275,12 +256,12 @@ serve(async (req) => {
       }
     }
 
-    private subscribeToAllData() {
+    private subscribeToPriceUpdatesOnly() {
       if (!this.isConnected || !this.ws) return;
 
       const allTickSymbols = this.symbolList.map(symbol => this.symbolMapping[symbol]);
       
-      // Subscribe to real-time tick data using AllTick's JSON protocol
+      // Subscribe only to real-time tick data using AllTick's JSON protocol
       // cmd_id: 22002 for real-time tick data
       this.ws.send(JSON.stringify({
         cmd_id: 22002,
@@ -289,42 +270,12 @@ serve(async (req) => {
         data: {
           symbol_list: allTickSymbols.map(symbol => ({
             code: symbol,
-            depth_level: 5
+            depth_level: 1 // Minimal depth needed for price only
           }))
         }
       }));
 
-      // Subscribe to 1-minute candlestick data
-      // cmd_id: 22004 for candlestick data
-      this.ws.send(JSON.stringify({
-        cmd_id: 22004,
-        seq_id: this.seqId++,
-        trace: `candle_${Date.now()}`,
-        data: {
-          symbol_list: allTickSymbols.map(symbol => ({
-            code: symbol,
-            period: "1m"
-          }))
-        }
-      }));
-
-      // Subscribe to order book depth (market depth)
-      // cmd_id: 22006 for order book data
-      this.ws.send(JSON.stringify({
-        cmd_id: 22006,
-        seq_id: this.seqId++,
-        trace: `depth_${Date.now()}`,
-        data: {
-          symbol_list: allTickSymbols.map(symbol => ({
-            code: symbol,
-            depth_level: 5
-          }))
-        }
-      }));
-
-      console.log(`📡 Subscribed to AllTick tick-by-tick (${allTickSymbols.length} symbols)`);
-      console.log(`📡 Subscribed to AllTick candlestick data (${allTickSymbols.length} symbols)`);
-      console.log(`📡 Subscribed to AllTick order book data (${allTickSymbols.length} symbols)`);
+      console.log(`📡 Subscribed to AllTick price updates only (${allTickSymbols.length} symbols)`);
     }
 
     private handleMessage(data: string) {
@@ -333,19 +284,14 @@ serve(async (req) => {
         
         // AllTick uses cmd_id to identify message types
         if (message.cmd_id === 22002) {
-          // Real-time tick data response
+          // Real-time tick data response - only price updates
           this.handlePriceUpdate(message.data);
-        } else if (message.cmd_id === 22004) {
-          // Candlestick data response
-          this.handleCandlestickUpdate(message.data);
-        } else if (message.cmd_id === 22006) {
-          // Order book depth response
-          this.handleOrderBookUpdate(message.data);
         } else if (message.cmd_id === 22001) {
           // Authentication response
           console.log('AllTick authentication response:', message);
         } else {
-          console.log('Unknown AllTick message type:', message.cmd_id);
+          // Ignore other message types (candlestick, order book, etc.)
+          console.log('Ignoring AllTick message type:', message.cmd_id);
         }
       } catch (error) {
         console.error('Error parsing AllTick message:', error);
@@ -380,68 +326,11 @@ serve(async (req) => {
       }
     }
 
-    private handleCandlestickUpdate(data: any) {
-      if (!data || !data.symbol_list) return;
-
-      for (const update of data.symbol_list) {
-        if (update.code && update.kline_list) {
-          const originalSymbol = Object.keys(this.symbolMapping)
-            .find(key => this.symbolMapping[key] === update.code) || update.code.split('.')[0];
-
-          // Process the latest candlestick
-          const latestKline = update.kline_list[update.kline_list.length - 1];
-          if (latestKline) {
-            const candlestickData: CandlestickData = {
-              symbol: originalSymbol,
-              open: latestKline.open_px,
-              high: latestKline.high_px,
-              low: latestKline.low_px,
-              close: latestKline.close_px,
-              volume: latestKline.volume,
-              timestamp: Date.now()
-            };
-
-            candlestickCache.set(originalSymbol, candlestickData);
-            this.candlestickSubscribers.forEach(callback => callback(candlestickData));
-          }
-        }
-      }
-    }
-
-    private handleOrderBookUpdate(data: any) {
-      if (!data || !data.symbol_list) return;
-
-      for (const update of data.symbol_list) {
-        if (update.code && (update.bid_list || update.ask_list)) {
-          const originalSymbol = Object.keys(this.symbolMapping)
-            .find(key => this.symbolMapping[key] === update.code) || update.code.split('.')[0];
-
-          const orderBookData: OrderBookData = {
-            symbol: originalSymbol,
-            bids: (update.bid_list || []).map((bid: any) => [bid.px, bid.sz]),
-            asks: (update.ask_list || []).map((ask: any) => [ask.px, ask.sz]),
-            timestamp: Date.now()
-          };
-
-          orderBookCache.set(originalSymbol, orderBookData);
-          this.orderBookSubscribers.forEach(callback => callback(orderBookData));
-        }
-      }
-    }
+    // Removed candlestick and order book handlers - price updates only
 
     subscribeToPrices(callback: (data: PriceUpdate) => void) {
       this.subscribers.add(callback);
       return () => this.subscribers.delete(callback);
-    }
-
-    subscribeToCandlesticks(callback: (data: CandlestickData) => void) {
-      this.candlestickSubscribers.add(callback);
-      return () => this.candlestickSubscribers.delete(callback);
-    }
-
-    subscribeToOrderBook(callback: (data: OrderBookData) => void) {
-      this.orderBookSubscribers.add(callback);
-      return () => this.orderBookSubscribers.delete(callback);
     }
 
     isConnectedStatus(): boolean {
@@ -459,8 +348,6 @@ serve(async (req) => {
       }
       this.isConnected = false;
       this.subscribers.clear();
-      this.candlestickSubscribers.clear();
-      this.orderBookSubscribers.clear();
     }
   }
 
@@ -835,18 +722,8 @@ serve(async (req) => {
             }
           });
 
-          // Subscribe to candlestick data for enhanced charting
-          allTickWS.subscribeToCandlesticks((candlestickData: CandlestickData) => {
-            console.log(`📊 Candlestick update: ${candlestickData.symbol} OHLC: ${candlestickData.open}/${candlestickData.high}/${candlestickData.low}/${candlestickData.close}`);
-          });
-
-          // Subscribe to order book for market depth
-          allTickWS.subscribeToOrderBook((orderBookData: OrderBookData) => {
-            const bestBid = orderBookData.bids[0]?.[0] || 0;
-            const bestAsk = orderBookData.asks[0]?.[0] || 0;
-            const spread = bestAsk - bestBid;
-            console.log(`📖 Order book: ${orderBookData.symbol} Bid: ${bestBid}, Ask: ${bestAsk}, Spread: ${spread.toFixed(5)}`);
-          });
+          // Only subscribe to price updates for optimal performance
+          console.log(`🚀 AllTick connected - price updates only for ${allTickWS.getSymbolCount()} symbols`);
         }
       }
 
@@ -891,23 +768,6 @@ serve(async (req) => {
             timestamp: now
           }
         }));
-
-        // Also send enhanced data if available
-        if (candlestickCache.size > 0) {
-          const candlestickUpdates = Array.from(candlestickCache.values()).slice(0, 10); // Send top 10
-          socket.send(JSON.stringify({
-            type: 'candlestick_update',
-            data: candlestickUpdates
-          }));
-        }
-
-        if (orderBookCache.size > 0) {
-          const orderBookUpdates = Array.from(orderBookCache.values()).slice(0, 5); // Send top 5
-          socket.send(JSON.stringify({
-            type: 'orderbook_update',
-            data: orderBookUpdates
-          }));
-        }
       } else {
         console.log('📊 No significant price changes - optimizing bandwidth');
       }
