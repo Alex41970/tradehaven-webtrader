@@ -23,16 +23,19 @@ import { MobileTradingHistory } from "./pages/MobileTradingHistory";
 
 const queryClient = new QueryClient();
 
-const App = () => {
-  // Activate smart connection management system
+// Connection manager component that must be inside ActivityProvider
+const ConnectionManager = () => {
   useActivityAwareConnectionManager();
-  
-  return (
+  return null;
+};
+
+const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
       <AuthProvider>
         <ActivityProvider>
           <PriceProvider>
+            <ConnectionManager />
             <TooltipProvider>
               <Toaster />
               <Sonner />
@@ -80,7 +83,6 @@ const App = () => {
     </AuthProvider>
     </ThemeProvider>
   </QueryClientProvider>
-  );
-};
+);
 
 export default App;
