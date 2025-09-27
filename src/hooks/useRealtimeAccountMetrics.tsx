@@ -32,14 +32,23 @@ export const useRealtimeAccountMetrics = (): RealtimeAccountMetrics => {
       return sum + (trade.margin_used || 0);
     }, 0);
 
-    // Balance is static (closed P&L only)
+    // Balance is static (closed P&L only) - backend ensures this
     const realTimeBalance = accountBalance;
     
     // Equity = Balance + Unrealized P&L from open trades
+    // Backend sends balance without unrealized P&L, we add it here
     const realTimeEquity = accountBalance + totalPnL;
     
     // Free margin = equity - used margin
     const realTimeFreeMargin = Math.max(0, realTimeEquity - totalUsedMargin);
+
+    console.log('📊 Real-time Account Metrics:', {
+      balance: realTimeBalance,
+      unrealizedPnL: totalPnL,
+      calculatedEquity: realTimeEquity,
+      usedMargin: totalUsedMargin,
+      freeMargin: realTimeFreeMargin
+    });
 
     return {
       realTimeBalance,

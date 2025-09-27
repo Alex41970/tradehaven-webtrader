@@ -467,7 +467,8 @@ async function recalculateUserMargins(userId: string) {
     }
 
     const newBalance = baseBalance + totalClosedPnL;
-    const equity = newBalance + totalUnrealizedPnL;
+    // Don't include unrealized P&L in stored equity - frontend will add it real-time
+    const equity = newBalance; // Same as balance, frontend adds unrealized P&L
     const availableMargin = Math.max(newBalance - totalUsedMargin, 0);
 
     // Update user profile
@@ -490,10 +491,11 @@ async function recalculateUserMargins(userId: string) {
     console.log('Margins updated:', {
       userId,
       balance: newBalance,
-      equity: equity,
+      equity: equity, // Now same as balance, frontend adds unrealized P&L
       usedMargin: totalUsedMargin,
       availableMargin,
-      unrealizedPnL: totalUnrealizedPnL
+      unrealizedPnL: totalUnrealizedPnL,
+      note: 'Equity = balance (no unrealized P&L), frontend will add real-time P&L'
     });
 
     // Broadcast margin update to connected user immediately
@@ -501,10 +503,10 @@ async function recalculateUserMargins(userId: string) {
       type: 'margin_update',
       data: {
         userId,
-        balance: newBalance,
+        balance: newBalance, // Base + closed P&L only
         usedMargin: totalUsedMargin,
         availableMargin,
-        equity: equity
+        equity: equity // Same as balance, frontend adds unrealized P&L
       }
     });
 
