@@ -626,6 +626,40 @@ serve(async (req) => {
     return cryptoMap;
   };
 
+  // Ultra-fast REST fallback for crypto via Binance (used when WS is unavailable)
+  const getCryptoPricesBinanceRest = async (
+    symbols: string[]
+  ): Promise<Map<string, { price: number; change: number }>> => {
+    const map = new Map<string, { price: number; change: number }>();
+    try {
+      // Map our USD symbols to Binance USDT symbols
+      const binanceSymbols = symbols
+        .map((s) => (s.endsWith('USD') ? s.replace('USD', 'USDT') : ''))
+        .filter((s) => !!s);
+      if (binanceSymbols.length === 0) return map;
+
+      const url = `https://api.binance.com/api/v3/ticker/24hr?symbols=${encodeURIComponent(JSON.stringify(binanceSymbols))}`;
+      const resp = await fetch(url);
+      if (resp.ok) {
+        const data = await resp.json();
+        for (const item of data) {
+          const ourSymbol = typeof item.symbol === 'string' ? item.symbol.replace('USDT', 'USD') : undefined;
+          const lastPrice = parseFloat(item.lastPrice ?? item.c ?? '0');
+          const changePct = parseFloat(item.priceChangePercent ?? item.P ?? '0');
+          if (ourSymbol && !Number.isNaN(lastPrice)) {
+            map.set(ourSymbol, { price: lastPrice, change: changePct });
+            console.log(`Binance REST: ${ourSymbol} = $${lastPrice} (${changePct}%)`);
+          }
+        }
+      } else {
+        console.error('Binance REST response not ok:', resp.status, await resp.text());
+      }
+    } catch (error) {
+      console.error('Binance REST error:', error);
+    }
+    return map;
+  };
+
   // Helper function to get real forex rates with 24h change from Yahoo Finance (fallback)
   const getForexRates = async (): Promise<Map<string, { price: number; change: number }>> => {
     const ratesMap = new Map();
@@ -926,8 +960,9 @@ serve(async (req) => {
       if (priceCache.size === 0 || (!allTickWS.isConnectedStatus() && !binanceWS.isConnectedStatus())) {
         try {
           const assetSymbols = assets.map(a => a.symbol);
-          const [cryptoMap, forexMap, commodityMap] = await Promise.all([
-            getCryptoPrices(assetSymbols),
+          // First, try ultra-fast Binance REST for crypto if WS is down
+          const [binanceRestMap, forexMap, commodityMap] = await Promise.all([
+            getCryptoPricesBinanceRest(assetSymbols),
             getForexRates(),
             getCommodityPrices()
           ]);
@@ -954,7 +989,14 @@ serve(async (req) => {
             });
           };
 
-          mergeMap(cryptoMap, 'Yahoo-Crypto');
+          // Merge Binance REST first, then Yahoo for anything missing
+          if (binanceRestMap.size > 0) {
+            mergeMap(binanceRestMap, 'Binance-REST');
+          }
+
+          // Fill any remaining symbols via Yahoo fallback
+          const yahooCryptoMap = await getCryptoPrices(assetSymbols);
+          mergeMap(yahooCryptoMap, 'Yahoo-Crypto');
           mergeMap(forexMap, 'Yahoo-Forex');
           mergeMap(commodityMap, 'Yahoo-Commodity');
         } catch (e) {

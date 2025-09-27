@@ -102,10 +102,14 @@ export const PriceProvider = ({ children }: PriceProviderProps) => {
 
         try {
           const message = JSON.parse(event.data);
-          console.log('🔄 WebSocket message received:', message.type, message.data?.length, 'updates');
+          console.log('🔄 WebSocket message received:', message.type, message.data?.length, 'updates', 'source:', message.metadata?.source);
           
           if (message.type === 'initial_prices' || message.type === 'price_update') {
             // Use optimized batching instead of direct state updates
+            if (Array.isArray(message.data) && message.data.length > 0) {
+              const first = message.data[0];
+              console.log('🔎 First price sample:', first.symbol, first.price, 'src=', first.source);
+            }
             addPriceUpdates(message.data);
           } else if (message.type === 'error') {
             console.error('Price service error:', message.message);
