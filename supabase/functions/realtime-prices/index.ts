@@ -215,7 +215,7 @@ serve(async (req) => {
         }
 
         // Correct AllTick WebSocket endpoint from documentation
-        this.ws = new WebSocket(`wss://quote.alltick.io/quote-stock-b-ws-api?token=${apiKey}`);
+        this.ws = new WebSocket(`wss://quote.alltick.io/quote-stock-b-ws-api?t=${encodeURIComponent(apiKey.trim())}`);
         
         this.ws.onopen = () => {
           console.log(`✅ AllTick WebSocket connected - subscribing to ${this.symbolList.length} symbols for price updates only`);
@@ -729,6 +729,43 @@ serve(async (req) => {
 
       // Smart batching: Only send updates when prices change significantly
       const significantPriceUpdates: PriceUpdate[] = [];
+      
+      // If AllTick cache is empty or WS not connected, populate from fallbacks
+      if (priceCache.size === 0 || !allTickWS.isConnectedStatus()) {
+        try {
+          const assetSymbols = assets.map(a => a.symbol);
+          const [cryptoMap, forexMap, commodityMap] = await Promise.all([
+            getCryptoPrices(assetSymbols),
+            getForexRates(),
+            getCommodityPrices()
+          ]);
+
+          const mergeMap = (map: Map<string, { price: number; change: number }>) => {
+            map.forEach((val, sym) => {
+              const priceData: PriceUpdate = {
+                symbol: sym,
+                price: val.price,
+                change_24h: val.change,
+                timestamp: Date.now(),
+                source: 'fallback'
+              };
+              // Update assets for immediate initial publish
+              const idx = assets.findIndex(a => a.symbol === sym);
+              if (idx !== -1) {
+                assets[idx].price = val.price;
+                assets[idx].change_24h = val.change;
+              }
+              priceCache.set(sym, priceData);
+            });
+          };
+
+          mergeMap(cryptoMap);
+          mergeMap(forexMap);
+          mergeMap(commodityMap);
+        } catch (e) {
+          console.error('Fallback price population failed:', e);
+        }
+      }
       
       // Get current prices from cache (updated by WebSocket)
       priceCache.forEach((priceData, symbol) => {

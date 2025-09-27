@@ -41,6 +41,7 @@ export const PriceProvider = ({ children }: PriceProviderProps) => {
   const reconnectAttempts = useRef(0);
   const connectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isPageVisible = useRef(true);
+  const clientIdRef = useRef<string>((typeof crypto !== 'undefined' && 'randomUUID' in crypto) ? crypto.randomUUID() : Math.random().toString(36).slice(2));
 
   // Page visibility optimization to reduce messages when tab is hidden
   useEffect(() => {
@@ -79,6 +80,16 @@ export const PriceProvider = ({ children }: PriceProviderProps) => {
         if (connectTimeoutRef.current) {
           clearTimeout(connectTimeoutRef.current);
           connectTimeoutRef.current = null;
+        }
+        // Send an initial heartbeat so server marks client active
+        try {
+          wsRef.current?.send(JSON.stringify({
+            type: 'heartbeat',
+            timestamp: Date.now(),
+            client_id: clientIdRef.current
+          }));
+        } catch (err) {
+          console.warn('Failed to send initial heartbeat', err);
         }
       };
 
@@ -160,6 +171,16 @@ export const PriceProvider = ({ children }: PriceProviderProps) => {
       }
     };
   }, []);
+
+  // Send heartbeat every 30s to keep server active
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+        wsRef.current.send(JSON.stringify({ type: 'heartbeat', timestamp: Date.now(), client_id: clientIdRef.current }));
+      }
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [isConnected]);
 
   return (
     <PriceContext.Provider value={{
