@@ -14,16 +14,31 @@ interface RealtimeAccountMetrics {
   // Update indicators
   lastUpdated: Date | null;
   isUpdating: boolean;
+  
+  // Trade closing management
+  excludeTradeFromPnL: (tradeId: string) => void;
+  includeTradeInPnL: (tradeId: string) => void;
 }
 
 export const useRealtimeAccountMetrics = (): RealtimeAccountMetrics => {
   const { profile, isPolling, lastUpdate } = useUserProfile();
   const { openTrades } = useTrades();
-  const { totalPnL, lastUpdated: pnlLastUpdated } = useRealtimePnL(openTrades || [], []);
-  const { handleTradeAction } = useEventDrivenUpdates();
   
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [excludedTradeIds, setExcludedTradeIds] = useState<string[]>([]);
+  
+  const { totalPnL, lastUpdated: pnlLastUpdated } = useRealtimePnL(openTrades || [], [], excludedTradeIds);
+  const { handleTradeAction } = useEventDrivenUpdates();
+
+  // Trade exclusion management functions
+  const excludeTradeFromPnL = (tradeId: string) => {
+    setExcludedTradeIds(prev => [...prev, tradeId]);
+  };
+  
+  const includeTradeInPnL = (tradeId: string) => {
+    setExcludedTradeIds(prev => prev.filter(id => id !== tradeId));
+  };
 
   // Calculate real-time values
   const metrics = useMemo(() => {
@@ -81,5 +96,7 @@ export const useRealtimeAccountMetrics = (): RealtimeAccountMetrics => {
     ...metrics,
     lastUpdated,
     isUpdating,
+    excludeTradeFromPnL,
+    includeTradeInPnL,
   };
 };

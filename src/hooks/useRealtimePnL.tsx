@@ -19,7 +19,7 @@ interface Asset {
   category: string;
 }
 
-export const useRealtimePnL = (trades: Trade[], assets: Asset[] = []) => {
+export const useRealtimePnL = (trades: Trade[], assets: Asset[] = [], excludeTradeIds: string[] = []) => {
   const { prices } = useRealTimePrices();
   const [lastPnL, setLastPnL] = useState<Record<string, number>>({});
   const [pnLUpdatedAt, setPnLUpdatedAt] = useState<Date | null>(null);
@@ -27,16 +27,27 @@ export const useRealtimePnL = (trades: Trade[], assets: Asset[] = []) => {
   const lastPricesRef = useRef<Record<string, number>>({});
   const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Memoize open trades to prevent recalculation
+  // Memoize open trades excluding any that are being closed
   const openTrades = useMemo(() => 
-    trades.filter(trade => trade.status === 'open'), 
-    [trades]
+    trades.filter(trade => trade.status === 'open' && !excludeTradeIds.includes(trade.id)), 
+    [trades, excludeTradeIds]
   );
   const hasOpenTrades = openTrades.length > 0;
 
   const calculatePnL = useCallback(() => {
     // Circuit breaker: don't calculate if no open trades
     if (!hasOpenTrades) {
+      // Clear PnL for any excluded trades
+      if (excludeTradeIds.length > 0) {
+        const filteredPnL = { ...lastPnL };
+        excludeTradeIds.forEach(tradeId => {
+          delete filteredPnL[tradeId];
+        });
+        if (Object.keys(filteredPnL).length !== Object.keys(lastPnL).length) {
+          setLastPnL(filteredPnL);
+          setPnLUpdatedAt(new Date());
+        }
+      }
       return;
     }
 
@@ -46,7 +57,10 @@ export const useRealtimePnL = (trades: Trade[], assets: Asset[] = []) => {
 
     // Only process open trades for performance
     openTrades.forEach(trade => {
-      // Skip closed trades (already filtered out by openTrades)
+      // Skip excluded trades
+      if (excludeTradeIds.includes(trade.id)) {
+        return;
+      }
 
       // Get current price from real-time prices
       const priceUpdate = prices.get(trade.symbol);
@@ -93,7 +107,10 @@ export const useRealtimePnL = (trades: Trade[], assets: Asset[] = []) => {
       Math.abs((newPnL[tradeId] || 0) - (lastPnL[tradeId] || 0)) >= 0.1
     );
     
-    if (hasSignificantChange || hasPnLChange) {
+    // Also check if we need to remove excluded trades
+    const hasExcludedTrades = excludeTradeIds.some(tradeId => tradeId in lastPnL);
+    
+    if (hasSignificantChange || hasPnLChange || hasExcludedTrades) {
       // Debounce state updates to prevent excessive re-renders
       if (debounceTimeoutRef.current) {
         clearTimeout(debounceTimeoutRef.current);
@@ -102,10 +119,10 @@ export const useRealtimePnL = (trades: Trade[], assets: Asset[] = []) => {
       debounceTimeoutRef.current = setTimeout(() => {
         setLastPnL(newPnL);
         setPnLUpdatedAt(new Date());
-        console.log('📊 P&L Updated:', Object.keys(newPnL).length, 'trades');
+        console.log('📊 P&L Updated:', Object.keys(newPnL).length, 'trades', excludeTradeIds.length > 0 ? `(excluded ${excludeTradeIds.length})` : '');
       }, 100); // 100ms debounce
     }
-  }, [openTrades, prices, assets, hasOpenTrades, lastPnL]);
+  }, [openTrades, prices, assets, hasOpenTrades, lastPnL, excludeTradeIds]);
 
   // Ultra-fast update frequency: 1 second for active trading
   useEffect(() => {

@@ -7,7 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2, Shield, AlertTriangle } from "lucide-react";
 import { useMemo, useState, useCallback } from "react";
 import { useRealTimePrices } from "@/hooks/useRealTimePrices";
-import { useRealtimePnL } from "@/hooks/useRealtimePnL";
+import { useRealtimeAccountMetrics } from "@/hooks/useRealtimeAccountMetrics";
 import { TradeRow } from "@/components/TradeRow";
 import { useEventDrivenUpdates } from "@/hooks/useEventDrivenUpdates";
 
@@ -18,7 +18,12 @@ export const Portfolio = () => {
   const { assets, loading: assetsLoading } = useAssets();
   const { toast } = useToast();
   const { getUpdatedAssets } = useRealTimePrices();
-  const { totalPnL: realtimeTotalPnL, lastUpdated } = useRealtimePnL(openTrades || [], assets);
+  const { 
+    realTimeEquity, 
+    lastUpdated,
+    excludeTradeFromPnL, 
+    includeTradeInPnL 
+  } = useRealtimeAccountMetrics();
   const { handleTradeAction } = useEventDrivenUpdates();
   const [closingTrades, setClosingTrades] = useState<Set<string>>(new Set());
 
@@ -35,8 +40,8 @@ export const Portfolio = () => {
     }
   }, [assets, getUpdatedAssets]);
 
-  // Use real-time P&L hook for faster updates (every second)
-  const totalPnL = realtimeTotalPnL;
+  // Use real-time account metrics for equity calculation
+  const totalPnL = realTimeEquity - (profile?.balance || 0);
 
   // Calculate risk metrics
   const riskMetrics = useMemo(() => {
@@ -68,6 +73,9 @@ export const Portfolio = () => {
     }
 
     setClosingTrades(prev => new Set(prev).add(tradeId));
+    
+    // Immediately exclude trade from PnL calculation to prevent double counting
+    excludeTradeFromPnL(tradeId);
 
     try {
       const asset = updatedAssets.find(a => a.symbol === symbol);
@@ -100,6 +108,8 @@ export const Portfolio = () => {
         handleTradeAction('close', { tradeId, symbol });
         // Trade will be removed from openTrades automatically via real-time updates
       } else {
+        // Re-include trade in PnL if closing failed
+        includeTradeInPnL(tradeId);
         toast({
           title: "Error",
           description: "Failed to close trade",
@@ -108,6 +118,8 @@ export const Portfolio = () => {
       }
     } catch (error) {
       console.error('Error closing trade:', error);
+      // Re-include trade in PnL if closing failed
+      includeTradeInPnL(tradeId);
       toast({
         title: "Error",
         description: "An error occurred while closing the trade",
@@ -120,7 +132,7 @@ export const Portfolio = () => {
         return newSet;
       });
     }
-  }, [updatedAssets, closeTrade, toast]);
+  }, [updatedAssets, closeTrade, toast, excludeTradeFromPnL, includeTradeInPnL, handleTradeAction]);
 
   // Real-time updates are now handled by the WebSocket system
 
