@@ -42,11 +42,14 @@ export const PriceDebugPanel = () => {
         <div>Connection Status: {connectionStatus}</div>
         {prices.size > 0 && (
           <details className="mt-2">
-            <summary className="cursor-pointer">View Price Data</summary>
+            <summary className="cursor-pointer">View Price Data ({prices.size} symbols)</summary>
             <div className="mt-2 max-h-32 overflow-y-auto">
               {Array.from(prices.entries()).map(([symbol, data]) => (
                 <div key={symbol} className="text-xs">
-                  {symbol}: ${data.price} ({data.change_24h.toFixed(2)}%)
+                  {symbol}: ${data.price} ({data.change_24h.toFixed(2)}%) 
+                  <span className="text-muted-foreground ml-1">
+                    [{(data as any).source || 'fallback'}]
+                  </span>
                 </div>
               ))}
             </div>

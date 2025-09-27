@@ -210,19 +210,23 @@ serve(async (req) => {
         
         const apiKey = Deno.env.get('ALLTICK_API_KEY');
         if (!apiKey) {
-          console.error('❌ AllTick API key not found');
+          console.error('❌ AllTick API key not found in environment variables');
+          console.error('🔧 Please add ALLTICK_API_KEY as a Supabase secret');
           return false;
         }
 
+        console.log('🔐 AllTick API key found, establishing connection...');
+        
         // Correct AllTick WebSocket endpoint from documentation
         this.ws = new WebSocket(`wss://quote.alltick.io/quote-stock-b-ws-api?t=${encodeURIComponent(apiKey.trim())}`);
         
         this.ws.onopen = () => {
-          console.log(`✅ AllTick WebSocket connected - authenticating...`);
+          console.log(`✅ AllTick WebSocket connected - subscribing immediately...`);
           this.isConnected = true;
           this.reconnectAttempts = 0;
-          // Authenticate first, then subscribe
-          this.authenticate();
+          // Skip separate authentication - API key in URL should handle auth
+          // Immediately subscribe to price updates with test symbols
+          this.subscribeToPriceUpdatesOnly();
         };
 
         this.ws.onmessage = (event) => {
@@ -257,66 +261,68 @@ serve(async (req) => {
       }
     }
 
-    private authenticate() {
-      if (!this.isConnected || !this.ws) return;
-
-      console.log('🔐 Authenticating with AllTick...');
-      // Send authentication message first
-      this.ws.send(JSON.stringify({
-        cmd_id: 22001,
-        seq_id: this.seqId++,
-        trace: `auth_${Date.now()}`,
-        data: {}
-      }));
-    }
+    // Removed separate authentication - API key in WebSocket URL handles auth
 
     private subscribeToPriceUpdatesOnly() {
       if (!this.isConnected || !this.ws) return;
 
-      const allTickSymbols = this.symbolList.map(symbol => this.symbolMapping[symbol]);
+      // Start with a small test list of known-good symbols
+      const testSymbols = ["BTCUSD.CC", "ETHUSD.CC", "EURUSD.FX", "XAUUSD.CM"];
       
-      // Subscribe to Latest Trade Price using correct cmd_id
-      // cmd_id: 22001 for Latest Trade Price subscription
-      this.ws.send(JSON.stringify({
+      console.log(`🧪 Starting AllTick subscription with test symbols: ${testSymbols.join(', ')}`);
+      
+      // Subscribe to Latest Trade Price using cmd_id: 22001
+      const subscriptionMessage = {
         cmd_id: 22001,
         seq_id: this.seqId++,
         trace: `price_sub_${Date.now()}`,
         data: {
-          symbol_list: allTickSymbols.map(symbol => ({
+          symbol_list: testSymbols.map(symbol => ({
             code: symbol
           }))
         }
-      }));
+      };
 
-      console.log(`📡 Subscribed to AllTick Latest Trade Prices (${allTickSymbols.length} symbols)`);
+      console.log('📡 Sending AllTick subscription:', JSON.stringify(subscriptionMessage, null, 2));
+      this.ws.send(JSON.stringify(subscriptionMessage));
+
+      console.log(`📡 Subscribed to AllTick Latest Trade Prices (${testSymbols.length} test symbols)`);
     }
 
     private handleMessage(data: string) {
       try {
         const message = JSON.parse(data);
-        console.log('📨 AllTick message received:', { cmd_id: message.cmd_id, ret_code: message.ret_code });
+        console.log('📨 AllTick message received:', { 
+          cmd_id: message.cmd_id, 
+          ret_code: message.ret_code, 
+          ret_msg: message.ret_msg,
+          has_data: !!message.data
+        });
         
         // AllTick uses cmd_id to identify message types
         if (message.cmd_id === 22001) {
-          // Authentication or Latest Trade Price response
+          // Latest Trade Price subscription response or data
           if (message.ret_code === 0) {
-            console.log('✅ AllTick authentication successful - subscribing to prices...');
-            // Authentication successful, now subscribe to prices
-            this.subscribeToPriceUpdatesOnly();
-          } else if (message.data && message.data.symbol_list) {
-            // Latest Trade Price data
-            console.log(`📊 Received price data for ${message.data.symbol_list.length} symbols`);
-            this.handlePriceUpdate(message.data);
+            if (message.data && message.data.symbol_list) {
+              // Price data received
+              console.log(`📊 AllTick RT data: ${message.data.symbol_list.length} symbols`);
+              this.handlePriceUpdate(message.data);
+            } else {
+              // Subscription confirmation
+              console.log('✅ AllTick subscription confirmed successfully');
+            }
           } else {
-            console.error('❌ AllTick authentication failed:', message);
+            console.error(`❌ AllTick error - ret_code: ${message.ret_code}, ret_msg: ${message.ret_msg}`);
+            console.error('📄 Full message:', JSON.stringify(message, null, 2));
           }
-        } else if (message.ret_code !== 0) {
-          console.error(`❌ AllTick error - cmd_id: ${message.cmd_id}, ret_code: ${message.ret_code}, msg: ${message.ret_msg}`);
+        } else if (message.ret_code && message.ret_code !== 0) {
+          console.error(`❌ AllTick error - cmd_id: ${message.cmd_id}, ret_code: ${message.ret_code}, ret_msg: ${message.ret_msg}`);
         } else {
-          console.log(`📝 AllTick message type ${message.cmd_id} ignored (not Latest Trade Price)`);
+          console.log(`📝 AllTick message cmd_id: ${message.cmd_id} (ignored)`);
         }
       } catch (error) {
-        console.error('Error parsing AllTick message:', error, 'Raw data:', data);
+        console.error('❌ Error parsing AllTick message:', error);
+        console.error('📄 Raw message data:', data);
       }
     }
 
