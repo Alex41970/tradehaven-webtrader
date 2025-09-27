@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { toast } from './use-toast';
+import { getActivityAwareSubscriptionManager } from '@/services/ActivityAwareSubscriptionManager';
 
 export interface TradeOrder {
   id: string;
@@ -60,33 +61,29 @@ export const useTradeOrders = () => {
 
     if (!user) return;
 
-    // Set up real-time subscription
-    const channel = supabase
-      .channel('trade-orders-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'trade_orders',
-          filter: `user_id=eq.${user.id}`
-        },
-        (payload) => {
-          if (payload.eventType === 'INSERT') {
-            setOrders(prev => [payload.new as TradeOrder, ...prev]);
-          } else if (payload.eventType === 'UPDATE') {
-            setOrders(prev => prev.map(order => 
-              order.id === payload.new.id ? payload.new as TradeOrder : order
-            ));
-          } else if (payload.eventType === 'DELETE') {
-            setOrders(prev => prev.filter(order => order.id !== payload.old.id));
-          }
+    // Set up activity-aware real-time subscription
+    const subscriptionManager = getActivityAwareSubscriptionManager(supabase);
+    const subscriptionId = subscriptionManager.subscribe({
+      channel: 'trade-orders-changes',
+      event: '*',
+      schema: 'public',
+      table: 'trade_orders',
+      filter: `user_id=eq.${user.id}`,
+      callback: (payload) => {
+        if (payload.eventType === 'INSERT') {
+          setOrders(prev => [payload.new as TradeOrder, ...prev]);
+        } else if (payload.eventType === 'UPDATE') {
+          setOrders(prev => prev.map(order => 
+            order.id === payload.new.id ? payload.new as TradeOrder : order
+          ));
+        } else if (payload.eventType === 'DELETE') {
+          setOrders(prev => prev.filter(order => order.id !== payload.old.id));
         }
-      )
-      .subscribe();
+      }
+    });
 
     return () => {
-      supabase.removeChannel(channel);
+      subscriptionManager.unsubscribe(subscriptionId);
     };
   }, [user, fetchOrders]);
 

@@ -1,6 +1,7 @@
 import { useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
+import { getActivityAwareSubscriptionManager } from '@/services/ActivityAwareSubscriptionManager';
 
 interface RealtimeSubscriptionOptions {
   table: string;
@@ -24,85 +25,45 @@ export const useRealtimeData = () => {
     onUpdate,
     onDelete
   }: RealtimeSubscriptionOptions) => {
-    const channelName = `realtime_${table}_${filter || 'all'}`;
+    const subscriptionManager = getActivityAwareSubscriptionManager(supabase);
     
-    // Remove existing subscription if any
-    const existingChannel = subscriptionsRef.current.get(channelName);
-    if (existingChannel) {
-      supabase.removeChannel(existingChannel);
-      subscriptionsRef.current.delete(channelName);
-    }
-
-    // Simplified channel setup with better error handling
-    const channel = supabase
-      .channel(channelName, {
-        config: {
-          presence: {
-            key: channelName,
-          },
-        },
-      })
-      .on(
-        'postgres_changes',
-        { 
-          event: '*', 
-          schema: 'public', 
-          table: table,
-          ...(filter && { filter })
-        },
-        (payload) => {
-          switch (payload.eventType) {
-            case 'INSERT':
-              onInsert?.(payload);
-              break;
-            case 'UPDATE':
-              onUpdate?.(payload);
-              break;
-            case 'DELETE':
-              onDelete?.(payload);
-              break;
-          }
+    return subscriptionManager.subscribe({
+      channel: `realtime_${table}_${filter || 'all'}`,
+      event: '*',
+      schema: 'public',
+      table: table,
+      ...(filter && { filter }),
+      callback: (payload) => {
+        switch (payload.eventType) {
+          case 'INSERT':
+            onInsert?.(payload);
+            break;
+          case 'UPDATE':
+            onUpdate?.(payload);
+            break;
+          case 'DELETE':
+            onDelete?.(payload);
+            break;
         }
-      )
-      .subscribe((status) => {
-        if (status === 'CHANNEL_ERROR') {
-          console.error(`❌ Failed to connect real-time updates for ${table}`);
-        } else if (status === 'TIMED_OUT') {
-          console.error(`⏰ Real-time connection timed out for ${table}`);
-        }
-      });
-
-    subscriptionsRef.current.set(channelName, channel);
-    return channelName;
+      }
+    });
   }, []);
 
   const unsubscribe = useCallback((subscriptionId: string) => {
-    const channel = subscriptionsRef.current.get(subscriptionId);
-    if (channel) {
-      supabase.removeChannel(channel);
-      subscriptionsRef.current.delete(subscriptionId);
-    }
+    const subscriptionManager = getActivityAwareSubscriptionManager(supabase);
+    subscriptionManager.unsubscribe(subscriptionId);
   }, []);
 
   const unsubscribeAll = useCallback(() => {
-    subscriptionsRef.current.forEach((channel) => {
-      supabase.removeChannel(channel);
-    });
-    subscriptionsRef.current.clear();
+    const subscriptionManager = getActivityAwareSubscriptionManager(supabase);
+    subscriptionManager.cleanup();
   }, []);
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      unsubscribeAll();
-    };
-  }, [unsubscribeAll]);
 
   return {
     subscribe,
     unsubscribe,
     unsubscribeAll,
-    activeSubscriptions: subscriptionsRef.current.size
+    activeSubscriptions: 0 // Managed by the activity-aware manager
   };
 };
 

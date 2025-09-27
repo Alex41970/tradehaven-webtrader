@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 import { useToast } from "./use-toast";
+import { getActivityAwareSubscriptionManager } from "@/services/ActivityAwareSubscriptionManager";
 
 export interface BotStatus {
   isConnected: boolean;
@@ -34,26 +35,22 @@ export const useBotStatus = () => {
     if (user) {
       fetchBotStatus();
       
-      // Set up real-time subscription for bot status changes
-      const channel = supabase
-        .channel('bot-status-changes')
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'user_bot_status',
-            filter: `user_id=eq.${user.id}`,
-          },
-          () => {
-            // Refetch bot status when changes occur
-            fetchBotStatus();
-          }
-        )
-        .subscribe();
+      // Set up activity-aware real-time subscription for bot status changes
+      const subscriptionManager = getActivityAwareSubscriptionManager(supabase);
+      const subscriptionId = subscriptionManager.subscribe({
+        channel: 'bot-status-changes',
+        event: '*',
+        schema: 'public',
+        table: 'user_bot_status',
+        filter: `user_id=eq.${user.id}`,
+        callback: () => {
+          // Refetch bot status when changes occur
+          fetchBotStatus();
+        }
+      });
 
       return () => {
-        supabase.removeChannel(channel);
+        subscriptionManager.unsubscribe(subscriptionId);
       };
     } else {
       setBotStatus(prev => ({ ...prev, loading: false, isConnected: false }));

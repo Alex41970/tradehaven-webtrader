@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 import { toast } from "@/hooks/use-toast";
+import { getActivityAwareSubscriptionManager } from "@/services/ActivityAwareSubscriptionManager";
 
 export interface DepositRequest {
   id: string;
@@ -112,55 +113,47 @@ export const useTransactionHistory = () => {
   const setupRealtimeSubscriptions = () => {
     if (!user) return;
 
-    const depositChannel = supabase
-      .channel('deposit-requests-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'deposit_requests',
-          filter: `user_id=eq.${user.id}`
-        },
-        (payload) => {
-          console.log('Deposit request update:', payload);
-          if (payload.eventType === 'INSERT') {
-            setDeposits(prev => [payload.new as DepositRequest, ...prev]);
-          } else if (payload.eventType === 'UPDATE') {
-            setDeposits(prev => prev.map(deposit => 
-              deposit.id === payload.new.id ? payload.new as DepositRequest : deposit
-            ));
-          }
+    const subscriptionManager = getActivityAwareSubscriptionManager(supabase);
+    
+    const depositSubscriptionId = subscriptionManager.subscribe({
+      channel: 'deposit-requests-changes',
+      event: '*',
+      schema: 'public',
+      table: 'deposit_requests',
+      filter: `user_id=eq.${user.id}`,
+      callback: (payload) => {
+        console.log('Deposit request update:', payload);
+        if (payload.eventType === 'INSERT') {
+          setDeposits(prev => [payload.new as DepositRequest, ...prev]);
+        } else if (payload.eventType === 'UPDATE') {
+          setDeposits(prev => prev.map(deposit => 
+            deposit.id === payload.new.id ? payload.new as DepositRequest : deposit
+          ));
         }
-      )
-      .subscribe();
+      }
+    });
 
-    const withdrawalChannel = supabase
-      .channel('withdrawal-requests-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'withdrawal_requests',
-          filter: `user_id=eq.${user.id}`
-        },
-        (payload) => {
-          console.log('Withdrawal request update:', payload);
-          if (payload.eventType === 'INSERT') {
-            setWithdrawals(prev => [payload.new as WithdrawalRequest, ...prev]);
-          } else if (payload.eventType === 'UPDATE') {
-            setWithdrawals(prev => prev.map(withdrawal => 
-              withdrawal.id === payload.new.id ? payload.new as WithdrawalRequest : withdrawal
-            ));
-          }
+    const withdrawalSubscriptionId = subscriptionManager.subscribe({
+      channel: 'withdrawal-requests-changes',
+      event: '*',
+      schema: 'public',
+      table: 'withdrawal_requests',
+      filter: `user_id=eq.${user.id}`,
+      callback: (payload) => {
+        console.log('Withdrawal request update:', payload);
+        if (payload.eventType === 'INSERT') {
+          setWithdrawals(prev => [payload.new as WithdrawalRequest, ...prev]);
+        } else if (payload.eventType === 'UPDATE') {
+          setWithdrawals(prev => prev.map(withdrawal => 
+            withdrawal.id === payload.new.id ? payload.new as WithdrawalRequest : withdrawal
+          ));
         }
-      )
-      .subscribe();
+      }
+    });
 
     return () => {
-      supabase.removeChannel(depositChannel);
-      supabase.removeChannel(withdrawalChannel);
+      subscriptionManager.unsubscribe(depositSubscriptionId);
+      subscriptionManager.unsubscribe(withdrawalSubscriptionId);
     };
   };
 

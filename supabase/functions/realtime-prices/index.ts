@@ -31,11 +31,21 @@ serve(async (req) => {
 
   let isConnected = false;
   let priceInterval: number | null = null;
+  let heartbeatInterval: number | null = null;
+  let clientHeartbeatInterval: number | null = null;
+  let lastHeartbeat = Date.now();
   let assets: any[] = [];
 
   socket.onopen = async () => {
-    console.log("WebSocket connection opened");
+    console.log("🔌 WebSocket connection opened - tracking active client");
     isConnected = true;
+    
+    // Send heartbeat to confirm active connection
+    socket.send(JSON.stringify({
+      type: 'heartbeat',
+      timestamp: Date.now(),
+      client_id: crypto.randomUUID()
+    }));
     
     // Fetch initial assets
     try {
@@ -60,7 +70,65 @@ serve(async (req) => {
         data: initialPrices
       }));
       
-      // Optimized price updates (every 10 seconds with smart batching to reduce message count)
+  let lastHeartbeat = Date.now();
+  let heartbeatInterval: number | null = null;
+
+  socket.onmessage = (event) => {
+    try {
+      const message = JSON.parse(event.data);
+      
+      if (message.type === 'heartbeat') {
+        console.log(`💓 Received heartbeat from client ${message.client_id || 'unknown'}`);
+        lastHeartbeat = Date.now();
+        
+        // Respond with heartbeat acknowledgment
+        socket.send(JSON.stringify({
+          type: 'heartbeat_ack',
+          timestamp: Date.now(),
+          client_active: true
+        }));
+      }
+      
+    } catch (error) {
+      console.error('Error parsing WebSocket message:', error);
+    }
+  };
+
+  // Set up heartbeat monitoring
+  heartbeatInterval = setInterval(() => {
+    const timeSinceLastHeartbeat = Date.now() - lastHeartbeat;
+    
+    // If no heartbeat for 90 seconds, consider client inactive
+    if (timeSinceLastHeartbeat > 90000) {
+      console.log(`💔 Client appears inactive (${Math.floor(timeSinceLastHeartbeat/1000)}s since last heartbeat) - pausing price updates`);
+      
+      // Stop sending price updates to inactive client
+      if (priceInterval) {
+        clearInterval(priceInterval);
+        priceInterval = null;
+        console.log('⏸️ Price updates paused for inactive client');
+      }
+    } else if (!priceInterval && isConnected) {
+      // Restart price updates for active client
+      console.log('💓 Client is active - resuming price updates');
+      priceInterval = setInterval(() => {
+        if (isConnected) {
+          sendPriceUpdates();
+        }
+      }, 10000);
+    }
+  }, 30000); // Check every 30 seconds
+
+  // Send periodic heartbeats to client
+  const clientHeartbeatInterval = setInterval(() => {
+    if (isConnected) {
+      socket.send(JSON.stringify({
+        type: 'server_heartbeat',
+        timestamp: Date.now(),
+        active_connections: 1 // Could track multiple connections in the future
+      }));
+    }
+  }, 60000); // Send heartbeat every minute
       priceInterval = setInterval(() => {
         if (isConnected) {
           sendPriceUpdates();
@@ -677,11 +745,19 @@ serve(async (req) => {
   };
 
   socket.onclose = () => {
-    console.log("WebSocket connection closed");
+    console.log("🔌 WebSocket connection closed - cleaning up intervals");
     isConnected = false;
     if (priceInterval) {
       clearInterval(priceInterval);
       priceInterval = null;
+    }
+    if (heartbeatInterval) {
+      clearInterval(heartbeatInterval);
+      heartbeatInterval = null;
+    }
+    if (clientHeartbeatInterval) {
+      clearInterval(clientHeartbeatInterval);
+      clientHeartbeatInterval = null;
     }
   };
 
@@ -691,6 +767,14 @@ serve(async (req) => {
     if (priceInterval) {
       clearInterval(priceInterval);
       priceInterval = null;
+    }
+    if (heartbeatInterval) {
+      clearInterval(heartbeatInterval);
+      heartbeatInterval = null;
+    }
+    if (clientHeartbeatInterval) {
+      clearInterval(clientHeartbeatInterval);
+      clientHeartbeatInterval = null;
     }
   };
 

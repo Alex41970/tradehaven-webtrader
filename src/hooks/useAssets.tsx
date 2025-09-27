@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { getActivityAwareSubscriptionManager } from "@/services/ActivityAwareSubscriptionManager";
 
 export interface Asset {
   id: string;
@@ -27,26 +28,22 @@ export const useAssets = () => {
   useEffect(() => {
     fetchAssets();
     
-    // Set up real-time subscription for price updates
-    const channel = supabase
-      .channel('schema-db-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'assets'
-        },
-        (payload) => {
-          setAssets(prev => prev.map(asset => 
-            asset.id === payload.new.id ? payload.new as Asset : asset
-          ));
-        }
-      )
-      .subscribe();
+    // Set up activity-aware real-time subscription for price updates
+    const subscriptionManager = getActivityAwareSubscriptionManager(supabase);
+    const subscriptionId = subscriptionManager.subscribe({
+      channel: 'assets-updates',
+      event: 'UPDATE',
+      schema: 'public',
+      table: 'assets',
+      callback: (payload) => {
+        setAssets(prev => prev.map(asset => 
+          asset.id === payload.new.id ? payload.new as Asset : asset
+        ));
+      }
+    });
 
     return () => {
-      supabase.removeChannel(channel);
+      subscriptionManager.unsubscribe(subscriptionId);
     };
   }, []);
 
