@@ -1,5 +1,6 @@
 import { usePollingUserProfile } from './usePollingUserProfile';
 import { useRealTimeTrading } from './useRealTimeTrading';
+import { useTrades } from './useTrades';
 
 export interface UserProfile {
   id: string;
@@ -17,10 +18,16 @@ export interface UserProfile {
 }
 
 export const useUserProfile = () => {
-  // Use HTTP polling for profile data (reduced real-time messages)
+  // Get trading activity to determine polling frequency
+  const { openTrades } = useTrades();
+  const hasActiveTrades = openTrades.length > 0;
+
+  // Use adaptive HTTP polling for profile data
   const pollingProfile = usePollingUserProfile({
-    pollingInterval: 20000, // 20 seconds - good balance for trading platform
-    enablePolling: true
+    activePollingInterval: 5000,   // 5 seconds when trades are active
+    idlePollingInterval: 30000,    // 30 seconds when no active trades
+    enablePolling: true,
+    hasActiveTrades
   });
 
   // Keep trading WebSocket for immediate trade confirmations only

@@ -19,11 +19,20 @@ export interface UserProfile {
 
 interface UsePollingUserProfileOptions {
   pollingInterval?: number; // milliseconds
+  activePollingInterval?: number; // milliseconds when trades are active
+  idlePollingInterval?: number; // milliseconds when no trades are active
   enablePolling?: boolean;
+  hasActiveTrades?: boolean; // whether user has open trades
 }
 
 export const usePollingUserProfile = (options: UsePollingUserProfileOptions = {}) => {
-  const { pollingInterval = 20000, enablePolling = true } = options; // Default 20 seconds
+  const { 
+    pollingInterval = 20000, 
+    activePollingInterval = 5000,  // 5 seconds when trades are active
+    idlePollingInterval = 30000,   // 30 seconds when no trades
+    enablePolling = true,
+    hasActiveTrades = false
+  } = options;
   const { user } = useAuth();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -32,6 +41,7 @@ export const usePollingUserProfile = (options: UsePollingUserProfileOptions = {}
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const isVisibleRef = useRef(true);
   const lastUpdateRef = useRef<Date>(new Date());
+  const currentIntervalRef = useRef<number>(pollingInterval);
 
   // Fetch profile data
   const fetchProfile = useCallback(async () => {
@@ -94,19 +104,33 @@ export const usePollingUserProfile = (options: UsePollingUserProfileOptions = {}
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, [enablePolling]);
 
+  // Calculate dynamic interval based on trading activity
+  const getDynamicInterval = useCallback(() => {
+    return hasActiveTrades ? activePollingInterval : idlePollingInterval;
+  }, [hasActiveTrades, activePollingInterval, idlePollingInterval]);
+
   // Start polling function
   const startPolling = useCallback(() => {
-    if (!enablePolling || !user || pollIntervalRef.current) return;
+    if (!enablePolling || !user) return;
 
-    console.log(`⏰ Starting profile polling (${pollingInterval / 1000}s interval)`);
+    const interval = getDynamicInterval();
+    currentIntervalRef.current = interval;
+
+    // Stop existing polling if interval changed
+    if (pollIntervalRef.current) {
+      clearInterval(pollIntervalRef.current);
+      pollIntervalRef.current = null;
+    }
+
+    console.log(`⏰ Starting profile polling (${interval / 1000}s interval, ${hasActiveTrades ? 'ACTIVE' : 'IDLE'} mode)`);
     setIsPolling(true);
 
     pollIntervalRef.current = setInterval(() => {
       if (isVisibleRef.current) {
         fetchProfile();
       }
-    }, pollingInterval);
-  }, [enablePolling, user, pollingInterval, fetchProfile]);
+    }, interval);
+  }, [enablePolling, user, getDynamicInterval, hasActiveTrades, fetchProfile]);
 
   // Stop polling function
   const stopPolling = useCallback(() => {
@@ -117,6 +141,15 @@ export const usePollingUserProfile = (options: UsePollingUserProfileOptions = {}
       setIsPolling(false);
     }
   }, []);
+
+  // Restart polling when trading activity changes
+  useEffect(() => {
+    const newInterval = getDynamicInterval();
+    if (pollIntervalRef.current && currentIntervalRef.current !== newInterval) {
+      console.log(`🔄 Trading activity changed - switching to ${newInterval / 1000}s interval (${hasActiveTrades ? 'ACTIVE' : 'IDLE'} mode)`);
+      startPolling(); // This will restart with new interval
+    }
+  }, [hasActiveTrades, getDynamicInterval, startPolling]);
 
   // Initial load and polling setup
   useEffect(() => {
