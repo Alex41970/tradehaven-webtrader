@@ -153,7 +153,7 @@ serve(async (req) => {
 
   // Enhanced cache for real-time price data only
   let priceCache = new Map<string, PriceUpdate>();
-  const PRICE_CHANGE_THRESHOLD = 0.001; // Ultra-sensitive for high-frequency trading
+  const PRICE_CHANGE_THRESHOLD = 0.00001; // True tick-by-tick sensitivity (0.00001%)
   
   // AllTick WebSocket for real-time tick-by-tick data
   class AllTickWebSocket {
@@ -809,8 +809,8 @@ serve(async (req) => {
         const lastSent = lastSentPrices.get(symbol);
         const priceChangePercent = lastSent ? Math.abs((priceData.price - lastSent.price) / lastSent.price * 100) : 100;
         
-        // Send update if price changed by threshold or it's been >5 seconds since last update
-        if (!lastSent || priceChangePercent >= PRICE_CHANGE_THRESHOLD || (now - lastSent.timestamp) > 5000) {
+        // Send update if price changed by threshold, it's AllTick data, or >3 seconds since last update
+        if (!lastSent || priceChangePercent >= PRICE_CHANGE_THRESHOLD || priceData.source === 'AllTick-RT' || (now - lastSent.timestamp) > 3000) {
           significantPriceUpdates.push({
             symbol: priceData.symbol,
             price: priceData.price,
