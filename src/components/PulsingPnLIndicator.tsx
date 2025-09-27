@@ -16,9 +16,9 @@ export const PulsingPnLIndicator: React.FC<PulsingPnLIndicatorProps> = ({
   const [prevPnL, setPrevPnL] = useState(pnl);
 
   useEffect(() => {
-    // Detect any change, even tiny ones (0.001 sensitivity)  
+    // Detect meaningful changes (0.1 sensitivity to reduce noise)  
     const pnlDiff = Math.abs(pnl - prevPnL);
-    if (pnlDiff >= 0.001 && !isNaN(pnl) && !isNaN(prevPnL)) {
+    if (pnlDiff >= 0.1 && !isNaN(pnl) && !isNaN(prevPnL)) {
       setIsPulsing(true);
       const timer = setTimeout(() => setIsPulsing(false), 400);
       setPrevPnL(pnl);

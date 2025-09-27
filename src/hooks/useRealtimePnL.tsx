@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRealTimePrices } from './useRealTimePrices';
 import { calculateRealTimePnL } from '@/utils/pnlCalculator';
 
@@ -23,89 +23,117 @@ export const useRealtimePnL = (trades: Trade[], assets: Asset[] = []) => {
   const { prices } = useRealTimePrices();
   const [lastPnL, setLastPnL] = useState<Record<string, number>>({});
   const [pnLUpdatedAt, setPnLUpdatedAt] = useState<Date | null>(null);
-  const [lastPrices, setLastPrices] = useState<Record<string, number>>({});
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const lastPricesRef = useRef<Record<string, number>>({});
+  const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Calculate P&L every 250ms for ultra-responsive updates
-  useEffect(() => {
-    const calculatePnL = () => {
-      const newPnL: Record<string, number> = {};
-      const newPrices: Record<string, number> = {};
-      let priceUpdateCount = 0;
-      let hasAnyPriceChange = false;
+  // Circuit breaker: only calculate if there are open trades
+  const openTrades = trades.filter(trade => trade.status === 'open');
+  const hasOpenTrades = openTrades.length > 0;
 
-      trades.forEach(trade => {
-        if (trade.status === 'closed') {
-          newPnL[trade.id] = trade.pnl;
-          return;
+  const calculatePnL = useCallback(() => {
+    // Circuit breaker: don't calculate if no open trades
+    if (!hasOpenTrades) {
+      return;
+    }
+
+    const newPnL: Record<string, number> = {};
+    const newPrices: Record<string, number> = {};
+    let hasSignificantChange = false;
+
+    trades.forEach(trade => {
+      if (trade.status === 'closed') {
+        newPnL[trade.id] = trade.pnl;
+        return;
+      }
+
+      // Get current price from real-time prices
+      const priceUpdate = prices.get(trade.symbol);
+      const currentPrice = Number(priceUpdate?.price);
+
+      if (currentPrice && currentPrice > 0) {
+        // Track price changes with higher threshold to reduce noise
+        const previousPrice = lastPricesRef.current[trade.symbol];
+        if (!previousPrice || Math.abs(currentPrice - previousPrice) >= 0.01) {
+          hasSignificantChange = true;
         }
+        newPrices[trade.symbol] = currentPrice;
 
-        // Get current price from real-time prices
-        const priceUpdate = prices.get(trade.symbol);
-        const currentPrice = Number(priceUpdate?.price);
+        // Find asset for contract_size
+        const asset = assets.find(a => a.symbol === trade.symbol);
+        const contractSize = asset?.contract_size || 1;
+        
+        // Calculate real-time P&L
+        const realTimePnL = calculateRealTimePnL(
+          {
+            trade_type: trade.trade_type,
+            amount: trade.amount,
+            open_price: trade.open_price,
+            leverage: trade.leverage,
+            contract_size: contractSize
+          },
+          currentPrice,
+          contractSize
+        );
+        
+        // Round to 2 decimal places for display
+        newPnL[trade.id] = Math.round(realTimePnL * 100) / 100;
+      } else {
+        // Fall back to stored P&L if no real-time price
+        newPnL[trade.id] = trade.pnl;
+      }
+    });
 
-        if (currentPrice && currentPrice > 0) {
-          priceUpdateCount++;
-          
-          // Track price changes for even tiny movements
-          const previousPrice = lastPrices[trade.symbol];
-          if (previousPrice && Math.abs(currentPrice - previousPrice) >= 0.001) {
-            hasAnyPriceChange = true;
-          }
-          newPrices[trade.symbol] = currentPrice;
+    // Update price tracking
+    lastPricesRef.current = newPrices;
 
-          // Find asset for contract_size (important for forex)
-          const asset = assets.find(a => a.symbol === trade.symbol);
-          const contractSize = asset?.contract_size || 1;
-          
-          // Calculate with higher precision for micro-changes
-          const realTimePnL = calculateRealTimePnL(
-            {
-              trade_type: trade.trade_type,
-              amount: trade.amount,
-              open_price: trade.open_price,
-              leverage: trade.leverage,
-              contract_size: contractSize
-            },
-            currentPrice,
-            contractSize
-          );
-          
-          // Round to 4 decimal places for precision
-          newPnL[trade.id] = Math.round(realTimePnL * 10000) / 10000;
-        } else {
-          // Fall back to stored P&L if no real-time price
-          newPnL[trade.id] = trade.pnl;
-        }
-      });
-
-      // Update prices tracking
-      setLastPrices(newPrices);
-
-      // Only update state if there are meaningful changes
-      const hasSignificantChange = Object.keys(newPnL).some(tradeId => 
-        Math.abs((newPnL[tradeId] || 0) - (lastPnL[tradeId] || 0)) >= 0.01
-      );
+    // Only update state if there are significant changes
+    const hasPnLChange = Object.keys(newPnL).some(tradeId => 
+      Math.abs((newPnL[tradeId] || 0) - (lastPnL[tradeId] || 0)) >= 0.1
+    );
+    
+    if (hasSignificantChange || hasPnLChange) {
+      // Debounce state updates to prevent excessive re-renders
+      if (debounceTimeoutRef.current) {
+        clearTimeout(debounceTimeoutRef.current);
+      }
       
-      if (hasAnyPriceChange || hasSignificantChange) {
+      debounceTimeoutRef.current = setTimeout(() => {
         setLastPnL(newPnL);
         setPnLUpdatedAt(new Date());
-        console.log('📊 P&L Updated (change detected):', Object.keys(newPnL).length, 'trades,', priceUpdateCount, 'with real-time prices');
-      }
-    };
+        console.log('📊 P&L Updated:', Object.keys(newPnL).length, 'trades');
+      }, 100); // 100ms debounce
+    }
+  }, [trades, prices, assets, hasOpenTrades, lastPnL]);
 
-    // Calculate immediately
+  // Optimized update frequency: 2 seconds instead of 250ms
+  useEffect(() => {
+    // Don't start interval if no open trades
+    if (!hasOpenTrades) {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+      return;
+    }
+
+    // Calculate immediately for open trades
     calculatePnL();
 
-    // Set up interval for every 250ms updates (ultra-fast)
-    intervalRef.current = setInterval(calculatePnL, 250);
+    // Set up interval for every 2 seconds (much more efficient)
+    intervalRef.current = setInterval(calculatePnL, 2000);
 
     return () => {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+      if (debounceTimeoutRef.current) {
+        clearTimeout(debounceTimeoutRef.current);
+        debounceTimeoutRef.current = null;
       }
     };
-  }, [trades, prices, assets]); // Remove lastPrices to prevent infinite loops
+  }, [calculatePnL, hasOpenTrades]);
 
   // Calculate total P&L
   const totalPnL = Object.values(lastPnL).reduce((sum, pnl) => sum + pnl, 0);
