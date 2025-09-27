@@ -181,44 +181,41 @@ serve(async (req) => {
     private orderBookSubscribers = new Set<(data: OrderBookData) => void>();
     private reconnectAttempts = 0;
     private maxReconnectAttempts = 5;
+    private seqId = 1;
     private symbolList: string[] = [];
     
-    // Comprehensive 100+ symbols across all asset types
+    // AllTick symbol mapping with proper suffixes
     private symbolMapping: Record<string, string> = {
-      // Major Cryptocurrencies (30 symbols)
-      'BTCUSD': 'BTC/USD', 'ETHUSD': 'ETH/USD', 'SOLUSD': 'SOL/USD', 'ADAUSD': 'ADA/USD',
-      'DOGEUSD': 'DOGE/USD', 'MATICUSD': 'MATIC/USD', 'LINKUSD': 'LINK/USD', 'AVAXUSD': 'AVAX/USD',
-      'DOTUSD': 'DOT/USD', 'UNIUSD': 'UNI/USD', 'LTCUSD': 'LTC/USD', 'BCHUSD': 'BCH/USD',
-      'XLMUSD': 'XLM/USD', 'FILUSD': 'FIL/USD', 'APEUSD': 'APE/USD', 'SANDUSD': 'SAND/USD',
-      'MANAUSD': 'MANA/USD', 'AXSUSD': 'AXS/USD', 'CHZUSD': 'CHZ/USD', 'FLOWUSD': 'FLOW/USD',
-      'BNBUSD': 'BNB/USD', 'XRPUSD': 'XRP/USD', 'TRXUSD': 'TRX/USD', 'ATOMUSD': 'ATOM/USD',
-      'ALGOUSD': 'ALGO/USD', 'VETUSD': 'VET/USD', 'EOSUSD': 'EOS/USD', 'IOTAUSD': 'IOTA/USD',
-      'XTZUSD': 'XTZ/USD', 'COMPUSD': 'COMP/USD',
+      // Major Cryptocurrencies (.CC suffix)
+      'BTCUSD': 'BTCUSD.CC', 'ETHUSD': 'ETHUSD.CC', 'SOLUSD': 'SOLUSD.CC', 'ADAUSD': 'ADAUSD.CC',
+      'DOGEUSD': 'DOGEUSD.CC', 'MATICUSD': 'MATICUSD.CC', 'LINKUSD': 'LINKUSD.CC', 'AVAXUSD': 'AVAXUSD.CC',
+      'DOTUSD': 'DOTUSD.CC', 'UNIUSD': 'UNIUSD.CC', 'LTCUSD': 'LTCUSD.CC', 'BCHUSD': 'BCHUSD.CC',
+      'XLMUSD': 'XLMUSD.CC', 'FILUSD': 'FILUSD.CC', 'APEUSD': 'APEUSD.CC', 'SANDUSD': 'SANDUSD.CC',
+      'MANAUSD': 'MANAUSD.CC', 'AXSUSD': 'AXSUSD.CC', 'CHZUSD': 'CHZUSD.CC', 'FLOWUSD': 'FLOWUSD.CC',
+      'BNBUSD': 'BNBUSD.CC', 'XRPUSD': 'XRPUSD.CC', 'TRXUSD': 'TRXUSD.CC', 'ATOMUSD': 'ATOMUSD.CC',
+      'ALGOUSD': 'ALGOUSD.CC', 'VETUSD': 'VETUSD.CC', 'EOSUSD': 'EOSUSD.CC', 'IOTAUSD': 'IOTAUSD.CC',
+      'XTZUSD': 'XTZUSD.CC', 'COMPUSD': 'COMPUSD.CC',
       
-      // Major Forex Pairs (25 symbols)
-      'EURUSD': 'EUR/USD', 'GBPUSD': 'GBP/USD', 'USDJPY': 'USD/JPY', 'AUDUSD': 'AUD/USD',
-      'USDCAD': 'USD/CAD', 'USDCHF': 'USD/CHF', 'NZDUSD': 'NZD/USD', 'EURGBP': 'EUR/GBP',
-      'EURJPY': 'EUR/JPY', 'GBPJPY': 'GBP/JPY', 'AUDJPY': 'AUD/JPY', 'CADJPY': 'CAD/JPY',
-      'CHFJPY': 'CHF/JPY', 'EURCHF': 'EUR/CHF', 'GBPCHF': 'GBP/CHF', 'AUDCHF': 'AUD/CHF',
-      'EURAUD': 'EUR/AUD', 'EURNZD': 'EUR/NZD', 'GBPAUD': 'GBP/AUD', 'GBPNZD': 'GBP/NZD',
-      'AUDNZD': 'AUD/NZD', 'USDSGD': 'USD/SGD', 'USDHKD': 'USD/HKD', 'USDNOK': 'USD/NOK',
-      'USDSEK': 'USD/SEK',
+      // Major Forex Pairs (.FX suffix)
+      'EURUSD': 'EURUSD.FX', 'GBPUSD': 'GBPUSD.FX', 'USDJPY': 'USDJPY.FX', 'AUDUSD': 'AUDUSD.FX',
+      'USDCAD': 'USDCAD.FX', 'USDCHF': 'USDCHF.FX', 'NZDUSD': 'NZDUSD.FX', 'EURGBP': 'EURGBP.FX',
+      'EURJPY': 'EURJPY.FX', 'GBPJPY': 'GBPJPY.FX', 'AUDJPY': 'AUDJPY.FX', 'CADJPY': 'CADJPY.FX',
+      'CHFJPY': 'CHFJPY.FX', 'EURCHF': 'EURCHF.FX', 'GBPCHF': 'GBPCHF.FX', 'AUDCHF': 'AUDCHF.FX',
+      'EURAUD': 'EURAUD.FX', 'EURNZD': 'EURNZD.FX', 'GBPAUD': 'GBPAUD.FX', 'GBPNZD': 'GBPNZD.FX',
+      'AUDNZD': 'AUDNZD.FX', 'USDSGD': 'USDSGD.FX', 'USDHKD': 'USDHKD.FX', 'USDNOK': 'USDNOK.FX',
+      'USDSEK': 'USDSEK.FX',
       
-      // Precious Metals & Commodities (20 symbols)
-      'XAUUSD': 'XAU/USD', 'XAGUSD': 'XAG/USD', 'XPTUSD': 'XPT/USD', 'XPDUSD': 'XPD/USD',
-      'USOIL': 'CL', 'UKBRENT': 'BZ', 'NATGAS': 'NG', 'COPPER': 'HG', 'WHEAT': 'ZW',
-      'CORN': 'ZC', 'SOYBEANS': 'ZS', 'COFFEE': 'KC', 'SUGAR': 'SB', 'COTTON': 'CT',
-      'COCOA': 'CC', 'OATS': 'ZO', 'RICE': 'ZR', 'LUMBER': 'LBS', 'HEATING_OIL': 'HO',
-      'GASOLINE': 'RB',
+      // Precious Metals & Commodities (.CM suffix)
+      'XAUUSD': 'XAUUSD.CM', 'XAGUSD': 'XAGUSD.CM', 'XPTUSD': 'XPTUSD.CM', 'XPDUSD': 'XPDUSD.CM',
+      'USOIL': 'USOIL.CM', 'UKBRENT': 'UKBRENT.CM', 'NATGAS': 'NATGAS.CM', 'COPPER': 'COPPER.CM', 
+      'WHEAT': 'WHEAT.CM', 'CORN': 'CORN.CM', 'SOYBEANS': 'SOYBEANS.CM', 'COFFEE': 'COFFEE.CM', 
+      'SUGAR': 'SUGAR.CM', 'COTTON': 'COTTON.CM', 'COCOA': 'COCOA.CM', 'OATS': 'OATS.CM', 
+      'RICE': 'RICE.CM', 'LUMBER': 'LUMBER.CM', 'HEATING_OIL': 'HEATING_OIL.CM', 'GASOLINE': 'GASOLINE.CM',
       
-      // Major Stock Indices & ETFs (15 symbols)
-      'SPY': 'SPY', 'QQQ': 'QQQ', 'DIA': 'DIA', 'IWM': 'IWM', 'VTI': 'VTI',
-      'SPX': 'SPX', 'NDX': 'NDX', 'RUT': 'RUT', 'VIX': 'VIX', 'FTSE': 'UKX',
-      'DAX': 'DAX', 'CAC': 'CAC', 'NIKKEI': 'NKY', 'HANG_SENG': 'HSI', 'ASX200': 'AS51',
-      
-      // Popular Individual Stocks (10 symbols)
-      'AAPL': 'AAPL', 'MSFT': 'MSFT', 'GOOGL': 'GOOGL', 'AMZN': 'AMZN', 'TSLA': 'TSLA',
-      'META': 'META', 'NFLX': 'NFLX', 'NVDA': 'NVDA', 'AMD': 'AMD', 'INTEL': 'INTC'
+      // Major US Stocks (.US suffix)
+      'AAPL': 'AAPL.US', 'MSFT': 'MSFT.US', 'GOOGL': 'GOOGL.US', 'AMZN': 'AMZN.US', 'TSLA': 'TSLA.US',
+      'META': 'META.US', 'NFLX': 'NFLX.US', 'NVDA': 'NVDA.US', 'AMD': 'AMD.US', 'INTC': 'INTC.US',
+      'SPY': 'SPY.US', 'QQQ': 'QQQ.US', 'DIA': 'DIA.US', 'IWM': 'IWM.US', 'VTI': 'VTI.US'
     };
 
     constructor() {
@@ -236,8 +233,8 @@ serve(async (req) => {
           return false;
         }
 
-        // AllTick WebSocket endpoint
-        this.ws = new WebSocket(`wss://quote-ws-api.alltick.co/quote-ws?token=${apiKey}`);
+        // Correct AllTick WebSocket endpoint from documentation
+        this.ws = new WebSocket(`wss://quote.alltick.io/quote-stock-b-ws-api?token=${apiKey}`);
         
         this.ws.onopen = () => {
           console.log(`✅ AllTick WebSocket connected - subscribing to ${this.symbolList.length} symbols`);
@@ -283,62 +280,95 @@ serve(async (req) => {
 
       const allTickSymbols = this.symbolList.map(symbol => this.symbolMapping[symbol]);
       
-      // Subscribe to real-time tick-by-tick quotes
+      // Subscribe to real-time tick data using AllTick's JSON protocol
+      // cmd_id: 22002 for real-time tick data
       this.ws.send(JSON.stringify({
-        id: Date.now(),
-        method: 'subscribe.quote',
-        params: allTickSymbols
+        cmd_id: 22002,
+        seq_id: this.seqId++,
+        trace: `tick_${Date.now()}`,
+        data: {
+          symbol_list: allTickSymbols.map(symbol => ({
+            code: symbol,
+            depth_level: 5
+          }))
+        }
       }));
 
       // Subscribe to 1-minute candlestick data
+      // cmd_id: 22004 for candlestick data
       this.ws.send(JSON.stringify({
-        id: Date.now() + 1,
-        method: 'subscribe.kline',
-        params: allTickSymbols.map(symbol => `${symbol}:1m`)
+        cmd_id: 22004,
+        seq_id: this.seqId++,
+        trace: `candle_${Date.now()}`,
+        data: {
+          symbol_list: allTickSymbols.map(symbol => ({
+            code: symbol,
+            period: "1m"
+          }))
+        }
       }));
 
       // Subscribe to order book depth (market depth)
+      // cmd_id: 22006 for order book data
       this.ws.send(JSON.stringify({
-        id: Date.now() + 2,
-        method: 'subscribe.depth',
-        params: allTickSymbols
+        cmd_id: 22006,
+        seq_id: this.seqId++,
+        trace: `depth_${Date.now()}`,
+        data: {
+          symbol_list: allTickSymbols.map(symbol => ({
+            code: symbol,
+            depth_level: 5
+          }))
+        }
       }));
 
-      console.log(`📡 Subscribed to tick-by-tick, candlestick, and order book data for ${allTickSymbols.length} symbols`);
+      console.log(`📡 Subscribed to AllTick tick-by-tick (${allTickSymbols.length} symbols)`);
+      console.log(`📡 Subscribed to AllTick candlestick data (${allTickSymbols.length} symbols)`);
+      console.log(`📡 Subscribed to AllTick order book data (${allTickSymbols.length} symbols)`);
     }
 
     private handleMessage(data: string) {
       try {
         const message = JSON.parse(data);
         
-        if (message.method === 'quote.update') {
-          this.handlePriceUpdate(message.params);
-        } else if (message.method === 'kline.update') {
-          this.handleCandlestickUpdate(message.params);
-        } else if (message.method === 'depth.update') {
-          this.handleOrderBookUpdate(message.params);
+        // AllTick uses cmd_id to identify message types
+        if (message.cmd_id === 22002) {
+          // Real-time tick data response
+          this.handlePriceUpdate(message.data);
+        } else if (message.cmd_id === 22004) {
+          // Candlestick data response
+          this.handleCandlestickUpdate(message.data);
+        } else if (message.cmd_id === 22006) {
+          // Order book depth response
+          this.handleOrderBookUpdate(message.data);
+        } else if (message.cmd_id === 22001) {
+          // Authentication response
+          console.log('AllTick authentication response:', message);
+        } else {
+          console.log('Unknown AllTick message type:', message.cmd_id);
         }
       } catch (error) {
         console.error('Error parsing AllTick message:', error);
       }
     }
 
-    private handlePriceUpdate(params: any) {
-      if (!params || !Array.isArray(params)) return;
+    private handlePriceUpdate(data: any) {
+      if (!data || !data.symbol_list) return;
 
-      for (const update of params) {
-        if (update.symbol && typeof update.price === 'number') {
+      for (const update of data.symbol_list) {
+        if (update.code && typeof update.last_px === 'number') {
+          // Map AllTick symbol back to our internal symbol
           const originalSymbol = Object.keys(this.symbolMapping)
-            .find(key => this.symbolMapping[key] === update.symbol) || update.symbol;
+            .find(key => this.symbolMapping[key] === update.code) || update.code.split('.')[0];
 
           const priceData: PriceUpdate = {
             symbol: originalSymbol,
-            price: update.price,
-            change_24h: update.change_24h || 0,
+            price: update.last_px,
+            change_24h: update.change_px || 0,
             volume: update.volume || 0,
-            bid: update.bid || update.price,
-            ask: update.ask || update.price,
-            spread: update.ask && update.bid ? update.ask - update.bid : 0,
+            bid: update.bid_px || update.last_px,
+            ask: update.ask_px || update.last_px,
+            spread: (update.ask_px && update.bid_px) ? update.ask_px - update.bid_px : 0,
             timestamp: Date.now(),
             source: 'AllTick-WS'
           };
@@ -350,44 +380,52 @@ serve(async (req) => {
       }
     }
 
-    private handleCandlestickUpdate(params: any) {
-      if (!params || !Array.isArray(params)) return;
+    private handleCandlestickUpdate(data: any) {
+      if (!data || !data.symbol_list) return;
 
-      for (const update of params) {
-        const originalSymbol = Object.keys(this.symbolMapping)
-          .find(key => this.symbolMapping[key] === update.symbol) || update.symbol;
+      for (const update of data.symbol_list) {
+        if (update.code && update.kline_list) {
+          const originalSymbol = Object.keys(this.symbolMapping)
+            .find(key => this.symbolMapping[key] === update.code) || update.code.split('.')[0];
 
-        const candlestickData: CandlestickData = {
-          symbol: originalSymbol,
-          open: update.open,
-          high: update.high,
-          low: update.low,
-          close: update.close,
-          volume: update.volume,
-          timestamp: Date.now()
-        };
+          // Process the latest candlestick
+          const latestKline = update.kline_list[update.kline_list.length - 1];
+          if (latestKline) {
+            const candlestickData: CandlestickData = {
+              symbol: originalSymbol,
+              open: latestKline.open_px,
+              high: latestKline.high_px,
+              low: latestKline.low_px,
+              close: latestKline.close_px,
+              volume: latestKline.volume,
+              timestamp: Date.now()
+            };
 
-        candlestickCache.set(originalSymbol, candlestickData);
-        this.candlestickSubscribers.forEach(callback => callback(candlestickData));
+            candlestickCache.set(originalSymbol, candlestickData);
+            this.candlestickSubscribers.forEach(callback => callback(candlestickData));
+          }
+        }
       }
     }
 
-    private handleOrderBookUpdate(params: any) {
-      if (!params || !Array.isArray(params)) return;
+    private handleOrderBookUpdate(data: any) {
+      if (!data || !data.symbol_list) return;
 
-      for (const update of params) {
-        const originalSymbol = Object.keys(this.symbolMapping)
-          .find(key => this.symbolMapping[key] === update.symbol) || update.symbol;
+      for (const update of data.symbol_list) {
+        if (update.code && (update.bid_list || update.ask_list)) {
+          const originalSymbol = Object.keys(this.symbolMapping)
+            .find(key => this.symbolMapping[key] === update.code) || update.code.split('.')[0];
 
-        const orderBookData: OrderBookData = {
-          symbol: originalSymbol,
-          bids: update.bids || [],
-          asks: update.asks || [],
-          timestamp: Date.now()
-        };
+          const orderBookData: OrderBookData = {
+            symbol: originalSymbol,
+            bids: (update.bid_list || []).map((bid: any) => [bid.px, bid.sz]),
+            asks: (update.ask_list || []).map((ask: any) => [ask.px, ask.sz]),
+            timestamp: Date.now()
+          };
 
-        orderBookCache.set(originalSymbol, orderBookData);
-        this.orderBookSubscribers.forEach(callback => callback(orderBookData));
+          orderBookCache.set(originalSymbol, orderBookData);
+          this.orderBookSubscribers.forEach(callback => callback(orderBookData));
+        }
       }
     }
 
