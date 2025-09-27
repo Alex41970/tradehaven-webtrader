@@ -217,8 +217,8 @@ serve(async (req) => {
 
         console.log('🔐 AllTick API key found, establishing connection...');
         
-        // Correct AllTick WebSocket endpoint from documentation
-        this.ws = new WebSocket(`wss://quote.alltick.io/quote-stock-b-ws-api?t=${encodeURIComponent(apiKey.trim())}`);
+        // Correct AllTick WebSocket endpoint for forex/crypto/commodities
+        this.ws = new WebSocket(`wss://quote.alltick.io/quote-b-ws-api?token=${encodeURIComponent(apiKey.trim())}`);
         
         this.ws.onopen = () => {
           console.log(`✅ AllTick WebSocket connected - subscribing immediately...`);
