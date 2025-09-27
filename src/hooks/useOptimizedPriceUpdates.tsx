@@ -23,7 +23,7 @@ export const useOptimizedPriceUpdates = () => {
   const batchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastProcessedRef = useRef<Record<string, number>>({});
 
-  // Batch updates every 300ms to reduce re-renders
+  // Batch updates every 100ms for responsive UI
   const processBatch = useCallback(() => {
     if (batchRef.current.length === 0) return;
 
@@ -36,8 +36,8 @@ export const useOptimizedPriceUpdates = () => {
 
       updates.forEach(update => {
         const lastPrice = lastProcessedRef.current[update.symbol];
-        // Only update if price has changed significantly (> 0.01%)
-        if (!lastPrice || Math.abs(update.price - lastPrice) / lastPrice > 0.0001) {
+        // Allow all meaningful price changes (any change > 0 for pulsing)
+        if (!lastPrice || update.price !== lastPrice) {
           newPrices.set(update.symbol, update);
           lastProcessedRef.current[update.symbol] = update.price;
           actualUpdates++;
@@ -62,8 +62,8 @@ export const useOptimizedPriceUpdates = () => {
       clearTimeout(batchTimeoutRef.current);
     }
 
-    // Process batch after 300ms of inactivity
-    batchTimeoutRef.current = setTimeout(processBatch, 300);
+    // Process batch after 100ms for responsive UI
+    batchTimeoutRef.current = setTimeout(processBatch, 100);
   }, [processBatch]);
 
   // Add multiple price updates to batch
@@ -75,8 +75,8 @@ export const useOptimizedPriceUpdates = () => {
       clearTimeout(batchTimeoutRef.current);
     }
 
-    // Process batch after 300ms of inactivity
-    batchTimeoutRef.current = setTimeout(processBatch, 300);
+    // Process batch after 100ms for responsive UI
+    batchTimeoutRef.current = setTimeout(processBatch, 100);
   }, [processBatch]);
 
   // Cleanup on unmount
