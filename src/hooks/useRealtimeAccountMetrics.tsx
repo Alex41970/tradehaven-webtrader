@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useUserProfile } from './useUserProfile';
 import { useTrades } from './useTrades';
 import { useRealtimePnL } from './useRealtimePnL';
+import { useEventDrivenUpdates } from './useEventDrivenUpdates';
 
 interface RealtimeAccountMetrics {
   // Real-time values
@@ -16,9 +17,10 @@ interface RealtimeAccountMetrics {
 }
 
 export const useRealtimeAccountMetrics = (): RealtimeAccountMetrics => {
-  const { profile } = useUserProfile();
+  const { profile, isPolling, lastUpdate } = useUserProfile();
   const { openTrades } = useTrades();
   const { totalPnL, lastUpdated: pnlLastUpdated } = useRealtimePnL(openTrades || [], []);
+  const { handleTradeAction } = useEventDrivenUpdates();
   
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
@@ -47,7 +49,9 @@ export const useRealtimeAccountMetrics = (): RealtimeAccountMetrics => {
       unrealizedPnL: totalPnL,
       calculatedEquity: realTimeEquity,
       usedMargin: totalUsedMargin,
-      freeMargin: realTimeFreeMargin
+      freeMargin: realTimeFreeMargin,
+      isPolling,
+      lastProfileUpdate: lastUpdate
     });
 
     return {

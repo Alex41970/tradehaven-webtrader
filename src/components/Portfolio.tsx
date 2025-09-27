@@ -9,7 +9,7 @@ import { useMemo, useState, useCallback } from "react";
 import { useRealTimePrices } from "@/hooks/useRealTimePrices";
 import { useRealtimePnL } from "@/hooks/useRealtimePnL";
 import { TradeRow } from "@/components/TradeRow";
-import { calculateRealTimePnL } from "@/utils/pnlCalculator";
+import { useEventDrivenUpdates } from "@/hooks/useEventDrivenUpdates";
 
 export const Portfolio = () => {
   // ALL HOOKS MUST BE CALLED FIRST - NO CONDITIONAL HOOK CALLS
@@ -19,6 +19,7 @@ export const Portfolio = () => {
   const { toast } = useToast();
   const { getUpdatedAssets } = useRealTimePrices();
   const { totalPnL: realtimeTotalPnL, lastUpdated } = useRealtimePnL(openTrades || [], assets);
+  const { handleTradeAction } = useEventDrivenUpdates();
   const [closingTrades, setClosingTrades] = useState<Set<string>>(new Set());
 
   // ALL useMemo hooks must be called here, before any conditional logic
@@ -95,7 +96,8 @@ export const Portfolio = () => {
       
       if (success) {
         console.log('Trade closed successfully from Portfolio');
-        // Database triggers will automatically handle margin recalculation
+        // Trigger immediate profile refresh for fast UI feedback
+        handleTradeAction('close', { tradeId, symbol });
         // Trade will be removed from openTrades automatically via real-time updates
       } else {
         toast({

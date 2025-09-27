@@ -23,6 +23,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { toast } from "@/hooks/use-toast";
 import { PulsingPriceIndicator } from "./PulsingPriceIndicator";
 import { PriceConnectionStatus } from "./PriceConnectionStatus";
+import { useEventDrivenUpdates } from "@/hooks/useEventDrivenUpdates";
 
 export const WebTrader = () => {
   const { assets, loading: assetsLoading } = useAssets();
@@ -31,6 +32,7 @@ export const WebTrader = () => {
   const { favorites, addFavorite, removeFavorite } = useFavorites();
   const { getUpdatedAssets, isConnected, lastUpdate } = useRealTimePrices();
   const { createOrder } = useTradeOrders();
+  const { handleTradeAction } = useEventDrivenUpdates();
   const isMobile = useIsMobile();
   const navigate = useNavigate();
 
@@ -150,8 +152,9 @@ export const WebTrader = () => {
           description: `${tradeType} order for ${selectedAsset.symbol} executed successfully`,
         });
         
-        // Database triggers will automatically handle margin recalculation
-        console.log('Trade executed successfully, margins will be auto-calculated by database triggers');
+        // Trigger immediate profile refresh for fast UI feedback
+        handleTradeAction('open', { symbol: selectedAsset.symbol, tradeType });
+        console.log('Trade executed successfully, triggering immediate profile refresh');
       }
     } catch (error) {
       console.error('Trade execution error:', error);
@@ -208,8 +211,9 @@ export const WebTrader = () => {
             title: "Market Order Executed",
             description: `${orderData.tradeType} order for ${selectedAsset.symbol} executed successfully`,
           });
-          // Database triggers will automatically handle margin recalculation
-          console.log('Market order executed successfully, margins will be auto-calculated by database triggers');
+          // Trigger immediate profile refresh for fast UI feedback
+          handleTradeAction('open', { symbol: selectedAsset.symbol, tradeType: orderData.tradeType });
+          console.log('Market order executed successfully, triggering immediate profile refresh');
         }
       } else {
         // Create pending order
@@ -249,8 +253,9 @@ export const WebTrader = () => {
     setIsExecuting(true);
     try {
       await closeTrade(tradeId, closePrice);
-      // Database triggers will automatically handle margin recalculation
-      console.log('Trade closed successfully, margins will be auto-calculated by database triggers');
+      // Trigger immediate profile refresh for fast UI feedback
+      handleTradeAction('close', { tradeId });
+      console.log('Trade closed successfully, triggering immediate profile refresh');
     } catch (error) {
       console.error('Error closing trade:', error);
     } finally {

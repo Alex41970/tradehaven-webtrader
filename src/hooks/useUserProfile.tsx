@@ -1,8 +1,5 @@
-import { useState, useEffect, useCallback } from "react";
-import { useAuth } from "./useAuth";
-import { toast } from "@/hooks/use-toast";
+import { usePollingUserProfile } from './usePollingUserProfile';
 import { useRealTimeTrading } from './useRealTimeTrading';
-import { supabase } from "@/integrations/supabase/client";
 
 export interface UserProfile {
   id: string;
@@ -20,71 +17,44 @@ export interface UserProfile {
 }
 
 export const useUserProfile = () => {
-  const { user } = useAuth();
-  const [dbProfile, setDbProfile] = useState<UserProfile | null>(null);
-  const [dbLoading, setDbLoading] = useState(true);
-  
-  const { profile: realtimeProfile, loading: realtimeLoading, isConnected } = useRealTimeTrading();
-  
-  // Use real-time data if connected, fallback to database data
-  const profile = (isConnected && realtimeProfile) ? realtimeProfile as UserProfile : dbProfile;
-  const loading = isConnected ? realtimeLoading : dbLoading;
+  // Use HTTP polling for profile data (reduced real-time messages)
+  const pollingProfile = usePollingUserProfile({
+    pollingInterval: 20000, // 20 seconds - good balance for trading platform
+    enablePolling: true
+  });
 
-  // Fallback database fetch
-  const fetchProfile = useCallback(async () => {
-    if (!user) {
-      setDbLoading(false);
-      return;
-    }
+  // Keep trading WebSocket for immediate trade confirmations only
+  const { isConnected: isTradingConnected } = useRealTimeTrading();
 
-    try {
-      setDbLoading(true);
-      const { data, error } = await supabase
-        .from('user_profiles')
-        .select('*')
-        .eq('user_id', user.id)
-        .single();
+  // Enhanced force refresh that works after user actions
+  const enhancedForceRefresh = async () => {
+    console.log('🚀 Enhanced force refresh triggered');
+    return await pollingProfile.forceRefresh();
+  };
 
-      if (error) throw error;
-      setDbProfile(data);
-    } catch (error) {
-      console.error('Error fetching user profile from database:', error);
-      setDbProfile(null);
-    } finally {
-      setDbLoading(false);
-    }
-  }, [user]);
-
-  // Initial database load
-  useEffect(() => {
-    fetchProfile();
-  }, [fetchProfile]);
-
-  // Force refresh function (no longer needed with real-time)
-  const forceRefresh = useCallback(async () => {
-    console.log('forceRefresh called - now using real-time data');
-  }, []);
-
-  // Update balance function (no longer needed with real-time)
-  const updateBalance = async (newBalance: number, newEquity: number, newUsedMargin: number, newAvailableMargin: number) => {
-    console.log('updateBalance called - now handled by real-time WebSocket');
+  // Enhanced update balance with immediate refresh
+  const enhancedUpdateBalance = async (newBalance: number, newEquity: number, newUsedMargin: number, newAvailableMargin: number) => {
+    console.log('🔄 Balance update triggered - refreshing immediately');
+    await pollingProfile.forceRefresh();
     return true;
   };
 
-  // Recalculate margins function (no longer needed with real-time)
-  const recalculateMargins = useCallback(async () => {
-    console.log('recalculateMargins called - now handled by real-time WebSocket');
+  // Enhanced recalculate margins with immediate refresh
+  const enhancedRecalculateMargins = async () => {
+    console.log('📊 Margin recalculation triggered - refreshing immediately');
+    await pollingProfile.forceRefresh();
     return true;
-  }, []);
-
-  // No longer needed with real-time WebSocket system
+  };
 
   return {
-    profile,
-    loading,
-    refetch: fetchProfile,
-    forceRefresh,
-    updateBalance,
-    recalculateMargins,
+    profile: pollingProfile.profile,
+    loading: pollingProfile.loading,
+    isPolling: pollingProfile.isPolling,
+    isTradingConnected,
+    lastUpdate: pollingProfile.lastUpdate,
+    refetch: pollingProfile.refetch,
+    forceRefresh: enhancedForceRefresh,
+    updateBalance: enhancedUpdateBalance,
+    recalculateMargins: enhancedRecalculateMargins,
   };
 };
