@@ -388,9 +388,139 @@ serve(async (req) => {
     }
   }
 
-  // Initialize AllTick WebSocket
+  // Binance WebSocket for crypto price fallback
+  class BinanceWebSocket {
+    private ws: WebSocket | null = null;
+    private isConnected = false;
+    private subscribers = new Set<(data: PriceUpdate) => void>();
+    private reconnectAttempts = 0;
+    private maxReconnectAttempts = 5;
+    private cryptoSymbols: string[] = [];
+    
+    // Major crypto symbols supported by Binance
+    private binanceSymbolMapping: Record<string, string> = {
+      'BTCUSD': 'BTCUSDT', 'ETHUSD': 'ETHUSDT', 'BNBUSD': 'BNBUSDT',
+      'ADAUSD': 'ADAUSDT', 'XRPUSD': 'XRPUSDT', 'SOLUSD': 'SOLUSDT',
+      'DOTUSD': 'DOTUSDT', 'LINKUSD': 'LINKUSDT', 'LTCUSD': 'LTCUSDT',
+      'MATICUSD': 'MATICUSDT', 'AVAXUSD': 'AVAXUSDT', 'UNIUSD': 'UNIUSDT'
+    };
+
+    constructor() {
+      this.cryptoSymbols = Object.keys(this.binanceSymbolMapping);
+      console.log(`🟡 Binance WebSocket initialized with ${this.cryptoSymbols.length} crypto symbols`);
+    }
+
+    async connect() {
+      try {
+        console.log('🟡 Connecting to Binance WebSocket for crypto fallback...');
+        
+        // Create stream names for all crypto pairs
+        const streams = Object.values(this.binanceSymbolMapping)
+          .map(symbol => `${symbol.toLowerCase()}@ticker`)
+          .join('/');
+        
+        this.ws = new WebSocket(`wss://stream.binance.com:9443/ws/${streams}`);
+        
+        this.ws.onopen = () => {
+          console.log(`✅ Binance WebSocket connected - streaming ${this.cryptoSymbols.length} crypto pairs`);
+          this.isConnected = true;
+          this.reconnectAttempts = 0;
+        };
+
+        this.ws.onmessage = (event) => {
+          this.handleMessage(event.data);
+        };
+
+        this.ws.onclose = (event) => {
+          console.log(`🟡 Binance WebSocket disconnected - Code: ${event.code}`);
+          this.isConnected = false;
+          this.scheduleReconnect();
+        };
+
+        this.ws.onerror = (error) => {
+          console.error('❌ Binance WebSocket error:', error);
+          this.isConnected = false;
+        };
+
+        return true;
+      } catch (error) {
+        console.error('Failed to connect to Binance WebSocket:', error);
+        this.scheduleReconnect();
+        return false;
+      }
+    }
+
+    private scheduleReconnect() {
+      if (this.reconnectAttempts < this.maxReconnectAttempts) {
+        this.reconnectAttempts++;
+        const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 15000);
+        console.log(`🔄 Reconnecting to Binance in ${delay}ms (attempt ${this.reconnectAttempts})`);
+        setTimeout(() => this.connect(), delay);
+      }
+    }
+
+    private handleMessage(data: string) {
+      try {
+        const ticker = JSON.parse(data);
+        
+        if (ticker.s && ticker.c) {
+          // Find our symbol from Binance symbol
+          const ourSymbol = Object.keys(this.binanceSymbolMapping)
+            .find(key => this.binanceSymbolMapping[key] === ticker.s);
+          
+          if (ourSymbol) {
+            const priceData: PriceUpdate = {
+              symbol: ourSymbol,
+              price: parseFloat(ticker.c), // Current price
+              change_24h: parseFloat(ticker.P), // 24h price change percent
+              volume: parseFloat(ticker.v), // 24h volume
+              bid: parseFloat(ticker.b), // Best bid price
+              ask: parseFloat(ticker.a), // Best ask price
+              spread: parseFloat(ticker.a) - parseFloat(ticker.b),
+              timestamp: Date.now(),
+              source: 'Binance-RT'
+            };
+
+            // Update cache and notify subscribers
+            priceCache.set(ourSymbol, priceData);
+            this.subscribers.forEach(callback => callback(priceData));
+            
+            console.log(`🟡 Binance RT: ${ourSymbol} = $${ticker.c} (${ticker.P}%)`);
+          }
+        }
+      } catch (error) {
+        console.error('❌ Error parsing Binance message:', error);
+      }
+    }
+
+    subscribeToPrices(callback: (data: PriceUpdate) => void) {
+      this.subscribers.add(callback);
+      return () => this.subscribers.delete(callback);
+    }
+
+    isConnectedStatus(): boolean {
+      return this.isConnected;
+    }
+
+    getSymbolCount(): number {
+      return this.cryptoSymbols.length;
+    }
+
+    disconnect() {
+      if (this.ws) {
+        this.ws.close();
+        this.ws = null;
+      }
+      this.isConnected = false;
+      this.subscribers.clear();
+    }
+  }
+
+  // Initialize WebSocket connections
   const allTickWS = new AllTickWebSocket();
+  const binanceWS = new BinanceWebSocket();
   let allTickConnected = false;
+  let binanceConnected = false;
 
   // Helper function to get yesterday's price from our database as fallback
   const getYesterdayPriceFromDB = async (symbol: string): Promise<number | null> => {
@@ -755,20 +885,39 @@ serve(async (req) => {
               assets[assetIndex].price = priceData.price;
               assets[assetIndex].change_24h = priceData.change_24h;
               
-              console.log(`⚡ Real-time tick: ${priceData.symbol} = $${priceData.price} (${priceData.change_24h.toFixed(2)}%)`);
+              console.log(`⚡ AllTick tick: ${priceData.symbol} = $${priceData.price} (${priceData.change_24h.toFixed(2)}%)`);
             }
           });
+          console.log(`🚀 AllTick connected - price updates for ${allTickWS.getSymbolCount()} symbols`);
+        }
+      }
 
-          // Only subscribe to price updates for optimal performance
-          console.log(`🚀 AllTick connected - price updates only for ${allTickWS.getSymbolCount()} symbols`);
+      // Initialize Binance WebSocket as fallback if AllTick is not available
+      if (!binanceConnected && !allTickConnected) {
+        console.log('🟡 Initializing Binance WebSocket fallback...');
+        binanceConnected = await binanceWS.connect();
+        
+        if (binanceConnected) {
+          // Subscribe to Binance real-time crypto updates
+          binanceWS.subscribeToPrices((priceData: PriceUpdate) => {
+            // Update asset price in real-time
+            const assetIndex = assets.findIndex(a => a.symbol === priceData.symbol);
+            if (assetIndex !== -1) {
+              assets[assetIndex].price = priceData.price;
+              assets[assetIndex].change_24h = priceData.change_24h;
+              
+              console.log(`⚡ Binance tick: ${priceData.symbol} = $${priceData.price} (${priceData.change_24h.toFixed(2)}%)`);
+            }
+          });
+          console.log(`🟡 Binance connected - crypto fallback for ${binanceWS.getSymbolCount()} symbols`);
         }
       }
 
       // Smart batching: Only send updates when prices change significantly
       const significantPriceUpdates: PriceUpdate[] = [];
       
-      // If AllTick cache is empty or WS not connected, populate from fallbacks
-      if (priceCache.size === 0 || !allTickWS.isConnectedStatus()) {
+      // Multi-tier fallback: AllTick -> Binance -> Yahoo Finance
+      if (priceCache.size === 0 || (!allTickWS.isConnectedStatus() && !binanceWS.isConnectedStatus())) {
         try {
           const assetSymbols = assets.map(a => a.symbol);
           const [cryptoMap, forexMap, commodityMap] = await Promise.all([
@@ -777,40 +926,48 @@ serve(async (req) => {
             getCommodityPrices()
           ]);
 
-          const mergeMap = (map: Map<string, { price: number; change: number }>) => {
+          const mergeMap = (map: Map<string, { price: number; change: number }>, source: string = 'fallback') => {
             map.forEach((val, sym) => {
-              const priceData: PriceUpdate = {
-                symbol: sym,
-                price: val.price,
-                change_24h: val.change,
-                timestamp: Date.now(),
-                source: 'fallback'
-              };
-              // Update assets for immediate initial publish
-              const idx = assets.findIndex(a => a.symbol === sym);
-              if (idx !== -1) {
-                assets[idx].price = val.price;
-                assets[idx].change_24h = val.change;
+              // Only use fallback if we don't have real-time data
+              if (!priceCache.has(sym)) {
+                const priceData: PriceUpdate = {
+                  symbol: sym,
+                  price: val.price,
+                  change_24h: val.change,
+                  timestamp: Date.now(),
+                  source
+                };
+                // Update assets for immediate initial publish
+                const idx = assets.findIndex(a => a.symbol === sym);
+                if (idx !== -1) {
+                  assets[idx].price = val.price;
+                  assets[idx].change_24h = val.change;
+                }
+                priceCache.set(sym, priceData);
               }
-              priceCache.set(sym, priceData);
             });
           };
 
-          mergeMap(cryptoMap);
-          mergeMap(forexMap);
-          mergeMap(commodityMap);
+          mergeMap(cryptoMap, 'Yahoo-Crypto');
+          mergeMap(forexMap, 'Yahoo-Forex');
+          mergeMap(commodityMap, 'Yahoo-Commodity');
         } catch (e) {
           console.error('Fallback price population failed:', e);
         }
       }
       
-      // Get current prices from cache (updated by WebSocket)
+      // Get current prices from cache (updated by WebSocket or fallbacks)
       priceCache.forEach((priceData, symbol) => {
         const lastSent = lastSentPrices.get(symbol);
         const priceChangePercent = lastSent ? Math.abs((priceData.price - lastSent.price) / lastSent.price * 100) : 100;
         
-        // Send update if price changed by threshold, it's AllTick data, or >3 seconds since last update
-        if (!lastSent || priceChangePercent >= PRICE_CHANGE_THRESHOLD || priceData.source === 'AllTick-RT' || (now - lastSent.timestamp) > 3000) {
+        // Lower threshold for real-time data, higher for fallbacks
+        const threshold = (priceData.source?.includes('RT') || priceData.source === 'AllTick-RT') 
+          ? PRICE_CHANGE_THRESHOLD 
+          : PRICE_CHANGE_THRESHOLD * 10;
+        
+        // Send update if price changed by threshold, it's real-time data, or >3 seconds since last update
+        if (!lastSent || priceChangePercent >= threshold || priceData.source?.includes('RT') || (now - lastSent.timestamp) > 3000) {
           significantPriceUpdates.push({
             symbol: priceData.symbol,
             price: priceData.price,
@@ -830,15 +987,19 @@ serve(async (req) => {
 
       // Only send WebSocket message if there are significant updates
       if (significantPriceUpdates.length > 0) {
+        const primarySource = allTickWS.isConnectedStatus() ? 'AllTick' : 
+                             binanceWS.isConnectedStatus() ? 'Binance' : 'Fallback';
+        
         console.log(`📡 Sending ${significantPriceUpdates.length} tick-by-tick updates (threshold: ${PRICE_CHANGE_THRESHOLD}%)`);
         
         socket.send(JSON.stringify({
           type: 'price_update',
           data: significantPriceUpdates,
           metadata: {
-            source: 'AllTick-WebSocket',
-            total_symbols: allTickWS.getSymbolCount(),
-            connected: allTickWS.isConnectedStatus(),
+            source: primarySource,
+            alltick_connected: allTickWS.isConnectedStatus(),
+            binance_connected: binanceWS.isConnectedStatus(),
+            total_symbols: allTickWS.getSymbolCount() + binanceWS.getSymbolCount(),
             timestamp: now
           }
         }));
@@ -883,7 +1044,7 @@ serve(async (req) => {
   };
 
   socket.onclose = () => {
-    console.log("🔌 WebSocket connection closed - cleaning up AllTick connection");
+    console.log("🔌 WebSocket connection closed - cleaning up connections");
     isConnected = false;
     if (priceInterval) {
       clearInterval(priceInterval);
@@ -897,10 +1058,14 @@ serve(async (req) => {
       clearInterval(clientHeartbeatInterval);
       clientHeartbeatInterval = null;
     }
-    // Disconnect AllTick WebSocket
+    // Disconnect all WebSocket connections
     if (allTickConnected) {
       allTickWS.disconnect();
       allTickConnected = false;
+    }
+    if (binanceConnected) {
+      binanceWS.disconnect();
+      binanceConnected = false;
     }
   };
 
