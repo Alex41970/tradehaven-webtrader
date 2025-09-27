@@ -218,18 +218,19 @@ serve(async (req) => {
         this.ws = new WebSocket(`wss://quote.alltick.io/quote-stock-b-ws-api?t=${encodeURIComponent(apiKey.trim())}`);
         
         this.ws.onopen = () => {
-          console.log(`✅ AllTick WebSocket connected - subscribing to ${this.symbolList.length} symbols for price updates only`);
+          console.log(`✅ AllTick WebSocket connected - authenticating...`);
           this.isConnected = true;
           this.reconnectAttempts = 0;
-          this.subscribeToPriceUpdatesOnly();
+          // Authenticate first, then subscribe
+          this.authenticate();
         };
 
         this.ws.onmessage = (event) => {
           this.handleMessage(event.data);
         };
 
-        this.ws.onclose = () => {
-          console.log('🔌 AllTick WebSocket disconnected');
+        this.ws.onclose = (event) => {
+          console.log(`🔌 AllTick WebSocket disconnected - Code: ${event.code}, Reason: ${event.reason}`);
           this.isConnected = false;
           this.scheduleReconnect();
         };
@@ -256,51 +257,76 @@ serve(async (req) => {
       }
     }
 
+    private authenticate() {
+      if (!this.isConnected || !this.ws) return;
+
+      console.log('🔐 Authenticating with AllTick...');
+      // Send authentication message first
+      this.ws.send(JSON.stringify({
+        cmd_id: 22001,
+        seq_id: this.seqId++,
+        trace: `auth_${Date.now()}`,
+        data: {}
+      }));
+    }
+
     private subscribeToPriceUpdatesOnly() {
       if (!this.isConnected || !this.ws) return;
 
       const allTickSymbols = this.symbolList.map(symbol => this.symbolMapping[symbol]);
       
-      // Subscribe only to real-time tick data using AllTick's JSON protocol
-      // cmd_id: 22002 for real-time tick data
+      // Subscribe to Latest Trade Price using correct cmd_id
+      // cmd_id: 22001 for Latest Trade Price subscription
       this.ws.send(JSON.stringify({
-        cmd_id: 22002,
+        cmd_id: 22001,
         seq_id: this.seqId++,
-        trace: `tick_${Date.now()}`,
+        trace: `price_sub_${Date.now()}`,
         data: {
           symbol_list: allTickSymbols.map(symbol => ({
-            code: symbol,
-            depth_level: 1 // Minimal depth needed for price only
+            code: symbol
           }))
         }
       }));
 
-      console.log(`📡 Subscribed to AllTick price updates only (${allTickSymbols.length} symbols)`);
+      console.log(`📡 Subscribed to AllTick Latest Trade Prices (${allTickSymbols.length} symbols)`);
     }
 
     private handleMessage(data: string) {
       try {
         const message = JSON.parse(data);
+        console.log('📨 AllTick message received:', { cmd_id: message.cmd_id, ret_code: message.ret_code });
         
         // AllTick uses cmd_id to identify message types
-        if (message.cmd_id === 22002) {
-          // Real-time tick data response - only price updates
-          this.handlePriceUpdate(message.data);
-        } else if (message.cmd_id === 22001) {
-          // Authentication response
-          console.log('AllTick authentication response:', message);
+        if (message.cmd_id === 22001) {
+          // Authentication or Latest Trade Price response
+          if (message.ret_code === 0) {
+            console.log('✅ AllTick authentication successful - subscribing to prices...');
+            // Authentication successful, now subscribe to prices
+            this.subscribeToPriceUpdatesOnly();
+          } else if (message.data && message.data.symbol_list) {
+            // Latest Trade Price data
+            console.log(`📊 Received price data for ${message.data.symbol_list.length} symbols`);
+            this.handlePriceUpdate(message.data);
+          } else {
+            console.error('❌ AllTick authentication failed:', message);
+          }
+        } else if (message.ret_code !== 0) {
+          console.error(`❌ AllTick error - cmd_id: ${message.cmd_id}, ret_code: ${message.ret_code}, msg: ${message.ret_msg}`);
         } else {
-          // Ignore other message types (candlestick, order book, etc.)
-          console.log('Ignoring AllTick message type:', message.cmd_id);
+          console.log(`📝 AllTick message type ${message.cmd_id} ignored (not Latest Trade Price)`);
         }
       } catch (error) {
-        console.error('Error parsing AllTick message:', error);
+        console.error('Error parsing AllTick message:', error, 'Raw data:', data);
       }
     }
 
     private handlePriceUpdate(data: any) {
-      if (!data || !data.symbol_list) return;
+      if (!data || !data.symbol_list) {
+        console.log('⚠️ No symbol_list in AllTick price data');
+        return;
+      }
 
+      let updateCount = 0;
       for (const update of data.symbol_list) {
         if (update.code && typeof update.last_px === 'number') {
           // Map AllTick symbol back to our internal symbol
@@ -316,14 +342,19 @@ serve(async (req) => {
             ask: update.ask_px || update.last_px,
             spread: (update.ask_px && update.bid_px) ? update.ask_px - update.bid_px : 0,
             timestamp: Date.now(),
-            source: 'AllTick-WS'
+            source: 'AllTick-RT'
           };
 
           // Update cache and notify subscribers
           priceCache.set(originalSymbol, priceData);
           this.subscribers.forEach(callback => callback(priceData));
+          updateCount++;
+          
+          console.log(`🚀 AllTick RT: ${originalSymbol} = $${update.last_px} (${update.change_px || 0}%)`);
         }
       }
+      
+      console.log(`📊 Processed ${updateCount} AllTick price updates`);
     }
 
     // Removed candlestick and order book handlers - price updates only
