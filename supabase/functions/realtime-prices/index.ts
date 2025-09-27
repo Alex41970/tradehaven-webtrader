@@ -919,13 +919,12 @@ serve(async (req) => {
       if (allTickConnected && !allTickSubscribed) {
         // Subscribe to real-time price updates
         allTickWS.subscribeToPrices((priceData: PriceUpdate) => {
-          // Update asset price in real-time
           const assetIndex = assets.findIndex(a => a.symbol === priceData.symbol);
           if (assetIndex !== -1) {
             assets[assetIndex].price = priceData.price;
             assets[assetIndex].change_24h = priceData.change_24h;
-            console.log(`⚡ AllTick tick: ${priceData.symbol} = $${priceData.price} (${priceData.change_24h.toFixed(2)}%)`);
           }
+          priceCache.set(priceData.symbol, priceData);
         });
         allTickSubscribed = true;
         console.log(`🚀 AllTick connected - price updates for ${allTickWS.getSymbolCount()} symbols`);
@@ -941,13 +940,12 @@ serve(async (req) => {
       if (!allTickConnected && binanceConnected && !binanceSubscribed) {
         // Subscribe to Binance real-time crypto updates
         binanceWS.subscribeToPrices((priceData: PriceUpdate) => {
-          // Update asset price in real-time
           const assetIndex = assets.findIndex(a => a.symbol === priceData.symbol);
           if (assetIndex !== -1) {
             assets[assetIndex].price = priceData.price;
             assets[assetIndex].change_24h = priceData.change_24h;
-            console.log(`⚡ Binance tick: ${priceData.symbol} = $${priceData.price} (${priceData.change_24h.toFixed(2)}%)`);
           }
+          priceCache.set(priceData.symbol, priceData);
         });
         binanceSubscribed = true;
         console.log(`🟡 Binance connected - crypto fallback for ${binanceWS.getSymbolCount()} symbols`);
@@ -1035,11 +1033,16 @@ serve(async (req) => {
 
       // Only send WebSocket message if there are significant updates
       if (significantPriceUpdates.length > 0) {
-        const primarySource = allTickWS.isConnectedStatus() ? 'AllTick' : 
-                             binanceWS.isConnectedStatus() ? 'Binance' : 'Fallback';
-        
-        console.log(`📡 Sending ${significantPriceUpdates.length} tick-by-tick updates (threshold: ${PRICE_CHANGE_THRESHOLD}%)`);
-        
+        // Determine primary source dynamically from payload if WS not connected
+        let primarySource = allTickWS.isConnectedStatus() ? 'AllTick' :
+                            binanceWS.isConnectedStatus() ? 'Binance-WS' : 'Fallback';
+        if (primarySource === 'Fallback') {
+          const hasBinanceRest = significantPriceUpdates.some(u => u.source === 'Binance-REST');
+          if (hasBinanceRest) primarySource = 'Binance-REST';
+        }
+
+        console.log(`📡 Sending ${significantPriceUpdates.length} tick-by-tick updates (threshold: ${PRICE_CHANGE_THRESHOLD}%) from ${primarySource}`);
+
         socket.send(JSON.stringify({
           type: 'price_update',
           data: significantPriceUpdates,

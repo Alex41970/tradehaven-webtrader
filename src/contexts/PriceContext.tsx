@@ -67,7 +67,9 @@ export const PriceProvider = ({ children }: PriceProviderProps) => {
       }
       
       // Use the full WebSocket URL for the edge function
+      // Ensure WS uses the correct full URL (Supabase Functions)
       const wsUrl = `wss://stdfkfutgkmnaajixguz.functions.supabase.co/functions/v1/realtime-prices`;
+      console.log('🔌 Connecting to price WS:', wsUrl);
       wsRef.current = new WebSocket(wsUrl);
 
       wsRef.current.onopen = () => {
@@ -182,7 +184,7 @@ export const PriceProvider = ({ children }: PriceProviderProps) => {
       if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
         wsRef.current.send(JSON.stringify({ type: 'heartbeat', timestamp: Date.now(), client_id: clientIdRef.current }));
       }
-    }, 30000);
+    }, 15000); // heartbeat faster to keep server in active mode
     return () => clearInterval(interval);
   }, [isConnected]);
 
@@ -194,6 +196,12 @@ export const PriceProvider = ({ children }: PriceProviderProps) => {
       connectionStatus,
       isPaused
     }}>
+      {/* SEO essentials for dashboard */}
+      <header>
+        <title>Live Trading Dashboard | Real-time Prices</title>
+        <meta name="description" content="Live trading prices and portfolio updates in real time" />
+        <link rel="canonical" href="/dashboard" />
+      </header>
       {children}
     </PriceContext.Provider>
   );

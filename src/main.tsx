@@ -8,7 +8,5 @@ import { tradingWebSocket } from './services/TradingWebSocketService';
 tradingWebSocket.connect();
 
 createRoot(document.getElementById("root")!).render(
-  <PriceProvider>
-    <App />
-  </PriceProvider>
+  <App />
 );
