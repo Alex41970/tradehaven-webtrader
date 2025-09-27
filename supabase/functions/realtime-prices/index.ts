@@ -11,6 +11,28 @@ interface PriceUpdate {
   price: number;
   change_24h: number;
   timestamp: number;
+  volume?: number;
+  bid?: number;
+  ask?: number;
+  spread?: number;
+  source?: string;
+}
+
+interface CandlestickData {
+  symbol: string;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume: number;
+  timestamp: number;
+}
+
+interface OrderBookData {
+  symbol: string;
+  bids: Array<[number, number]>; // [price, quantity]
+  asks: Array<[number, number]>; // [price, quantity]
+  timestamp: number;
 }
 
 serve(async (req) => {
@@ -144,85 +166,269 @@ serve(async (req) => {
     }
   };
 
-  // Optimized cache for reduced message volume 
-  let priceCache = new Map<string, { price: number; change: number; timestamp: number }>();
-  let lastApiCall = 0;
-  const API_CACHE_DURATION = 1000; // 1 second for ultra-fast AllTick updates
-  const PRICE_CHANGE_THRESHOLD = 0.01; // Only send updates if price changed by 0.01% or more
+  // Enhanced cache for real-time tick-by-tick data
+  let priceCache = new Map<string, PriceUpdate>();
+  let candlestickCache = new Map<string, CandlestickData>();
+  let orderBookCache = new Map<string, OrderBookData>();
+  const PRICE_CHANGE_THRESHOLD = 0.001; // Ultra-sensitive for high-frequency trading
   
-  // AllTick API integration for ultra-high frequency data (170ms latency)
-  const getAllTickPrices = async (symbols: string[]): Promise<Map<string, { price: number; change: number; source: string }>> => {
-    const allTickApiKey = Deno.env.get('ALLTICK_API_KEY');
-    if (!allTickApiKey) {
-      console.log('AllTick API key not available, using fallback sources');
-      return new Map();
+  // AllTick WebSocket for real-time tick-by-tick data
+  class AllTickWebSocket {
+    private ws: WebSocket | null = null;
+    private isConnected = false;
+    private subscribers = new Set<(data: PriceUpdate) => void>();
+    private candlestickSubscribers = new Set<(data: CandlestickData) => void>();
+    private orderBookSubscribers = new Set<(data: OrderBookData) => void>();
+    private reconnectAttempts = 0;
+    private maxReconnectAttempts = 5;
+    private symbolList: string[] = [];
+    
+    // Comprehensive 100+ symbols across all asset types
+    private symbolMapping: Record<string, string> = {
+      // Major Cryptocurrencies (30 symbols)
+      'BTCUSD': 'BTC/USD', 'ETHUSD': 'ETH/USD', 'SOLUSD': 'SOL/USD', 'ADAUSD': 'ADA/USD',
+      'DOGEUSD': 'DOGE/USD', 'MATICUSD': 'MATIC/USD', 'LINKUSD': 'LINK/USD', 'AVAXUSD': 'AVAX/USD',
+      'DOTUSD': 'DOT/USD', 'UNIUSD': 'UNI/USD', 'LTCUSD': 'LTC/USD', 'BCHUSD': 'BCH/USD',
+      'XLMUSD': 'XLM/USD', 'FILUSD': 'FIL/USD', 'APEUSD': 'APE/USD', 'SANDUSD': 'SAND/USD',
+      'MANAUSD': 'MANA/USD', 'AXSUSD': 'AXS/USD', 'CHZUSD': 'CHZ/USD', 'FLOWUSD': 'FLOW/USD',
+      'BNBUSD': 'BNB/USD', 'XRPUSD': 'XRP/USD', 'TRXUSD': 'TRX/USD', 'ATOMUSD': 'ATOM/USD',
+      'ALGOUSD': 'ALGO/USD', 'VETUSD': 'VET/USD', 'EOSUSD': 'EOS/USD', 'IOTAUSD': 'IOTA/USD',
+      'XTZUSD': 'XTZ/USD', 'COMPUSD': 'COMP/USD',
+      
+      // Major Forex Pairs (25 symbols)
+      'EURUSD': 'EUR/USD', 'GBPUSD': 'GBP/USD', 'USDJPY': 'USD/JPY', 'AUDUSD': 'AUD/USD',
+      'USDCAD': 'USD/CAD', 'USDCHF': 'USD/CHF', 'NZDUSD': 'NZD/USD', 'EURGBP': 'EUR/GBP',
+      'EURJPY': 'EUR/JPY', 'GBPJPY': 'GBP/JPY', 'AUDJPY': 'AUD/JPY', 'CADJPY': 'CAD/JPY',
+      'CHFJPY': 'CHF/JPY', 'EURCHF': 'EUR/CHF', 'GBPCHF': 'GBP/CHF', 'AUDCHF': 'AUD/CHF',
+      'EURAUD': 'EUR/AUD', 'EURNZD': 'EUR/NZD', 'GBPAUD': 'GBP/AUD', 'GBPNZD': 'GBP/NZD',
+      'AUDNZD': 'AUD/NZD', 'USDSGD': 'USD/SGD', 'USDHKD': 'USD/HKD', 'USDNOK': 'USD/NOK',
+      'USDSEK': 'USD/SEK',
+      
+      // Precious Metals & Commodities (20 symbols)
+      'XAUUSD': 'XAU/USD', 'XAGUSD': 'XAG/USD', 'XPTUSD': 'XPT/USD', 'XPDUSD': 'XPD/USD',
+      'USOIL': 'CL', 'UKBRENT': 'BZ', 'NATGAS': 'NG', 'COPPER': 'HG', 'WHEAT': 'ZW',
+      'CORN': 'ZC', 'SOYBEANS': 'ZS', 'COFFEE': 'KC', 'SUGAR': 'SB', 'COTTON': 'CT',
+      'COCOA': 'CC', 'OATS': 'ZO', 'RICE': 'ZR', 'LUMBER': 'LBS', 'HEATING_OIL': 'HO',
+      'GASOLINE': 'RB',
+      
+      // Major Stock Indices & ETFs (15 symbols)
+      'SPY': 'SPY', 'QQQ': 'QQQ', 'DIA': 'DIA', 'IWM': 'IWM', 'VTI': 'VTI',
+      'SPX': 'SPX', 'NDX': 'NDX', 'RUT': 'RUT', 'VIX': 'VIX', 'FTSE': 'UKX',
+      'DAX': 'DAX', 'CAC': 'CAC', 'NIKKEI': 'NKY', 'HANG_SENG': 'HSI', 'ASX200': 'AS51',
+      
+      // Popular Individual Stocks (10 symbols)
+      'AAPL': 'AAPL', 'MSFT': 'MSFT', 'GOOGL': 'GOOGL', 'AMZN': 'AMZN', 'TSLA': 'TSLA',
+      'META': 'META', 'NFLX': 'NFLX', 'NVDA': 'NVDA', 'AMD': 'AMD', 'INTEL': 'INTC'
+    };
+
+    constructor() {
+      this.symbolList = Object.keys(this.symbolMapping);
+      console.log(`🚀 AllTick WebSocket initialized with ${this.symbolList.length} symbols`);
     }
 
-    const prices = new Map();
-    
-    try {
-      console.log('Fetching from AllTick API (170ms latency):', symbols.join(', '));
+    async connect() {
+      try {
+        console.log('🔌 Connecting to AllTick WebSocket for tick-by-tick data...');
+        
+        const apiKey = Deno.env.get('ALLTICK_API_KEY');
+        if (!apiKey) {
+          console.error('❌ AllTick API key not found');
+          return false;
+        }
+
+        // AllTick WebSocket endpoint
+        this.ws = new WebSocket(`wss://quote-ws-api.alltick.co/quote-ws?token=${apiKey}`);
+        
+        this.ws.onopen = () => {
+          console.log(`✅ AllTick WebSocket connected - subscribing to ${this.symbolList.length} symbols`);
+          this.isConnected = true;
+          this.reconnectAttempts = 0;
+          this.subscribeToAllData();
+        };
+
+        this.ws.onmessage = (event) => {
+          this.handleMessage(event.data);
+        };
+
+        this.ws.onclose = () => {
+          console.log('🔌 AllTick WebSocket disconnected');
+          this.isConnected = false;
+          this.scheduleReconnect();
+        };
+
+        this.ws.onerror = (error) => {
+          console.error('❌ AllTick WebSocket error:', error);
+          this.isConnected = false;
+        };
+
+        return true;
+      } catch (error) {
+        console.error('Failed to connect to AllTick WebSocket:', error);
+        this.scheduleReconnect();
+        return false;
+      }
+    }
+
+    private scheduleReconnect() {
+      if (this.reconnectAttempts < this.maxReconnectAttempts) {
+        this.reconnectAttempts++;
+        const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 30000);
+        console.log(`🔄 Reconnecting to AllTick in ${delay}ms (attempt ${this.reconnectAttempts})`);
+        setTimeout(() => this.connect(), delay);
+      }
+    }
+
+    private subscribeToAllData() {
+      if (!this.isConnected || !this.ws) return;
+
+      const allTickSymbols = this.symbolList.map(symbol => this.symbolMapping[symbol]);
       
-      // AllTick provides real-time data for multiple asset types
-      for (const symbol of symbols) {
-        try {
-          // AllTick symbol mapping for different asset types
-          let allTickSymbol = symbol;
-          
-          // Map crypto symbols for AllTick
-          if (symbol.endsWith('USD')) {
-            if (symbol === 'BTCUSD') allTickSymbol = 'BTC/USD';
-            else if (symbol === 'ETHUSD') allTickSymbol = 'ETH/USD';
-            else if (symbol === 'XRPUSD') allTickSymbol = 'XRP/USD';
-            else if (symbol === 'ADAUSD') allTickSymbol = 'ADA/USD';
-            else if (symbol === 'DOTUSD') allTickSymbol = 'DOT/USD';
-            else if (symbol === 'BNBUSD') allTickSymbol = 'BNB/USD';
-            else if (symbol === 'LINKUSD') allTickSymbol = 'LINK/USD';
-            else if (symbol === 'LTCUSD') allTickSymbol = 'LTC/USD';
-            else if (symbol === 'MATICUSD') allTickSymbol = 'MATIC/USD';
-            else if (symbol === 'SOLUSD') allTickSymbol = 'SOL/USD';
-          }
-          
-          const response = await fetch(`https://quote-api.alltick.co/quote?token=${allTickApiKey}&code=${allTickSymbol}`, {
-            method: 'GET',
-            headers: {
-              'User-Agent': 'TradingBot/1.0'
-            }
-          });
-          
-          if (response.ok) {
-            const data = await response.json();
-            if (data && data.data && data.data.length > 0) {
-              const quote = data.data[0];
-              const currentPrice = parseFloat(quote.latest_price || quote.price);
-              const previousClose = parseFloat(quote.prev_close || quote.previous_close);
-              
-              if (!isNaN(currentPrice) && currentPrice > 0) {
-                const change24h = previousClose ? ((currentPrice - previousClose) / previousClose) * 100 : 0;
-                
-                prices.set(symbol, {
-                  price: parseFloat(currentPrice.toFixed(6)),
-                  change: parseFloat(change24h.toFixed(4)),
-                  source: 'AllTick'
-                });
-                
-                console.log(`AllTick REAL price update: ${symbol} = $${currentPrice} (${change24h.toFixed(2)}%)`);
-              }
-            }
-          }
-          
-          // Small delay to respect rate limits
-          await new Promise(resolve => setTimeout(resolve, 50));
-        } catch (error) {
-          console.log(`AllTick error for ${symbol}:`, error instanceof Error ? error.message : String(error));
+      // Subscribe to real-time tick-by-tick quotes
+      this.ws.send(JSON.stringify({
+        id: Date.now(),
+        method: 'subscribe.quote',
+        params: allTickSymbols
+      }));
+
+      // Subscribe to 1-minute candlestick data
+      this.ws.send(JSON.stringify({
+        id: Date.now() + 1,
+        method: 'subscribe.kline',
+        params: allTickSymbols.map(symbol => `${symbol}:1m`)
+      }));
+
+      // Subscribe to order book depth (market depth)
+      this.ws.send(JSON.stringify({
+        id: Date.now() + 2,
+        method: 'subscribe.depth',
+        params: allTickSymbols
+      }));
+
+      console.log(`📡 Subscribed to tick-by-tick, candlestick, and order book data for ${allTickSymbols.length} symbols`);
+    }
+
+    private handleMessage(data: string) {
+      try {
+        const message = JSON.parse(data);
+        
+        if (message.method === 'quote.update') {
+          this.handlePriceUpdate(message.params);
+        } else if (message.method === 'kline.update') {
+          this.handleCandlestickUpdate(message.params);
+        } else if (message.method === 'depth.update') {
+          this.handleOrderBookUpdate(message.params);
+        }
+      } catch (error) {
+        console.error('Error parsing AllTick message:', error);
+      }
+    }
+
+    private handlePriceUpdate(params: any) {
+      if (!params || !Array.isArray(params)) return;
+
+      for (const update of params) {
+        if (update.symbol && typeof update.price === 'number') {
+          const originalSymbol = Object.keys(this.symbolMapping)
+            .find(key => this.symbolMapping[key] === update.symbol) || update.symbol;
+
+          const priceData: PriceUpdate = {
+            symbol: originalSymbol,
+            price: update.price,
+            change_24h: update.change_24h || 0,
+            volume: update.volume || 0,
+            bid: update.bid || update.price,
+            ask: update.ask || update.price,
+            spread: update.ask && update.bid ? update.ask - update.bid : 0,
+            timestamp: Date.now(),
+            source: 'AllTick-WS'
+          };
+
+          // Update cache and notify subscribers
+          priceCache.set(originalSymbol, priceData);
+          this.subscribers.forEach(callback => callback(priceData));
         }
       }
-    } catch (error) {
-      console.error('AllTick API error:', error);
     }
-    
-    return prices;
-  };
+
+    private handleCandlestickUpdate(params: any) {
+      if (!params || !Array.isArray(params)) return;
+
+      for (const update of params) {
+        const originalSymbol = Object.keys(this.symbolMapping)
+          .find(key => this.symbolMapping[key] === update.symbol) || update.symbol;
+
+        const candlestickData: CandlestickData = {
+          symbol: originalSymbol,
+          open: update.open,
+          high: update.high,
+          low: update.low,
+          close: update.close,
+          volume: update.volume,
+          timestamp: Date.now()
+        };
+
+        candlestickCache.set(originalSymbol, candlestickData);
+        this.candlestickSubscribers.forEach(callback => callback(candlestickData));
+      }
+    }
+
+    private handleOrderBookUpdate(params: any) {
+      if (!params || !Array.isArray(params)) return;
+
+      for (const update of params) {
+        const originalSymbol = Object.keys(this.symbolMapping)
+          .find(key => this.symbolMapping[key] === update.symbol) || update.symbol;
+
+        const orderBookData: OrderBookData = {
+          symbol: originalSymbol,
+          bids: update.bids || [],
+          asks: update.asks || [],
+          timestamp: Date.now()
+        };
+
+        orderBookCache.set(originalSymbol, orderBookData);
+        this.orderBookSubscribers.forEach(callback => callback(orderBookData));
+      }
+    }
+
+    subscribeToPrices(callback: (data: PriceUpdate) => void) {
+      this.subscribers.add(callback);
+      return () => this.subscribers.delete(callback);
+    }
+
+    subscribeToCandlesticks(callback: (data: CandlestickData) => void) {
+      this.candlestickSubscribers.add(callback);
+      return () => this.candlestickSubscribers.delete(callback);
+    }
+
+    subscribeToOrderBook(callback: (data: OrderBookData) => void) {
+      this.orderBookSubscribers.add(callback);
+      return () => this.orderBookSubscribers.delete(callback);
+    }
+
+    isConnectedStatus(): boolean {
+      return this.isConnected;
+    }
+
+    getSymbolCount(): number {
+      return this.symbolList.length;
+    }
+
+    disconnect() {
+      if (this.ws) {
+        this.ws.close();
+        this.ws = null;
+      }
+      this.isConnected = false;
+      this.subscribers.clear();
+      this.candlestickSubscribers.clear();
+      this.orderBookSubscribers.clear();
+    }
+  }
+
+  // Initialize AllTick WebSocket
+  const allTickWS = new AllTickWebSocket();
+  let allTickConnected = false;
 
   // Helper function to get yesterday's price from our database as fallback
   const getYesterdayPriceFromDB = async (symbol: string): Promise<number | null> => {
@@ -567,160 +773,120 @@ serve(async (req) => {
 
   // Keep track of last sent prices to implement smart batching
   let lastSentPrices = new Map<string, { price: number; timestamp: number }>();
+  let lastApiCall = 0;
 
   const sendPriceUpdates = async () => {
     try {
       const now = Date.now();
       
-      // Fetch fresh REAL prices from APIs with ultra-fast frequency (every 1 second)
-      if (now - lastApiCall > API_CACHE_DURATION) {
-        console.log('Refreshing REAL prices from APIs with AllTick priority...');
-        lastApiCall = now;
+      // Initialize AllTick WebSocket connection if not connected
+      if (!allTickConnected) {
+        console.log('🚀 Initializing AllTick WebSocket connection...');
+        allTickConnected = await allTickWS.connect();
         
-        // Get all symbols for AllTick (primary source)
-        const allSymbols = assets.map(a => a.symbol);
-        
-        // Step 1: Try AllTick first for all symbols (ultra-high frequency)
-        const allTickPrices = await getAllTickPrices(allSymbols);
-        
-        // Step 2: Update price cache and assets with AllTick data
-        allTickPrices.forEach((data, symbol) => {
-          priceCache.set(symbol, { price: data.price, change: data.change, timestamp: now });
-          const assetIndex = assets.findIndex(a => a.symbol === symbol);
-          if (assetIndex !== -1) {
-            console.log(`AllTick REAL price update: ${symbol} = $${data.price} (${data.change.toFixed(2)}%)`);
-            assets[assetIndex].price = data.price;
-            assets[assetIndex].change_24h = data.change;
-          }
-        });
-        
-        // Step 3: Get symbols still missing data for fallback sources
-        const missingCryptoSymbols = assets
-          .filter(a => a.category === 'crypto' && !allTickPrices.has(a.symbol))
-          .map(a => a.symbol);
-        
-        const missingForexSymbols = assets
-          .filter(a => a.category === 'forex' && !allTickPrices.has(a.symbol))
-          .map(a => a.symbol);
-          
-        const missingCommoditySymbols = assets
-          .filter(a => a.category === 'commodities' && !allTickPrices.has(a.symbol))
-          .map(a => a.symbol);
-        
-        try {
-          // Step 4: Fallback to Yahoo Finance for missing prices
-          const fallbackResults = await Promise.allSettled([
-            missingCryptoSymbols.length > 0 ? getCryptoPrices(missingCryptoSymbols) : Promise.resolve(new Map()),
-            missingForexSymbols.length > 0 ? getForexRates() : Promise.resolve(new Map()),
-            missingCommoditySymbols.length > 0 ? getCommodityPrices() : Promise.resolve(new Map())
-          ]);
-          
-          const [cryptoResult, forexResult, commodityResult] = fallbackResults;
-          
-          // Process fallback crypto prices
-          if (cryptoResult.status === 'fulfilled') {
-            const cryptoPrices = cryptoResult.value;
-            cryptoPrices.forEach((data, symbol) => {
-              if (missingCryptoSymbols.includes(symbol)) {
-                priceCache.set(symbol, { ...data, timestamp: now });
-                const assetIndex = assets.findIndex(a => a.symbol === symbol);
-                if (assetIndex !== -1) {
-                  assets[assetIndex].price = data.price;
-                  assets[assetIndex].change_24h = data.change;
-                }
-              }
-            });
-          }
-          
-          // Process fallback forex rates
-          if (forexResult.status === 'fulfilled') {
-            const forexRates = forexResult.value;
-            forexRates.forEach((data, symbol) => {
-              if (missingForexSymbols.includes(symbol)) {
-                priceCache.set(symbol, { price: data.price, change: data.change, timestamp: now });
-                const assetIndex = assets.findIndex(a => a.symbol === symbol);
-                if (assetIndex !== -1) {
-                  console.log(`REAL forex rate update: ${symbol} = ${data.price} (${data.change.toFixed(2)}%)`);
-                  assets[assetIndex].price = data.price;
-                  assets[assetIndex].change_24h = data.change;
-                }
-              }
-            });
-          }
-          
-          // Process fallback commodity prices
-          if (commodityResult.status === 'fulfilled') {
-            const commodityPrices = commodityResult.value;
-            commodityPrices.forEach((data, symbol) => {
-              if (missingCommoditySymbols.includes(symbol)) {
-                priceCache.set(symbol, { ...data, timestamp: now });
-                const assetIndex = assets.findIndex(a => a.symbol === symbol);
-                if (assetIndex !== -1) {
-                  console.log(`REAL commodity price update: ${symbol} = $${data.price} (${data.change.toFixed(2)}%)`);
-                  assets[assetIndex].price = data.price;
-                  assets[assetIndex].change_24h = data.change;
-                }
-              }
-            });
-          }
-          
-          console.log(`Updated ${priceCache.size} assets with REAL market data (AllTick: ${allTickPrices.size}, Fallback: ${priceCache.size - allTickPrices.size})`);
-          
-        } catch (apiError) {
-          console.error('CRITICAL: Failed to fetch fallback prices from APIs:', apiError);
+        if (allTickConnected) {
+          // Subscribe to real-time price updates
+          allTickWS.subscribeToPrices((priceData: PriceUpdate) => {
+            // Update asset price in real-time
+            const assetIndex = assets.findIndex(a => a.symbol === priceData.symbol);
+            if (assetIndex !== -1) {
+              assets[assetIndex].price = priceData.price;
+              assets[assetIndex].change_24h = priceData.change_24h;
+              
+              console.log(`⚡ Real-time tick: ${priceData.symbol} = $${priceData.price} (${priceData.change_24h.toFixed(2)}%)`);
+            }
+          });
+
+          // Subscribe to candlestick data for enhanced charting
+          allTickWS.subscribeToCandlesticks((candlestickData: CandlestickData) => {
+            console.log(`📊 Candlestick update: ${candlestickData.symbol} OHLC: ${candlestickData.open}/${candlestickData.high}/${candlestickData.low}/${candlestickData.close}`);
+          });
+
+          // Subscribe to order book for market depth
+          allTickWS.subscribeToOrderBook((orderBookData: OrderBookData) => {
+            const bestBid = orderBookData.bids[0]?.[0] || 0;
+            const bestAsk = orderBookData.asks[0]?.[0] || 0;
+            const spread = bestAsk - bestBid;
+            console.log(`📖 Order book: ${orderBookData.symbol} Bid: ${bestBid}, Ask: ${bestAsk}, Spread: ${spread.toFixed(5)}`);
+          });
         }
       }
 
-      // Smart batching: Only send price updates if price changed significantly
+      // Smart batching: Only send updates when prices change significantly
       const significantPriceUpdates: PriceUpdate[] = [];
       
-      assets.forEach(asset => {
-        const lastSent = lastSentPrices.get(asset.symbol);
-        const priceChangePercent = lastSent ? Math.abs((asset.price - lastSent.price) / lastSent.price * 100) : 100;
+      // Get current prices from cache (updated by WebSocket)
+      priceCache.forEach((priceData, symbol) => {
+        const lastSent = lastSentPrices.get(symbol);
+        const priceChangePercent = lastSent ? Math.abs((priceData.price - lastSent.price) / lastSent.price * 100) : 100;
         
-        // Send update if price changed by threshold or if it's been >30 seconds since last update
-        if (!lastSent || priceChangePercent >= PRICE_CHANGE_THRESHOLD || (now - lastSent.timestamp) > 30000) {
+        // Send update if price changed by threshold or it's been >5 seconds since last update
+        if (!lastSent || priceChangePercent >= PRICE_CHANGE_THRESHOLD || (now - lastSent.timestamp) > 5000) {
           significantPriceUpdates.push({
-            symbol: asset.symbol,
-            price: asset.price,
-            change_24h: asset.change_24h,
-            timestamp: now
+            symbol: priceData.symbol,
+            price: priceData.price,
+            change_24h: priceData.change_24h,
+            volume: priceData.volume,
+            bid: priceData.bid,
+            ask: priceData.ask,
+            spread: priceData.spread,
+            timestamp: now,
+            source: priceData.source
           });
           
           // Update last sent price
-          lastSentPrices.set(asset.symbol, { price: asset.price, timestamp: now });
+          lastSentPrices.set(symbol, { price: priceData.price, timestamp: now });
         }
       });
 
       // Only send WebSocket message if there are significant updates
       if (significantPriceUpdates.length > 0) {
-        console.log(`Sending ${significantPriceUpdates.length} significant price updates (threshold: ${PRICE_CHANGE_THRESHOLD}%)`);
+        console.log(`📡 Sending ${significantPriceUpdates.length} tick-by-tick updates (threshold: ${PRICE_CHANGE_THRESHOLD}%)`);
+        
         socket.send(JSON.stringify({
           type: 'price_update',
-          data: significantPriceUpdates
+          data: significantPriceUpdates,
+          metadata: {
+            source: 'AllTick-WebSocket',
+            total_symbols: allTickWS.getSymbolCount(),
+            connected: allTickWS.isConnectedStatus(),
+            timestamp: now
+          }
         }));
+
+        // Also send enhanced data if available
+        if (candlestickCache.size > 0) {
+          const candlestickUpdates = Array.from(candlestickCache.values()).slice(0, 10); // Send top 10
+          socket.send(JSON.stringify({
+            type: 'candlestick_update',
+            data: candlestickUpdates
+          }));
+        }
+
+        if (orderBookCache.size > 0) {
+          const orderBookUpdates = Array.from(orderBookCache.values()).slice(0, 5); // Send top 5
+          socket.send(JSON.stringify({
+            type: 'orderbook_update',
+            data: orderBookUpdates
+          }));
+        }
       } else {
-        console.log('No significant price changes - skipping WebSocket message to reduce traffic');
+        console.log('📊 No significant price changes - optimizing bandwidth');
       }
 
-      // Update database only when we have significant fresh data (every 5 seconds max)
-      if ((now - lastApiCall < 2000) && priceCache.size > 0 && significantPriceUpdates.length > 0) {
-        const updatesWithFreshData = significantPriceUpdates.filter(update => {
-          const cached = priceCache.get(update.symbol);
-          return cached && (now - cached.timestamp) < API_CACHE_DURATION;
-        });
-        
-        if (updatesWithFreshData.length > 0) {
-          console.log(`Updating database with REAL market data for ${updatesWithFreshData.length} assets`);
-          await updateDatabasePrices(updatesWithFreshData);
-        }
+      // Update database less frequently to reduce load (every 5 seconds max)
+      if (significantPriceUpdates.length > 0 && (now - lastApiCall) > 5000) {
+        lastApiCall = now;
+        console.log(`💾 Updating database with ${significantPriceUpdates.length} price changes`);
+        await updateDatabasePrices(significantPriceUpdates);
       }
 
     } catch (error) {
       console.error('Error in sendPriceUpdates:', error);
       socket.send(JSON.stringify({
         type: 'error',
-        message: 'Failed to update market prices'
+        message: 'Failed to update market prices',
+        details: error instanceof Error ? error.message : String(error)
       }));
     }
   };
@@ -745,7 +911,7 @@ serve(async (req) => {
   };
 
   socket.onclose = () => {
-    console.log("🔌 WebSocket connection closed - cleaning up intervals");
+    console.log("🔌 WebSocket connection closed - cleaning up AllTick connection");
     isConnected = false;
     if (priceInterval) {
       clearInterval(priceInterval);
@@ -758,6 +924,11 @@ serve(async (req) => {
     if (clientHeartbeatInterval) {
       clearInterval(clientHeartbeatInterval);
       clientHeartbeatInterval = null;
+    }
+    // Disconnect AllTick WebSocket
+    if (allTickConnected) {
+      allTickWS.disconnect();
+      allTickConnected = false;
     }
   };
 
