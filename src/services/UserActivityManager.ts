@@ -96,13 +96,9 @@ export class UserActivityManager {
     this.lastActivity = new Date();
     this.resetInactivityTimer();
 
-    // If coming back from complete disconnection, trigger page reload
+    // If coming back from complete disconnection, the activity-aware connection manager will handle reconnection
     if (wasDisconnected) {
-      console.log('🔄 User returned from complete disconnection - reloading page');
-      setTimeout(() => {
-        window.location.reload();
-      }, 100);
-      return;
+      console.log('🔄 User returned from complete disconnection - smart reconnection will handle this');
     }
 
     // Only notify if state changed from inactive to active

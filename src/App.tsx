@@ -9,6 +9,7 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import RoleBasedRoute from "@/components/RoleBasedRoute";
 import { PriceProvider } from "@/contexts/PriceContext";
 import { ActivityProvider } from "@/contexts/ActivityContext";
+import { useActivityAwareConnectionManager } from "@/hooks/useActivityAwareConnectionManager";
 import { ThemeProvider } from "next-themes";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
@@ -22,7 +23,11 @@ import { MobileTradingHistory } from "./pages/MobileTradingHistory";
 
 const queryClient = new QueryClient();
 
-const App = () => (
+const App = () => {
+  // Activate smart connection management system
+  useActivityAwareConnectionManager();
+  
+  return (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
       <AuthProvider>
@@ -75,6 +80,7 @@ const App = () => (
     </AuthProvider>
     </ThemeProvider>
   </QueryClientProvider>
-);
+  );
+};
 
 export default App;
