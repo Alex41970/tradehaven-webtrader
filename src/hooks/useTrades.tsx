@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "./useAuth";
 import { useRealTimeTrading } from './useRealTimeTrading';
-import { useRealTimePrices } from './useRealTimePrices';
+
 import { supabase } from "@/integrations/supabase/client";
 import { calculateRealTimePnL } from '@/utils/pnlCalculator';
 
@@ -39,7 +39,7 @@ export const useTrades = () => {
     closeTrade: realtimeCloseTrade
   } = useRealTimeTrading();
   
-  const { getUpdatedAssets } = useRealTimePrices();
+  
 
   // Fallback database query
   const fetchTrades = useCallback(async () => {
