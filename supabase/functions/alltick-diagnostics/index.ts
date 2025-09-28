@@ -57,29 +57,33 @@ serve(async (req) => {
 
     // Test 3: Different message structures
     const messageStructures = [
-      // Current structure
+      // ✅ CORRECT: Latest Trade Price subscription
       {
-        cmd_id: 22000,
+        cmd_id: 22004,
         seq_id: 123,
         trace: "test_trace_001",
         data: {
-          symbol_list: ["BTCUSD.CC"],
-          filter_list: [0]
+          symbol_list: [{ code: "BTCUSD.CC" }]
         }
       },
-      // Simplified structure
+      // Heartbeat test
       {
         cmd_id: 22000,
-        data: {
-          symbol_list: ["BTCUSD.CC"]
-        }
+        seq_id: 124,
+        trace: "heartbeat_test",
+        data: {}
       },
-      // Alternative cmd_id
+      // Multi-symbol test
       {
-        cmd_id: 22001,
+        cmd_id: 22004,
+        seq_id: 125,
+        trace: "multi_symbol_test", 
         data: {
-          symbol_list: ["BTCUSD.CC"],
-          filter_list: [0]
+          symbol_list: [
+            { code: "BTCUSD.CC" },
+            { code: "ETHUSD.CC" },
+            { code: "EURUSD.FX" }
+          ]
         }
       }
     ];
@@ -176,12 +180,11 @@ async function testSubscription(url: string, symbols: string[], testName: string
       
       ws.onopen = () => {
         const subscribeMessage = {
-          cmd_id: 22000,
+          cmd_id: 22004,  // ✅ Correct subscription command
           seq_id: 123,
           trace: "diagnostic_test",
           data: {
-            symbol_list: symbols,
-            filter_list: [0]
+            symbol_list: symbols.map(code => ({ code }))  // ✅ Correct format
           }
         };
         ws.send(JSON.stringify(subscribeMessage));

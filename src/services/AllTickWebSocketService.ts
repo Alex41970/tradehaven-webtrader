@@ -20,13 +20,17 @@ export class AllTickWebSocketService {
   private maxReconnectAttempts = 3;
   private seqId = 1;
 
-  // Connection endpoints (try both variants)
-  private endpoints = ['wss://quote.alltick.io/quote-ws-api', 'wss://quote.alltick.io/'];
+  // Connection endpoints (using proper AllTick API paths)
+  private endpoints = [
+    'wss://quote.alltick.io/quote-b-ws-api',      // Forex, Crypto, Commodities 
+    'wss://quote.alltick.io/quote-stock-b-ws-api' // Stocks, Indices
+  ];
   private endpointIndex = 0;
 
-  // Watchdog to ensure we actually receive ticks
+  // Watchdog and heartbeat management
   private lastDataTs = 0;
   private watchdog: number | null = null;
+  private heartbeatInterval: number | null = null;
   
   // Symbol mapping from internal to AllTick format - All 100 trading pairs
   private symbolMapping: { [key: string]: string } = {
@@ -166,16 +170,18 @@ export class AllTickWebSocketService {
 
       console.log('🔐 AllTick client API key found, establishing direct connection...');
       
-      // Direct connection to AllTick using client key (try multiple endpoints)
-      const url = `${this.endpoints[this.endpointIndex]}?t=${encodeURIComponent(apiKey.trim())}`;
+      // Direct connection to AllTick using proper endpoint and token param
+      const url = `${this.endpoints[this.endpointIndex]}?token=${encodeURIComponent(apiKey.trim())}`;
+      console.log(`🔗 Connecting to: ${url}`);
       this.ws = new WebSocket(url);
       
       this.ws.onopen = () => {
-        console.log(`✅ AllTick WebSocket connected directly - subscribing immediately...`);
+        console.log(`✅ AllTick WebSocket connected - starting subscription and heartbeat...`);
         this.isConnected = true;
         this.reconnectAttempts = 0;
         this.lastDataTs = 0;
         this.subscribeToPriceUpdates();
+        this.startHeartbeat();
         this.startWatchdog();
       };
 
@@ -186,6 +192,7 @@ export class AllTickWebSocketService {
       this.ws.onclose = (event) => {
         console.log(`🔌 AllTick WebSocket disconnected - Code: ${event.code}, Reason: ${event.reason}`);
         this.isConnected = false;
+        this.stopHeartbeat();
         if (this.watchdog) { clearInterval(this.watchdog); this.watchdog = null; }
         this.scheduleReconnect();
       };
@@ -219,43 +226,53 @@ export class AllTickWebSocketService {
   private subscribeToPriceUpdates() {
     if (!this.isConnected || !this.ws) return;
 
-    // Subscribe to ALL available symbols for maximum real-time coverage
+    // Start with a smaller subset to avoid plan limits, then scale up
     const allSymbols = Object.values(this.symbolMapping);
+    const symbolsToSubscribe = allSymbols.slice(0, 50); // Start with 50 symbols
     
-    console.log(`🚀 Starting AllTick subscription with ALL symbols: ${allSymbols.join(', ')}`);
+    console.log(`🚀 Starting AllTick subscription with ${symbolsToSubscribe.length} symbols (from ${allSymbols.length} total)`);
     
-    // Subscribe to Latest Trade Price using cmd_id: 22000 (symbol_list as strings)
+    // Use CORRECT cmd_id: 22004 for Latest Trade Price subscription
     const subscriptionMessage = {
-      cmd_id: 22000,
+      cmd_id: 22004,  // ✅ Correct command for transaction quote subscription
       seq_id: this.seqId++,
-      trace: `frontend_price_sub_${Date.now()}`,
+      trace: `price_sub_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       data: {
-        symbol_list: allSymbols,
-        filter_list: [0]
+        symbol_list: symbolsToSubscribe.map(code => ({ code }))  // ✅ Correct format: array of {code} objects
       }
     } as const;
 
-    console.log('📡 Sending AllTick frontend subscription for ALL symbols:', JSON.stringify(subscriptionMessage, null, 2));
+    console.log('📡 Sending AllTick subscription (cmd_id: 22004):', JSON.stringify(subscriptionMessage, null, 2));
     this.ws.send(JSON.stringify(subscriptionMessage));
 
-    // Also send alternate subscription format (cmd_id: 22001 with { code })
-    const altSubscriptionMessage = {
-      cmd_id: 22001,
-      seq_id: this.seqId++,
-      trace: `frontend_price_sub_alt_${Date.now()}`,
-      data: {
-        symbol_list: allSymbols.map(code => ({ code }))
-      }
-    } as const;
-
-    console.log('📡 Sending alternate AllTick subscription (22001) for compatibility:', JSON.stringify(altSubscriptionMessage, null, 2));
-    this.ws.send(JSON.stringify(altSubscriptionMessage));
-
-    console.log(`📡 Subscribed to AllTick Latest Trade Prices from frontend (${allSymbols.length} symbols)`);
+    console.log(`📡 ✅ Subscribed to ${symbolsToSubscribe.length} symbols using CORRECT protocol`);
   }
 
-  // Watchdog to ensure we start receiving real-time ticks; resubscribes and flips
-  // endpoints if needed to recover from silent subs.
+  // Start mandatory heartbeat (cmd_id: 22000 every 10 seconds)
+  private startHeartbeat() {
+    this.stopHeartbeat(); // Clear any existing
+    this.heartbeatInterval = window.setInterval(() => {
+      if (this.isConnected && this.ws && this.ws.readyState === WebSocket.OPEN) {
+        const heartbeat = {
+          cmd_id: 22000,  // ✅ Correct heartbeat command
+          seq_id: this.seqId++,
+          trace: `heartbeat_${Date.now()}`,
+          data: {}
+        };
+        this.ws.send(JSON.stringify(heartbeat));
+        console.log('💓 Heartbeat sent (cmd_id: 22000)');
+      }
+    }, 10000); // Every 10 seconds as required
+  }
+
+  private stopHeartbeat() {
+    if (this.heartbeatInterval) {
+      clearInterval(this.heartbeatInterval);
+      this.heartbeatInterval = null;
+    }
+  }
+
+  // Watchdog to ensure we start receiving real-time ticks
   private startWatchdog() {
     if (this.watchdog) {
       clearInterval(this.watchdog);
@@ -265,93 +282,95 @@ export class AllTickWebSocketService {
       const since = Date.now() - (this.lastDataTs || openedAt);
       if (!this.isConnected || !this.ws || this.ws.readyState !== WebSocket.OPEN) return;
 
-      if (since > 5000 && since < 12000) {
-        console.log('🔁 No ticks received yet — re-sending AllTick subscriptions...');
+      if (since > 8000 && since < 15000) {
+        console.log('🔁 No ticks received yet — re-sending subscription...');
         this.subscribeToPriceUpdates();
       }
-      if (since >= 12000) {
-        console.log('⚠️ No ticks after 12s — switching AllTick endpoint and reconnecting');
+      if (since >= 15000) {
+        console.log('⚠️ No ticks after 15s — switching endpoint and reconnecting');
         this.endpointIndex = (this.endpointIndex + 1) % this.endpoints.length;
         this.disconnect();
         this.connect();
       }
-    }, 3000);
+    }, 5000);
   }
 
   private handleMessage(data: string) {
     try {
       const message = JSON.parse(data);
-      console.log('📨 AllTick frontend message received:', { 
-        cmd_id: message.cmd_id, 
-        ret_code: message.ret_code, 
-        ret_msg: message.ret_msg,
-        has_data: !!message.data
-      });
       
-      if (message.cmd_id === 22000 || message.cmd_id === 22001) {
-        if (message.ret_code === 0 || typeof message.ret_code === 'undefined') {
-          if (message.data && message.data.symbol_list) {
-            console.log(`📊 AllTick frontend RT data: ${message.data.symbol_list.length} symbols`);
-            this.handlePriceUpdate(message.data);
-          } else {
-            console.log('✅ AllTick frontend subscription confirmed successfully');
-          }
+      // Log first 3 messages in full for debugging
+      if (this.seqId <= 5) {
+        console.log('🔍 Full AllTick message:', message);
+      } else {
+        console.log('📨 AllTick message:', { 
+          cmd_id: message.cmd_id, 
+          ret: message.ret, 
+          msg: message.msg,
+          has_data: !!message.data
+        });
+      }
+      
+      // Handle subscription confirmation (cmd_id: 22005)
+      if (message.cmd_id === 22005) {
+        if (message.ret === 200) {
+          console.log('✅ AllTick subscription confirmed successfully');
         } else {
-          console.error(`❌ AllTick frontend error - ret_code: ${message.ret_code}, ret_msg: ${message.ret_msg}`);
+          console.error(`❌ Subscription error - ret: ${message.ret}, msg: ${message.msg}`);
+        }
+      }
+      
+      // Handle heartbeat response (cmd_id: 22001)  
+      if (message.cmd_id === 22001) {
+        console.log('💓 Heartbeat acknowledged');
+      }
+      
+      // Handle incoming price data (cmd_id: 22998)
+      if (message.cmd_id === 22998) {
+        if (message.data) {
+          console.log(`📊 Received price tick for: ${message.data.code}`);
+          this.handlePriceUpdate(message.data);
         }
       }
     } catch (error) {
-      console.error('❌ Error parsing AllTick frontend message:', error);
+      console.error('❌ Error parsing AllTick message:', error, 'Raw:', data);
     }
   }
 
   private handlePriceUpdate(data: any) {
-    if (!data || !data.symbol_list) {
-      console.log('⚠️ No symbol_list in AllTick frontend price data');
-      return;
-    }
+    // Handle single price update (cmd_id: 22998 format)
+    const code = data?.code;
+    const lastPx = data?.last_px ?? data?.price ?? data?.lastPrice;
+    const changePx = data?.change_px ?? data?.change ?? 0;
+    const bidPx = data?.bid_px ?? data?.bid;
+    const askPx = data?.ask_px ?? data?.ask;
 
-    let updateCount = 0;
-    for (const update of data.symbol_list) {
-      // Normalize possible response shapes
-      const code = (update && (update.code || update.symbol || (typeof update === 'string' ? update : undefined))) as string | undefined;
-      const lastPx = update?.last_px ?? update?.price ?? update?.lastPrice ?? update?.px;
-      const changePx = update?.change_px ?? update?.change ?? 0;
-      const bidPx = update?.bid_px ?? update?.bid ?? lastPx;
-      const askPx = update?.ask_px ?? update?.ask ?? lastPx;
+    if (code && typeof lastPx === 'number') {
+      // Map AllTick symbol back to our internal symbol
+      const originalSymbol = Object.keys(this.symbolMapping)
+        .find(key => this.symbolMapping[key] === code) || code.split('.')[0];
 
-      if (code && typeof lastPx === 'number') {
-        // Map AllTick symbol back to our internal symbol
-        const originalSymbol = Object.keys(this.symbolMapping)
-          .find(key => this.symbolMapping[key] === code) || code.split('.')[0];
+      const priceData: PriceUpdate = {
+        symbol: originalSymbol,
+        price: lastPx,
+        change_24h: changePx || 0,
+        volume: data?.volume || 0,
+        bid: bidPx || lastPx,
+        ask: askPx || lastPx,
+        spread: (askPx && bidPx) ? askPx - bidPx : 0,
+        timestamp: Date.now(),
+        source: 'AllTick-Live'
+      };
 
-        const priceData: PriceUpdate = {
-          symbol: originalSymbol,
-          price: lastPx,
-          change_24h: changePx || 0,
-          volume: update?.volume || 0,
-          bid: bidPx,
-          ask: askPx,
-          spread: (askPx && bidPx) ? askPx - bidPx : 0,
-          timestamp: Date.now(),
-          source: 'AllTick-Direct'
-        };
+      // Mark that we have live data
+      this.lastDataTs = Date.now();
 
-        // Mark that we have live data
-        this.lastDataTs = Date.now();
-
-        // Notify all subscribers
-        this.subscribers.forEach(callback => callback(priceData));
-        updateCount++;
-        
-        console.log(`⚡ TICK: ${originalSymbol} = $${lastPx} (${changePx || 0}%) - IMMEDIATE UPDATE`);
-      } else {
-        console.log('ℹ️ Unrecognized update shape:', update);
-      }
-    }
-    
-    if (updateCount > 0) {
-      console.log(`🔥 PROCESSED ${updateCount} LIVE TICKS - NO BATCHING DELAY`);
+      // Notify all subscribers
+      this.subscribers.forEach(callback => callback(priceData));
+      
+      console.log(`⚡ LIVE TICK: ${originalSymbol} = $${lastPx} (${changePx || 0}%)`);
+    } else {
+      console.log('ℹ️ Incomplete price data:', data);
     }
   }
 
@@ -373,6 +392,7 @@ export class AllTickWebSocketService {
       this.ws.close();
       this.ws = null;
     }
+    this.stopHeartbeat();
     if (this.watchdog) { clearInterval(this.watchdog); this.watchdog = null; }
     this.isConnected = false;
     this.subscribers.clear();
