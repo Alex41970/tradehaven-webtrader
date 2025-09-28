@@ -23,7 +23,7 @@ export const useOptimizedPriceUpdates = () => {
   const batchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastProcessedRef = useRef<Record<string, number>>({});
 
-  // Batch updates every 100ms for responsive UI
+  // IMMEDIATE processing for AllTick - no batching delay
   const processBatch = useCallback(() => {
     if (batchRef.current.length === 0) return;
 
@@ -35,14 +35,15 @@ export const useOptimizedPriceUpdates = () => {
       let actualUpdates = 0;
 
       updates.forEach(update => {
-        // Process all price updates - no threshold needed since we're not using Supabase Realtime
+        // Process ALL price updates immediately - AllTick direct feed
         newPrices.set(update.symbol, update);
         lastProcessedRef.current[update.symbol] = update.price;
         actualUpdates++;
+        console.log(`⚡ INSTANT UPDATE: ${update.symbol} = $${update.price} - NO DELAY`);
       });
 
       if (actualUpdates > 0) {
-        console.log(`📊 Processed ${actualUpdates} price updates (no filtering - direct AllTick feed)`);
+        console.log(`🔥 INSTANT PROCESSED ${actualUpdates} ticks - ZERO BATCHING`);
         setLastUpdate(new Date());
       }
 
@@ -50,30 +51,30 @@ export const useOptimizedPriceUpdates = () => {
     });
   }, []);
 
-  // Add price update to batch
+  // Add price update and process IMMEDIATELY - no delay
   const addPriceUpdate = useCallback((update: PriceUpdate) => {
     batchRef.current.push(update);
 
-    // Clear existing timeout
+    // Clear any existing timeout
     if (batchTimeoutRef.current) {
       clearTimeout(batchTimeoutRef.current);
     }
 
-    // Process batch after 100ms for responsive UI
-    batchTimeoutRef.current = setTimeout(processBatch, 100);
+    // Process IMMEDIATELY - no timeout delay for AllTick
+    processBatch();
   }, [processBatch]);
 
-  // Add multiple price updates to batch
+  // Add multiple price updates and process IMMEDIATELY
   const addPriceUpdates = useCallback((updates: PriceUpdate[]) => {
     batchRef.current.push(...updates);
 
-    // Clear existing timeout
+    // Clear any existing timeout
     if (batchTimeoutRef.current) {
       clearTimeout(batchTimeoutRef.current);
     }
 
-    // Process batch after 100ms for responsive UI
-    batchTimeoutRef.current = setTimeout(processBatch, 100);
+    // Process IMMEDIATELY - no timeout delay for bulk updates
+    processBatch();
   }, [processBatch]);
 
   // Cleanup on unmount

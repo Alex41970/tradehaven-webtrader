@@ -107,10 +107,10 @@ export class AllTickWebSocketService {
   private subscribeToPriceUpdates() {
     if (!this.isConnected || !this.ws) return;
 
-    // Subscribe to major symbols for testing
-    const testSymbols = ["BTCUSD.CC", "ETHUSD.CC", "EURUSD.FX", "XAUUSD.CM"];
+    // Subscribe to ALL available symbols for maximum real-time coverage
+    const allSymbols = Object.values(this.symbolMapping);
     
-    console.log(`🧪 Starting AllTick subscription with symbols: ${testSymbols.join(', ')}`);
+    console.log(`🚀 Starting AllTick subscription with ALL symbols: ${allSymbols.join(', ')}`);
     
     // Subscribe to Latest Trade Price using cmd_id: 22001
     const subscriptionMessage = {
@@ -118,16 +118,16 @@ export class AllTickWebSocketService {
       seq_id: this.seqId++,
       trace: `frontend_price_sub_${Date.now()}`,
       data: {
-        symbol_list: testSymbols.map(symbol => ({
+        symbol_list: allSymbols.map(symbol => ({
           code: symbol
         }))
       }
     };
 
-    console.log('📡 Sending AllTick frontend subscription:', JSON.stringify(subscriptionMessage, null, 2));
+    console.log('📡 Sending AllTick frontend subscription for ALL symbols:', JSON.stringify(subscriptionMessage, null, 2));
     this.ws.send(JSON.stringify(subscriptionMessage));
 
-    console.log(`📡 Subscribed to AllTick Latest Trade Prices from frontend (${testSymbols.length} symbols)`);
+    console.log(`📡 Subscribed to AllTick Latest Trade Prices from frontend (${allSymbols.length} symbols)`);
   }
 
   private handleMessage(data: string) {
@@ -186,11 +186,13 @@ export class AllTickWebSocketService {
         this.subscribers.forEach(callback => callback(priceData));
         updateCount++;
         
-        console.log(`🚀 AllTick Direct: ${originalSymbol} = $${update.last_px} (${update.change_px || 0}%)`);
+        console.log(`⚡ TICK: ${originalSymbol} = $${update.last_px} (${update.change_px || 0}%) - IMMEDIATE UPDATE`);
       }
     }
     
-    console.log(`📊 Processed ${updateCount} AllTick frontend price updates`);
+    if (updateCount > 0) {
+      console.log(`🔥 PROCESSED ${updateCount} LIVE TICKS - NO BATCHING DELAY`);
+    }
   }
 
   subscribeToPrices(callback: (data: PriceUpdate) => void) {

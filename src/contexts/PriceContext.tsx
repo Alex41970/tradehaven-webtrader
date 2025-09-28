@@ -54,12 +54,10 @@ export const PriceProvider: React.FC<PriceProviderProps> = ({ children }) => {
       allTickServiceRef.current = new AllTickWebSocketService();
       
       const unsubscribe = allTickServiceRef.current.subscribeToPrices((priceUpdate) => {
-        console.log('📨 AllTick price received:', priceUpdate.symbol, priceUpdate.price);
+        console.log(`⚡ LIVE TICK RECEIVED: ${priceUpdate.symbol} = $${priceUpdate.price} - PROCESSING NOW`);
         addPriceUpdate(priceUpdate);
         
-        // Immediately flush the update to ensure instant display
-        processBatch();
-        
+        // Update immediately - no need for processBatch as addPriceUpdate now processes instantly
         setLastUpdate(new Date(priceUpdate.timestamp));
         setIsConnected(true);
         setConnectionStatus('connected');
