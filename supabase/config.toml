@@ -42,9 +42,6 @@ enabled = true
 port = 54324
 ip_version = "ipv4"
 
-[functions.realtime-prices]
-verify_jwt = false
-
 [functions.websocket-trading-updates]
 verify_jwt = false
 

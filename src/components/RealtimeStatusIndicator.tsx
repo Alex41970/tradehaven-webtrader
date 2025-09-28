@@ -7,13 +7,13 @@ import { useActivity } from '@/contexts/ActivityContext';
 
 const RealtimeStatusIndicator: React.FC = () => {
   const { isConnected: tradingConnected } = useRealTimeTrading();
-  const { isConnected, isPaused, connectionStatus, allTickConnected, edgeFunctionConnected } = usePrices();
+  const { isConnected, isPaused, connectionStatus } = usePrices();
   const { isUserActive, minutesSinceLastActivity, forceActive } = useActivity();
   
   // Determine overall status
   const isAnyConnected = tradingConnected || isConnected;
   const isPausedState = isPaused || !isUserActive;
-  const connectionCount = (tradingConnected ? 1 : 0) + (allTickConnected ? 1 : 0) + (edgeFunctionConnected ? 1 : 0);
+  const connectionCount = (tradingConnected ? 1 : 0) + (isConnected ? 1 : 0);
 
   // Handle click to resume activity
   const handleClick = () => {
@@ -22,7 +22,7 @@ const RealtimeStatusIndicator: React.FC = () => {
     }
   };
 
-  // Determine display state - show AllTick priority
+  // Determine display state - show AllTick status
   if (isPausedState) {
     return (
       <Badge 
@@ -54,15 +54,15 @@ const RealtimeStatusIndicator: React.FC = () => {
       variant={isAnyConnected ? "default" : "secondary"} 
       className="flex items-center gap-1 text-xs"
     >
-      {allTickConnected ? (
+      {isConnected ? (
         <>
           <Zap className="h-3 w-3" />
-          AllTick Direct ({connectionCount})
+          AllTick Live ({connectionCount})
         </>
-      ) : isAnyConnected ? (
+      ) : tradingConnected ? (
         <>
           <Wifi className="h-3 w-3" />
-          Live ({connectionCount})
+          Trading ({connectionCount})
         </>
       ) : (
         <>

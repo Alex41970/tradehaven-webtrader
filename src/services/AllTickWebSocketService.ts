@@ -100,7 +100,7 @@ export class AllTickWebSocketService {
       console.log(`🔄 Reconnecting to AllTick in ${delay}ms (attempt ${this.reconnectAttempts})`);
       setTimeout(() => this.connect(), delay);
     } else {
-      console.log('Max AllTick reconnect attempts reached, will rely on edge function fallback');
+      console.log('❌ Max AllTick reconnect attempts reached - no price data available');
     }
   }
 

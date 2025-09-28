@@ -14,7 +14,7 @@ export const PriceConnectionStatus: React.FC = () => {
       return (
         <Loader2 
           className="h-4 w-4 text-yellow-500 animate-spin" 
-          aria-label="Connecting to price feed"
+          aria-label="Connecting to AllTick"
         />
       );
     }
@@ -22,8 +22,8 @@ export const PriceConnectionStatus: React.FC = () => {
     if (connectionStatus === 'error') {
       return (
         <AlertTriangle 
-          className="h-4 w-4 text-orange-500" 
-          aria-label="Price feed error - using database"
+          className="h-4 w-4 text-red-500" 
+          aria-label="AllTick connection error"
         />
       );
     }
@@ -31,12 +31,12 @@ export const PriceConnectionStatus: React.FC = () => {
     return isConnected ? (
       <Wifi 
         className="h-4 w-4 text-green-500" 
-        aria-label="Real-time prices active"
+        aria-label="AllTick live prices"
       />
     ) : (
       <WifiOff 
-        className="h-4 w-4 text-muted-foreground" 
-        aria-label="Database prices"
+        className="h-4 w-4 text-red-500" 
+        aria-label="AllTick offline"
       />
     );
   }
@@ -53,22 +53,22 @@ export const PriceConnectionStatus: React.FC = () => {
 
   if (connectionStatus === 'error') {
     return (
-      <Badge variant="outline" className="flex items-center gap-1 text-xs border-orange-500/50 text-orange-600">
+      <Badge variant="outline" className="flex items-center gap-1 text-xs border-red-500/50 text-red-600">
         <AlertTriangle className="h-3 w-3" />
-        Database Mode
+        AllTick Offline
       </Badge>
     );
   }
 
   return (
     <Badge 
-      variant={isConnected ? "default" : "secondary"} 
+      variant={isConnected ? "default" : "destructive"} 
       className="flex items-center gap-1 text-xs"
     >
       {isConnected ? (
         <>
           <Wifi className="h-3 w-3" />
-          Live Prices
+          AllTick Live
           {lastUpdate && (
             <span className="text-xs opacity-70">
               • {lastUpdate.toLocaleTimeString([], { timeStyle: 'short' })}
@@ -78,7 +78,7 @@ export const PriceConnectionStatus: React.FC = () => {
       ) : (
         <>
           <WifiOff className="h-3 w-3" />
-          Database Prices
+          AllTick Offline
         </>
       )}
     </Badge>
