@@ -35,17 +35,14 @@ export const useOptimizedPriceUpdates = () => {
       let actualUpdates = 0;
 
       updates.forEach(update => {
-        const lastPrice = lastProcessedRef.current[update.symbol];
-        // Allow all meaningful price changes (any change > 0 for pulsing)
-        if (!lastPrice || update.price !== lastPrice) {
-          newPrices.set(update.symbol, update);
-          lastProcessedRef.current[update.symbol] = update.price;
-          actualUpdates++;
-        }
+        // Process all price updates - no threshold needed since we're not using Supabase Realtime
+        newPrices.set(update.symbol, update);
+        lastProcessedRef.current[update.symbol] = update.price;
+        actualUpdates++;
       });
 
       if (actualUpdates > 0) {
-        console.log(`📊 Batched ${actualUpdates}/${updates.length} price updates`);
+        console.log(`📊 Processed ${actualUpdates} price updates (no filtering - direct AllTick feed)`);
         setLastUpdate(new Date());
       }
 
