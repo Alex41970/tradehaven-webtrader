@@ -26,6 +26,7 @@ export const useAssets = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    console.log('🎯 useAssets hook initializing...');
     fetchAssets();
     
     // Set up activity-aware real-time subscription for price updates
@@ -36,6 +37,7 @@ export const useAssets = () => {
       schema: 'public',
       table: 'assets',
       callback: (payload) => {
+        console.log('🔄 Asset update received:', payload.new);
         setAssets(prev => prev.map(asset => 
           asset.id === payload.new.id ? payload.new as Asset : asset
         ));
@@ -49,6 +51,7 @@ export const useAssets = () => {
 
   const fetchAssets = async () => {
     try {
+      console.log('📊 Starting to fetch assets from database...');
       const { data, error } = await supabase
         .from('assets')
         .select('*')
@@ -57,7 +60,7 @@ export const useAssets = () => {
         .order('symbol', { ascending: true });
 
       if (error) {
-        console.error('Error fetching assets:', error);
+        console.error('❌ Error fetching assets:', error);
         toast({
           title: "Error",
           description: "Failed to fetch trading assets",
@@ -66,9 +69,10 @@ export const useAssets = () => {
         return;
       }
 
+      console.log(`✅ Successfully fetched ${data?.length || 0} assets from database`);
       setAssets(data as Asset[] || []);
     } catch (error) {
-      console.error('Error:', error);
+      console.error('❌ Unexpected error fetching assets:', error);
     } finally {
       setLoading(false);
     }

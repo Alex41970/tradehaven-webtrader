@@ -49,12 +49,23 @@ export const PriceProvider: React.FC<PriceProviderProps> = ({ children }) => {
   // Initialize AllTick connection
   useEffect(() => {
     const initAllTick = async () => {
-      console.log('🚀 Initializing AllTick-only WebSocket service...');
+      console.log('🚀 PriceProvider: Initializing AllTick WebSocket service...');
+      console.log('🔑 Checking API key availability...');
+      
+      const apiKey = import.meta.env.VITE_ALLTICK_CLIENT_KEY;
+      if (!apiKey || apiKey === 'your-c-app-key-here') {
+        console.error('❌ CRITICAL: AllTick API key not set or still default!');
+        console.error('🔧 Set VITE_ALLTICK_CLIENT_KEY in your .env file');
+        setConnectionStatus('error');
+        return;
+      }
+      
+      console.log('✅ AllTick API key found, proceeding with connection...');
       
       allTickServiceRef.current = new AllTickWebSocketService();
       
       const unsubscribe = allTickServiceRef.current.subscribeToPrices((priceUpdate) => {
-        console.log(`⚡ LIVE TICK RECEIVED: ${priceUpdate.symbol} = $${priceUpdate.price} - PROCESSING NOW`);
+        console.log(`⚡ LIVE PRICE RECEIVED: ${priceUpdate.symbol} = $${priceUpdate.price} (${priceUpdate.change_24h}%)`);
         addPriceUpdate(priceUpdate);
         
         // Update immediately - no need for processBatch as addPriceUpdate now processes instantly
@@ -66,7 +77,7 @@ export const PriceProvider: React.FC<PriceProviderProps> = ({ children }) => {
       const connected = await allTickServiceRef.current.connect();
       
       if (connected) {
-        console.log('✅ AllTick WebSocket connected successfully');
+        console.log('✅ AllTick WebSocket connected successfully - waiting for price data...');
         setIsConnected(true);
         setConnectionStatus('connected');
       } else {
@@ -82,6 +93,7 @@ export const PriceProvider: React.FC<PriceProviderProps> = ({ children }) => {
 
     return () => {
       if (allTickServiceRef.current) {
+        console.log('🔌 PriceProvider: Disconnecting AllTick service...');
         allTickServiceRef.current.disconnect();
       }
     };
