@@ -35,7 +35,7 @@ interface PriceProviderProps {
 }
 
 export const PriceProvider = ({ children }: PriceProviderProps) => {
-  const { prices, lastUpdate, addPriceUpdates } = useOptimizedPriceUpdates();
+  const { prices, lastUpdate, addPriceUpdates, processBatch } = useOptimizedPriceUpdates();
   const [isConnected, setIsConnected] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'disconnected' | 'error' | 'paused'>('disconnected');
   const [isPaused, setIsPaused] = useState(false);
@@ -49,6 +49,7 @@ export const PriceProvider = ({ children }: PriceProviderProps) => {
   const connectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isPageVisible = useRef(true);
   const clientIdRef = useRef<string>((typeof crypto !== 'undefined' && 'randomUUID' in crypto) ? crypto.randomUUID() : Math.random().toString(36).slice(2));
+  const edgePausedRef = useRef<boolean>(false);
 
   // Page visibility optimization to reduce messages when tab is hidden
   useEffect(() => {
@@ -75,8 +76,10 @@ export const PriceProvider = ({ children }: PriceProviderProps) => {
       
       console.log('📊 AllTick Direct update:', priceData.symbol, priceData.price, 'source:', priceData.source);
       addPriceUpdates([priceData]);
+      // Flush immediately for ultra-low latency
+      processBatch();
     });
-    
+
     // Connect and update status
     const connected = await allTickServiceRef.current.connect();
     setAllTickConnected(connected);
@@ -110,8 +113,35 @@ export const PriceProvider = ({ children }: PriceProviderProps) => {
     updateConnectionStatus();
   }, [allTickConnected, edgeFunctionConnected]);
 
+  // Pause/resume Edge Function based on AllTick direct connection to save Supabase usage
+  useEffect(() => {
+    if (allTickConnected) {
+      if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+        console.log('🧘 Pausing Edge Function price feed (AllTick direct active)');
+        edgePausedRef.current = true;
+        try {
+          wsRef.current.close();
+        } catch (e) {
+          console.warn('Failed to close Edge Function WS while pausing', e);
+        }
+      } else {
+        edgePausedRef.current = true;
+      }
+    } else {
+      if (edgePausedRef.current && (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN)) {
+        console.log('🔄 Resuming Edge Function price feed (AllTick not active)');
+        edgePausedRef.current = false;
+        connectWebSocket();
+      }
+    }
+  }, [allTickConnected]);
+
   const connectWebSocket = () => {
     try {
+      if (edgePausedRef.current) {
+        console.log('⏸️ Edge Function connect skipped (paused due to AllTick)');
+        return;
+      }
       setConnectionStatus('connecting');
       setIsPaused(false);
       
@@ -187,15 +217,19 @@ export const PriceProvider = ({ children }: PriceProviderProps) => {
           connectTimeoutRef.current = null;
         }
         
-        // Attempt to reconnect with exponential backoff (max 3 attempts)
-        if (reconnectAttempts.current < 3) {
+        // Attempt to reconnect with exponential backoff (max 3 attempts) unless paused
+        if (!edgePausedRef.current && reconnectAttempts.current < 3) {
           const delay = Math.pow(2, reconnectAttempts.current) * 1000;
           reconnectTimeoutRef.current = setTimeout(() => {
             reconnectAttempts.current++;
             connectWebSocket();
           }, delay);
         } else {
-          console.log('Max reconnect attempts reached, staying in database mode');
+          if (edgePausedRef.current) {
+            console.log('⏹️ Edge Function reconnection suppressed (paused due to AllTick)');
+          } else {
+            console.log('Max reconnect attempts reached, staying in database mode');
+          }
         }
       };
 
