@@ -32,6 +32,8 @@ interface PriceProviderProps {
 }
 
 export const PriceProvider: React.FC<PriceProviderProps> = ({ children }) => {
+  console.log('🔥 PRICE PROVIDER COMPONENT CREATED - INITIALIZING NOW');
+  
   const [isConnected, setIsConnected] = useState(false);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
   const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'disconnected' | 'error'>('connecting');
@@ -48,6 +50,8 @@ export const PriceProvider: React.FC<PriceProviderProps> = ({ children }) => {
 
   // Initialize AllTick connection
   useEffect(() => {
+    console.log('🔥 PRICE PROVIDER USE EFFECT FIRED - STARTING ALLTICK CONNECTION');
+    
     const initAllTick = async () => {
       console.log('🚀 PriceProvider: Initializing AllTick WebSocket service...');
       console.log('🔑 Checking API key availability...');

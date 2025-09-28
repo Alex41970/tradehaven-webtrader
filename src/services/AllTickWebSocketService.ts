@@ -136,12 +136,16 @@ export class AllTickWebSocketService {
   private symbolList: string[];
 
   constructor() {
+    console.log('🔥 ALLTICK SERVICE CONSTRUCTOR CALLED - SERVICE CREATED');
+    
     this.symbolList = Object.keys(this.symbolMapping);
     console.log(`🚀 AllTick frontend service initialized with ALL ${this.symbolList.length} symbols across 5 categories`);
     console.log(`📊 Coverage: ${Object.values(this.symbolMapping).filter(s => s.endsWith('.FX')).length} Forex, ${Object.values(this.symbolMapping).filter(s => s.endsWith('.CC')).length} Crypto, ${Object.values(this.symbolMapping).filter(s => s.endsWith('.CM')).length} Commodities, ${Object.values(this.symbolMapping).filter(s => s.endsWith('.US')).length} Stocks, ${Object.values(this.symbolMapping).filter(s => s.endsWith('.IDX')).length} Indices`);
   }
 
   async connect(): Promise<boolean> {
+    console.log('🔥 ALLTICK CONNECT METHOD CALLED - STARTING CONNECTION PROCESS');
+    
     try {
       console.log('🔌 Connecting to AllTick WebSocket directly from frontend...');
       
@@ -299,7 +303,7 @@ export class AllTickWebSocketService {
   }
 
   getSymbolCount(): number {
-    return this.symbolList.length;
+    return Object.keys(this.symbolMapping).length;
   }
 
   disconnect() {
