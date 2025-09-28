@@ -57,6 +57,8 @@ export const PriceProvider: React.FC<PriceProviderProps> = ({ children }) => {
       console.log('🔑 Checking API key availability...');
       
       const apiKey = import.meta.env.VITE_ALLTICK_CLIENT_KEY;
+      console.log('🔑 API Key status:', apiKey ? `Found (${apiKey.substring(0, 10)}...)` : 'NOT FOUND');
+      
       if (!apiKey || apiKey === 'your-c-app-key-here') {
         console.error('❌ CRITICAL: AllTick API key not set or still default!');
         console.error('🔧 Set VITE_ALLTICK_CLIENT_KEY in your .env file');
@@ -69,19 +71,20 @@ export const PriceProvider: React.FC<PriceProviderProps> = ({ children }) => {
       allTickServiceRef.current = new AllTickWebSocketService();
       
       const unsubscribe = allTickServiceRef.current.subscribeToPrices((priceUpdate) => {
-        console.log(`⚡ LIVE PRICE RECEIVED: ${priceUpdate.symbol} = $${priceUpdate.price} (${priceUpdate.change_24h}%)`);
+        console.log(`⚡ LIVE PRICE RECEIVED: ${priceUpdate.symbol} = $${priceUpdate.price} (${priceUpdate.change_24h}%) - Source: ${priceUpdate.source}`);
         addPriceUpdate(priceUpdate);
         
-        // Update immediately - no need for processBatch as addPriceUpdate now processes instantly
         setLastUpdate(new Date(priceUpdate.timestamp));
         setIsConnected(true);
         setConnectionStatus('connected');
       });
       
+      console.log('🔌 Attempting AllTick WebSocket connection...');
       const connected = await allTickServiceRef.current.connect();
       
       if (connected) {
         console.log('✅ AllTick WebSocket connected successfully - waiting for price data...');
+        console.log(`📊 AllTick monitoring ${allTickServiceRef.current.getSymbolCount()} symbols`);
         setIsConnected(true);
         setConnectionStatus('connected');
       } else {
