@@ -1,29 +1,29 @@
 import React from 'react';
 import { Badge } from '@/components/ui/badge';
-import { Wifi, WifiOff, Pause, Clock } from 'lucide-react';
+import { Wifi, WifiOff, Pause, Clock, Zap } from 'lucide-react';
 import { useRealTimeTrading } from '@/hooks/useRealTimeTrading';
 import { usePrices } from '@/contexts/PriceContext';
 import { useActivity } from '@/contexts/ActivityContext';
 
 const RealtimeStatusIndicator: React.FC = () => {
   const { isConnected: tradingConnected } = useRealTimeTrading();
-  const { isConnected: pricesConnected, isPaused: pricesPaused, connectionStatus } = usePrices();
+  const { isConnected, isPaused, connectionStatus, allTickConnected, edgeFunctionConnected } = usePrices();
   const { isUserActive, minutesSinceLastActivity, forceActive } = useActivity();
   
   // Determine overall status
-  const isConnected = tradingConnected || pricesConnected;
-  const isPaused = pricesPaused || !isUserActive;
-  const connectionCount = (tradingConnected ? 1 : 0) + (pricesConnected ? 1 : 0);
+  const isAnyConnected = tradingConnected || isConnected;
+  const isPausedState = isPaused || !isUserActive;
+  const connectionCount = (tradingConnected ? 1 : 0) + (allTickConnected ? 1 : 0) + (edgeFunctionConnected ? 1 : 0);
 
   // Handle click to resume activity
   const handleClick = () => {
-    if (isPaused) {
+    if (isPausedState) {
       forceActive();
     }
   };
 
-  // Determine display state
-  if (isPaused) {
+  // Determine display state - show AllTick priority
+  if (isPausedState) {
     return (
       <Badge 
         variant="outline" 
@@ -51,10 +51,15 @@ const RealtimeStatusIndicator: React.FC = () => {
 
   return (
     <Badge 
-      variant={isConnected ? "default" : "secondary"} 
+      variant={isAnyConnected ? "default" : "secondary"} 
       className="flex items-center gap-1 text-xs"
     >
-      {isConnected ? (
+      {allTickConnected ? (
+        <>
+          <Zap className="h-3 w-3" />
+          AllTick Direct ({connectionCount})
+        </>
+      ) : isAnyConnected ? (
         <>
           <Wifi className="h-3 w-3" />
           Live ({connectionCount})

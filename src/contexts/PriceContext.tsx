@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { toast } from '@/hooks/use-toast';
 import { useOptimizedPriceUpdates } from '@/hooks/useOptimizedPriceUpdates';
+import { AllTickWebSocketService } from '@/services/AllTickWebSocketService';
 
 interface PriceUpdate {
   symbol: string;
@@ -15,6 +16,8 @@ interface PriceContextType {
   lastUpdate: Date | null;
   connectionStatus: 'connecting' | 'connected' | 'disconnected' | 'error' | 'paused';
   isPaused: boolean;
+  allTickConnected: boolean;
+  edgeFunctionConnected: boolean;
 }
 
 const PriceContext = createContext<PriceContextType | undefined>(undefined);
@@ -36,7 +39,11 @@ export const PriceProvider = ({ children }: PriceProviderProps) => {
   const [isConnected, setIsConnected] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'disconnected' | 'error' | 'paused'>('disconnected');
   const [isPaused, setIsPaused] = useState(false);
+  const [allTickConnected, setAllTickConnected] = useState(false);
+  const [edgeFunctionConnected, setEdgeFunctionConnected] = useState(false);
+  
   const wsRef = useRef<WebSocket | null>(null);
+  const allTickServiceRef = useRef<AllTickWebSocketService | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const reconnectAttempts = useRef(0);
   const connectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -56,6 +63,53 @@ export const PriceProvider = ({ children }: PriceProviderProps) => {
     }
   }, []);
 
+  // Initialize AllTick direct connection
+  const connectAllTick = async () => {
+    if (!allTickServiceRef.current) {
+      allTickServiceRef.current = new AllTickWebSocketService();
+    }
+    
+    // Subscribe to AllTick price updates
+    allTickServiceRef.current.subscribeToPrices((priceData) => {
+      if (!isPageVisible.current) return; // Skip if tab hidden
+      
+      console.log('📊 AllTick Direct update:', priceData.symbol, priceData.price, 'source:', priceData.source);
+      addPriceUpdates([priceData]);
+    });
+    
+    // Connect and update status
+    const connected = await allTickServiceRef.current.connect();
+    setAllTickConnected(connected);
+    
+    // Update overall connection status
+    updateConnectionStatus();
+  };
+
+  // Update overall connection status based on both connections
+  const updateConnectionStatus = () => {
+    const anyConnected = allTickConnected || edgeFunctionConnected;
+    setIsConnected(anyConnected);
+    
+    if (allTickConnected && edgeFunctionConnected) {
+      setConnectionStatus('connected');
+      console.log('🚀 Both AllTick and Edge Function connected - dual data feed active');
+    } else if (allTickConnected) {
+      setConnectionStatus('connected');
+      console.log('⚡ AllTick direct connected - real-time prices active');
+    } else if (edgeFunctionConnected) {
+      setConnectionStatus('connected');
+      console.log('🔄 Edge Function connected - fallback prices active');
+    } else {
+      setConnectionStatus('disconnected');
+      console.log('❌ No price connections active');
+    }
+  };
+
+  // Update connection status whenever individual connections change
+  useEffect(() => {
+    updateConnectionStatus();
+  }, [allTickConnected, edgeFunctionConnected]);
+
   const connectWebSocket = () => {
     try {
       setConnectionStatus('connecting');
@@ -73,9 +127,9 @@ export const PriceProvider = ({ children }: PriceProviderProps) => {
       wsRef.current = new WebSocket(wsUrl);
 
       wsRef.current.onopen = () => {
-        console.log('Real-time price WebSocket connected');
-        setIsConnected(true);
-        setConnectionStatus('connected');
+        console.log('Edge Function WebSocket connected');
+        setEdgeFunctionConnected(true);
+        updateConnectionStatus();
         reconnectAttempts.current = 0;
         
         // Clear connection timeout on successful connection
@@ -123,9 +177,9 @@ export const PriceProvider = ({ children }: PriceProviderProps) => {
       };
 
       wsRef.current.onclose = () => {
-        console.log('Price WebSocket disconnected');
-        setIsConnected(false);
-        setConnectionStatus('disconnected');
+        console.log('Edge Function WebSocket disconnected');
+        setEdgeFunctionConnected(false);
+        updateConnectionStatus();
         
         // Clear connection timeout
         if (connectTimeoutRef.current) {
@@ -163,11 +217,16 @@ export const PriceProvider = ({ children }: PriceProviderProps) => {
   };
 
   useEffect(() => {
+    // Start both connections
     connectWebSocket();
+    connectAllTick();
 
     return () => {
       if (wsRef.current) {
         wsRef.current.close();
+      }
+      if (allTickServiceRef.current) {
+        allTickServiceRef.current.disconnect();
       }
       if (reconnectTimeoutRef.current) {
         clearTimeout(reconnectTimeoutRef.current);
@@ -194,7 +253,9 @@ export const PriceProvider = ({ children }: PriceProviderProps) => {
       isConnected,
       lastUpdate,
       connectionStatus,
-      isPaused
+      isPaused,
+      allTickConnected,
+      edgeFunctionConnected
     }}>
       {/* SEO essentials for dashboard */}
       <header>
