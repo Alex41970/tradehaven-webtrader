@@ -7,7 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import RoleBasedRoute from "@/components/RoleBasedRoute";
-import { PriceProvider } from "@/contexts/PriceContext";
+
 import { ActivityProvider } from "@/contexts/ActivityContext";
 import { useActivityAwareConnectionManager } from "@/hooks/useActivityAwareConnectionManager";
 import { ThemeProvider } from "next-themes";
@@ -34,7 +34,7 @@ const App = () => (
     <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
       <AuthProvider>
         <ActivityProvider>
-          <PriceProvider>
+          
             <ConnectionManager />
             <TooltipProvider>
               <Toaster />
@@ -78,7 +78,7 @@ const App = () => (
               </Routes>
             </BrowserRouter>
           </TooltipProvider>
-        </PriceProvider>
+        
       </ActivityProvider>
     </AuthProvider>
     </ThemeProvider>
