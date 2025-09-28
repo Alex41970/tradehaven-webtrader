@@ -19,6 +19,14 @@ export class AllTickWebSocketService {
   private reconnectAttempts = 0;
   private maxReconnectAttempts = 3;
   private seqId = 1;
+
+  // Connection endpoints (try both variants)
+  private endpoints = ['wss://quote.alltick.io/quote-ws-api', 'wss://quote.alltick.io/'];
+  private endpointIndex = 0;
+
+  // Watchdog to ensure we actually receive ticks
+  private lastDataTs = 0;
+  private watchdog: number | null = null;
   
   // Symbol mapping from internal to AllTick format - All 100 trading pairs
   private symbolMapping: { [key: string]: string } = {
@@ -158,14 +166,17 @@ export class AllTickWebSocketService {
 
       console.log('🔐 AllTick client API key found, establishing direct connection...');
       
-      // Direct connection to AllTick using client key (use root endpoint – more reliable)
-      this.ws = new WebSocket(`wss://quote.alltick.io/?t=${encodeURIComponent(apiKey.trim())}`);
+      // Direct connection to AllTick using client key (try multiple endpoints)
+      const url = `${this.endpoints[this.endpointIndex]}?t=${encodeURIComponent(apiKey.trim())}`;
+      this.ws = new WebSocket(url);
       
       this.ws.onopen = () => {
         console.log(`✅ AllTick WebSocket connected directly - subscribing immediately...`);
         this.isConnected = true;
         this.reconnectAttempts = 0;
+        this.lastDataTs = 0;
         this.subscribeToPriceUpdates();
+        this.startWatchdog();
       };
 
       this.ws.onmessage = (event) => {
@@ -175,6 +186,7 @@ export class AllTickWebSocketService {
       this.ws.onclose = (event) => {
         console.log(`🔌 AllTick WebSocket disconnected - Code: ${event.code}, Reason: ${event.reason}`);
         this.isConnected = false;
+        if (this.watchdog) { clearInterval(this.watchdog); this.watchdog = null; }
         this.scheduleReconnect();
       };
 
@@ -196,6 +208,8 @@ export class AllTickWebSocketService {
       this.reconnectAttempts++;
       const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 30000);
       console.log(`🔄 Reconnecting to AllTick in ${delay}ms (attempt ${this.reconnectAttempts})`);
+      // Flip endpoint each attempt to maximize compatibility
+      this.endpointIndex = (this.endpointIndex + 1) % this.endpoints.length;
       setTimeout(() => this.connect(), delay);
     } else {
       console.log('❌ Max AllTick reconnect attempts reached - no price data available');
@@ -224,7 +238,44 @@ export class AllTickWebSocketService {
     console.log('📡 Sending AllTick frontend subscription for ALL symbols:', JSON.stringify(subscriptionMessage, null, 2));
     this.ws.send(JSON.stringify(subscriptionMessage));
 
+    // Also send alternate subscription format (cmd_id: 22001 with { code })
+    const altSubscriptionMessage = {
+      cmd_id: 22001,
+      seq_id: this.seqId++,
+      trace: `frontend_price_sub_alt_${Date.now()}`,
+      data: {
+        symbol_list: allSymbols.map(code => ({ code }))
+      }
+    } as const;
+
+    console.log('📡 Sending alternate AllTick subscription (22001) for compatibility:', JSON.stringify(altSubscriptionMessage, null, 2));
+    this.ws.send(JSON.stringify(altSubscriptionMessage));
+
     console.log(`📡 Subscribed to AllTick Latest Trade Prices from frontend (${allSymbols.length} symbols)`);
+  }
+
+  // Watchdog to ensure we start receiving real-time ticks; resubscribes and flips
+  // endpoints if needed to recover from silent subs.
+  private startWatchdog() {
+    if (this.watchdog) {
+      clearInterval(this.watchdog);
+    }
+    const openedAt = Date.now();
+    this.watchdog = window.setInterval(() => {
+      const since = Date.now() - (this.lastDataTs || openedAt);
+      if (!this.isConnected || !this.ws || this.ws.readyState !== WebSocket.OPEN) return;
+
+      if (since > 5000 && since < 12000) {
+        console.log('🔁 No ticks received yet — re-sending AllTick subscriptions...');
+        this.subscribeToPriceUpdates();
+      }
+      if (since >= 12000) {
+        console.log('⚠️ No ticks after 12s — switching AllTick endpoint and reconnecting');
+        this.endpointIndex = (this.endpointIndex + 1) % this.endpoints.length;
+        this.disconnect();
+        this.connect();
+      }
+    }, 3000);
   }
 
   private handleMessage(data: string) {
@@ -286,6 +337,9 @@ export class AllTickWebSocketService {
           source: 'AllTick-Direct'
         };
 
+        // Mark that we have live data
+        this.lastDataTs = Date.now();
+
         // Notify all subscribers
         this.subscribers.forEach(callback => callback(priceData));
         updateCount++;
@@ -319,6 +373,7 @@ export class AllTickWebSocketService {
       this.ws.close();
       this.ws = null;
     }
+    if (this.watchdog) { clearInterval(this.watchdog); this.watchdog = null; }
     this.isConnected = false;
     this.subscribers.clear();
   }
