@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
-import { AllTickWebSocketService } from '@/services/AllTickWebSocketService';
+import { AllTickRestService } from '@/services/AllTickRestService';
 import { useOptimizedPriceUpdates } from '@/hooks/useOptimizedPriceUpdates';
 
 interface PriceUpdate {
@@ -47,14 +47,14 @@ export const PriceProvider: React.FC<PriceProviderProps> = ({ children }) => {
     processBatch 
   } = useOptimizedPriceUpdates();
 
-  const allTickServiceRef = useRef<AllTickWebSocketService | null>(null);
+  const allTickServiceRef = useRef<AllTickRestService | null>(null);
 
-  // Initialize AllTick connection
+  // Initialize AllTick REST connection
   useEffect(() => {
-    console.log('🔥 PRICE PROVIDER USE EFFECT FIRED - STARTING ALLTICK CONNECTION');
+    console.log('🔥 PRICE PROVIDER USE EFFECT FIRED - STARTING ALLTICK REST CONNECTION');
     
     const initAllTick = async () => {
-      console.log('🚀 PriceProvider: Initializing AllTick WebSocket service...');
+      console.log('🚀 PriceProvider: Initializing AllTick REST service...');
       console.log('🔑 Checking API key availability...');
       
       const apiKey = import.meta.env.VITE_ALLTICK_CLIENT_KEY;
@@ -67,45 +67,49 @@ export const PriceProvider: React.FC<PriceProviderProps> = ({ children }) => {
         return;
       }
       
-      console.log('✅ AllTick API key found, proceeding with connection...');
+      console.log('✅ AllTick API key found, proceeding with REST connection...');
       
-      allTickServiceRef.current = new AllTickWebSocketService();
-      
-      const unsubscribe = allTickServiceRef.current.subscribeToPrices((priceUpdate) => {
-        console.log(`⚡ LIVE PRICE RECEIVED: ${priceUpdate.symbol} = $${priceUpdate.price} (${priceUpdate.change_24h}%) - Source: ${priceUpdate.source}`);
-        addPriceUpdate(priceUpdate);
+      try {
+        allTickServiceRef.current = new AllTickRestService();
         
-        setLastUpdate(new Date(priceUpdate.timestamp));
-        setIsConnected(true);
-        setConnectionStatus('connected');
-      });
-      
-      console.log('🔌 Attempting AllTick WebSocket connection...');
-      const connected = await allTickServiceRef.current.connect();
-      
-      if (connected) {
-        console.log('✅ AllTick WebSocket connected successfully - waiting for price data...');
-        console.log(`📊 AllTick monitoring ${allTickServiceRef.current.getSymbolCount()} symbols`);
-        // Do not mark connected until first tick is received
-        setConnectionStatus('connecting');
-      } else {
-        console.log('❌ AllTick WebSocket failed to connect');
-        setIsConnected(false);
+        const unsubscribe = allTickServiceRef.current.subscribeToPrices((priceUpdate) => {
+          console.log(`⚡ REST PRICE RECEIVED: ${priceUpdate.symbol} = $${priceUpdate.price} (${priceUpdate.change_24h}%) - Source: ${priceUpdate.source}`);
+          addPriceUpdate(priceUpdate);
+          
+          setLastUpdate(new Date(priceUpdate.timestamp));
+          setIsConnected(true);
+          setConnectionStatus('connected');
+        });
+        
+        console.log('🔌 Starting AllTick REST polling...');
+        const connected = await allTickServiceRef.current.connect();
+        
+        if (connected) {
+          console.log('✅ AllTick REST service started successfully');
+          console.log(`📊 AllTick monitoring ${allTickServiceRef.current.getSymbolCount()} symbols`);
+          setConnectionStatus('connecting');
+        } else {
+          console.log('❌ AllTick REST service failed to start');
+          setIsConnected(false);
+          setConnectionStatus('error');
+        }
+        
+        return unsubscribe;
+      } catch (error) {
+        console.error('❌ AllTick REST service initialization error:', error);
         setConnectionStatus('error');
       }
-      
-      return unsubscribe;
     };
 
     initAllTick();
 
     return () => {
       if (allTickServiceRef.current) {
-        console.log('🔌 PriceProvider: Disconnecting AllTick service...');
+        console.log('🔌 PriceProvider: Disconnecting AllTick REST service...');
         allTickServiceRef.current.disconnect();
       }
     };
-  }, [addPriceUpdate, processBatch]);
+  }, [addPriceUpdate]);
 
   // Handle page visibility for performance
   useEffect(() => {
