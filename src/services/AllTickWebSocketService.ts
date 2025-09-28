@@ -158,8 +158,8 @@ export class AllTickWebSocketService {
 
       console.log('🔐 AllTick client API key found, establishing direct connection...');
       
-      // Direct connection to AllTick using client key
-      this.ws = new WebSocket(`wss://quote.alltick.io/quote-ws-api?t=${encodeURIComponent(apiKey.trim())}`);
+      // Direct connection to AllTick using client key (use root endpoint – more reliable)
+      this.ws = new WebSocket(`wss://quote.alltick.io/?t=${encodeURIComponent(apiKey.trim())}`);
       
       this.ws.onopen = () => {
         console.log(`✅ AllTick WebSocket connected directly - subscribing immediately...`);
@@ -210,17 +210,16 @@ export class AllTickWebSocketService {
     
     console.log(`🚀 Starting AllTick subscription with ALL symbols: ${allSymbols.join(', ')}`);
     
-    // Subscribe to Latest Trade Price using cmd_id: 22001
+    // Subscribe to Latest Trade Price using cmd_id: 22000 (symbol_list as strings)
     const subscriptionMessage = {
-      cmd_id: 22001,
+      cmd_id: 22000,
       seq_id: this.seqId++,
       trace: `frontend_price_sub_${Date.now()}`,
       data: {
-        symbol_list: allSymbols.map(symbol => ({
-          code: symbol
-        }))
+        symbol_list: allSymbols,
+        filter_list: [0]
       }
-    };
+    } as const;
 
     console.log('📡 Sending AllTick frontend subscription for ALL symbols:', JSON.stringify(subscriptionMessage, null, 2));
     this.ws.send(JSON.stringify(subscriptionMessage));
@@ -238,8 +237,8 @@ export class AllTickWebSocketService {
         has_data: !!message.data
       });
       
-      if (message.cmd_id === 22001) {
-        if (message.ret_code === 0) {
+      if (message.cmd_id === 22000 || message.cmd_id === 22001) {
+        if (message.ret_code === 0 || typeof message.ret_code === 'undefined') {
           if (message.data && message.data.symbol_list) {
             console.log(`📊 AllTick frontend RT data: ${message.data.symbol_list.length} symbols`);
             this.handlePriceUpdate(message.data);
@@ -263,19 +262,26 @@ export class AllTickWebSocketService {
 
     let updateCount = 0;
     for (const update of data.symbol_list) {
-      if (update.code && typeof update.last_px === 'number') {
+      // Normalize possible response shapes
+      const code = (update && (update.code || update.symbol || (typeof update === 'string' ? update : undefined))) as string | undefined;
+      const lastPx = update?.last_px ?? update?.price ?? update?.lastPrice ?? update?.px;
+      const changePx = update?.change_px ?? update?.change ?? 0;
+      const bidPx = update?.bid_px ?? update?.bid ?? lastPx;
+      const askPx = update?.ask_px ?? update?.ask ?? lastPx;
+
+      if (code && typeof lastPx === 'number') {
         // Map AllTick symbol back to our internal symbol
         const originalSymbol = Object.keys(this.symbolMapping)
-          .find(key => this.symbolMapping[key] === update.code) || update.code.split('.')[0];
+          .find(key => this.symbolMapping[key] === code) || code.split('.')[0];
 
         const priceData: PriceUpdate = {
           symbol: originalSymbol,
-          price: update.last_px,
-          change_24h: update.change_px || 0,
-          volume: update.volume || 0,
-          bid: update.bid_px || update.last_px,
-          ask: update.ask_px || update.last_px,
-          spread: (update.ask_px && update.bid_px) ? update.ask_px - update.bid_px : 0,
+          price: lastPx,
+          change_24h: changePx || 0,
+          volume: update?.volume || 0,
+          bid: bidPx,
+          ask: askPx,
+          spread: (askPx && bidPx) ? askPx - bidPx : 0,
           timestamp: Date.now(),
           source: 'AllTick-Direct'
         };
@@ -284,7 +290,9 @@ export class AllTickWebSocketService {
         this.subscribers.forEach(callback => callback(priceData));
         updateCount++;
         
-        console.log(`⚡ TICK: ${originalSymbol} = $${update.last_px} (${update.change_px || 0}%) - IMMEDIATE UPDATE`);
+        console.log(`⚡ TICK: ${originalSymbol} = $${lastPx} (${changePx || 0}%) - IMMEDIATE UPDATE`);
+      } else {
+        console.log('ℹ️ Unrecognized update shape:', update);
       }
     }
     

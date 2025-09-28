@@ -7,6 +7,7 @@ interface PriceUpdate {
   price: number;
   change_24h: number;
   timestamp: number;
+  source?: string;
 }
 
 interface PriceContextType {
@@ -85,8 +86,8 @@ export const PriceProvider: React.FC<PriceProviderProps> = ({ children }) => {
       if (connected) {
         console.log('✅ AllTick WebSocket connected successfully - waiting for price data...');
         console.log(`📊 AllTick monitoring ${allTickServiceRef.current.getSymbolCount()} symbols`);
-        setIsConnected(true);
-        setConnectionStatus('connected');
+        // Do not mark connected until first tick is received
+        setConnectionStatus('connecting');
       } else {
         console.log('❌ AllTick WebSocket failed to connect');
         setIsConnected(false);
