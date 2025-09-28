@@ -226,17 +226,28 @@ export class AllTickWebSocketService {
   private subscribeToPriceUpdates() {
     if (!this.isConnected || !this.ws) return;
 
+    const endpoint = this.endpoints[this.endpointIndex];
+    const allCodes = Object.values(this.symbolMapping);
+
+    // Choose symbols valid for the connected endpoint
+    const isBEndpoint = endpoint.includes('quote-b-ws-api'); // FX/CC/CM
+    const codesForEndpoint = allCodes.filter(code => {
+      const suffix = code.split('.').pop() || '';
+      if (isBEndpoint) {
+        return suffix === 'FX' || suffix === 'CC' || suffix === 'CM';
+      }
+      return suffix === 'US' || suffix === 'IDX';
+    });
+
     // Start with a smaller subset to avoid plan limits, then scale up
-    const allSymbols = Object.values(this.symbolMapping);
-    const symbolsToSubscribe = allSymbols.slice(0, 50); // Start with 50 symbols
+    const symbolsToSubscribe = codesForEndpoint.slice(0, 60);
     
-    console.log(`🚀 Starting AllTick subscription with ${symbolsToSubscribe.length} symbols (from ${allSymbols.length} total)`);
+    console.log(`🚀 Subscribing on ${isBEndpoint ? 'quote-b' : 'quote-stock-b'} endpoint with ${symbolsToSubscribe.length} symbols (of ${codesForEndpoint.length} eligible)`);
     
-    // Use CORRECT cmd_id: 22004 for Latest Trade Price subscription
     const subscriptionMessage = {
       cmd_id: 22004,  // ✅ Correct command for transaction quote subscription
       seq_id: this.seqId++,
-      trace: `price_sub_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      trace: `price_sub_${Date.now()}_${Math.random().toString(36).slice(2)}`,
       data: {
         symbol_list: symbolsToSubscribe.map(code => ({ code }))  // ✅ Correct format: array of {code} objects
       }
@@ -245,7 +256,7 @@ export class AllTickWebSocketService {
     console.log('📡 Sending AllTick subscription (cmd_id: 22004):', JSON.stringify(subscriptionMessage, null, 2));
     this.ws.send(JSON.stringify(subscriptionMessage));
 
-    console.log(`📡 ✅ Subscribed to ${symbolsToSubscribe.length} symbols using CORRECT protocol`);
+    console.log(`📡 ✅ Subscribed: ${symbolsToSubscribe[0]} ... (${symbolsToSubscribe.length} total)`);
   }
 
   // Start mandatory heartbeat (cmd_id: 22000 every 10 seconds)
@@ -340,12 +351,16 @@ export class AllTickWebSocketService {
   private handlePriceUpdate(data: any) {
     // Handle single price update (cmd_id: 22998 format)
     const code = data?.code;
-    const lastPx = data?.last_px ?? data?.price ?? data?.lastPrice;
-    const changePx = data?.change_px ?? data?.change ?? 0;
-    const bidPx = data?.bid_px ?? data?.bid;
-    const askPx = data?.ask_px ?? data?.ask;
+    const rawLast = data?.last_px ?? data?.price ?? data?.lastPrice;
+    const lastPx = typeof rawLast === 'string' ? parseFloat(rawLast) : rawLast;
+    const changeRaw = data?.change_px ?? data?.change ?? 0;
+    const changePx = typeof changeRaw === 'string' ? parseFloat(changeRaw) : changeRaw;
+    const bidRaw = data?.bid_px ?? data?.bid;
+    const askRaw = data?.ask_px ?? data?.ask;
+    const bidPx = typeof bidRaw === 'string' ? parseFloat(bidRaw) : bidRaw;
+    const askPx = typeof askRaw === 'string' ? parseFloat(askRaw) : askRaw;
 
-    if (code && typeof lastPx === 'number') {
+    if (code && typeof lastPx === 'number' && !Number.isNaN(lastPx)) {
       // Map AllTick symbol back to our internal symbol
       const originalSymbol = Object.keys(this.symbolMapping)
         .find(key => this.symbolMapping[key] === code) || code.split('.')[0];
@@ -353,12 +368,12 @@ export class AllTickWebSocketService {
       const priceData: PriceUpdate = {
         symbol: originalSymbol,
         price: lastPx,
-        change_24h: changePx || 0,
-        volume: data?.volume || 0,
-        bid: bidPx || lastPx,
-        ask: askPx || lastPx,
-        spread: (askPx && bidPx) ? askPx - bidPx : 0,
-        timestamp: Date.now(),
+        change_24h: (typeof changePx === 'number' && !Number.isNaN(changePx)) ? changePx : 0,
+        volume: typeof data?.volume === 'string' ? parseFloat(data.volume) : (data?.volume || 0),
+        bid: typeof bidPx === 'number' && !Number.isNaN(bidPx) ? bidPx : lastPx,
+        ask: typeof askPx === 'number' && !Number.isNaN(askPx) ? askPx : lastPx,
+        spread: (typeof askPx === 'number' && typeof bidPx === 'number') ? (askPx - bidPx) : 0,
+        timestamp: (typeof data?.tick_time === 'string' ? parseInt(data.tick_time, 10) * 1000 : Date.now()),
         source: 'AllTick-Live'
       };
 
@@ -368,7 +383,7 @@ export class AllTickWebSocketService {
       // Notify all subscribers
       this.subscribers.forEach(callback => callback(priceData));
       
-      console.log(`⚡ LIVE TICK: ${originalSymbol} = $${lastPx} (${changePx || 0}%)`);
+      console.log(`⚡ LIVE TICK: ${originalSymbol} = $${lastPx} (${priceData.change_24h}%)`);
     } else {
       console.log('ℹ️ Incomplete price data:', data);
     }
@@ -395,6 +410,6 @@ export class AllTickWebSocketService {
     this.stopHeartbeat();
     if (this.watchdog) { clearInterval(this.watchdog); this.watchdog = null; }
     this.isConnected = false;
-    this.subscribers.clear();
+    // Do NOT clear subscribers here; keep callbacks across reconnects
   }
 }

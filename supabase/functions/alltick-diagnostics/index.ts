@@ -31,8 +31,8 @@ serve(async (req) => {
     
     for (const param of tokenParams) {
       const result = await testWebSocketConnection(
-        `wss://quote.alltick.io/?${param}=${apiKey}`,
-        `API Key Parameter: ?${param}=`
+        `wss://quote.alltick.io/quote-b-ws-api?token=${apiKey}`,
+        `API Key Parameter: ?token=`
       );
       results.push(result);
     }
@@ -48,7 +48,7 @@ serve(async (req) => {
 
     for (const symbols of symbolFormats) {
       const result = await testSubscription(
-        `wss://quote.alltick.io/?t=${apiKey}`,
+        `wss://quote.alltick.io/quote-b-ws-api?token=${apiKey}`,
         symbols,
         `Symbol Format: ${symbols[0]}`
       );
@@ -90,7 +90,7 @@ serve(async (req) => {
 
     for (let i = 0; i < messageStructures.length; i++) {
       const result = await testMessageStructure(
-        `wss://quote.alltick.io/?t=${apiKey}`,
+        `wss://quote.alltick.io/quote-b-ws-api?token=${apiKey}`,
         messageStructures[i],
         `Message Structure ${i + 1}`
       );
