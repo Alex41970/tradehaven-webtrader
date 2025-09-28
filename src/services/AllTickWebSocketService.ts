@@ -20,10 +20,9 @@ export class AllTickWebSocketService {
   private maxReconnectAttempts = 3;
   private seqId = 1;
   
-  // Symbol mapping from internal to AllTick format
+  // Symbol mapping from internal to AllTick format - All 100 trading pairs
   private symbolMapping: { [key: string]: string } = {
-    'BTCUSD': 'BTCUSD.CC',
-    'ETHUSD': 'ETHUSD.CC', 
+    // FOREX (30 pairs) - .FX suffix
     'EURUSD': 'EURUSD.FX',
     'GBPUSD': 'GBPUSD.FX',
     'USDJPY': 'USDJPY.FX',
@@ -34,17 +33,112 @@ export class AllTickWebSocketService {
     'EURGBP': 'EURGBP.FX',
     'EURJPY': 'EURJPY.FX',
     'GBPJPY': 'GBPJPY.FX',
+    'AUDCAD': 'AUDCAD.FX',
+    'AUDCHF': 'AUDCHF.FX',
+    'AUDJPY': 'AUDJPY.FX',
+    'AUDNZD': 'AUDNZD.FX',
+    'CADCHF': 'CADCHF.FX',
+    'CADJPY': 'CADJPY.FX',
+    'CHFJPY': 'CHFJPY.FX',
+    'EURAUD': 'EURAUD.FX',
+    'EURCAD': 'EURCAD.FX',
+    'EURCHF': 'EURCHF.FX',
+    'EURNZD': 'EURNZD.FX',
+    'GBPAUD': 'GBPAUD.FX',
+    'GBPCAD': 'GBPCAD.FX',
+    'GBPCHF': 'GBPCHF.FX',
+    'GBPNZD': 'GBPNZD.FX',
+    'NZDCAD': 'NZDCAD.FX',
+    'NZDCHF': 'NZDCHF.FX',
+    'NZDJPY': 'NZDJPY.FX',
+    'USDSEK': 'USDSEK.FX',
+    'USDNOK': 'USDNOK.FX',
+
+    // CRYPTO (20 pairs) - .CC suffix
+    'BTCUSD': 'BTCUSD.CC',
+    'ETHUSD': 'ETHUSD.CC',
+    'ADAUSD': 'ADAUSD.CC',
+    'BNBUSD': 'BNBUSD.CC',
+    'DOTUSD': 'DOTUSD.CC',
+    'LINKUSD': 'LINKUSD.CC',
+    'LTCUSD': 'LTCUSD.CC',
+    'MATICUSD': 'MATICUSD.CC',
+    'SOLUSD': 'SOLUSD.CC',
+    'XRPUSD': 'XRPUSD.CC',
+    'AVAXUSD': 'AVAXUSD.CC',
+    'ATOMUSD': 'ATOMUSD.CC',
+    'UNIUSD': 'UNIUSD.CC',
+    'ALGOUSD': 'ALGOUSD.CC',
+    'APTUSD': 'APTUSD.CC',
+    'NEARUSD': 'NEARUSD.CC',
+    'FTMUSD': 'FTMUSD.CC',
+    'ICPUSD': 'ICPUSD.CC',
+    'VETUSD': 'VETUSD.CC',
+    'TRXUSD': 'TRXUSD.CC',
+
+    // COMMODITIES (13 pairs) - .CM suffix
     'XAUUSD': 'XAUUSD.CM',
     'XAGUSD': 'XAGUSD.CM',
-    'USOIL': 'USOIL.CM',
-    'UKOIL': 'UKOIL.CM'
+    'XPDUSD': 'XPDUSD.CM',
+    'XPTUSD': 'XPTUSD.CM',
+    'WTIUSD': 'WTIUSD.CM',
+    'BCOUSD': 'BCOUSD.CM',
+    'NATGAS': 'NATGAS.CM',
+    'COPPER': 'COPPER.CM',
+    'COCOA': 'COCOA.CM',
+    'COFFEE': 'COFFEE.CM',
+    'SUGAR': 'SUGAR.CM',
+    'COTTON': 'COTTON.CM',
+    'WHEAT': 'WHEAT.CM',
+
+    // STOCKS (25 pairs) - .US suffix
+    'AAPL': 'AAPL.US',
+    'AMD': 'AMD.US',
+    'AMZN': 'AMZN.US',
+    'GOOGL': 'GOOGL.US',
+    'INTC': 'INTC.US',
+    'META': 'META.US',
+    'MSFT': 'MSFT.US',
+    'NFLX': 'NFLX.US',
+    'NVDA': 'NVDA.US',
+    'TSLA': 'TSLA.US',
+    'TSMC': 'TSMC.US',
+    'V': 'V.US',
+    'JPM': 'JPM.US',
+    'WMT': 'WMT.US',
+    'PG': 'PG.US',
+    'JNJ': 'JNJ.US',
+    'UNH': 'UNH.US',
+    'HD': 'HD.US',
+    'MA': 'MA.US',
+    'BAC': 'BAC.US',
+    'XOM': 'XOM.US',
+    'LLY': 'LLY.US',
+    'ABBV': 'ABBV.US',
+    'KO': 'KO.US',
+    'PEP': 'PEP.US',
+
+    // INDICES (12 pairs) - .IDX suffix
+    'AUS200': 'AUS200.IDX',
+    'DJ30': 'DJ30.IDX',
+    'FRA40': 'FRA40.IDX',
+    'GER40': 'GER40.IDX',
+    'JPN225': 'JPN225.IDX',
+    'NAS100': 'NAS100.IDX',
+    'SPX500': 'SPX500.IDX',
+    'UK100': 'UK100.IDX',
+    'US30': 'US30.IDX',
+    'HK50': 'HK50.IDX',
+    'CHINA50': 'CHINA50.IDX',
+    'EUSTX50': 'EUSTX50.IDX'
   };
 
   private symbolList: string[];
 
   constructor() {
     this.symbolList = Object.keys(this.symbolMapping);
-    console.log(`🚀 AllTick frontend service initialized with ${this.symbolList.length} symbols`);
+    console.log(`🚀 AllTick frontend service initialized with ALL ${this.symbolList.length} symbols across 5 categories`);
+    console.log(`📊 Coverage: ${Object.values(this.symbolMapping).filter(s => s.endsWith('.FX')).length} Forex, ${Object.values(this.symbolMapping).filter(s => s.endsWith('.CC')).length} Crypto, ${Object.values(this.symbolMapping).filter(s => s.endsWith('.CM')).length} Commodities, ${Object.values(this.symbolMapping).filter(s => s.endsWith('.US')).length} Stocks, ${Object.values(this.symbolMapping).filter(s => s.endsWith('.IDX')).length} Indices`);
   }
 
   async connect(): Promise<boolean> {
