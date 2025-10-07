@@ -121,26 +121,62 @@ export class AllTickRestService {
 
       console.log(`📊 Fetching batch ${this.currentBatchIndex + 1}/${totalBatches}: ${symbolBatch.length} symbols`);
 
-      const response = await fetch(`${this.baseUrl}/realtime`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'token': this.apiKey
-        },
-        body: JSON.stringify({
-          trace: `batch_${this.currentBatchIndex}_${Date.now()}`,
-          data: {
-            symbol_list: symbolBatch.map(symbol => ({ code: symbol }))
-          }
-        })
-      });
+      // Prefer CORS-friendly GET endpoint to avoid preflight issues
+      const queryPayload = {
+        trace: `batch_${this.currentBatchIndex}_${Date.now()}`,
+        data: {
+          symbol_list: symbolBatch.map(symbol => ({ code: symbol }))
+        }
+      };
 
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      let data: AllTickRestResponse;
+
+      try {
+        const url = `${this.baseUrl}/quote-b-api/trade-tick?token=${encodeURIComponent(this.apiKey)}&query=${encodeURIComponent(JSON.stringify(queryPayload))}`;
+        const response = await fetch(url, { method: 'GET' });
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const json = await response.json();
+
+        if (json && typeof json === 'object' && 'code' in json && Array.isArray((json as any).data)) {
+          data = json as AllTickRestResponse;
+        } else if (json && typeof json === 'object' && 'ret' in json && (json as any).ret === 200 && (json as any).data?.tick_list) {
+          // Normalize trade-tick response to AllTickRestResponse shape
+          data = {
+            code: 0,
+            msg: (json as any).msg ?? 'ok',
+            data: ((json as any).data.tick_list as any[]).map((t: any) => ({
+              symbol: t.code,
+              last_px: t.price,
+              change_px: '0',
+              change_rate: '0',
+              timestamp: String(t.tick_time ?? Date.now())
+            }))
+          };
+        } else {
+          throw new Error('Unexpected API response');
+        }
+      } catch (e) {
+        // Fallback to POST /realtime (may be blocked by CORS)
+        const response = await fetch(`${this.baseUrl}/realtime`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'token': this.apiKey
+          },
+          body: JSON.stringify(queryPayload)
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        data = await response.json() as AllTickRestResponse;
       }
 
-      const data: AllTickRestResponse = await response.json();
-      
       if (data.code !== 0) {
         throw new Error(`AllTick API Error ${data.code}: ${data.msg}`);
       }
