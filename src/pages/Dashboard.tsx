@@ -13,6 +13,7 @@ import { WithdrawModal } from "@/components/WithdrawModal";
 import { TransactionHistoryPopup } from "@/components/TransactionHistoryPopup";
 import TradingStatusIndicator from "@/components/TradingStatusIndicator";
 import { ConnectionStatus } from "@/components/ConnectionStatus";
+import { AllTickDiagnostics } from "@/components/AllTickDiagnostics";
 import { LogOut, TrendingUp, DollarSign, Activity, ExternalLink, Plus, Minus, BarChart3, Target, Trophy, Shield, TrendingDown, Zap, Award, Bot, History, ArrowUpRight, ArrowDownLeft, Clock, CheckCircle, XCircle, Loader, Menu, User, CircleDollarSign, MessageCircle, Settings } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useUserProfile } from "@/hooks/useUserProfile";
@@ -388,6 +389,11 @@ const Dashboard = () => {
 
         {/* Main Content */}
         <div className="container mx-auto px-4 py-6">
+          {/* AllTick Diagnostics */}
+          <div className="mb-6">
+            <AllTickDiagnostics />
+          </div>
+
           {/* Quick Stats */}
           <div className="grid md:grid-cols-3 gap-6 mb-6">
             <Card className="bg-gradient-to-br from-card via-card to-card/95 border-2 border-primary/10 shadow-lg hover:shadow-xl transition-shadow duration-300">
