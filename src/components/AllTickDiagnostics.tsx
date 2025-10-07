@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { Button } from './ui/button';
 import { Card } from './ui/card';
+import { toast } from 'sonner';
+import { Copy } from 'lucide-react';
 
 export const AllTickDiagnostics = () => {
   const [results, setResults] = useState<any[]>([]);
@@ -151,6 +153,102 @@ export const AllTickDiagnostics = () => {
     setTesting(false);
   };
 
+  const generateSupportReport = () => {
+    const successCount = results.filter(r => r.success).length;
+    const failureCount = results.filter(r => !r.success).length;
+    
+    const report = `
+=================================================
+ALLTICK API SUPPORT REQUEST - CORS/Connectivity Issue
+=================================================
+
+ISSUE SUMMARY:
+-------------
+All API requests to quote.alltick.io are failing with "Failed to fetch" errors.
+This appears to be a CORS (Cross-Origin Resource Sharing) blocking issue.
+
+ENVIRONMENT:
+-----------
+Domain: ac0ac84a-cb35-4876-85b6-c05832115c63.lovableproject.com
+Browser: ${navigator.userAgent}
+Date: ${new Date().toISOString()}
+
+API CREDENTIALS:
+---------------
+API Key Type: c-app (Client Application)
+API Key (partial): ${apiKey?.substring(0, 20)}...${apiKey?.substring(apiKey.length - 6)}
+Expected Use: Frontend/Browser Direct Calls
+
+DIAGNOSTIC TEST RESULTS:
+-----------------------
+Total Tests: ${results.length}
+Successful: ${successCount}
+Failed: ${failureCount}
+
+${results.map((result, idx) => `
+TEST ${idx + 1}: ${result.test}
+Status: ${result.success ? '✅ PASS' : '❌ FAIL'}
+Details:
+${JSON.stringify(result.details, null, 2)}
+---
+`).join('\n')}
+
+NETWORK ERROR DETAILS:
+---------------------
+Error Type: Failed to fetch
+This typically indicates:
+1. CORS preflight request blocked
+2. Domain not whitelisted for c-app key
+3. Invalid CORS headers on server
+
+EXPECTED CORS HEADERS NEEDED:
+----------------------------
+Access-Control-Allow-Origin: https://ac0ac84a-cb35-4876-85b6-c05832115c63.lovableproject.com
+Access-Control-Allow-Methods: GET, POST, OPTIONS
+Access-Control-Allow-Headers: Content-Type, token
+Access-Control-Allow-Credentials: true
+
+REQUESTS ATTEMPTED:
+------------------
+1. GET https://quote.alltick.io
+   - Headers: token: ${apiKey?.substring(0, 15)}...
+   
+2. POST https://quote.alltick.io/realtime
+   - Headers: Content-Type: application/json, token: [api-key]
+   - Body: {"trace":"...", "data":{"symbol_list":[{"code":"BTC/USDT.CC"}]}}
+   
+3. GET https://quote.alltick.io/realtime?symbol=BTC/USDT.CC
+   - Headers: token: [api-key]
+   
+4. POST https://quote.alltick.io/quote
+   - Headers: Content-Type: application/json, token: [api-key]
+
+QUESTION FOR SUPPORT:
+--------------------
+Our c-app API key should work from browser/frontend, correct?
+Do we need to whitelist our domain? If so, where in the dashboard?
+We see no whitelist settings in our AllTick account.
+
+Are there any CORS configuration steps we're missing?
+
+CONTACT INFO:
+------------
+Please respond with:
+1. Confirmation that our domain is whitelisted
+2. Any required CORS configuration steps
+3. Alternative endpoints if /realtime is not browser-accessible
+
+=================================================
+END OF REPORT
+=================================================
+    `.trim();
+
+    navigator.clipboard.writeText(report);
+    toast.success('Support report copied to clipboard!', {
+      description: 'You can now paste this into your support ticket.'
+    });
+  };
+
   return (
     <Card className="p-6 space-y-4">
       <div>
@@ -158,9 +256,17 @@ export const AllTickDiagnostics = () => {
         <p className="text-sm text-muted-foreground mb-4">
           API Key: {apiKey?.substring(0, 20)}...{apiKey?.substring(apiKey.length - 6)}
         </p>
-        <Button onClick={runDiagnostics} disabled={testing}>
-          {testing ? 'Running Tests...' : 'Run Diagnostics'}
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={runDiagnostics} disabled={testing}>
+            {testing ? 'Running Tests...' : 'Run Diagnostics'}
+          </Button>
+          {results.length > 0 && (
+            <Button onClick={generateSupportReport} variant="outline">
+              <Copy className="mr-2 h-4 w-4" />
+              Copy Support Report
+            </Button>
+          )}
+        </div>
       </div>
 
       {results.length > 0 && (
