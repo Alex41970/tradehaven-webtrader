@@ -169,13 +169,15 @@ export const AllTickDiagnostics = () => {
             <div 
               key={idx} 
               className={`p-3 rounded border ${
-                result.success ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'
+                result.success 
+                  ? 'bg-success/10 border-success/30 text-foreground' 
+                  : 'bg-destructive/10 border-destructive/30 text-foreground'
               }`}
             >
               <div className="font-semibold flex items-center gap-2">
                 {result.success ? '✅' : '❌'} {result.test}
               </div>
-              <pre className="text-xs mt-2 overflow-x-auto">
+              <pre className="text-xs mt-2 overflow-x-auto text-foreground">
                 {JSON.stringify(result.details, null, 2)}
               </pre>
             </div>
