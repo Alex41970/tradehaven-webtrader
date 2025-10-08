@@ -117,6 +117,10 @@ Deno.serve(async (req) => {
 
     console.log(`📦 Processing ${batches.length} batches of symbols`);
 
+    // Track auth and failure states
+    let hadUnauthorized = false;
+    let hadFailures = 0;
+
     // Fetch all batches in parallel
     const batchPromises = batches.map(async (batch) => {
       const response = await fetch('https://quote.alltick.io/realtime', {
@@ -134,6 +138,8 @@ Deno.serve(async (req) => {
       });
 
       if (!response.ok) {
+        if (response.status === 401) hadUnauthorized = true;
+        hadFailures++;
         console.error(`❌ Batch request failed: ${response.status} ${response.statusText}`);
         return null;
       }
@@ -176,6 +182,17 @@ Deno.serve(async (req) => {
     }
 
     console.log(`✅ Successfully fetched ${prices.length} prices`);
+
+    // If no prices and failures occurred, surface an error
+    if (prices.length === 0 && (hadUnauthorized || hadFailures === batches.length)) {
+      const errorMsg = hadUnauthorized 
+        ? 'Unauthorized from AllTick: invalid or missing API key'
+        : 'Failed to retrieve prices from AllTick';
+      return new Response(
+        JSON.stringify({ success: false, error: errorMsg, prices: [] }),
+        { status: hadUnauthorized ? 401 : 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     return new Response(
       JSON.stringify({ 
