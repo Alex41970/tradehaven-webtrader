@@ -54,20 +54,7 @@ export const PriceProvider: React.FC<PriceProviderProps> = ({ children }) => {
     console.log('🔥 PRICE PROVIDER USE EFFECT FIRED - STARTING ALLTICK REST CONNECTION');
     
     const initAllTick = async () => {
-      console.log('🚀 PriceProvider: Initializing AllTick REST service...');
-      console.log('🔑 Checking API key availability...');
-      
-      const apiKey = import.meta.env.VITE_ALLTICK_CLIENT_KEY;
-      console.log('🔑 API Key status:', apiKey ? `Found (${apiKey.substring(0, 10)}...)` : 'NOT FOUND');
-      
-      if (!apiKey || apiKey === 'your-c-app-key-here') {
-        console.error('❌ CRITICAL: AllTick API key not set or still default!');
-        console.error('🔧 Set VITE_ALLTICK_CLIENT_KEY in your .env file');
-        setConnectionStatus('error');
-        return;
-      }
-      
-      console.log('✅ AllTick API key found, proceeding with REST connection...');
+      console.log('🚀 PriceProvider: Initializing AllTick REST service via backend relay...');
       
       try {
         allTickServiceRef.current = new AllTickRestService();

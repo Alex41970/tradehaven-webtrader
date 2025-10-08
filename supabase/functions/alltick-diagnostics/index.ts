@@ -19,9 +19,9 @@ serve(async (req) => {
   }
 
   try {
-    const apiKey = Deno.env.get('VITE_ALLTICK_CLIENT_KEY') || Deno.env.get('ALLTICK_API_KEY');
+    const apiKey = Deno.env.get('ALLTICK_API_KEY');
     if (!apiKey) {
-      throw new Error('VITE_ALLTICK_CLIENT_KEY not configured');
+      throw new Error('ALLTICK_API_KEY not configured');
     }
 
     const results: DiagnosticResult[] = [];

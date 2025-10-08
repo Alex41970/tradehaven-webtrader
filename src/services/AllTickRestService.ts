@@ -22,7 +22,7 @@ export class AllTickRestService {
   private subscribers = new Set<(update: PriceUpdate) => void>();
   private pollingInterval: NodeJS.Timeout | null = null;
   private isPolling = false;
-  private edgeFunctionUrl = 'https://stdfkfutgkmnaajixguz.supabase.co/functions/v1/update-prices';
+  private edgeFunctionUrl = 'https://stdfkfutgkmnaajixguz.supabase.co/functions/v1/alltick-relay';
 
   // Symbol mapping from internal to AllTick format
   private symbolMapping = new Map([
@@ -76,7 +76,7 @@ export class AllTickRestService {
   ]);
 
   constructor() {
-    console.log(`🔧 AllTick REST Service initialized (backend relay mode)`);
+    console.log(`🔧 AllTick REST Service initialized via Supabase relay`);
   }
 
   async connect(): Promise<boolean> {
@@ -102,9 +102,8 @@ export class AllTickRestService {
 
   private async fetchBatch(): Promise<void> {
     try {
-      console.log('🔄 Fetching prices via Supabase edge function (backend relay)...');
+      console.log('🔄 Fetching prices via AllTick relay...');
       
-      // Call Supabase edge function which acts as backend relay to AllTick
       const response = await fetch(this.edgeFunctionUrl, {
         method: 'POST',
         headers: {
@@ -118,23 +117,22 @@ export class AllTickRestService {
 
       const result = await response.json();
       
-      if (!result.prices || !Array.isArray(result.prices)) {
-        console.error('Invalid response structure:', result);
+      if (!result.success || !result.prices || !Array.isArray(result.prices)) {
+        console.error('Invalid response from AllTick relay:', result);
         return;
       }
 
-      console.log(`✅ Received ${result.prices.length} price updates from backend relay`);
+      console.log(`✅ Received ${result.prices.length} price updates`);
       
       // Process each price update
       result.prices.forEach((priceData: any) => {
         if (priceData && priceData.symbol) {
-          // Notify subscribers with normalized format
           const update: PriceUpdate = {
             symbol: priceData.symbol,
             price: priceData.price,
             change_24h: priceData.change_24h || 0,
-            timestamp: Date.now(),
-            source: 'AllTick-Backend'
+            timestamp: priceData.timestamp || Date.now(),
+            source: 'AllTick'
           };
           
           this.subscribers.forEach(callback => {
@@ -148,7 +146,7 @@ export class AllTickRestService {
       });
       
     } catch (error) {
-      console.error('❌ Error fetching prices from backend relay:', error);
+      console.error('❌ Error fetching prices from AllTick relay:', error);
     }
   }
 
