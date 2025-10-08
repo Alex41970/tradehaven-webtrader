@@ -19,12 +19,10 @@ interface AllTickRestResponse {
 }
 
 export class AllTickRestService {
-  private apiKey: string;
-  private baseUrl = 'https://quote.alltick.io';
   private subscribers = new Set<(update: PriceUpdate) => void>();
   private pollingInterval: NodeJS.Timeout | null = null;
-  private currentBatchIndex = 0;
   private isPolling = false;
+  private edgeFunctionUrl = 'https://stdfkfutgkmnaajixguz.supabase.co/functions/v1/update-prices';
 
   // Symbol mapping from internal to AllTick format
   private symbolMapping = new Map([
@@ -77,17 +75,8 @@ export class AllTickRestService {
     ['JPN225', 'NIKKEI.IDX'],
   ]);
 
-  private allSymbols: string[];
-  private batchSize = 25; // Batch size to respect rate limits
-
   constructor() {
-    const apiKey = import.meta.env.VITE_ALLTICK_CLIENT_KEY;
-    if (!apiKey || apiKey === 'your-c-app-key-here') {
-      throw new Error('AllTick API key not configured');
-    }
-    this.apiKey = apiKey;
-    this.allSymbols = Array.from(this.symbolMapping.values());
-    console.log(`🔧 AllTick REST Service initialized with ${this.allSymbols.length} symbols`);
+    console.log(`🔧 AllTick REST Service initialized (backend relay mode)`);
   }
 
   async connect(): Promise<boolean> {
@@ -103,138 +92,66 @@ export class AllTickRestService {
   }
 
   private startPolling(): void {
-    // Start immediately, then every 1 second
+    // Start immediately, then every 2 seconds (backend relay)
     this.fetchBatch();
     
     this.pollingInterval = setInterval(() => {
       this.fetchBatch();
-    }, 1000);
+    }, 2000);
   }
 
   private async fetchBatch(): Promise<void> {
     try {
-      // Calculate which batch of symbols to fetch
-      const totalBatches = Math.ceil(this.allSymbols.length / this.batchSize);
-      const startIndex = this.currentBatchIndex * this.batchSize;
-      const endIndex = Math.min(startIndex + this.batchSize, this.allSymbols.length);
-      const symbolBatch = this.allSymbols.slice(startIndex, endIndex);
-
-      console.log(`📊 Fetching batch ${this.currentBatchIndex + 1}/${totalBatches}: ${symbolBatch.length} symbols`);
-
-      // Prefer CORS-friendly GET endpoint to avoid preflight issues
-      const queryPayload = {
-        trace: `batch_${this.currentBatchIndex}_${Date.now()}`,
-        data: {
-          symbol_list: symbolBatch.map(symbol => ({ code: symbol }))
-        }
-      };
-
-      let data: AllTickRestResponse;
-
-      try {
-        const url = `${this.baseUrl}/quote-b-api/trade-tick?token=${encodeURIComponent(this.apiKey)}&query=${encodeURIComponent(JSON.stringify(queryPayload))}`;
-        const response = await fetch(url, { method: 'GET' });
-
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
-
-        const json = await response.json();
-
-        if (json && typeof json === 'object' && 'code' in json && Array.isArray((json as any).data)) {
-          data = json as AllTickRestResponse;
-        } else if (json && typeof json === 'object' && 'ret' in json && (json as any).ret === 200 && (json as any).data?.tick_list) {
-          // Normalize trade-tick response to AllTickRestResponse shape
-          data = {
-            code: 0,
-            msg: (json as any).msg ?? 'ok',
-            data: ((json as any).data.tick_list as any[]).map((t: any) => ({
-              symbol: t.code,
-              last_px: t.price,
-              change_px: '0',
-              change_rate: '0',
-              timestamp: String(t.tick_time ?? Date.now())
-            }))
-          };
-        } else {
-          throw new Error('Unexpected API response');
-        }
-      } catch (e) {
-        // Fallback to POST /realtime (may be blocked by CORS)
-        const response = await fetch(`${this.baseUrl}/realtime`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'token': this.apiKey
-          },
-          body: JSON.stringify(queryPayload)
-        });
-
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
-
-        data = await response.json() as AllTickRestResponse;
-      }
-
-      if (data.code !== 0) {
-        throw new Error(`AllTick API Error ${data.code}: ${data.msg}`);
-      }
-
-      // Process the price updates
-      if (data.data && Array.isArray(data.data)) {
-        data.data.forEach(item => this.processPriceUpdate(item));
-      }
-
-      // Move to next batch (with wraparound)
-      this.currentBatchIndex = (this.currentBatchIndex + 1) % totalBatches;
-
-    } catch (error) {
-      console.error('❌ AllTick REST API error:', error);
-    }
-  }
-
-  private processPriceUpdate(item: any): void {
-    try {
-      // Find internal symbol name
-      const internalSymbol = Array.from(this.symbolMapping.entries())
-        .find(([, allTickSymbol]) => allTickSymbol === item.symbol)?.[0];
-
-      if (!internalSymbol) {
-        return; // Skip unknown symbols
-      }
-
-      const price = parseFloat(item.last_px);
-      const changeRate = parseFloat(item.change_rate || '0');
-      const timestamp = parseInt(item.timestamp) || Date.now();
-
-      if (isNaN(price)) {
-        return; // Skip invalid prices
-      }
-
-      const priceUpdate: PriceUpdate = {
-        symbol: internalSymbol,
-        price: price,
-        change_24h: changeRate,
-        timestamp: timestamp,
-        source: 'AllTick-REST'
-      };
-
-      console.log(`⚡ REST PRICE: ${internalSymbol} = $${price} (${changeRate.toFixed(2)}%)`);
-
-      // Notify all subscribers
-      this.subscribers.forEach(callback => {
-        try {
-          callback(priceUpdate);
-        } catch (error) {
-          console.error('Error in price update callback:', error);
-        }
+      console.log('🔄 Fetching prices via Supabase edge function (backend relay)...');
+      
+      // Call Supabase edge function which acts as backend relay to AllTick
+      const response = await fetch(this.edgeFunctionUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
       });
 
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      
+      if (!result.prices || !Array.isArray(result.prices)) {
+        console.error('Invalid response structure:', result);
+        return;
+      }
+
+      console.log(`✅ Received ${result.prices.length} price updates from backend relay`);
+      
+      // Process each price update
+      result.prices.forEach((priceData: any) => {
+        if (priceData && priceData.symbol) {
+          // Notify subscribers with normalized format
+          const update: PriceUpdate = {
+            symbol: priceData.symbol,
+            price: priceData.price,
+            change_24h: priceData.change_24h || 0,
+            timestamp: Date.now(),
+            source: 'AllTick-Backend'
+          };
+          
+          this.subscribers.forEach(callback => {
+            try {
+              callback(update);
+            } catch (error) {
+              console.error('Error in price update callback:', error);
+            }
+          });
+        }
+      });
+      
     } catch (error) {
-      console.error('Error processing price update:', error, item);
+      console.error('❌ Error fetching prices from backend relay:', error);
     }
   }
+
 
   subscribeToPrices(callback: (update: PriceUpdate) => void): () => void {
     this.subscribers.add(callback);
@@ -251,7 +168,7 @@ export class AllTickRestService {
   }
 
   getSymbolCount(): number {
-    return this.allSymbols.length;
+    return this.symbolMapping.size;
   }
 
   disconnect(): void {
