@@ -38,7 +38,7 @@ export const WebTrader = () => {
 
   const [selectedAsset, setSelectedAsset] = useState(null);
   const [amount, setAmount] = useState(1);
-  const [leverage, setLeverage] = useState(100);
+  const [leverage, setLeverage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [isExecuting, setIsExecuting] = useState(false);
@@ -85,6 +85,13 @@ export const WebTrader = () => {
     }
   }, [realtimeAssets]); // Removed selectedAsset from dependencies
 
+  // Auto-adjust leverage when selectedAsset changes if current leverage exceeds max
+  useEffect(() => {
+    if (selectedAsset && leverage > selectedAsset.max_leverage) {
+      setLeverage(selectedAsset.max_leverage);
+    }
+  }, [selectedAsset]);
+
   // Real-time updates are now handled by WebSocket system, no need for Supabase subscriptions
 
   // Calculate margin required
@@ -112,8 +119,7 @@ export const WebTrader = () => {
   const handleTrade = async (tradeType: 'BUY' | 'SELL') => {
     if (!selectedAsset || !profile) return;
     
-    // For forex, use 1 as amount since it's a fixed lot size
-    const tradeAmount = selectedAsset.category === 'forex' ? 1 : amount;
+    const tradeAmount = amount;
     
     if (tradeAmount < selectedAsset.min_trade_size) {
       toast({
@@ -178,7 +184,7 @@ export const WebTrader = () => {
   }) => {
     if (!selectedAsset || !profile) return;
 
-    const tradeAmount = selectedAsset.category === 'forex' ? 1 : amount;
+    const tradeAmount = amount;
     
     if (tradeAmount < selectedAsset.min_trade_size) {
       toast({

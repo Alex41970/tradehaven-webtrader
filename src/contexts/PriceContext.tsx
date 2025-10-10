@@ -115,15 +115,6 @@ export const PriceProvider: React.FC<PriceProviderProps> = ({ children }) => {
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, []);
 
-  // Debug: Log prices Map size periodically
-  useEffect(() => {
-    const interval = setInterval(() => {
-      console.log(`🗺️ PriceContext Map Status - Size: ${prices.size}, Symbols: [${Array.from(prices.keys()).slice(0, 5).join(', ')}${prices.size > 5 ? '...' : ''}]`);
-    }, 10000); // Every 10 seconds
-
-    return () => clearInterval(interval);
-  }, [prices]);
-
   const value: PriceContextType = {
     prices,
     isConnected,

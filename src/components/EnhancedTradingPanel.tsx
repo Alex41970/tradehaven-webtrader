@@ -187,14 +187,22 @@ export const EnhancedTradingPanel: React.FC<EnhancedTradingPanelProps> = ({
         {/* Amount */}
         <div className="space-y-2">
           <Label htmlFor="amount">
-            {selectedAsset.category === 'forex' ? 'Trade Size' : 'Amount'}
+            {selectedAsset.category === 'forex' ? 'Lot Size' : 'Amount'}
           </Label>
           {selectedAsset.category === 'forex' ? (
-            <div className="flex items-center h-10 px-3 py-2 border border-trading-secondary/30 bg-trading-secondary/20 rounded-md">
-              <span className="text-sm">1 Standard Lot</span>
-              <span className="text-xs text-muted-foreground ml-2">
-                ({selectedAsset.contract_size.toLocaleString()} units)
-              </span>
+            <div className="space-y-1">
+              <Input
+                id="amount"
+                type="number"
+                value={amount}
+                onChange={(e) => onAmountChange(parseFloat(e.target.value) || 0)}
+                className="bg-trading-secondary/20 border-trading-secondary/30"
+                min={0.01}
+                step="0.01"
+              />
+              <p className="text-xs text-muted-foreground">
+                {amount} lot × {selectedAsset.contract_size.toLocaleString()} units = {(amount * selectedAsset.contract_size).toLocaleString()} units
+              </p>
             </div>
           ) : (
             <Input

@@ -67,8 +67,6 @@ export const useRealtimePnL = (trades: Trade[], assets: Asset[] = [], excludeTra
       const priceUpdate = prices.get(trade.symbol);
       const currentPrice = Number(priceUpdate?.price);
 
-      console.log(`🔍 PnL Calc for ${trade.symbol}: Real-time price = ${currentPrice || 'NOT FOUND'}, Prices Map has ${prices.size} entries`);
-
       if (currentPrice && currentPrice > 0) {
         // Track all price changes for real-time updates
         const previousPrice = lastPricesRef.current[trade.symbol];
@@ -80,8 +78,6 @@ export const useRealtimePnL = (trades: Trade[], assets: Asset[] = [], excludeTra
         // Find asset for contract_size
         const asset = assets.find(a => a.symbol === trade.symbol);
         const contractSize = asset?.contract_size || 1;
-        
-        console.log(`✅ Using real-time price for ${trade.symbol}: $${currentPrice}, contract_size: ${contractSize}`);
         
         // Calculate real-time P&L
         const realTimePnL = calculateRealTimePnL(
@@ -98,14 +94,12 @@ export const useRealtimePnL = (trades: Trade[], assets: Asset[] = [], excludeTra
         
         // Round to 2 decimal places for display
         newPnL[trade.id] = Math.round(realTimePnL * 100) / 100;
-        console.log(`💰 Calculated PnL for trade ${trade.id}: $${newPnL[trade.id]}`);
       } else {
         // Fallback: Try to get price from assets array
         const asset = assets.find(a => a.symbol === trade.symbol);
         const fallbackPrice = asset?.price;
         
         if (fallbackPrice && fallbackPrice > 0) {
-          console.log(`🔄 Using fallback asset price for ${trade.symbol}: $${fallbackPrice}`);
           newPrices[trade.symbol] = fallbackPrice;
           hasSignificantChange = true;
           
@@ -123,10 +117,9 @@ export const useRealtimePnL = (trades: Trade[], assets: Asset[] = [], excludeTra
           );
           
           newPnL[trade.id] = Math.round(realTimePnL * 100) / 100;
-          console.log(`💰 Calculated PnL from fallback for trade ${trade.id}: $${newPnL[trade.id]}`);
         } else {
           // Last resort: Fall back to stored P&L if no price available
-          console.warn(`⚠️ No price available for ${trade.symbol}, using stored PnL: $${trade.pnl}`);
+          console.warn(`⚠️ No price available for ${trade.symbol}, using stored PnL`);
           newPnL[trade.id] = trade.pnl;
         }
       }
@@ -149,7 +142,7 @@ export const useRealtimePnL = (trades: Trade[], assets: Asset[] = [], excludeTra
     }
   }, [openTrades, prices, assets, hasOpenTrades, lastPnL, excludeTradeIds]);
 
-  // Real-time update frequency: 2 seconds to match price updates
+  // Real-time update frequency: 1 second for responsive updates
   useEffect(() => {
     // Don't start interval if no open trades
     if (!hasOpenTrades) {
@@ -163,8 +156,8 @@ export const useRealtimePnL = (trades: Trade[], assets: Asset[] = [], excludeTra
     // Calculate immediately for open trades
     calculatePnL();
 
-    // Set up interval for every 2 seconds (matches price update frequency)
-    intervalRef.current = setInterval(calculatePnL, 2000);
+    // Set up interval for every 1 second for responsive updates
+    intervalRef.current = setInterval(calculatePnL, 1000);
 
     return () => {
       if (intervalRef.current) {
