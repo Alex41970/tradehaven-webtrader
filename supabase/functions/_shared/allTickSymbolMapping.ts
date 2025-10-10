@@ -35,7 +35,7 @@ export const ALLTICK_SYMBOL_MAPPING = new Map([
   ['USDMXN', 'USDMXN'],
   ['USDZAR', 'USDZAR'],
   
-  // === CRYPTO (30 coins) ===
+  // === CRYPTO (38 coins) ===
   ['BTCUSD', 'BTCUSDT'],
   ['ETHUSD', 'ETHUSDT'],
   ['XRPUSD', 'XRPUSDT'],
@@ -66,23 +66,20 @@ export const ALLTICK_SYMBOL_MAPPING = new Map([
   ['INJUSD', 'INJUSDT'],
   ['SANDUSD', 'SANDUSDT'],
   ['MANAUSD', 'MANAUSDT'],
+  ['BNBUSD', 'BNBUSDT'],     // Binance Coin
+  ['SHIBUSDT', 'SHIBUSDT'],  // Shiba Inu
+  ['PEPEUSDT', 'PEPEUSDT'],  // Pepe
+  ['RNDRUSDT', 'RNDRUSDT'],  // Render
+  ['FTMUSDT', 'FTMUSDT'],    // Fantom
+  ['GRTUSD', 'GRTUSDT'],     // The Graph
+  ['AAVEUSDT', 'AAVEUSDT'],  // Aave
+  ['MKRUSDT', 'MKRUSDT'],    // Maker
   
-  // === COMMODITIES (15) ===
+  // === COMMODITIES (3) ===
   ['XAUUSD', 'XAUUSD'],  // Gold
-  ['XAGUSD', 'XAGUSD'],  // Silver
-  ['WTIUSD', 'WTIUSD'],  // WTI Crude Oil
-  ['BCOUSD', 'BCOUSD'],  // Brent Crude Oil (changed from BRUSD)
-  ['XPTUSD', 'XPTUSD'],  // Platinum
-  ['XPDUSD', 'XPDUSD'],  // Palladium
-  ['COPUSD', 'XCOPUSD'], // Copper (changed to XCOPUSD)
-  ['GSUSD', 'NGUSD'],    // Natural Gas (changed from GSUSD)
-  ['CORNUSD', 'CORNUSD'], // Corn
-  ['WHEATUSD', 'WHEATUSD'], // Wheat
-  ['SOYUSD', 'SOYUSD'],  // Soybeans
-  ['COFFEEUSD', 'COFFEEUSD'], // Coffee
-  ['COTTONUSD', 'COTTONUSD'], // Cotton
-  ['SUGARUSD', 'SUGARUSD'], // Sugar
-  ['COCOAUSD', 'COCOAUSD'], // Cocoa
+  ['XAGUSD', 'Silver'],  // Silver (AllTick uses "Silver")
+  ['WTIUSD', 'USOIL'],   // WTI Crude Oil (AllTick uses "USOIL")
+  ['BCOUSD', 'UKOIL'],   // Brent Crude Oil (AllTick uses "UKOIL")
   
   // === STOCKS (20 US) ===
   ['AAPL', 'AAPL.US'],
@@ -106,12 +103,12 @@ export const ALLTICK_SYMBOL_MAPPING = new Map([
   ['CRM', 'CRM.US'],
   ['PYPL', 'PYPL.US'],
   
-  // === INDICES (5) ===
-  ['SPX500', 'SPX500.IDX'],  // S&P 500
-  ['NAS100', 'NAS100.IDX'],  // Nasdaq 100
-  ['US30', 'US30.IDX'],      // Dow Jones
-  ['UK100', 'UK100.IDX'],    // FTSE 100
-  ['JPN225', 'JPN225.IDX'],  // Nikkei 225
+  // === INDICES (5) - trying without .IDX suffix ===
+  ['SPX500', 'SPX500'],  // S&P 500
+  ['NAS100', 'NAS100'],  // Nasdaq 100
+  ['US30', 'US30'],      // Dow Jones
+  ['UK100', 'UK100'],    // FTSE 100
+  ['JPN225', 'JPN225'],  // Nikkei 225
 ]);
 
 // Helper functions

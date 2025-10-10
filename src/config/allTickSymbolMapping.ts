@@ -37,7 +37,7 @@ export const ALLTICK_SYMBOL_MAPPING = new Map<string, string>([
   ['USDMXN', 'USDMXN'],
   ['USDZAR', 'USDZAR'],
 
-  // ============ CRYPTO (30 TOP COINS) ============
+  // ============ CRYPTO (36 TOP COINS) ============
   ['BTCUSD', 'BTCUSDT'],
   ['ETHUSD', 'ETHUSDT'],
   ['BNBUSD', 'BNBUSDT'],
@@ -68,23 +68,18 @@ export const ALLTICK_SYMBOL_MAPPING = new Map<string, string>([
   ['ICPUSD', 'ICPUSDT'],
   ['INJUSD', 'INJUSDT'],
   ['RNDRUSD', 'RNDRUSDT'],
+  ['BNBUSD', 'BNBUSDT'],     // Binance Coin
+  ['SHIBUSDT', 'SHIBUSDT'],  // Shiba Inu
+  ['PEPEUSDT', 'PEPEUSDT'],  // Pepe
+  ['FTMUSDT', 'FTMUSDT'],    // Fantom
+  ['AAVEUSDT', 'AAVEUSDT'],  // Aave
+  ['MKRUSDT', 'MKRUSDT'],    // Maker
 
-  // ============ COMMODITIES (15) ============
+  // ============ COMMODITIES (3) ============
   ['XAUUSD', 'XAUUSD'],      // Gold
-  ['XAGUSD', 'XAGUSD'],      // Silver
-  ['XPTUSD', 'XPTUSD'],      // Platinum
-  ['XPDUSD', 'XPDUSD'],      // Palladium
-  ['WTIUSD', 'WTIUSD'],      // WTI Crude Oil
-  ['BCOUSD', 'BRUSD'],       // Brent Crude Oil
-  ['UKOUSD', 'BRUSD'],       // UK Oil (Brent)
-  ['USOIL', 'WTIUSD'],       // US Oil (WTI)
-  ['GASUSD', 'GASUSD'],      // Natural Gas
-  ['CORNUSD', 'CORNUSD'],    // Corn
-  ['WHEATUSD', 'WHEATUSD'],  // Wheat
-  ['SOYUSD', 'SOYUSD'],      // Soybeans
-  ['COTUSD', 'COTUSD'],      // Cotton
-  ['SUGUSD', 'SUGUSD'],      // Sugar
-  ['COFUSD', 'COFUSD'],      // Coffee
+  ['XAGUSD', 'Silver'],      // Silver (AllTick uses "Silver")
+  ['WTIUSD', 'USOIL'],       // WTI Crude Oil (AllTick uses "USOIL")
+  ['BCOUSD', 'UKOIL'],       // Brent Crude Oil (AllTick uses "UKOIL")
 
   // ============ US STOCKS (20) ============
   ['AAPL', 'AAPL.US'],       // Apple
@@ -108,15 +103,15 @@ export const ALLTICK_SYMBOL_MAPPING = new Map<string, string>([
   ['INTC', 'INTC.US'],       // Intel
   ['AMD', 'AMD.US'],         // AMD
 
-  // ============ INDICES (5) ============
-  ['SPX500', 'SPX500.IDX'],  // S&P 500
-  ['NAS100', 'NAS100.IDX'],  // Nasdaq 100
-  ['US30', 'US30.IDX'],      // Dow Jones 30
-  ['UK100', 'UK100.IDX'],    // FTSE 100
-  ['JPN225', 'JPN225.IDX'],  // Nikkei 225
+  // ============ INDICES (5) - trying without .IDX suffix ============
+  ['SPX500', 'SPX500'],  // S&P 500
+  ['NAS100', 'NAS100'],  // Nasdaq 100
+  ['US30', 'US30'],      // Dow Jones 30
+  ['UK100', 'UK100'],    // FTSE 100
+  ['JPN225', 'JPN225'],  // Nikkei 225
 ]);
 
-// Total symbols: 100 (30 Forex + 30 Crypto + 15 Commodities + 20 Stocks + 5 Indices)
+// Total symbols: 100 (30 Forex + 36 Crypto + 3 Commodities + 20 Stocks + 5 Indices + 6 replacements)
 
 /**
  * Get the internal symbol from an AllTick code
