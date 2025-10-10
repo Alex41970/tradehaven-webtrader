@@ -100,18 +100,22 @@ async function testRestAPI(url: string, apiKey: string, symbolList: Array<{code:
   try {
     const startTime = Date.now();
     
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        token: apiKey,
-        trace: `diagnostics_${Date.now()}`,
-        data: {
-          symbol_list: symbolList
-        }
-      })
+    // Build query object
+    const queryObj = {
+      trace: `diagnostics_${Date.now()}`,
+      data: {
+        symbol_list: symbolList
+      }
+    };
+    
+    // Encode query as URL parameter
+    const query = encodeURIComponent(JSON.stringify(queryObj));
+    
+    // Use GET with token and query in URL
+    const fullUrl = `${url}?token=${apiKey}&query=${query}`;
+    
+    const response = await fetch(fullUrl, {
+      method: 'GET'
     });
 
     const responseData = await response.json();
