@@ -71,11 +71,11 @@ export const ALLTICK_SYMBOL_MAPPING = new Map([
   ['XAUUSD', 'XAUUSD'],  // Gold
   ['XAGUSD', 'XAGUSD'],  // Silver
   ['WTIUSD', 'WTIUSD'],  // WTI Crude Oil
-  ['BCOUSD', 'BRUSD'],   // Brent Crude Oil
+  ['BCOUSD', 'BCOUSD'],  // Brent Crude Oil (changed from BRUSD)
   ['XPTUSD', 'XPTUSD'],  // Platinum
   ['XPDUSD', 'XPDUSD'],  // Palladium
-  ['COPUSD', 'COPUSD'],  // Copper
-  ['GSUSD', 'GSUSD'],    // Natural Gas
+  ['COPUSD', 'XCOPUSD'], // Copper (changed to XCOPUSD)
+  ['GSUSD', 'NGUSD'],    // Natural Gas (changed from GSUSD)
   ['CORNUSD', 'CORNUSD'], // Corn
   ['WHEATUSD', 'WHEATUSD'], // Wheat
   ['SOYUSD', 'SOYUSD'],  // Soybeans

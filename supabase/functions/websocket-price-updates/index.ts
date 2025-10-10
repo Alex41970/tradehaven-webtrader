@@ -132,6 +132,7 @@ async function makeRequest(baseUrl: string, symbols: string[], apiKey: string): 
 
   if (!response.ok) {
     console.error(`❌ Request failed: ${response.status} ${response.statusText}`);
+    console.error(`   Requested symbols (${symbols.length}):`, symbols.join(', '));
     return [];
   }
 
@@ -139,20 +140,24 @@ async function makeRequest(baseUrl: string, symbols: string[], apiKey: string): 
   
   if (json.ret === 600) {
     console.warn(`⚠️ Symbols not available (ret:600): ${json.msg}`);
+    console.warn(`   Requested symbols (${symbols.length}):`, symbols.join(', '));
     return [];
   }
   
   if (json.ret !== 200 && json.code !== 0) {
     console.error(`❌ API Error: ret=${json.ret}, msg=${json.msg}`);
+    console.error(`   Requested symbols (${symbols.length}):`, symbols.join(', '));
     return [];
   }
   
   const tickList = json?.data?.tick_list || [];
   const updates: PriceUpdate[] = [];
+  const receivedSymbols = new Set<string>();
   
   for (const tick of tickList) {
     const price = parseFloat(tick.price);
     if (!isNaN(price)) {
+      receivedSymbols.add(tick.code);
       updates.push({
         symbol: tick.code,
         price,
@@ -160,6 +165,13 @@ async function makeRequest(baseUrl: string, symbols: string[], apiKey: string): 
         timestamp: Number(tick.tick_time) || Date.now()
       });
     }
+  }
+  
+  // Log missing symbols
+  const missingSymbols = symbols.filter(s => !receivedSymbols.has(s));
+  if (missingSymbols.length > 0) {
+    console.warn(`⚠️ Missing ${missingSymbols.length} symbols from response:`);
+    console.warn(`   ${missingSymbols.join(', ')}`);
   }
   
   return updates;
