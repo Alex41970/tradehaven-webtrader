@@ -14,35 +14,9 @@ export const AllTickDiagnostics = () => {
     setTesting(true);
     setResults([]);
 
-    // Test 1: Quick auth test (single symbol sanity check)
+    // Run comprehensive diagnostics (includes auth verification)
     try {
-      console.log('Running quick auth test via edge function...');
-      const { data, error } = await supabase.functions.invoke('test-alltick-auth');
-      
-      if (error) throw error;
-      
-      const authTest = {
-        test: 'AllTick Auth Test (BTC/USDT)',
-        success: data?.success || false,
-        details: {
-          status: data?.status,
-          statusText: data?.statusText,
-          response: data?.response,
-          apiKeyInfo: data?.apiKeyInfo
-        }
-      };
-      setResults(prev => [...prev, authTest]);
-    } catch (error: any) {
-      setResults(prev => [...prev, {
-        test: 'AllTick Auth Test',
-        success: false,
-        details: { error: error.message }
-      }]);
-    }
-
-    // Test 2: Full diagnostics (multiple symbols and endpoints)
-    try {
-      console.log('Running full diagnostics via edge function...');
+      console.log('Running diagnostics via edge function...');
       const { data, error } = await supabase.functions.invoke('alltick-diagnostics');
       
       if (error) throw error;

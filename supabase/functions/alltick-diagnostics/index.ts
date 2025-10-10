@@ -26,12 +26,12 @@ serve(async (req) => {
 
     const results: DiagnosticResult[] = [];
 
-    // Test 1: Crypto (compact code)
+    // Test 1: Auth + Crypto (verifies API key and connectivity)
     const result1 = await testRestAPI(
       'https://quote.alltick.io/quote-b-api/trade-tick',
       apiKey,
       [{ code: 'BTCUSDT' }],
-      'Crypto - BTCUSDT'
+      'Auth Test + Crypto - BTCUSDT'
     );
     results.push(result1);
     await delay(1200); // Avoid rate limits
@@ -86,6 +86,11 @@ serve(async (req) => {
         total: results.length,
         successful: results.filter(r => r.success).length,
         failed: results.filter(r => !r.success).length
+      },
+      apiKeyInfo: {
+        present: true,
+        length: apiKey.length,
+        prefix: apiKey.substring(0, 10)
       }
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
