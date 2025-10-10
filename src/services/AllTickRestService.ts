@@ -142,6 +142,7 @@ export class AllTickRestService {
     ['XAUUSD', 'XAUUSD'],
     ['XAGUSD', 'XAGUSD'],
     ['WTIUSD', 'WTIUSD'],
+    ['BCOUSD', 'BRUSD'],
     ['BRUSD', 'BRUSD'],
     ['XPTUSD', 'XPTUSD'],
     ['XPDUSD', 'XPDUSD'],
@@ -270,12 +271,12 @@ export class AllTickRestService {
   }
 
   private startPolling(): void {
-    // Start immediately, then every 1 second (AllTick Basic plan supports high-frequency updates)
+    // Start immediately, then every 2 seconds to respect rate limits
     this.fetchBatch();
     
     this.pollingInterval = setInterval(() => {
       this.fetchBatch();
-    }, 1000);
+    }, 2000);
   }
 
   private async fetchBatch(): Promise<void> {

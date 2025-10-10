@@ -116,7 +116,7 @@ export const useRealtimePnL = (trades: Trade[], assets: Asset[] = [], excludeTra
     }
   }, [openTrades, prices, assets, hasOpenTrades, lastPnL, excludeTradeIds]);
 
-  // Ultra-fast update frequency: 1 second for active trading
+  // Real-time update frequency: 2 seconds to match price updates
   useEffect(() => {
     // Don't start interval if no open trades
     if (!hasOpenTrades) {
@@ -130,8 +130,8 @@ export const useRealtimePnL = (trades: Trade[], assets: Asset[] = [], excludeTra
     // Calculate immediately for open trades
     calculatePnL();
 
-    // Set up interval for every 1 second (ultra-fast for active trading)
-    intervalRef.current = setInterval(calculatePnL, 1000);
+    // Set up interval for every 2 seconds (matches price update frequency)
+    intervalRef.current = setInterval(calculatePnL, 2000);
 
     return () => {
       if (intervalRef.current) {

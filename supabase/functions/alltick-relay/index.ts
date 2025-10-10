@@ -60,6 +60,7 @@ const symbolMapping = new Map([
   ['XAUUSD', 'XAUUSD'],
   ['XAGUSD', 'XAGUSD'],
   ['WTIUSD', 'WTIUSD'],
+  ['BCOUSD', 'BRUSD'],
   ['BRUSD', 'BRUSD'],
   
   // Major US Stocks (keep .US suffix)
@@ -110,95 +111,90 @@ Deno.serve(async (req) => {
     // Get all AllTick symbols
     const allTickSymbols = Array.from(symbolMapping.values());
     
-    // Batch symbols into chunks of 50 (AllTick limit)
-    const batchSize = 50;
-    const batches: string[][] = [];
-    for (let i = 0; i < allTickSymbols.length; i += batchSize) {
-      batches.push(allTickSymbols.slice(i, i + batchSize));
-    }
+    console.log(`📦 Fetching ${allTickSymbols.length} symbols in single batch`);
 
-    console.log(`📦 Processing ${batches.length} batches of symbols`);
+    // Split symbols by API group
+    const forexCryptoCommoditySymbols = allTickSymbols.filter(code => !/(\.US|\.IDX)$/.test(code));
+    const stockIndexSymbols = allTickSymbols.filter(code => /(\.US|\.IDX)$/.test(code));
 
     // Track auth and failure states
     let hadUnauthorized = false;
     let hadFailures = 0;
 
-    // Fetch all batches in parallel
-    const batchPromises = batches.map(async (batch) => {
-      // Split symbols by API group
-      // Compact codes (no suffix) go to quote-b-api
-      // Stocks/indices (.US/.IDX) go to quote-stock-b-api
-      const forexCryptoCommoditySymbols = batch.filter(code => !/(\.US|\.IDX)$/.test(code));
-      const stockIndexSymbols = batch.filter(code => /(\.US|\.IDX)$/.test(code));
+    const makeRequest = async (baseUrl: string, symbols: string[]): Promise<PriceUpdate[]> => {
+      if (symbols.length === 0) return [];
+      const query = encodeURIComponent(JSON.stringify({
+        trace: `batch_${Date.now()}`,
+        data: { symbol_list: symbols.map(code => ({ code })) }
+      }));
+      const url = `${baseUrl}/trade-tick?token=${apiKey}&query=${query}`;
+      const response = await fetch(url);
 
-      const requests: Promise<PriceUpdate[]>[] = [];
+      if (!response.ok) {
+        if (response.status === 401) hadUnauthorized = true;
+        hadFailures++;
+        console.error(`❌ Request failed: ${response.status} ${response.statusText}`);
+        return [];
+      }
 
-      const makeRequest = async (baseUrl: string, symbols: string[]): Promise<PriceUpdate[]> => {
-        if (symbols.length === 0) return [];
-        const query = encodeURIComponent(JSON.stringify({
-          trace: `batch_${Date.now()}`,
-          data: { symbol_list: symbols.map(code => ({ code })) }
-        }));
-        const url = `${baseUrl}/trade-tick?token=${apiKey}&query=${query}`;
-        const response = await fetch(url);
-
-        if (!response.ok) {
-          if (response.status === 401) hadUnauthorized = true;
-          hadFailures++;
-          console.error(`❌ Request failed: ${response.status} ${response.statusText}`);
-          return [];
+      const json: any = await response.json();
+      
+      // Handle ret:600 "code invalid" gracefully (symbol not available)
+      if (json.ret === 600) {
+        console.warn(`⚠️ Symbols not available (ret:600): ${json.msg}`);
+        return [];
+      }
+      
+      // Check for success: ret:200 indicates success in REST API
+      if (json.ret !== 200 && json.code !== 0) {
+        console.error(`❌ API Error: ret=${json.ret}, msg=${json.msg}`);
+        return [];
+      }
+      
+      const tickList = json?.data?.tick_list || [];
+      const reverseMapping = new Map(
+        Array.from(symbolMapping.entries()).map(([k, v]) => [v, k])
+      );
+      const updates: PriceUpdate[] = [];
+      for (const tick of tickList) {
+        const internalSymbol = reverseMapping.get(tick.code);
+        const price = parseFloat(tick.price);
+        if (internalSymbol && !isNaN(price)) {
+          updates.push({
+            symbol: internalSymbol,
+            price,
+            change_24h: 0,
+            timestamp: Number(tick.tick_time) || Date.now()
+          });
         }
+      }
+      return updates;
+    };
 
-        const json: any = await response.json();
-        
-        // Handle ret:600 "code invalid" gracefully (symbol not available)
-        if (json.ret === 600) {
-          console.warn(`⚠️ Symbols not available (ret:600): ${json.msg}`);
-          return [];
-        }
-        
-        // Check for success: ret:200 indicates success in REST API
-        if (json.ret !== 200 && json.code !== 0) {
-          console.error(`❌ API Error: ret=${json.ret}, msg=${json.msg}`);
-          return [];
-        }
-        
-        const tickList = json?.data?.tick_list || [];
-        const reverseMapping = new Map(
-          Array.from(symbolMapping.entries()).map(([k, v]) => [v, k])
-        );
-        const updates: PriceUpdate[] = [];
-        for (const tick of tickList) {
-          const internalSymbol = reverseMapping.get(tick.code);
-          const price = parseFloat(tick.price);
-          if (internalSymbol && !isNaN(price)) {
-            updates.push({
-              symbol: internalSymbol,
-              price,
-              change_24h: 0,
-              timestamp: Number(tick.tick_time) || Date.now()
-            });
-          }
-        }
-        return updates;
-      };
+    // Process SEQUENTIALLY (not parallel) - fetch all symbols in 2 API calls
+    const allPrices: PriceUpdate[] = [];
 
-      requests.push(makeRequest('https://quote.alltick.io/quote-b-api', forexCryptoCommoditySymbols));
-      requests.push(makeRequest('https://quote.alltick.io/quote-stock-b-api', stockIndexSymbols));
+    // First request: Forex/Crypto/Commodities
+    if (forexCryptoCommoditySymbols.length > 0) {
+      const prices1 = await makeRequest('https://quote.alltick.io/quote-b-api', forexCryptoCommoditySymbols);
+      allPrices.push(...prices1);
+      
+      // Small delay between API calls to respect rate limits
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
 
-      const results = await Promise.all(requests);
-      return results.flat();
-    });
+    // Second request: Stocks/Indices
+    if (stockIndexSymbols.length > 0) {
+      const prices2 = await makeRequest('https://quote.alltick.io/quote-stock-b-api', stockIndexSymbols);
+      allPrices.push(...prices2);
+    }
 
-    const batchResults = await Promise.all(batchPromises);
-
-    // Process all results and normalize
-    const prices: PriceUpdate[] = batchResults.flat();
+    const prices: PriceUpdate[] = allPrices;
 
     console.log(`✅ Successfully fetched ${prices.length} prices`);
 
     // If no prices and failures occurred, surface an error
-    if (prices.length === 0 && (hadUnauthorized || hadFailures === batches.length)) {
+    if (prices.length === 0 && (hadUnauthorized || hadFailures > 0)) {
       const errorMsg = hadUnauthorized 
         ? 'Unauthorized from AllTick: invalid or missing API key'
         : 'Failed to retrieve prices from AllTick';
