@@ -39,20 +39,20 @@ const INDEX_MAPPINGS: Record<string, string> = {
 
 // Explicit commodity mappings
 const COMMODITY_MAPPINGS: Record<string, string> = {
-  // Precious metals (spot)
+  // Precious metals (spot) - TVC is free
   'XAUUSD': 'TVC:GOLD',
   'XAGUSD': 'TVC:SILVER',
   'XPTUSD': 'TVC:PLATINUM',
   'XPDUSD': 'TVC:PALLADIUM',
   
-  // Base metals
-  'XCUUSD': 'COMEX:HG1!',
-  'COPPER': 'COMEX:HG1!',
-  'XALUSD': 'COMEX:ALI1!',
-  'XZNCUSD': 'COMEX:ZNC1!',
-  'XNIUSD': 'LME:NI1!',
+  // Base metals - CFD providers (free)
+  'XCUUSD': 'CAPITALCOM:COPPER',
+  'COPPER': 'CAPITALCOM:COPPER',
+  'XALUSD': 'CAPITALCOM:ALUMINUM',
+  'XZNCUSD': 'CAPITALCOM:ZINC',
+  'XNIUSD': 'CAPITALCOM:NICKEL',
   
-  // Energy
+  // Energy - TVC is free
   'WTIUSD': 'TVC:USOIL',
   'USOIL': 'TVC:USOIL',
   'BCOUSD': 'TVC:UKOIL',
@@ -61,18 +61,18 @@ const COMMODITY_MAPPINGS: Record<string, string> = {
   'NATGAS': 'TVC:NATURALGAS',
   'NATGASUSD': 'TVC:NATURALGAS',
   
-  // Agriculture futures
-  'WHEAT': 'CBOT:ZW1!',
-  'CORN': 'CBOT:ZC1!',
-  'SOYBEAN': 'CBOT:ZS1!',
-  'COFFEE': 'ICEUS:KC1!',
-  'COCOA': 'ICEUS:CC1!',
-  'SUGAR': 'ICEUS:SB1!',
-  'COTTON': 'ICEUS:CT1!',
-  'ORANGE': 'ICEUS:OJ1!',
-  'CATTLE': 'CME:LE1!',
-  'HOGS': 'CME:HE1!',
-  'LUMBER': 'CME:LBS1!',
+  // Agriculture - CFD providers (free)
+  'WHEAT': 'PEPPERSTONE:WHEAT',
+  'CORN': 'PEPPERSTONE:CORN',
+  'SOYBEAN': 'PEPPERSTONE:SOYBEAN',
+  'COFFEE': 'CAPITALCOM:COFFEE',
+  'COCOA': 'CAPITALCOM:COCOA',
+  'SUGAR': 'CAPITALCOM:SUGAR',
+  'COTTON': 'CAPITALCOM:COTTON',
+  'ORANGE': 'CAPITALCOM:ORANGEJUICE',
+  'CATTLE': 'CAPITALCOM:LIVECATTLE',
+  'HOGS': 'CAPITALCOM:LEANHOGS',
+  'LUMBER': 'CAPITALCOM:LUMBER',
 };
 
 // Explicit stock exchange mappings (NASDAQ vs NYSE)
@@ -235,7 +235,7 @@ export function resolveTVSymbol(asset: Asset): string {
     const pair = symbol.replace(/USD$/, '');
     // Reconstruct pair - if it's already a 6-char pair, use as-is
     const forexPair = pair.length === 6 ? pair : symbol;
-    const tvSymbol = `FX_IDC:${forexPair}`;
+    const tvSymbol = `FX:${forexPair}`;
     console.debug('TradingView symbol resolved (forex)', { appSymbol: symbol, tvSymbol });
     return tvSymbol;
   }
@@ -243,7 +243,7 @@ export function resolveTVSymbol(asset: Asset): string {
   // Default fallback based on symbol pattern
   if (symbol.length === 6 && !symbol.includes('USD')) {
     // Likely a forex pair (EURUSD, GBPJPY, etc.)
-    const tvSymbol = `FX_IDC:${symbol}`;
+    const tvSymbol = `FX:${symbol}`;
     console.debug('TradingView symbol resolved (forex fallback)', { appSymbol: symbol, tvSymbol });
     return tvSymbol;
   }
@@ -257,7 +257,7 @@ export function resolveTVSymbol(asset: Asset): string {
   }
 
   // Last resort: try forex
-  const tvSymbol = `FX_IDC:${symbol}`;
+  const tvSymbol = `FX:${symbol}`;
   console.warn('TradingView symbol fallback used', { appSymbol: symbol, tvSymbol });
   return tvSymbol;
 }
