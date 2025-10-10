@@ -276,12 +276,12 @@ export class AllTickRestService {
   }
 
   private startPolling(): void {
-    // Start immediately, then every 2 seconds to respect rate limits
+    // Start immediately, then every 3 seconds to reduce rate limiting
     this.fetchBatch();
     
     this.pollingInterval = setInterval(() => {
       this.fetchBatch();
-    }, 2000);
+    }, 3000); // Increased from 2s to 3s to reduce API load
   }
 
   private async fetchBatch(): Promise<void> {

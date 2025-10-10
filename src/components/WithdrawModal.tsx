@@ -10,7 +10,7 @@ import { CreditCard, Wallet, AlertTriangle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
-import { useUserProfile } from '@/hooks/useUserProfile';
+import { useSharedUserProfile } from '@/hooks/useSharedUserProfile';
 
 interface WithdrawModalProps {
   open: boolean;
@@ -19,7 +19,7 @@ interface WithdrawModalProps {
 
 export const WithdrawModal: React.FC<WithdrawModalProps> = ({ open, onOpenChange }) => {
   const { user } = useAuth();
-  const { profile } = useUserProfile();
+  const { profile } = useSharedUserProfile();
   const [step, setStep] = useState(1);
   const [withdrawalType, setWithdrawalType] = useState<'crypto' | 'wire'>('crypto');
   const [amount, setAmount] = useState('');

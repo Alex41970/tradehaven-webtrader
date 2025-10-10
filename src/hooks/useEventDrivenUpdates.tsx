@@ -1,13 +1,13 @@
-import { useEffect, useCallback } from 'react';
-import { useUserProfile } from './useUserProfile';
+import { useCallback, useEffect } from 'react';
+import { useSharedUserProfile } from './useSharedUserProfile';
 import { useRealTimeTrading } from './useRealTimeTrading';
 
 /**
  * Hook to handle event-driven updates after user actions
- * Provides immediate feedback while using polling for regular updates
+ * Uses shared profile cache to prevent duplicate requests
  */
 export const useEventDrivenUpdates = () => {
-  const { forceRefresh: refreshProfile } = useUserProfile();
+  const { forceRefresh: refreshProfile } = useSharedUserProfile();
   const { isConnected } = useRealTimeTrading();
 
   // Trigger immediate update after trade actions

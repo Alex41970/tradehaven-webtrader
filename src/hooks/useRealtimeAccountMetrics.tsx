@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { useUserProfile } from './useUserProfile';
+import { useSharedUserProfile } from './useSharedUserProfile';
 import { useTrades } from './useTrades';
 import { useRealtimePnL } from './useRealtimePnL';
 import { useEventDrivenUpdates } from './useEventDrivenUpdates';
@@ -22,7 +22,7 @@ interface RealtimeAccountMetrics {
 }
 
 export const useRealtimeAccountMetrics = (): RealtimeAccountMetrics => {
-  const { profile, isPolling, lastUpdate } = useUserProfile();
+  const { profile, lastUpdate } = useSharedUserProfile(true);
   const { openTrades } = useTrades();
   const { assets } = useAssets();
   
