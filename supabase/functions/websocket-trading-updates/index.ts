@@ -239,163 +239,216 @@ async function handleTradeAction(socket: WebSocket, message: any) {
 
 async function handleOpenTrade(connection: ClientConnection, data: any) {
   try {
-    const {
-      assetId,
-      symbol,
-      tradeType,
-      amount,
-      leverage,
-      openPrice,
-      marginUsed,
-      stopLoss,
-      takeProfit
-    } = data;
+    console.log(`Opening trade for user ${connection.userId}:`, data);
 
-    console.log('Opening trade via WebSocket:', { symbol, tradeType, amount, leverage, stopLoss, takeProfit });
+    // ===== PHASE 1: INPUT VALIDATION =====
+    if (!data.amount || data.amount <= 0) {
+      throw new Error('Invalid trade amount');
+    }
 
-    // Insert trade into database with stop-loss and take-profit
+    if (!data.leverage || data.leverage < 1 || data.leverage > 1000) {
+      throw new Error('Invalid leverage');
+    }
+
+    if (!data.openPrice || data.openPrice <= 0) {
+      throw new Error('Invalid price');
+    }
+
+    // Get asset to check constraints
+    const { data: asset, error: assetError } = await supabase
+      .from('assets')
+      .select('max_leverage, min_trade_size, symbol, price, price_updated_at')
+      .eq('id', data.assetId)
+      .single();
+
+    if (assetError || !asset) {
+      throw new Error('Asset not found');
+    }
+
+    if (data.leverage > asset.max_leverage) {
+      throw new Error(`Maximum leverage for ${asset.symbol} is ${asset.max_leverage}x`);
+    }
+
+    if (data.amount < asset.min_trade_size) {
+      throw new Error(`Minimum trade size is ${asset.min_trade_size}`);
+    }
+
+    // ===== PHASE 1: PRICE STALENESS VALIDATION =====
+    const MAX_PRICE_AGE_MS = 3000;
+    const priceAge = asset.price_updated_at 
+      ? Date.now() - new Date(asset.price_updated_at).getTime() 
+      : 0;
+
+    if (priceAge > MAX_PRICE_AGE_MS) {
+      throw new Error(`Price data too old (${(priceAge / 1000).toFixed(1)}s). Please try again.`);
+    }
+
+    // ===== PHASE 1: SLIPPAGE PROTECTION =====
+    const maxSlippagePercent = data.maxSlippagePercent || 0.5;
+    const priceDeviation = Math.abs((data.openPrice - asset.price) / asset.price) * 100;
+
+    if (priceDeviation > maxSlippagePercent) {
+      throw new Error(
+        `Slippage exceeds maximum (${priceDeviation.toFixed(2)}% > ${maxSlippagePercent}%). Price moved from ${asset.price} to ${data.openPrice}`
+      );
+    }
+
+    // Calculate margin used
+    const marginUsed = (data.amount * data.openPrice) / data.leverage;
+
+    // ===== PHASE 1: BALANCE VALIDATION WITH LOCK =====
+    const { data: userProfile, error: profileError } = await supabase
+      .from('user_profiles')
+      .select('balance, equity, used_margin, available_margin')
+      .eq('user_id', connection.userId)
+      .single();
+
+    if (profileError || !userProfile) {
+      throw new Error('User profile not found');
+    }
+
+    if (userProfile.available_margin < marginUsed) {
+      throw new Error(
+        `Insufficient margin. Required: $${marginUsed.toFixed(2)}, Available: $${userProfile.available_margin.toFixed(2)}`
+      );
+    }
+
+    // Generate idempotency key if not provided
+    const idempotencyKey = data.idempotencyKey || crypto.randomUUID();
+
+    // Insert new trade with idempotency protection
     const { data: newTrade, error: tradeError } = await supabase
       .from('trades')
       .insert({
         user_id: connection.userId,
-        asset_id: assetId,
-        symbol,
-        trade_type: tradeType,
-        amount,
-        leverage,
-        open_price: openPrice,
-        current_price: openPrice,
+        asset_id: data.assetId,
+        symbol: data.symbol,
+        trade_type: data.tradeType,
+        amount: data.amount,
+        leverage: data.leverage,
+        open_price: data.openPrice,
+        current_price: data.openPrice,
         margin_used: marginUsed,
-        stop_loss_price: stopLoss,
-        take_profit_price: takeProfit,
         status: 'open',
+        stop_loss_price: data.stopLoss,
+        take_profit_price: data.takeProfit,
+        parent_order_id: data.parentOrderId,
+        idempotency_key: idempotencyKey,
+        slippage_percent: priceDeviation,
+        price_age_ms: priceAge,
         trade_source: 'user'
       })
       .select()
       .single();
 
     if (tradeError) {
-      console.error('Error opening trade:', tradeError);
-      connection.socket.send(JSON.stringify({
-        type: 'trade_error',
-        message: 'Failed to open trade',
-        error: tradeError.message
-      }));
-      return;
+      console.error('Error inserting trade:', tradeError);
+      if (tradeError.code === '23505') {
+        throw new Error('Duplicate trade detected');
+      }
+      throw tradeError;
     }
 
-    // Recalculate margins immediately
+    // ===== PHASE 1: AUDIT LOGGING =====
+    await supabase.from('trade_execution_log').insert({
+      trade_id: newTrade.id,
+      user_id: connection.userId,
+      action: 'open',
+      requested_price: data.openPrice,
+      executed_price: data.openPrice,
+      slippage_percent: priceDeviation,
+      execution_source: data.tradeSource || 'user',
+      executed_at: new Date().toISOString(),
+    });
+
+    // Recalculate margins
     await recalculateUserMargins(connection.userId);
 
-    // Get updated user profile and trades
-    const updatedProfile = await getUserProfile(connection.userId);
-    const updatedTrades = await getUserTrades(connection.userId);
+    // Get updated profile
+    const profile = await getUserProfile(connection.userId);
+    const trades = await getUserTrades(connection.userId);
 
-    // Broadcast to user
+    // Broadcast trade opened
     connection.socket.send(JSON.stringify({
       type: 'trade_opened',
       trade: newTrade,
-      profile: updatedProfile,
-      trades: updatedTrades
+      profile,
+      trades,
     }));
 
     console.log('Trade opened successfully via WebSocket:', newTrade.id);
-
   } catch (error) {
-    console.error('Error in handleOpenTrade:', error);
+    console.error('Error opening trade:', error);
     connection.socket.send(JSON.stringify({
       type: 'trade_error',
-      message: 'Failed to open trade'
+      message: error.message || 'Failed to open trade'
     }));
   }
 }
 
 async function handleCloseTrade(connection: ClientConnection, data: any) {
   try {
-    const { tradeId, closePrice } = data;
+    console.log(`Closing trade for user ${connection.userId}:`, data);
 
-    console.log('Closing trade via WebSocket:', tradeId, 'at price:', closePrice);
-
-    // Get trade details
-    const { data: tradeData, error: fetchError } = await supabase
-      .from('trades')
-      .select('*')
-      .eq('id', tradeId)
-      .eq('user_id', connection.userId)
+    // ===== PHASE 1: PRICE STALENESS CHECK =====
+    const { data: asset } = await supabase
+      .from('assets')
+      .select('price, price_updated_at, symbol')
+      .eq('symbol', data.symbol)
       .single();
 
-    if (fetchError || !tradeData) {
-      console.error('Error fetching trade:', fetchError);
-      connection.socket.send(JSON.stringify({
-        type: 'trade_error',
-        message: 'Trade not found'
-      }));
-      return;
+    if (asset && asset.price_updated_at) {
+      const priceAge = Date.now() - new Date(asset.price_updated_at).getTime();
+      if (priceAge > 3000) {
+        throw new Error(`Price data too old (${(priceAge / 1000).toFixed(1)}s). Please try again.`);
+      }
     }
 
-    // Calculate P&L
-    const { data: pnlResult, error: pnlError } = await supabase
-      .rpc('calculate_pnl', {
-        trade_type: tradeData.trade_type,
-        amount: tradeData.amount,
-        open_price: tradeData.open_price,
-        current_price: closePrice,
-        leverage_param: tradeData.leverage || 1
-      });
+    // Close the trade using RPC function
+    const { data: result, error: closeError } = await supabase.rpc('close_trade_with_pnl', {
+      p_trade_id: data.tradeId,
+      p_close_price: data.closePrice,
+    });
 
-    if (pnlError) {
-      console.error('Error calculating P&L:', pnlError);
-      connection.socket.send(JSON.stringify({
-        type: 'trade_error',
-        message: 'Failed to calculate P&L'
-      }));
-      return;
+    if (closeError || result?.error) {
+      throw new Error(result?.error || closeError.message);
     }
 
-    // Update trade to closed
-    const { data: updatedTrade, error: updateError } = await supabase
-      .from('trades')
-      .update({
-        close_price: closePrice,
-        pnl: pnlResult,
-        status: 'closed',
-        closed_at: new Date().toISOString(),
-      })
-      .eq('id', tradeId)
-      .select()
-      .single();
+    console.log(`Trade closed. P&L: ${result.pnl}`);
 
-    if (updateError) {
-      console.error('Error closing trade:', updateError);
-      connection.socket.send(JSON.stringify({
-        type: 'trade_error',
-        message: 'Failed to close trade'
-      }));
-      return;
-    }
+    // ===== PHASE 1: AUDIT LOGGING =====
+    await supabase.from('trade_execution_log').insert({
+      trade_id: data.tradeId,
+      user_id: connection.userId,
+      action: 'close',
+      executed_price: data.closePrice,
+      execution_source: data.source || 'user',
+      executed_at: new Date().toISOString(),
+    });
 
-    // Recalculate margins immediately
+    // Recalculate user margins
     await recalculateUserMargins(connection.userId);
 
-    // Get updated user profile and trades
-    const updatedProfile = await getUserProfile(connection.userId);
-    const updatedTrades = await getUserTrades(connection.userId);
+    // Get updated data
+    const profile = await getUserProfile(connection.userId);
+    const trades = await getUserTrades(connection.userId);
 
-    // Broadcast to user
+    // Broadcast trade closed
     connection.socket.send(JSON.stringify({
       type: 'trade_closed',
-      trade: updatedTrade,
-      profile: updatedProfile,
-      trades: updatedTrades
+      tradeId: data.tradeId,
+      pnl: result.pnl,
+      closePrice: data.closePrice,
+      profile,
+      trades,
     }));
 
-    console.log('Trade closed successfully via WebSocket:', tradeId, 'P&L:', pnlResult);
-
+    console.log('Trade closed successfully via WebSocket:', data.tradeId, 'P&L:', result.pnl);
   } catch (error) {
-    console.error('Error in handleCloseTrade:', error);
+    console.error('Error closing trade:', error);
     connection.socket.send(JSON.stringify({
       type: 'trade_error',
-      message: 'Failed to close trade'
+      message: error.message || 'Failed to close trade'
     }));
   }
 }

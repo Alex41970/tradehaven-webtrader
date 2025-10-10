@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_audit_log: {
+        Row: {
+          action: string
+          admin_id: string
+          id: string
+          ip_address: unknown | null
+          new_value: Json | null
+          old_value: Json | null
+          performed_at: string | null
+          reason: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          admin_id: string
+          id?: string
+          ip_address?: unknown | null
+          new_value?: Json | null
+          old_value?: Json | null
+          performed_at?: string | null
+          reason?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          admin_id?: string
+          id?: string
+          ip_address?: unknown | null
+          new_value?: Json | null
+          old_value?: Json | null
+          performed_at?: string | null
+          reason?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       admin_payment_settings: {
         Row: {
           admin_id: string
@@ -86,6 +122,7 @@ export type Database = {
           min_trade_size: number
           name: string
           price: number
+          price_updated_at: string | null
           quote_currency: string | null
           spread: number
           symbol: string
@@ -103,6 +140,7 @@ export type Database = {
           min_trade_size?: number
           name: string
           price: number
+          price_updated_at?: string | null
           quote_currency?: string | null
           spread?: number
           symbol: string
@@ -120,6 +158,7 @@ export type Database = {
           min_trade_size?: number
           name?: string
           price?: number
+          price_updated_at?: string | null
           quote_currency?: string | null
           spread?: number
           symbol?: string
@@ -270,6 +309,62 @@ export type Database = {
         }
         Relationships: []
       }
+      trade_execution_log: {
+        Row: {
+          action: string
+          executed_at: string | null
+          executed_by: string | null
+          executed_price: number | null
+          execution_source: string | null
+          id: string
+          ip_address: unknown | null
+          notes: string | null
+          requested_price: number | null
+          slippage_percent: number | null
+          trade_id: string | null
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          action: string
+          executed_at?: string | null
+          executed_by?: string | null
+          executed_price?: number | null
+          execution_source?: string | null
+          id?: string
+          ip_address?: unknown | null
+          notes?: string | null
+          requested_price?: number | null
+          slippage_percent?: number | null
+          trade_id?: string | null
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          action?: string
+          executed_at?: string | null
+          executed_by?: string | null
+          executed_price?: number | null
+          execution_source?: string | null
+          id?: string
+          ip_address?: unknown | null
+          notes?: string | null
+          requested_price?: number | null
+          slippage_percent?: number | null
+          trade_id?: string | null
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trade_execution_log_trade_id_fkey"
+            columns: ["trade_id"]
+            isOneToOne: false
+            referencedRelation: "trades"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       trade_orders: {
         Row: {
           amount: number
@@ -279,7 +374,9 @@ export type Database = {
           filled_at: string | null
           id: string
           leverage: number
+          max_slippage_percent: number | null
           order_type: string
+          price_at_order: number | null
           status: string
           stop_loss_price: number | null
           symbol: string
@@ -297,7 +394,9 @@ export type Database = {
           filled_at?: string | null
           id?: string
           leverage?: number
+          max_slippage_percent?: number | null
           order_type?: string
+          price_at_order?: number | null
           status?: string
           stop_loss_price?: number | null
           symbol: string
@@ -315,7 +414,9 @@ export type Database = {
           filled_at?: string | null
           id?: string
           leverage?: number
+          max_slippage_percent?: number | null
           order_type?: string
+          price_at_order?: number | null
           status?: string
           stop_loss_price?: number | null
           symbol?: string
@@ -351,12 +452,15 @@ export type Database = {
           created_at: string
           current_price: number | null
           id: string
+          idempotency_key: string | null
           leverage: number
           margin_used: number
           open_price: number
           opened_at: string
           parent_order_id: string | null
           pnl: number | null
+          price_age_ms: number | null
+          slippage_percent: number | null
           status: string
           stop_loss_price: number | null
           symbol: string
@@ -365,6 +469,7 @@ export type Database = {
           trade_type: string
           updated_at: string
           user_id: string
+          version: number | null
         }
         Insert: {
           amount: number
@@ -374,12 +479,15 @@ export type Database = {
           created_at?: string
           current_price?: number | null
           id?: string
+          idempotency_key?: string | null
           leverage?: number
           margin_used: number
           open_price: number
           opened_at?: string
           parent_order_id?: string | null
           pnl?: number | null
+          price_age_ms?: number | null
+          slippage_percent?: number | null
           status?: string
           stop_loss_price?: number | null
           symbol: string
@@ -388,6 +496,7 @@ export type Database = {
           trade_type: string
           updated_at?: string
           user_id: string
+          version?: number | null
         }
         Update: {
           amount?: number
@@ -397,12 +506,15 @@ export type Database = {
           created_at?: string
           current_price?: number | null
           id?: string
+          idempotency_key?: string | null
           leverage?: number
           margin_used?: number
           open_price?: number
           opened_at?: string
           parent_order_id?: string | null
           pnl?: number | null
+          price_age_ms?: number | null
+          slippage_percent?: number | null
           status?: string
           stop_loss_price?: number | null
           symbol?: string
@@ -411,6 +523,7 @@ export type Database = {
           trade_type?: string
           updated_at?: string
           user_id?: string
+          version?: number | null
         }
         Relationships: [
           {
@@ -744,6 +857,10 @@ export type Database = {
               trade_type: string
             }
         Returns: number
+      }
+      close_trade_with_pnl: {
+        Args: { p_close_price: number; p_trade_id: string }
+        Returns: Json
       }
       deactivate_and_disconnect_license: {
         Args: { _admin_id: string; _license_id: string }
