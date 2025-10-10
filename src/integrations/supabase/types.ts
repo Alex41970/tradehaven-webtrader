@@ -111,6 +111,8 @@ export type Database = {
       }
       assets: {
         Row: {
+          alltick_code: string | null
+          alltick_supported: boolean | null
           base_currency: string | null
           category: string
           change_24h: number
@@ -129,6 +131,8 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          alltick_code?: string | null
+          alltick_supported?: boolean | null
           base_currency?: string | null
           category: string
           change_24h?: number
@@ -147,6 +151,8 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          alltick_code?: string | null
+          alltick_supported?: boolean | null
           base_currency?: string | null
           category?: string
           change_24h?: number

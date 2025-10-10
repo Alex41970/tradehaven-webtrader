@@ -1,3 +1,5 @@
+import { getAllTickSymbols } from '../../../src/config/allTickSymbolMapping.ts';
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -28,60 +30,6 @@ interface PriceUpdate {
   timestamp: number;
 }
 
-// Symbol mapping from internal to AllTick REST format
-// REST API uses compact codes (no slashes/suffixes) for Forex/Crypto/Commodities
-// Stocks and Indices keep their .US/.IDX suffixes
-const symbolMapping = new Map([
-  // Major Forex pairs (compact codes for REST)
-  ['EURUSD', 'EURUSD'],
-  ['GBPUSD', 'GBPUSD'],
-  ['USDJPY', 'USDJPY'],
-  ['USDCHF', 'USDCHF'],
-  ['AUDUSD', 'AUDUSD'],
-  ['USDCAD', 'USDCAD'],
-  ['NZDUSD', 'NZDUSD'],
-  ['EURGBP', 'EURGBP'],
-  ['EURJPY', 'EURJPY'],
-  ['GBPJPY', 'GBPJPY'],
-  
-  // Crypto pairs (compact codes for REST)
-  ['BTCUSD', 'BTCUSDT'],
-  ['ETHUSD', 'ETHUSDT'],
-  ['ADAUSD', 'ADAUSDT'],
-  ['DOTUSD', 'DOTUSDT'],
-  ['LINKUSD', 'LINKUSDT'],
-  ['LTCUSD', 'LTCUSDT'],
-  ['XRPUSD', 'XRPUSDT'],
-  ['SOLUSD', 'SOLUSDT'],
-  ['AVAXUSD', 'AVAXUSDT'],
-  ['MATICUSD', 'MATICUSDT'],
-  
-  // Commodities (compact codes for REST)
-  ['XAUUSD', 'XAUUSD'],
-  ['XAGUSD', 'XAGUSD'],
-  ['WTIUSD', 'WTIUSD'],
-  ['BCOUSD', 'BRUSD'],
-  ['BRUSD', 'BRUSD'],
-  
-  // Major US Stocks (keep .US suffix)
-  ['AAPL', 'AAPL.US'],
-  ['GOOGL', 'GOOGL.US'],
-  ['MSFT', 'MSFT.US'],
-  ['AMZN', 'AMZN.US'],
-  ['TSLA', 'TSLA.US'],
-  ['NVDA', 'NVDA.US'],
-  ['META', 'META.US'],
-  ['NFLX', 'NFLX.US'],
-  
-  // Indices (keep .IDX suffix)
-  ['SPX500', 'SPX500.IDX'],
-  ['NAS100', 'NAS100.IDX'],
-  ['US30', 'US30.IDX'],
-  ['GER40', 'GER40.IDX'],
-  ['UK100', 'UK100.IDX'],
-  ['JPN225', 'JPN225.IDX'],
-]);
-
 Deno.serve(async (req) => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
@@ -108,16 +56,19 @@ Deno.serve(async (req) => {
 
     console.log('🔄 Fetching prices from AllTick API...');
 
-    // Get all AllTick symbols
-    const allTickSymbols = Array.from(symbolMapping.values());
+    // Get all 100 AllTick symbols from shared mapping
+    const allTickSymbols = getAllTickSymbols();
     
-    console.log(`📦 Fetching ${allTickSymbols.length} symbols in single batch`);
+    console.log(`📦 Fetching ${allTickSymbols.length} symbols in optimized batches`);
 
-    // Split symbols by API group
+    // Split symbols by API endpoint
     const forexCryptoCommoditySymbols = allTickSymbols.filter(code => !/(\.US|\.IDX)$/.test(code));
     const stockIndexSymbols = allTickSymbols.filter(code => /(\.US|\.IDX)$/.test(code));
 
-    // Track auth and failure states
+    console.log(`🔄 Batch 1: ${forexCryptoCommoditySymbols.length} Forex/Crypto/Commodities`);
+    console.log(`🔄 Batch 2: ${stockIndexSymbols.length} Stocks/Indices`);
+
+    // Track failures
     let hadUnauthorized = false;
     let hadFailures = 0;
 
@@ -152,16 +103,12 @@ Deno.serve(async (req) => {
       }
       
       const tickList = json?.data?.tick_list || [];
-      const reverseMapping = new Map(
-        Array.from(symbolMapping.entries()).map(([k, v]) => [v, k])
-      );
       const updates: PriceUpdate[] = [];
       for (const tick of tickList) {
-        const internalSymbol = reverseMapping.get(tick.code);
         const price = parseFloat(tick.price);
-        if (internalSymbol && !isNaN(price)) {
+        if (!isNaN(price)) {
           updates.push({
-            symbol: internalSymbol,
+            symbol: tick.code,
             price,
             change_24h: 0,
             timestamp: Number(tick.tick_time) || Date.now()
@@ -178,6 +125,7 @@ Deno.serve(async (req) => {
     if (forexCryptoCommoditySymbols.length > 0) {
       const prices1 = await makeRequest('https://quote.alltick.io/quote-b-api', forexCryptoCommoditySymbols);
       allPrices.push(...prices1);
+      console.log(`✅ Batch 1 fetched: ${prices1.length} prices`);
       
       // Small delay between API calls to respect rate limits
       await new Promise(resolve => setTimeout(resolve, 100));
@@ -187,11 +135,28 @@ Deno.serve(async (req) => {
     if (stockIndexSymbols.length > 0) {
       const prices2 = await makeRequest('https://quote.alltick.io/quote-stock-b-api', stockIndexSymbols);
       allPrices.push(...prices2);
+      console.log(`✅ Batch 2 fetched: ${prices2.length} prices`);
     }
 
     const prices: PriceUpdate[] = allPrices;
 
-    console.log(`✅ Successfully fetched ${prices.length} prices`);
+    // Log success summary
+    const receivedSymbols = new Set(prices.map(p => p.symbol));
+    const failedSymbols = allTickSymbols.filter(sym => !receivedSymbols.has(sym));
+    
+    console.log(`✅ Successfully fetched ${prices.length} of ${allTickSymbols.length} prices`);
+    
+    if (failedSymbols.length > 0) {
+      console.warn(`⚠️ Failed symbols (${failedSymbols.length}):`, failedSymbols.slice(0, 10).join(', '));
+      if (failedSymbols.length > 10) {
+        console.warn(`   ... and ${failedSymbols.length - 10} more`);
+      }
+    }
+
+    const successRate = (prices.length / allTickSymbols.length) * 100;
+    if (successRate < 90) {
+      console.warn(`⚠️ Low success rate: ${successRate.toFixed(1)}%`);
+    }
 
     // If no prices and failures occurred, surface an error
     if (prices.length === 0 && (hadUnauthorized || hadFailures > 0)) {
@@ -208,7 +173,13 @@ Deno.serve(async (req) => {
       JSON.stringify({ 
         success: true, 
         prices,
-        timestamp: Date.now()
+        timestamp: Date.now(),
+        stats: {
+          requested: allTickSymbols.length,
+          received: prices.length,
+          failed: failedSymbols.length,
+          successRate: successRate.toFixed(1) + '%'
+        }
       }),
       { 
         status: 200, 
