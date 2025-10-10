@@ -1,7 +1,7 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useTrades } from "@/hooks/useTrades";
-import { useUserProfile } from "@/hooks/useUserProfile";
+import { useSharedUserProfile } from "@/hooks/useSharedUserProfile";
 import { useAssets } from "@/hooks/useAssets";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Shield, AlertTriangle } from "lucide-react";
@@ -10,11 +10,12 @@ import { useRealTimePrices } from "@/hooks/useRealTimePrices";
 import { useRealtimeAccountMetrics } from "@/hooks/useRealtimeAccountMetrics";
 import { TradeRow } from "@/components/TradeRow";
 import { useEventDrivenUpdates } from "@/hooks/useEventDrivenUpdates";
+import { PortfolioSkeleton } from "./PortfolioSkeleton";
 
 export const Portfolio = () => {
   // ALL HOOKS MUST BE CALLED FIRST - NO CONDITIONAL HOOK CALLS
-  const { openTrades, closeTrade, loading: tradesLoading } = useTrades();
-  const { profile, loading: profileLoading } = useUserProfile();
+  const { openTrades, closeTrade } = useTrades();
+  const { profile, loading: profileLoading } = useSharedUserProfile(openTrades.length > 0);
   const { assets, loading: assetsLoading } = useAssets();
   const { toast } = useToast();
   const { getUpdatedAssets } = useRealTimePrices();
@@ -137,14 +138,8 @@ export const Portfolio = () => {
   // Real-time updates are now handled by the WebSocket system
 
   // NOW we can do conditional rendering AFTER all hooks are called
-  const isLoading = tradesLoading || profileLoading || assetsLoading;
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-32">
-        <Loader2 className="h-6 w-6 animate-spin" />
-      </div>
-    );
+  if (profileLoading || assetsLoading) {
+    return <PortfolioSkeleton />;
   }
 
   return (

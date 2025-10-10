@@ -23,6 +23,13 @@ export class AllTickRestService {
   private pollingInterval: NodeJS.Timeout | null = null;
   private isPolling = false;
   private edgeFunctionUrl = 'https://stdfkfutgkmnaajixguz.supabase.co/functions/v1/alltick-relay';
+  
+  // Circuit breaker state
+  private consecutiveFailures = 0;
+  private maxFailures = 3;
+  private circuitBreakerTimeout: NodeJS.Timeout | null = null;
+  private isCircuitOpen = false;
+  private retryDelay = 1000; // Start with 1 second
 
   // Symbol mapping from internal to AllTick REST format
   // REST API uses compact codes (no slashes/suffixes) for Forex/Crypto/Commodities
@@ -278,6 +285,12 @@ export class AllTickRestService {
   }
 
   private async fetchBatch(): Promise<void> {
+    // Circuit breaker: skip if open
+    if (this.isCircuitOpen) {
+      console.log('⚠️ Circuit breaker open, skipping fetch');
+      return;
+    }
+
     try {
       const response = await fetch(this.edgeFunctionUrl, {
         method: 'POST',
@@ -294,8 +307,14 @@ export class AllTickRestService {
       
       if (!result.success || !result.prices || !Array.isArray(result.prices)) {
         console.error('Invalid response from AllTick relay:', result);
+        this.handleFailure();
         return;
       }
+      
+      // Success: reset circuit breaker
+      this.consecutiveFailures = 0;
+      this.retryDelay = 1000;
+      this.isCircuitOpen = false;
       
       // Process each price update
       result.prices.forEach((priceData: any) => {
@@ -320,6 +339,33 @@ export class AllTickRestService {
       
     } catch (error) {
       console.error('❌ Error fetching prices from AllTick relay:', error);
+      this.handleFailure();
+    }
+  }
+
+  private handleFailure(): void {
+    this.consecutiveFailures++;
+    
+    if (this.consecutiveFailures >= this.maxFailures) {
+      console.warn(`🚨 Circuit breaker OPEN after ${this.consecutiveFailures} failures. Pausing for 60s...`);
+      this.isCircuitOpen = true;
+      
+      // Close circuit breaker after 60 seconds
+      if (this.circuitBreakerTimeout) {
+        clearTimeout(this.circuitBreakerTimeout);
+      }
+      
+      this.circuitBreakerTimeout = setTimeout(() => {
+        console.log('🔄 Circuit breaker CLOSED, resuming requests...');
+        this.isCircuitOpen = false;
+        this.consecutiveFailures = 0;
+        this.retryDelay = 1000;
+      }, 60000);
+    } else {
+      // Exponential backoff: 1s, 2s, 5s
+      const delays = [1000, 2000, 5000];
+      this.retryDelay = delays[Math.min(this.consecutiveFailures - 1, delays.length - 1)];
+      console.log(`⏳ Retry ${this.consecutiveFailures}/${this.maxFailures} with ${this.retryDelay}ms delay`);
     }
   }
 
@@ -346,7 +392,14 @@ export class AllTickRestService {
       this.pollingInterval = null;
     }
     
+    if (this.circuitBreakerTimeout) {
+      clearTimeout(this.circuitBreakerTimeout);
+      this.circuitBreakerTimeout = null;
+    }
+    
     this.isPolling = false;
     this.subscribers.clear();
+    this.consecutiveFailures = 0;
+    this.isCircuitOpen = false;
   }
 }

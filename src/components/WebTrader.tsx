@@ -15,7 +15,7 @@ import { TradingTabsInterface } from "./TradingTabsInterface";
 import { Star, StarIcon, TrendingUp, TrendingDown, Menu, Wallet, History, ArrowLeft } from "lucide-react";
 import { useAssets } from "@/hooks/useAssets";
 import { useTrades } from "@/hooks/useTrades";
-import { useUserProfile } from "@/hooks/useUserProfile";
+import { useSharedUserProfile } from "@/hooks/useSharedUserProfile";
 import { useFavorites } from "@/hooks/useFavorites";
 import { useRealTimePrices } from "@/hooks/useRealTimePrices";
 import { useTradeOrders } from "@/hooks/useTradeOrders";
@@ -25,11 +25,12 @@ import { toast } from "@/hooks/use-toast";
 import { PulsingPriceIndicator } from "./PulsingPriceIndicator";
 import { PriceConnectionStatus } from "./PriceConnectionStatus";
 import { useEventDrivenUpdates } from "@/hooks/useEventDrivenUpdates";
+import { WebTraderSkeleton } from "./WebTraderSkeleton";
 
 export const WebTrader = () => {
+  const { openTrade, closeTrade, openTrades } = useTrades();
   const { assets, loading: assetsLoading } = useAssets();
-  const { openTrade, closeTrade, openTrades, loading: tradesLoading } = useTrades();
-  const { profile, loading: profileLoading, refetch: refetchProfile } = useUserProfile();
+  const { profile, loading: profileLoading, refetch: refetchProfile } = useSharedUserProfile(openTrades.length > 0);
   const { favorites, addFavorite, removeFavorite } = useFavorites();
   const { getUpdatedAssets, isConnected, lastUpdate } = useRealTimePrices();
   const { createOrder } = useTradeOrders();
@@ -341,11 +342,7 @@ export const WebTrader = () => {
   });
 
   if (assetsLoading || profileLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-      </div>
-    );
+    return <WebTraderSkeleton />;
   }
 
   if (!profile) {

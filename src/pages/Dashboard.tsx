@@ -15,7 +15,7 @@ import TradingStatusIndicator from "@/components/TradingStatusIndicator";
 import { ConnectionStatus } from "@/components/ConnectionStatus";
 import { LogOut, TrendingUp, DollarSign, Activity, ExternalLink, Plus, Minus, BarChart3, Target, Trophy, Shield, TrendingDown, Zap, Award, Bot, History, ArrowUpRight, ArrowDownLeft, Clock, CheckCircle, XCircle, Loader, Menu, User, CircleDollarSign, MessageCircle, Settings } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useUserProfile } from "@/hooks/useUserProfile";
+import { useSharedUserProfile } from "@/hooks/useSharedUserProfile";
 import { useTrades } from "@/hooks/useTrades";
 import { useAssets } from "@/hooks/useAssets";
 import { useRealTimePrices } from "@/hooks/useRealTimePrices";
@@ -37,8 +37,8 @@ import { ContactSupportModal } from "@/components/ContactSupportModal";
 const Dashboard = () => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
-  const { profile, loading: profileLoading, refetch: refetchProfile } = useUserProfile();
   const { trades, openTrades } = useTrades();
+  const { profile, loading: profileLoading, refetch: refetchProfile } = useSharedUserProfile(openTrades.length > 0);
   const { assets, loading: assetsLoading } = useAssets();
   const { getUpdatedAssets } = useRealTimePrices();
   const { botStatus, activateLicense, pauseBot, resumeBot, disconnectBot } = useBotStatus();
