@@ -1,4 +1,4 @@
-import { getAllTickSymbols } from '../../../src/config/allTickSymbolMapping.ts';
+import { getAllTickSymbols } from '../_shared/allTickSymbolMapping.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
