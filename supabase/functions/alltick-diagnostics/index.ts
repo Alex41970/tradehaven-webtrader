@@ -34,37 +34,30 @@ serve(async (req) => {
       'Auth Test + Crypto - BTCUSDT'
     );
     results.push(result1);
-    await delay(1200); // Avoid rate limits
+    await delay(2000); // Avoid rate limits
 
-    // Test 2: Forex (compact code)
+    // Test 2: Forex & Commodity batch (single request to avoid rate limits)
     const result2 = await testRestAPI(
       'https://quote.alltick.io/quote-b-api/trade-tick',
       apiKey,
-      [{ code: 'EURUSD' }],
-      'Forex - EURUSD'
+      [
+        { code: 'EURUSD' },
+        { code: 'XAUUSD' }
+      ],
+      'Forex & Commodity - EURUSD, XAUUSD'
     );
     results.push(result2);
-    await delay(1200);
+    await delay(2000);
 
-    // Test 3: Commodity (compact code)
+    // Test 3: Stock (standard format)
     const result3 = await testRestAPI(
-      'https://quote.alltick.io/quote-b-api/trade-tick',
-      apiKey,
-      [{ code: 'XAUUSD' }],
-      'Commodity - XAUUSD'
-    );
-    results.push(result3);
-    await delay(1200);
-
-    // Test 4: Stock (standard format)
-    const result4 = await testRestAPI(
       'https://quote.alltick.io/quote-stock-b-api/trade-tick',
       apiKey,
       [{ code: 'AAPL.US' }],
       'Stock - AAPL.US'
     );
-    results.push(result4);
-    await delay(1200);
+    results.push(result3);
+    await delay(2000);
 
     // Test 5: Multiple symbols from different classes
     const result5 = await testRestAPI(
@@ -126,33 +119,50 @@ async function testRestAPI(url: string, apiKey: string, symbolList: Array<{code:
     // Use GET with token and query in URL
     const fullUrl = `${url}?token=${apiKey}&query=${query}`;
     
-    const response = await fetch(fullUrl, {
-      method: 'GET'
-    });
+    let response = await fetch(fullUrl, { method: 'GET' });
+    let status = response.status;
+    let responseData: any = null;
+    try {
+      responseData = await response.json();
+    } catch (_) {
+      responseData = null;
+    }
 
-    const responseData = await response.json();
+    // Simple retry on rate limit
+    const isRateLimited = (s: number, d: any) => s === 429 || (d?.error_msg?.toLowerCase?.().includes('too many') ?? false);
+    if (isRateLimited(status, responseData)) {
+      await delay(2000);
+      response = await fetch(fullUrl, { method: 'GET' });
+      status = response.status;
+      try {
+        responseData = await response.json();
+      } catch (_) {
+        responseData = null;
+      }
+    }
+
     const latency = Date.now() - startTime;
 
     // AllTick REST uses ret:200 for success (not code:0)
-    const isSuccess = responseData.ret === 200 || responseData.code === 0;
+    const isSuccess = responseData?.ret === 200 || responseData?.code === 0;
     
     if (isSuccess) {
-      const dataCount = responseData.data?.tick_list?.length || 0;
+      const dataCount = responseData?.data?.tick_list?.length || 0;
       return {
         test: testName,
         success: true,
         details: `Success - received ${dataCount} price updates in ${latency}ms`,
         responseData: responseData
       };
-    } else if (responseData.ret === 600) {
+    } else if (responseData?.ret === 600) {
       // Handle "code invalid" gracefully
       return {
         test: testName,
         success: false,
-        details: `Symbol not available (ret:600): ${responseData.msg}`,
+        details: `Symbol not available (ret:600): ${responseData?.msg}`,
         responseData: responseData
       };
-    } else if (response.status === 429) {
+    } else if (isRateLimited(status, responseData)) {
       return {
         test: testName,
         success: false,
@@ -163,7 +173,7 @@ async function testRestAPI(url: string, apiKey: string, symbolList: Array<{code:
       return {
         test: testName,
         success: false,
-        details: `API Error ${responseData.ret || responseData.code || response.status}: ${responseData.msg || response.statusText}`,
+        details: `API Error ${responseData?.ret || responseData?.code || status}: ${responseData?.msg || response.statusText}`,
         responseData: responseData
       };
     }
