@@ -54,7 +54,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log('🔄 Fetching prices from AllTick API...');
+    console.log('🔄 Fetching prices from AllTick API (v2 - 100 symbols)...');
 
     // Get all 100 AllTick symbols from shared mapping
     const allTickSymbols = getAllTickSymbols();

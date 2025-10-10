@@ -22,9 +22,9 @@ interface AllTickRestResponse {
 
 /**
  * AllTick REST API Service with Circuit Breaker
- * Polls the alltick-relay edge function for price updates every 2 seconds
+ * Polls the alltick-relay edge function for price updates every 3 seconds
  * Supports 100 symbols (AllTick API limit)
- * Rate: 30 requests/min (50% of 60/min limit - safe buffer)
+ * Rate: 20 requests/min (33% of 60/min limit - safe 3x buffer)
  */
 export class AllTickRestService {
   private subscribers = new Set<(update: PriceUpdate) => void>();
@@ -56,18 +56,18 @@ export class AllTickRestService {
   }
 
   /**
-   * Start polling for price updates every 2 seconds
-   * Rate: 30 requests/min (50% of 60/min limit)
+   * Start polling for price updates every 3 seconds
+   * Rate: 20 requests/min (33% of 60/min limit - safe 3x buffer against rate limiting)
    */
   private startPolling(): void {
-    // Start immediately, then every 2 seconds
+    // Start immediately, then every 3 seconds
     this.fetchBatch();
     
     this.pollingInterval = setInterval(() => {
       this.fetchBatch();
-    }, 2000); // 2 seconds = 30 requests per minute (50% of limit)
+    }, 3000); // 3 seconds = 20 requests per minute (safe buffer, prevents 429 errors)
     
-    console.log('🔄 AllTick REST polling started (2s intervals, 30 req/min)');
+    console.log('🔄 AllTick REST polling started (3s intervals, 20 req/min)');
   }
 
   private async fetchBatch(): Promise<void> {
