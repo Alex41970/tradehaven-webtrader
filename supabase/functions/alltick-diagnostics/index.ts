@@ -28,7 +28,7 @@ serve(async (req) => {
 
     // Test 1: Basic REST API connectivity
     const result1 = await testRestAPI(
-      'https://quote.alltick.io/realtime',
+      'https://quote.alltick.io/quote-b-api/trade-tick',
       apiKey,
       [{ code: 'BTC/USDT.CC' }],
       'Basic REST API - Single Symbol'
@@ -37,7 +37,7 @@ serve(async (req) => {
 
     // Test 2: Multiple symbols
     const result2 = await testRestAPI(
-      'https://quote.alltick.io/realtime',
+      'https://quote.alltick.io/quote-b-api/trade-tick',
       apiKey,
       [
         { code: 'BTC/USDT.CC' },
@@ -57,11 +57,17 @@ serve(async (req) => {
     ];
 
     for (let i = 0; i < symbolFormats.length; i++) {
+      const code = symbolFormats[i][0].code;
+      const isStockOrIndex = /(\.US|\.HK|\.IDX)$/.test(code);
+      const endpoint = isStockOrIndex
+        ? 'https://quote.alltick.io/quote-stock-b-api/trade-tick'
+        : 'https://quote.alltick.io/quote-b-api/trade-tick';
+
       const result = await testRestAPI(
-        'https://quote.alltick.io/realtime',
+        endpoint,
         apiKey,
         symbolFormats[i],
-        `Symbol Format Test ${i + 1}: ${symbolFormats[i][0].code}`
+        `Symbol Format Test ${i + 1}: ${code}`
       );
       results.push(result);
     }

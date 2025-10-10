@@ -123,63 +123,60 @@ Deno.serve(async (req) => {
 
     // Fetch all batches in parallel
     const batchPromises = batches.map(async (batch) => {
-      const response = await fetch('https://quote.alltick.io/realtime', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          token: apiKey,
+      // Split symbols by API group
+      const forexCryptoSymbols = batch.filter(code => /(\.FX|\.CC|\.CM)$/.test(code));
+      const stockIndexSymbols = batch.filter(code => /(\.US|\.IDX)$/.test(code));
+
+      const requests: Promise<PriceUpdate[]>[] = [];
+
+      const makeRequest = async (baseUrl: string, symbols: string[]): Promise<PriceUpdate[]> => {
+        if (symbols.length === 0) return [];
+        const query = encodeURIComponent(JSON.stringify({
           trace: `batch_${Date.now()}`,
-          data: {
-            symbol_list: batch.map(code => ({ code }))
+          data: { symbol_list: symbols.map(code => ({ code })) }
+        }));
+        const url = `${baseUrl}/trade-tick?token=${apiKey}&query=${query}`;
+        const response = await fetch(url);
+
+        if (!response.ok) {
+          if (response.status === 401) hadUnauthorized = true;
+          hadFailures++;
+          console.error(`❌ Request failed: ${response.status} ${response.statusText}`);
+          return [];
+        }
+
+        const json: any = await response.json();
+        const tickList = json?.data?.tick_list || [];
+        const reverseMapping = new Map(
+          Array.from(symbolMapping.entries()).map(([k, v]) => [v, k])
+        );
+        const updates: PriceUpdate[] = [];
+        for (const tick of tickList) {
+          const internalSymbol = reverseMapping.get(tick.code);
+          const price = parseFloat(tick.price);
+          if (internalSymbol && !isNaN(price)) {
+            updates.push({
+              symbol: internalSymbol,
+              price,
+              change_24h: 0,
+              timestamp: Number(tick.tick_time) || Date.now()
+            });
           }
-        })
-      });
+        }
+        return updates;
+      };
 
-      if (!response.ok) {
-        if (response.status === 401) hadUnauthorized = true;
-        hadFailures++;
-        console.error(`❌ Batch request failed: ${response.status} ${response.statusText}`);
-        return null;
-      }
+      requests.push(makeRequest('https://quote.alltick.io/quote-b-api', forexCryptoSymbols));
+      requests.push(makeRequest('https://quote.alltick.io/quote-stock-b-api', stockIndexSymbols));
 
-      return await response.json() as AllTickRealtimeResponse;
+      const results = await Promise.all(requests);
+      return results.flat();
     });
 
     const batchResults = await Promise.all(batchPromises);
 
     // Process all results and normalize
-    const prices: PriceUpdate[] = [];
-    const reverseMapping = new Map(
-      Array.from(symbolMapping.entries()).map(([k, v]) => [v, k])
-    );
-
-    for (const result of batchResults) {
-      if (!result || result.code !== 0 || !result.data) {
-        continue;
-      }
-
-      // Process each symbol in the response
-      for (const [allTickSymbol, priceData] of Object.entries(result.data)) {
-        const internalSymbol = reverseMapping.get(allTickSymbol);
-        if (!internalSymbol) continue;
-
-        const lastPrice = parseFloat(priceData.last_px);
-        const changeRate = priceData.change_rate 
-          ? parseFloat(priceData.change_rate)
-          : 0;
-
-        if (!isNaN(lastPrice)) {
-          prices.push({
-            symbol: internalSymbol,
-            price: lastPrice,
-            change_24h: changeRate,
-            timestamp: Date.now()
-          });
-        }
-      }
-    }
+    const prices: PriceUpdate[] = batchResults.flat();
 
     console.log(`✅ Successfully fetched ${prices.length} prices`);
 
