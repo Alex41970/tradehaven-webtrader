@@ -67,9 +67,9 @@ export const useRealtimePnL = (trades: Trade[], assets: Asset[] = [], excludeTra
       const currentPrice = Number(priceUpdate?.price);
 
       if (currentPrice && currentPrice > 0) {
-        // Track price changes with higher threshold to reduce noise
+        // Track all price changes for real-time updates
         const previousPrice = lastPricesRef.current[trade.symbol];
-        if (!previousPrice || Math.abs(currentPrice - previousPrice) >= 0.01) {
+        if (!previousPrice || currentPrice !== previousPrice) {
           hasSignificantChange = true;
         }
         newPrices[trade.symbol] = currentPrice;
@@ -102,25 +102,17 @@ export const useRealtimePnL = (trades: Trade[], assets: Asset[] = [], excludeTra
     // Update price tracking
     lastPricesRef.current = newPrices;
 
-    // Only update state if there are significant changes
+    // Update state on any change for real-time responsiveness
     const hasPnLChange = Object.keys(newPnL).some(tradeId => 
-      Math.abs((newPnL[tradeId] || 0) - (lastPnL[tradeId] || 0)) >= 0.1
+      (newPnL[tradeId] || 0) !== (lastPnL[tradeId] || 0)
     );
     
     // Also check if we need to remove excluded trades
     const hasExcludedTrades = excludeTradeIds.some(tradeId => tradeId in lastPnL);
     
     if (hasSignificantChange || hasPnLChange || hasExcludedTrades) {
-      // Debounce state updates to prevent excessive re-renders
-      if (debounceTimeoutRef.current) {
-        clearTimeout(debounceTimeoutRef.current);
-      }
-      
-      debounceTimeoutRef.current = setTimeout(() => {
-        setLastPnL(newPnL);
-        setPnLUpdatedAt(new Date());
-        console.log('📊 P&L Updated:', Object.keys(newPnL).length, 'trades', excludeTradeIds.length > 0 ? `(excluded ${excludeTradeIds.length})` : '');
-      }, 100); // 100ms debounce
+      setLastPnL(newPnL);
+      setPnLUpdatedAt(new Date());
     }
   }, [openTrades, prices, assets, hasOpenTrades, lastPnL, excludeTradeIds]);
 

@@ -94,12 +94,12 @@ export class AllTickRestService {
   }
 
   private startPolling(): void {
-    // Start immediately, then every 12 seconds (respects AllTick free plan rate limit: 1 req/10s)
+    // Start immediately, then every 1 second (AllTick Basic plan supports high-frequency updates)
     this.fetchBatch();
     
     this.pollingInterval = setInterval(() => {
       this.fetchBatch();
-    }, 12000);
+    }, 1000);
   }
 
   private async fetchBatch(): Promise<void> {
