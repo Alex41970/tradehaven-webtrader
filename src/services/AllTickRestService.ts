@@ -24,39 +24,41 @@ export class AllTickRestService {
   private isPolling = false;
   private edgeFunctionUrl = 'https://stdfkfutgkmnaajixguz.supabase.co/functions/v1/alltick-relay';
 
-  // Symbol mapping from internal to AllTick format
+  // Symbol mapping from internal to AllTick REST format
+  // REST API uses compact codes (no slashes/suffixes) for Forex/Crypto/Commodities
+  // Stocks and Indices keep their .US/.IDX suffixes
   private symbolMapping = new Map([
-    // Major Forex pairs
-    ['EURUSD', 'EUR/USD.FX'],
-    ['GBPUSD', 'GBP/USD.FX'],
-    ['USDJPY', 'USD/JPY.FX'],
-    ['USDCHF', 'USD/CHF.FX'],
-    ['AUDUSD', 'AUD/USD.FX'],
-    ['USDCAD', 'USD/CAD.FX'],
-    ['NZDUSD', 'NZD/USD.FX'],
-    ['EURGBP', 'EUR/GBP.FX'],
-    ['EURJPY', 'EUR/JPY.FX'],
-    ['GBPJPY', 'GBP/JPY.FX'],
+    // Major Forex pairs (compact codes for REST)
+    ['EURUSD', 'EURUSD'],
+    ['GBPUSD', 'GBPUSD'],
+    ['USDJPY', 'USDJPY'],
+    ['USDCHF', 'USDCHF'],
+    ['AUDUSD', 'AUDUSD'],
+    ['USDCAD', 'USDCAD'],
+    ['NZDUSD', 'NZDUSD'],
+    ['EURGBP', 'EURGBP'],
+    ['EURJPY', 'EURJPY'],
+    ['GBPJPY', 'GBPJPY'],
     
-    // Crypto pairs
-    ['BTCUSD', 'BTC/USDT.CC'],
-    ['ETHUSD', 'ETH/USDT.CC'],
-    ['ADAUSD', 'ADA/USDT.CC'],
-    ['DOTUSD', 'DOT/USDT.CC'],
-    ['LINKUSD', 'LINK/USDT.CC'],
-    ['LTCUSD', 'LTC/USDT.CC'],
-    ['XRPUSD', 'XRP/USDT.CC'],
-    ['SOLUSD', 'SOL/USDT.CC'],
-    ['AVAXUSD', 'AVAX/USDT.CC'],
-    ['MATICUSD', 'MATIC/USDT.CC'],
+    // Crypto pairs (compact codes for REST)
+    ['BTCUSD', 'BTCUSDT'],
+    ['ETHUSD', 'ETHUSDT'],
+    ['ADAUSD', 'ADAUSDT'],
+    ['DOTUSD', 'DOTUSDT'],
+    ['LINKUSD', 'LINKUSDT'],
+    ['LTCUSD', 'LTCUSDT'],
+    ['XRPUSD', 'XRPUSDT'],
+    ['SOLUSD', 'SOLUSDT'],
+    ['AVAXUSD', 'AVAXUSDT'],
+    ['MATICUSD', 'MATICUSDT'],
     
-    // Commodities
-    ['XAUUSD', 'XAU/USD.CM'],
-    ['XAGUSD', 'XAG/USD.CM'],
-    ['WTIUSD', 'WTI/USD.CM'],
-    ['BRUSD', 'BRENT/USD.CM'],
+    // Commodities (compact codes for REST)
+    ['XAUUSD', 'XAUUSD'],
+    ['XAGUSD', 'XAGUSD'],
+    ['WTIUSD', 'WTIUSD'],
+    ['BRUSD', 'BRUSD'],
     
-    // Major US Stocks
+    // Major US Stocks (keep .US suffix)
     ['AAPL', 'AAPL.US'],
     ['GOOGL', 'GOOGL.US'],
     ['MSFT', 'MSFT.US'],
@@ -66,13 +68,13 @@ export class AllTickRestService {
     ['META', 'META.US'],
     ['NFLX', 'NFLX.US'],
     
-    // Indices
-    ['SPX500', 'SPX.IDX'],
-    ['NAS100', 'NASDAQ.IDX'],
-    ['US30', 'DJI.IDX'],
-    ['GER40', 'DAX.IDX'],
-    ['UK100', 'FTSE.IDX'],
-    ['JPN225', 'NIKKEI.IDX'],
+    // Indices (keep .IDX suffix)
+    ['SPX500', 'SPX500.IDX'],
+    ['NAS100', 'NAS100.IDX'],
+    ['US30', 'US30.IDX'],
+    ['GER40', 'GER40.IDX'],
+    ['UK100', 'UK100.IDX'],
+    ['JPN225', 'JPN225.IDX'],
   ]);
 
   constructor() {

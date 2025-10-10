@@ -28,39 +28,41 @@ interface PriceUpdate {
   timestamp: number;
 }
 
-// Symbol mapping from internal to AllTick format
+// Symbol mapping from internal to AllTick REST format
+// REST API uses compact codes (no slashes/suffixes) for Forex/Crypto/Commodities
+// Stocks and Indices keep their .US/.IDX suffixes
 const symbolMapping = new Map([
-  // Major Forex pairs
-  ['EURUSD', 'EUR/USD.FX'],
-  ['GBPUSD', 'GBP/USD.FX'],
-  ['USDJPY', 'USD/JPY.FX'],
-  ['USDCHF', 'USD/CHF.FX'],
-  ['AUDUSD', 'AUD/USD.FX'],
-  ['USDCAD', 'USD/CAD.FX'],
-  ['NZDUSD', 'NZD/USD.FX'],
-  ['EURGBP', 'EUR/GBP.FX'],
-  ['EURJPY', 'EUR/JPY.FX'],
-  ['GBPJPY', 'GBP/JPY.FX'],
+  // Major Forex pairs (compact codes for REST)
+  ['EURUSD', 'EURUSD'],
+  ['GBPUSD', 'GBPUSD'],
+  ['USDJPY', 'USDJPY'],
+  ['USDCHF', 'USDCHF'],
+  ['AUDUSD', 'AUDUSD'],
+  ['USDCAD', 'USDCAD'],
+  ['NZDUSD', 'NZDUSD'],
+  ['EURGBP', 'EURGBP'],
+  ['EURJPY', 'EURJPY'],
+  ['GBPJPY', 'GBPJPY'],
   
-  // Crypto pairs
-  ['BTCUSD', 'BTC/USDT.CC'],
-  ['ETHUSD', 'ETH/USDT.CC'],
-  ['ADAUSD', 'ADA/USDT.CC'],
-  ['DOTUSD', 'DOT/USDT.CC'],
-  ['LINKUSD', 'LINK/USDT.CC'],
-  ['LTCUSD', 'LTC/USDT.CC'],
-  ['XRPUSD', 'XRP/USDT.CC'],
-  ['SOLUSD', 'SOL/USDT.CC'],
-  ['AVAXUSD', 'AVAX/USDT.CC'],
-  ['MATICUSD', 'MATIC/USDT.CC'],
+  // Crypto pairs (compact codes for REST)
+  ['BTCUSD', 'BTCUSDT'],
+  ['ETHUSD', 'ETHUSDT'],
+  ['ADAUSD', 'ADAUSDT'],
+  ['DOTUSD', 'DOTUSDT'],
+  ['LINKUSD', 'LINKUSDT'],
+  ['LTCUSD', 'LTCUSDT'],
+  ['XRPUSD', 'XRPUSDT'],
+  ['SOLUSD', 'SOLUSDT'],
+  ['AVAXUSD', 'AVAXUSDT'],
+  ['MATICUSD', 'MATICUSDT'],
   
-  // Commodities
-  ['XAUUSD', 'XAU/USD.CM'],
-  ['XAGUSD', 'XAG/USD.CM'],
-  ['WTIUSD', 'WTI/USD.CM'],
-  ['BRUSD', 'BRENT/USD.CM'],
+  // Commodities (compact codes for REST)
+  ['XAUUSD', 'XAUUSD'],
+  ['XAGUSD', 'XAGUSD'],
+  ['WTIUSD', 'WTIUSD'],
+  ['BRUSD', 'BRUSD'],
   
-  // Major US Stocks
+  // Major US Stocks (keep .US suffix)
   ['AAPL', 'AAPL.US'],
   ['GOOGL', 'GOOGL.US'],
   ['MSFT', 'MSFT.US'],
@@ -70,13 +72,13 @@ const symbolMapping = new Map([
   ['META', 'META.US'],
   ['NFLX', 'NFLX.US'],
   
-  // Indices
-  ['SPX500', 'SPX.IDX'],
-  ['NAS100', 'NASDAQ.IDX'],
-  ['US30', 'DJI.IDX'],
-  ['GER40', 'DAX.IDX'],
-  ['UK100', 'FTSE.IDX'],
-  ['JPN225', 'NIKKEI.IDX'],
+  // Indices (keep .IDX suffix)
+  ['SPX500', 'SPX500.IDX'],
+  ['NAS100', 'NAS100.IDX'],
+  ['US30', 'US30.IDX'],
+  ['GER40', 'GER40.IDX'],
+  ['UK100', 'UK100.IDX'],
+  ['JPN225', 'JPN225.IDX'],
 ]);
 
 Deno.serve(async (req) => {
@@ -124,7 +126,9 @@ Deno.serve(async (req) => {
     // Fetch all batches in parallel
     const batchPromises = batches.map(async (batch) => {
       // Split symbols by API group
-      const forexCryptoSymbols = batch.filter(code => /(\.FX|\.CC|\.CM)$/.test(code));
+      // Compact codes (no suffix) go to quote-b-api
+      // Stocks/indices (.US/.IDX) go to quote-stock-b-api
+      const forexCryptoCommoditySymbols = batch.filter(code => !/(\.US|\.IDX)$/.test(code));
       const stockIndexSymbols = batch.filter(code => /(\.US|\.IDX)$/.test(code));
 
       const requests: Promise<PriceUpdate[]>[] = [];
@@ -146,6 +150,19 @@ Deno.serve(async (req) => {
         }
 
         const json: any = await response.json();
+        
+        // Handle ret:600 "code invalid" gracefully (symbol not available)
+        if (json.ret === 600) {
+          console.warn(`⚠️ Symbols not available (ret:600): ${json.msg}`);
+          return [];
+        }
+        
+        // Check for success: ret:200 indicates success in REST API
+        if (json.ret !== 200 && json.code !== 0) {
+          console.error(`❌ API Error: ret=${json.ret}, msg=${json.msg}`);
+          return [];
+        }
+        
         const tickList = json?.data?.tick_list || [];
         const reverseMapping = new Map(
           Array.from(symbolMapping.entries()).map(([k, v]) => [v, k])
@@ -166,7 +183,7 @@ Deno.serve(async (req) => {
         return updates;
       };
 
-      requests.push(makeRequest('https://quote.alltick.io/quote-b-api', forexCryptoSymbols));
+      requests.push(makeRequest('https://quote.alltick.io/quote-b-api', forexCryptoCommoditySymbols));
       requests.push(makeRequest('https://quote.alltick.io/quote-stock-b-api', stockIndexSymbols));
 
       const results = await Promise.all(requests);

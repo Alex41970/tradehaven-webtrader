@@ -26,51 +26,58 @@ serve(async (req) => {
 
     const results: DiagnosticResult[] = [];
 
-    // Test 1: Basic REST API connectivity
+    // Test 1: Crypto (compact code)
     const result1 = await testRestAPI(
       'https://quote.alltick.io/quote-b-api/trade-tick',
       apiKey,
-      [{ code: 'BTC/USDT.CC' }],
-      'Basic REST API - Single Symbol'
+      [{ code: 'BTCUSDT' }],
+      'Crypto - BTCUSDT'
     );
     results.push(result1);
+    await delay(1200); // Avoid rate limits
 
-    // Test 2: Multiple symbols
+    // Test 2: Forex (compact code)
     const result2 = await testRestAPI(
       'https://quote.alltick.io/quote-b-api/trade-tick',
       apiKey,
-      [
-        { code: 'BTC/USDT.CC' },
-        { code: 'ETH/USDT.CC' },
-        { code: 'EUR/USD.FX' }
-      ],
-      'REST API - Multiple Symbols'
+      [{ code: 'EURUSD' }],
+      'Forex - EURUSD'
     );
     results.push(result2);
+    await delay(1200);
 
-    // Test 3: Different symbol formats
-    const symbolFormats = [
-      [{ code: 'BTC/USDT.CC' }],       // Crypto format
-      [{ code: 'EUR/USD.FX' }],        // Forex format  
-      [{ code: 'XAU/USD.CM' }],        // Commodity format
-      [{ code: 'AAPL.US' }],           // Stock format
-    ];
+    // Test 3: Commodity (compact code)
+    const result3 = await testRestAPI(
+      'https://quote.alltick.io/quote-b-api/trade-tick',
+      apiKey,
+      [{ code: 'XAUUSD' }],
+      'Commodity - XAUUSD'
+    );
+    results.push(result3);
+    await delay(1200);
 
-    for (let i = 0; i < symbolFormats.length; i++) {
-      const code = symbolFormats[i][0].code;
-      const isStockOrIndex = /(\.US|\.HK|\.IDX)$/.test(code);
-      const endpoint = isStockOrIndex
-        ? 'https://quote.alltick.io/quote-stock-b-api/trade-tick'
-        : 'https://quote.alltick.io/quote-b-api/trade-tick';
+    // Test 4: Stock (standard format)
+    const result4 = await testRestAPI(
+      'https://quote.alltick.io/quote-stock-b-api/trade-tick',
+      apiKey,
+      [{ code: 'AAPL.US' }],
+      'Stock - AAPL.US'
+    );
+    results.push(result4);
+    await delay(1200);
 
-      const result = await testRestAPI(
-        endpoint,
-        apiKey,
-        symbolFormats[i],
-        `Symbol Format Test ${i + 1}: ${code}`
-      );
-      results.push(result);
-    }
+    // Test 5: Multiple symbols from different classes
+    const result5 = await testRestAPI(
+      'https://quote.alltick.io/quote-b-api/trade-tick',
+      apiKey,
+      [
+        { code: 'BTCUSDT' },
+        { code: 'ETHUSDT' },
+        { code: 'EURUSD' }
+      ],
+      'Multiple Symbols - Crypto & Forex'
+    );
+    results.push(result5);
 
     return new Response(JSON.stringify({
       success: true,
@@ -121,19 +128,37 @@ async function testRestAPI(url: string, apiKey: string, symbolList: Array<{code:
     const responseData = await response.json();
     const latency = Date.now() - startTime;
 
-    if (response.ok && responseData.code === 0) {
-      const dataCount = responseData.data ? responseData.data.length : 0;
+    // AllTick REST uses ret:200 for success (not code:0)
+    const isSuccess = responseData.ret === 200 || responseData.code === 0;
+    
+    if (isSuccess) {
+      const dataCount = responseData.data?.tick_list?.length || 0;
       return {
         test: testName,
         success: true,
         details: `Success - received ${dataCount} price updates in ${latency}ms`,
         responseData: responseData
       };
+    } else if (responseData.ret === 600) {
+      // Handle "code invalid" gracefully
+      return {
+        test: testName,
+        success: false,
+        details: `Symbol not available (ret:600): ${responseData.msg}`,
+        responseData: responseData
+      };
+    } else if (response.status === 429) {
+      return {
+        test: testName,
+        success: false,
+        details: `Rate limit exceeded (429) - please wait before retrying`,
+        responseData: responseData
+      };
     } else {
       return {
         test: testName,
         success: false,
-        details: `API Error ${responseData.code || response.status}: ${responseData.msg || response.statusText}`,
+        details: `API Error ${responseData.ret || responseData.code || response.status}: ${responseData.msg || response.statusText}`,
         responseData: responseData
       };
     }
@@ -145,4 +170,9 @@ async function testRestAPI(url: string, apiKey: string, symbolList: Array<{code:
       details: `Request failed: ${error instanceof Error ? error.message : String(error)}`
     };
   }
+}
+
+// Helper to add delay between requests
+function delay(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
 }

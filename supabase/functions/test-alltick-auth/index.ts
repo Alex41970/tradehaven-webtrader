@@ -23,32 +23,47 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Test with a single crypto symbol using REST GET
-    const query = encodeURIComponent(JSON.stringify({
-      trace: `auth_test_${Date.now()}`,
-      data: { symbol_list: [{ code: 'BTC/USDT.CC' }] }
+    // Test 1: Stock symbol
+    const stockQuery = encodeURIComponent(JSON.stringify({
+      trace: `auth_test_stock_${Date.now()}`,
+      data: { symbol_list: [{ code: 'AAPL.US' }] }
     }));
 
-    const testResponse = await fetch(`https://quote.alltick.io/quote-b-api/trade-tick?token=${apiKey}&query=${query}`);
+    const stockResponse = await fetch(`https://quote.alltick.io/quote-stock-b-api/trade-tick?token=${apiKey}&query=${stockQuery}`);
+    const stockData = await stockResponse.json();
 
-    const responseText = await testResponse.text();
-    let responseData;
-    try {
-      responseData = JSON.parse(responseText);
-    } catch {
-      responseData = { raw: responseText };
-    }
+    console.log(`Stock test - Status: ${stockResponse.status}, Data:`, stockData);
 
-    console.log(`Response status: ${testResponse.status}`);
-    console.log(`Response data:`, responseData);
+    // Test 2: Forex symbol (compact code)
+    const forexQuery = encodeURIComponent(JSON.stringify({
+      trace: `auth_test_forex_${Date.now()}`,
+      data: { symbol_list: [{ code: 'EURUSD' }] }
+    }));
+
+    const forexResponse = await fetch(`https://quote.alltick.io/quote-b-api/trade-tick?token=${apiKey}&query=${forexQuery}`);
+    const forexData = await forexResponse.json();
+
+    console.log(`Forex test - Status: ${forexResponse.status}, Data:`, forexData);
+
+    // Check success: ret:200 indicates success
+    const stockSuccess = stockData.ret === 200;
+    const forexSuccess = forexData.ret === 200;
 
     return new Response(
       JSON.stringify({
-        success: testResponse.ok,
-        status: testResponse.status,
-        statusText: testResponse.statusText,
-        headers: Object.fromEntries(testResponse.headers.entries()),
-        response: responseData,
+        success: stockSuccess && forexSuccess,
+        tests: {
+          stock: {
+            success: stockSuccess,
+            status: stockResponse.status,
+            response: stockData
+          },
+          forex: {
+            success: forexSuccess,
+            status: forexResponse.status,
+            response: forexData
+          }
+        },
         apiKeyInfo: {
           present: true,
           length: apiKey.length,
