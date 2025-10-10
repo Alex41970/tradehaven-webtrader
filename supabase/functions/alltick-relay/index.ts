@@ -123,11 +123,10 @@ Deno.serve(async (req) => {
 
     // Fetch all batches in parallel
     const batchPromises = batches.map(async (batch) => {
-      const response = await fetch('https://quote.alltick.io/realtime', {
+      const response = await fetch(`https://quote.alltick.io/realtime?token=${apiKey}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'token': apiKey,
         },
         body: JSON.stringify({
           trace: `batch_${Date.now()}`,

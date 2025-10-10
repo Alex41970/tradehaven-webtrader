@@ -24,11 +24,10 @@ Deno.serve(async (req) => {
     }
 
     // Test with a single crypto symbol
-    const testResponse = await fetch('https://quote.alltick.io/realtime', {
+    const testResponse = await fetch(`https://quote.alltick.io/realtime?token=${apiKey}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'token': apiKey,
       },
       body: JSON.stringify({
         trace: `auth_test_${Date.now()}`,

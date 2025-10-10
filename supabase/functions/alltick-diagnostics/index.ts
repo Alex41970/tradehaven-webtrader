@@ -94,11 +94,10 @@ async function testRestAPI(url: string, apiKey: string, symbolList: Array<{code:
   try {
     const startTime = Date.now();
     
-    const response = await fetch(url, {
+    const response = await fetch(`${url}?token=${apiKey}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'token': apiKey
       },
       body: JSON.stringify({
         trace: `diagnostics_${Date.now()}`,
