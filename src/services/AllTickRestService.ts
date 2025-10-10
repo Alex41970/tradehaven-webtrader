@@ -5,162 +5,164 @@ interface PriceUpdate {
   price: number;
   change_24h: number;
   timestamp: number;
-  source: string;
+  source?: string;
 }
 
-interface AllTickRestResponse {
-  success: boolean;
-  prices: PriceUpdate[];
-  timestamp: number;
+interface WebSocketMessage {
+  type: string;
+  prices?: PriceUpdate[];
+  timestamp?: number;
   stats?: {
     requested: number;
     received: number;
-    failed: number;
     successRate: string;
   };
+  cached?: boolean;
+  message?: string;
+  clientCount?: number;
 }
 
 /**
- * AllTick REST API Service with Circuit Breaker
- * Polls the alltick-relay edge function for price updates every 3 seconds
- * Supports 100 symbols (AllTick API limit)
- * Rate: 20 requests/min (33% of 60/min limit - safe 3x buffer)
+ * AllTick WebSocket Service - Receives real-time price broadcasts
+ * Connects to websocket-price-updates edge function
+ * ONE central poller broadcasts to ALL users (solves rate limiting!)
+ * Rate: 20 requests/min total (regardless of user count)
  */
 export class AllTickRestService {
   private subscribers = new Set<(update: PriceUpdate) => void>();
-  private pollingInterval: NodeJS.Timeout | null = null;
-  private isPolling = false;
-  private edgeFunctionUrl = 'https://stdfkfutgkmnaajixguz.supabase.co/functions/v1/alltick-relay';
+  private websocket: WebSocket | null = null;
+  private connected = false;
+  private reconnectAttempts = 0;
+  private maxReconnectAttempts = 5;
+  private reconnectDelay = 1000;
+  private reconnectTimeout: NodeJS.Timeout | null = null;
+  private pingInterval: NodeJS.Timeout | null = null;
   
-  // Circuit breaker state
-  private consecutiveFailures = 0;
-  private maxFailures = 3;
-  private circuitBreakerTimeout: NodeJS.Timeout | null = null;
-  private isCircuitOpen = false;
-  private retryDelay = 1000; // Start with 1 second
-
-  // Using shared symbol mapping from config (100 symbols total)
+  private websocketUrl = 'wss://stdfkfutgkmnaajixguz.supabase.co/functions/v1/websocket-price-updates';
 
   constructor() {
-    // Service initialized
+    console.log('🔌 AllTick WebSocket Service initialized');
   }
 
   async connect(): Promise<boolean> {
-    if (this.isPolling) {
+    if (this.websocket?.readyState === WebSocket.OPEN) {
+      console.log('✅ Already connected to AllTick WebSocket');
       return true;
     }
 
-    this.isPolling = true;
-    this.startPolling();
-    return true;
+    return this.connectWebSocket();
   }
 
-  /**
-   * Start polling for price updates every 3 seconds
-   * Rate: 20 requests/min (33% of 60/min limit - safe 3x buffer against rate limiting)
-   */
-  private startPolling(): void {
-    // Start immediately, then every 3 seconds
-    this.fetchBatch();
-    
-    this.pollingInterval = setInterval(() => {
-      this.fetchBatch();
-    }, 3000); // 3 seconds = 20 requests per minute (safe buffer, prevents 429 errors)
-    
-    console.log('🔄 AllTick REST polling started (3s intervals, 20 req/min)');
+  private connectWebSocket(): Promise<boolean> {
+    return new Promise((resolve) => {
+      try {
+        console.log('🔌 Connecting to AllTick WebSocket...');
+        this.websocket = new WebSocket(this.websocketUrl);
+
+        this.websocket.onopen = () => {
+          console.log('✅ Connected to AllTick WebSocket');
+          this.connected = true;
+          this.reconnectAttempts = 0;
+          this.reconnectDelay = 1000;
+          
+          // Start ping interval to keep connection alive
+          this.startPingInterval();
+          
+          resolve(true);
+        };
+
+        this.websocket.onmessage = (event) => {
+          try {
+            const message: WebSocketMessage = JSON.parse(event.data);
+            
+            if (message.type === 'price_update' && message.prices) {
+              // Broadcast to all subscribers
+              message.prices.forEach((priceData) => {
+                const update: PriceUpdate = {
+                  symbol: priceData.symbol,
+                  price: priceData.price,
+                  change_24h: priceData.change_24h || 0,
+                  timestamp: priceData.timestamp || Date.now(),
+                  source: 'AllTick'
+                };
+                
+                this.subscribers.forEach(callback => {
+                  try {
+                    callback(update);
+                  } catch (error) {
+                    console.error('Error in price update callback:', error);
+                  }
+                });
+              });
+
+              // Log stats
+              if (message.stats) {
+                const isCached = message.cached ? ' (cached)' : '';
+                console.log(`📊 AllTick WS: ${message.stats.received}/${message.stats.requested} symbols (${message.stats.successRate})${isCached}`);
+              }
+            } else if (message.type === 'connected') {
+              console.log(`✅ ${message.message} (clients: ${message.clientCount})`);
+            } else if (message.type === 'pong') {
+              // Ping response - connection is alive
+            }
+          } catch (error) {
+            console.error('Error processing WebSocket message:', error);
+          }
+        };
+
+        this.websocket.onerror = (error) => {
+          console.error('❌ WebSocket error:', error);
+          resolve(false);
+        };
+
+        this.websocket.onclose = () => {
+          console.log('🔌 WebSocket connection closed');
+          this.connected = false;
+          this.stopPingInterval();
+          
+          // Attempt reconnection
+          this.attemptReconnect();
+        };
+
+      } catch (error) {
+        console.error('❌ Failed to create WebSocket:', error);
+        resolve(false);
+      }
+    });
   }
 
-  private async fetchBatch(): Promise<void> {
-    // Circuit breaker: skip if open
-    if (this.isCircuitOpen) {
-      console.log('⚠️ Circuit breaker open, skipping fetch');
+  private startPingInterval(): void {
+    this.stopPingInterval();
+    
+    // Send ping every 30 seconds
+    this.pingInterval = setInterval(() => {
+      if (this.websocket?.readyState === WebSocket.OPEN) {
+        this.websocket.send(JSON.stringify({ type: 'ping', timestamp: Date.now() }));
+      }
+    }, 30000);
+  }
+
+  private stopPingInterval(): void {
+    if (this.pingInterval) {
+      clearInterval(this.pingInterval);
+      this.pingInterval = null;
+    }
+  }
+
+  private attemptReconnect(): void {
+    if (this.reconnectAttempts >= this.maxReconnectAttempts) {
+      console.error('❌ Max reconnection attempts reached');
       return;
     }
 
-    try {
-      const response = await fetch(this.edgeFunctionUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      const result: AllTickRestResponse = await response.json();
-      
-      if (!result.success || !result.prices || !Array.isArray(result.prices)) {
-        console.error('Invalid response from AllTick relay:', result);
-        this.handleFailure();
-        return;
-      }
-      
-      // Success: reset circuit breaker
-      this.consecutiveFailures = 0;
-      this.retryDelay = 1000;
-      this.isCircuitOpen = false;
-      
-      // Process each price update
-      result.prices.forEach((priceData: any) => {
-        if (priceData && priceData.symbol) {
-          const update: PriceUpdate = {
-            symbol: priceData.symbol,
-            price: priceData.price,
-            change_24h: priceData.change_24h || 0,
-            timestamp: priceData.timestamp || Date.now(),
-            source: 'AllTick'
-          };
-          
-          this.subscribers.forEach(callback => {
-            try {
-              callback(update);
-            } catch (error) {
-              console.error('Error in price update callback:', error);
-            }
-          });
-        }
-      });
-
-      // Log stats if available
-      if (result.stats) {
-        console.log(`✅ AllTick REST: ${result.stats.received}/${result.stats.requested} symbols (${result.stats.successRate})`);
-        if (result.stats.failed > 0) {
-          console.warn(`⚠️ ${result.stats.failed} symbols failed to update`);
-        }
-      }
-      
-    } catch (error) {
-      console.error('❌ Error fetching prices from AllTick relay:', error);
-      this.handleFailure();
-    }
-  }
-
-  private handleFailure(): void {
-    this.consecutiveFailures++;
+    this.reconnectAttempts++;
+    const delay = this.reconnectDelay * this.reconnectAttempts;
     
-    if (this.consecutiveFailures >= this.maxFailures) {
-      console.warn(`🚨 Circuit breaker OPEN after ${this.consecutiveFailures} failures. Pausing for 60s...`);
-      this.isCircuitOpen = true;
-      
-      // Close circuit breaker after 60 seconds
-      if (this.circuitBreakerTimeout) {
-        clearTimeout(this.circuitBreakerTimeout);
-      }
-      
-      this.circuitBreakerTimeout = setTimeout(() => {
-        console.log('🔄 Circuit breaker CLOSED, resuming requests...');
-        this.isCircuitOpen = false;
-        this.consecutiveFailures = 0;
-        this.retryDelay = 1000;
-      }, 60000);
-    } else {
-      // Exponential backoff: 1s, 2s, 5s
-      const delays = [1000, 2000, 5000];
-      this.retryDelay = delays[Math.min(this.consecutiveFailures - 1, delays.length - 1)];
-      console.log(`⏳ Retry ${this.consecutiveFailures}/${this.maxFailures} with ${this.retryDelay}ms delay`);
-    }
+    console.log(`🔄 Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
+    
+    this.reconnectTimeout = setTimeout(() => {
+      this.connectWebSocket();
+    }, delay);
   }
 
   subscribeToPrices(callback: (update: PriceUpdate) => void): () => void {
@@ -172,7 +174,7 @@ export class AllTickRestService {
   }
 
   isConnected(): boolean {
-    return this.isPolling;
+    return this.connected && this.websocket?.readyState === WebSocket.OPEN;
   }
 
   /**
@@ -183,19 +185,22 @@ export class AllTickRestService {
   }
 
   disconnect(): void {
-    if (this.pollingInterval) {
-      clearInterval(this.pollingInterval);
-      this.pollingInterval = null;
+    console.log('🔌 Disconnecting from AllTick WebSocket');
+    
+    this.stopPingInterval();
+    
+    if (this.reconnectTimeout) {
+      clearTimeout(this.reconnectTimeout);
+      this.reconnectTimeout = null;
     }
     
-    if (this.circuitBreakerTimeout) {
-      clearTimeout(this.circuitBreakerTimeout);
-      this.circuitBreakerTimeout = null;
+    if (this.websocket) {
+      this.websocket.close();
+      this.websocket = null;
     }
     
-    this.isPolling = false;
+    this.connected = false;
     this.subscribers.clear();
-    this.consecutiveFailures = 0;
-    this.isCircuitOpen = false;
+    this.reconnectAttempts = 0;
   }
 }
