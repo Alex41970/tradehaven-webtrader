@@ -33,7 +33,7 @@ export const ALLTICK_SYMBOL_MAPPING = new Map([
   ['NZDCHF', 'NZDCHF'],
   ['NZDJPY', 'NZDJPY'],
   ['USDMXN', 'USDMXN'],
-  ['USDZAR', 'USDZAR'],
+  ['USDSEK', 'USDSEK'],  // USD/Swedish Krona
   
   // === CRYPTO (38 coins) ===
   ['BTCUSD', 'BTCUSDT'],
@@ -43,7 +43,6 @@ export const ALLTICK_SYMBOL_MAPPING = new Map([
   ['SOLUSD', 'SOLUSDT'],
   ['DOTUSD', 'DOTUSDT'],
   ['DOGEUSD', 'DOGEUSDT'],
-  ['MATICUSD', 'MATICUSDT'],
   ['AVAXUSD', 'AVAXUSDT'],
   ['UNIUSD', 'UNIUSDT'],
   ['LINKUSD', 'LINKUSDT'],
@@ -67,13 +66,14 @@ export const ALLTICK_SYMBOL_MAPPING = new Map([
   ['SANDUSD', 'SANDUSDT'],
   ['MANAUSD', 'MANAUSDT'],
   ['BNBUSD', 'BNBUSDT'],     // Binance Coin
-  ['SHIBUSDT', 'SHIBUSDT'],  // Shiba Inu
-  ['PEPEUSDT', 'PEPEUSDT'],  // Pepe
-  ['RNDRUSDT', 'RNDRUSDT'],  // Render
-  ['FTMUSDT', 'FTMUSDT'],    // Fantom
+  ['SHIBUSD', 'SHIBUSDT'],  // Shiba Inu
+  ['PEPEUSD', 'PEPEUSDT'],  // Pepe
+  ['RNDRUSD', 'RNDRUSDT'],  // Render
   ['GRTUSD', 'GRTUSDT'],     // The Graph
-  ['AAVEUSDT', 'AAVEUSDT'],  // Aave
-  ['MKRUSDT', 'MKRUSDT'],    // Maker
+  ['AAVEUSD', 'AAVEUSDT'],  // Aave
+  ['TONUSD', 'TONUSDT'],    // Toncoin
+  ['SUIUSD', 'SUIUSDT'],    // Sui
+  ['HBARUSD', 'HBARUSDT'],  // Hedera
   
   // === COMMODITIES (3) ===
   ['XAUUSD', 'XAUUSD'],  // Gold
@@ -103,8 +103,8 @@ export const ALLTICK_SYMBOL_MAPPING = new Map([
   ['CRM', 'CRM.US'],
   ['PYPL', 'PYPL.US'],
   
-  // === INDICES (5) - trying without .IDX suffix ===
-  ['SPX500', 'SPX500'],  // S&P 500
+  // === INDICES (5) ===
+  ['SPX500', 'US500'],   // S&P 500
   ['NAS100', 'NAS100'],  // Nasdaq 100
   ['US30', 'US30'],      // Dow Jones
   ['UK100', 'UK100'],    // FTSE 100
