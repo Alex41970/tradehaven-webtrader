@@ -21,6 +21,7 @@ export interface UserProfile {
 let sharedProfile: UserProfile | null = null;
 let sharedLoading = true;
 let sharedLastFetch = 0;
+let isInitialLoad = true;
 let subscribers = new Set<() => void>();
 let fetchPromise: Promise<UserProfile | null> | null = null;
 
@@ -44,6 +45,7 @@ export const useSharedUserProfile = (hasActiveTrades = false) => {
     if (!user) {
       sharedProfile = null;
       sharedLoading = false;
+      isInitialLoad = true; // Reset for next user
       notifySubscribers();
       return null;
     }
@@ -63,8 +65,11 @@ export const useSharedUserProfile = (hasActiveTrades = false) => {
     // Create new fetch promise
     fetchPromise = (async () => {
       try {
-        sharedLoading = true;
-        notifySubscribers();
+        // Only show loading on initial fetch, not on polling refreshes
+        if (isInitialLoad) {
+          sharedLoading = true;
+          notifySubscribers();
+        }
 
         const { data, error } = await supabase
           .from('user_profiles')
@@ -77,6 +82,7 @@ export const useSharedUserProfile = (hasActiveTrades = false) => {
         sharedProfile = data;
         sharedLastFetch = Date.now();
         sharedLoading = false;
+        isInitialLoad = false; // Mark that initial load is complete
         
         notifySubscribers();
         return data;
@@ -109,6 +115,7 @@ export const useSharedUserProfile = (hasActiveTrades = false) => {
 
     // Set up polling
     pollIntervalRef.current = setInterval(() => {
+      console.log(`🔄 Polling user profile (interval: ${pollInterval}ms, active trades: ${hasActiveTrades})`);
       fetchProfile(true);
     }, pollInterval);
 
