@@ -54,9 +54,6 @@ verify_jwt = false
 [functions.alltick-diagnostics]
 verify_jwt = false
 
-[functions.alltick-relay]
-verify_jwt = false
-
 [functions.test-alltick-auth]
 verify_jwt = false
 
