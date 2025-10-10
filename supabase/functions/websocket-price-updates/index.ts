@@ -28,7 +28,9 @@ async function startCentralPoller() {
   if (isPolling) return;
   
   isPolling = true;
-  console.log('🚀 Starting central AllTick price poller (3s intervals, 20 req/min)');
+  console.log('🚀 Starting central AllTick price poller (3s intervals, staggered requests)');
+  console.log('📊 Rate limiting: 2 requests per 3s poll (1.5s apart) = 40 req/min (limit: 60)');
+  console.log('⏱️  Request timing: Batch 1 at 0s, Batch 2 at 1.5s, Next poll at 3s');
   
   // Initial fetch
   await fetchAndBroadcastPrices();
@@ -64,15 +66,16 @@ async function fetchAndBroadcastPrices() {
 
     const prices: PriceUpdate[] = [];
 
-    // Batch 1: Forex/Crypto/Commodities
+    // Batch 1: Forex/Crypto/Commodities (quote-b-api)
     if (forexCryptoCommoditySymbols.length > 0) {
       const batch1 = await makeRequest('https://quote.alltick.io/quote-b-api', forexCryptoCommoditySymbols, apiKey);
       prices.push(...batch1);
       
-      await new Promise(resolve => setTimeout(resolve, 100));
+      // Wait 1.5 seconds before second batch to avoid rate limiting
+      await new Promise(resolve => setTimeout(resolve, 1500));
     }
 
-    // Batch 2: Stocks/Indices
+    // Batch 2: Stocks/Indices (quote-stock-b-api)
     if (stockIndexSymbols.length > 0) {
       const batch2 = await makeRequest('https://quote.alltick.io/quote-stock-b-api', stockIndexSymbols, apiKey);
       prices.push(...batch2);
