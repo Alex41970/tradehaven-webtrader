@@ -3,6 +3,7 @@ import { useUserProfile } from './useUserProfile';
 import { useTrades } from './useTrades';
 import { useRealtimePnL } from './useRealtimePnL';
 import { useEventDrivenUpdates } from './useEventDrivenUpdates';
+import { useAssets } from './useAssets';
 
 interface RealtimeAccountMetrics {
   // Real-time values
@@ -23,12 +24,13 @@ interface RealtimeAccountMetrics {
 export const useRealtimeAccountMetrics = (): RealtimeAccountMetrics => {
   const { profile, isPolling, lastUpdate } = useUserProfile();
   const { openTrades } = useTrades();
+  const { assets } = useAssets();
   
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
   const [excludedTradeIds, setExcludedTradeIds] = useState<string[]>([]);
   
-  const { totalPnL, lastUpdated: pnlLastUpdated } = useRealtimePnL(openTrades || [], [], excludedTradeIds);
+  const { totalPnL, lastUpdated: pnlLastUpdated } = useRealtimePnL(openTrades || [], assets || [], excludedTradeIds);
   const { handleTradeAction } = useEventDrivenUpdates();
 
   // Trade exclusion management functions

@@ -62,6 +62,7 @@ export const PriceProvider: React.FC<PriceProviderProps> = ({ children }) => {
         const unsubscribe = allTickServiceRef.current.subscribeToPrices((priceUpdate) => {
           console.log(`⚡ REST PRICE RECEIVED: ${priceUpdate.symbol} = $${priceUpdate.price} (${priceUpdate.change_24h}%) - Source: ${priceUpdate.source}`);
           addPriceUpdate(priceUpdate);
+          console.log(`📊 Price added to Map, current Map size: ${prices.size}`);
           
           setLastUpdate(new Date(priceUpdate.timestamp));
           setIsConnected(true);
@@ -113,6 +114,15 @@ export const PriceProvider: React.FC<PriceProviderProps> = ({ children }) => {
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, []);
+
+  // Debug: Log prices Map size periodically
+  useEffect(() => {
+    const interval = setInterval(() => {
+      console.log(`🗺️ PriceContext Map Status - Size: ${prices.size}, Symbols: [${Array.from(prices.keys()).slice(0, 5).join(', ')}${prices.size > 5 ? '...' : ''}]`);
+    }, 10000); // Every 10 seconds
+
+    return () => clearInterval(interval);
+  }, [prices]);
 
   const value: PriceContextType = {
     prices,
