@@ -172,7 +172,7 @@ export const EnhancedTradingPanel: React.FC<EnhancedTradingPanelProps> = ({
           </Label>
           <Select value={leverage.toString()} onValueChange={(value) => onLeverageChange(parseInt(value))}>
             <SelectTrigger className="bg-trading-secondary/20 border-trading-secondary/30">
-              <SelectValue />
+              <SelectValue placeholder={`${leverage}x`} />
             </SelectTrigger>
             <SelectContent>
               {[1, 2, 5, 10, 20, 50, Math.min(100, selectedAsset.max_leverage)].map((lev) => (

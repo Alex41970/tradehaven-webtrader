@@ -86,12 +86,12 @@ export const WebTrader = () => {
     }
   }, [realtimeAssets]); // Removed selectedAsset from dependencies
 
-  // Auto-adjust leverage when selectedAsset changes if current leverage exceeds max
+  // Always set leverage to max when asset changes
   useEffect(() => {
-    if (selectedAsset && leverage > selectedAsset.max_leverage) {
+    if (selectedAsset) {
       setLeverage(selectedAsset.max_leverage);
     }
-  }, [selectedAsset]);
+  }, [selectedAsset?.id]);
 
   // Real-time updates are now handled by WebSocket system, no need for Supabase subscriptions
 
