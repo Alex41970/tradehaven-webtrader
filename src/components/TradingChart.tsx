@@ -1,57 +1,17 @@
 import { useEffect, useRef } from "react";
 import { useTheme } from "next-themes";
+import { resolveTVSymbol } from "@/utils/tradingviewSymbolResolver";
 
 interface TradingChartProps {
   symbol: string;
+  category?: string;
+  name?: string;
 }
 
-export const TradingChart = ({ symbol }: TradingChartProps) => {
+export const TradingChart = ({ symbol, category, name }: TradingChartProps) => {
   const chartRef = useRef<HTMLDivElement>(null);
   const widgetRef = useRef<any>(null);
   const { theme } = useTheme();
-
-  // Map asset symbols to proper TradingView symbols
-  const getProperSymbol = (symbol: string): string => {
-    const symbolMappings: Record<string, string> = {
-      // Crypto
-      'BTCUSD': 'BINANCE:BTCUSDT',
-      'ETHUSD': 'BINANCE:ETHUSDT', 
-      'XRPUSD': 'BINANCE:XRPUSDT',
-      'ADAUSD': 'BINANCE:ADAUSDT',
-      'DOTUSD': 'BINANCE:DOTUSDT',
-      
-      // Stocks
-      'AAPL': 'NASDAQ:AAPL',
-      'GOOGL': 'NASDAQ:GOOGL',
-      'TSLA': 'NASDAQ:TSLA',
-      'MSFT': 'NASDAQ:MSFT',
-      'AMZN': 'NASDAQ:AMZN',
-      
-      // Forex pairs
-      'EURUSD': 'FX:EURUSD',
-      'GBPUSD': 'FX:GBPUSD',
-      'USDJPY': 'FX:USDJPY',
-      'USDCHF': 'FX:USDCHF',
-      'AUDUSD': 'FX:AUDUSD',
-      'USDCAD': 'FX:USDCAD',
-      'NZDUSD': 'FX:NZDUSD',
-      
-      // Commodities
-      'XAUUSD': 'TVC:GOLD',
-      'XAGUSD': 'TVC:SILVER',
-      'WTIUSD': 'TVC:USOIL',
-      'BCOUSD': 'TVC:UKOIL',
-      
-      // Indices
-      'US30': 'TVC:DJI',
-      'SPX500': 'TVC:SPX',
-      'NAS100': 'TVC:NDX',
-      'UK100': 'TVC:UKX',
-      'GER40': 'TVC:DAX',
-    };
-    
-    return symbolMappings[symbol] || `FX:${symbol}`;
-  };
 
   useEffect(() => {
     if (!chartRef.current) return;
@@ -101,9 +61,11 @@ export const TradingChart = ({ symbol }: TradingChartProps) => {
       
       try {
         const isDark = theme === 'dark';
+        const tvSymbol = resolveTVSymbol({ symbol, category, name });
+        
         widgetRef.current = new window.TradingView.widget({
           autosize: true,
-          symbol: getProperSymbol(symbol),
+          symbol: tvSymbol,
           interval: "1",
           timezone: "Etc/UTC",
           theme: isDark ? "dark" : "light",

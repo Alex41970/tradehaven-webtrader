@@ -453,6 +453,8 @@ export const WebTrader = () => {
                 <TradingChart 
                   key={selectedAsset?.id || 'no-asset'} 
                   symbol={selectedAsset?.symbol || ''} 
+                  category={selectedAsset?.category}
+                  name={selectedAsset?.name}
                 />
               </div>
 
