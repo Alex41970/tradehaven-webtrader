@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { TradingChart } from "./TradingChart";
 import { TradeRow } from "./TradeRow";
 import { TradingTabsInterface } from "./TradingTabsInterface";
@@ -425,26 +426,30 @@ export const WebTrader = () => {
                     </TabsList>
                     
                     <TabsContent value="all" className="mt-2">
-                        <div className="max-h-[400px] md:max-h-[600px] overflow-y-auto space-y-2 pr-2">
-                         {(isMobile ? filteredAssets.slice(0, 4) : filteredAssets.slice(0, 8)).map((asset) => (
-                           <AssetRow key={asset.id} asset={asset} />
-                         ))}
-                      </div>
+                      <ScrollArea className="h-[400px] md:h-[600px]">
+                        <div className="space-y-2 pr-2">
+                          {filteredAssets.map((asset) => (
+                            <AssetRow key={asset.id} asset={asset} />
+                          ))}
+                        </div>
+                      </ScrollArea>
                     </TabsContent>
                     
                     <TabsContent value="favorites" className="mt-2">
-                      <div className="max-h-[400px] md:max-h-[600px] overflow-y-auto space-y-2 pr-2">
-                        {favoriteAssets.length > 0 ? (
-                           (isMobile ? favoriteAssets.slice(0, 4) : favoriteAssets.slice(0, 8)).map((asset) => (
-                             <AssetRow key={asset.id} asset={asset} />
-                           ))
-                        ) : (
-                          <div className="text-center py-8 text-muted-foreground">
-                            <Star className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                            <p className="text-sm">No favorite assets</p>
-                          </div>
-                        )}
-                      </div>
+                      <ScrollArea className="h-[400px] md:h-[600px]">
+                        <div className="space-y-2 pr-2">
+                          {favoriteAssets.length > 0 ? (
+                            favoriteAssets.map((asset) => (
+                              <AssetRow key={asset.id} asset={asset} />
+                            ))
+                          ) : (
+                            <div className="text-center py-8 text-muted-foreground">
+                              <Star className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                              <p className="text-sm">No favorite assets</p>
+                            </div>
+                          )}
+                        </div>
+                      </ScrollArea>
                     </TabsContent>
                     
                   </Tabs>
