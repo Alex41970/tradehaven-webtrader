@@ -51,7 +51,6 @@ export const usePollingUserProfile = (options: UsePollingUserProfileOptions = {}
     }
 
     try {
-      console.log('🔄 Fetching user profile via HTTP...');
       const { data, error } = await supabase
         .from('user_profiles')
         .select('*')
@@ -62,13 +61,6 @@ export const usePollingUserProfile = (options: UsePollingUserProfileOptions = {}
 
       setProfile(data);
       lastUpdateRef.current = new Date();
-      
-      console.log('✅ Profile updated via HTTP:', {
-        balance: data.balance,
-        equity: data.equity,
-        usedMargin: data.used_margin,
-        availableMargin: data.available_margin
-      });
       
       return data;
     } catch (error) {
@@ -81,7 +73,6 @@ export const usePollingUserProfile = (options: UsePollingUserProfileOptions = {}
 
   // Force immediate refresh (for after user actions)
   const forceRefresh = useCallback(async () => {
-    console.log('🚀 Force refreshing profile...');
     return await fetchProfile();
   }, [fetchProfile]);
 
@@ -89,7 +80,6 @@ export const usePollingUserProfile = (options: UsePollingUserProfileOptions = {}
   useEffect(() => {
     const handleVisibilityChange = () => {
       isVisibleRef.current = !document.hidden;
-      console.log('👁️ Tab visibility changed:', isVisibleRef.current ? 'visible' : 'hidden');
       
       if (isVisibleRef.current && enablePolling) {
         // Resume polling when tab becomes visible
@@ -122,7 +112,6 @@ export const usePollingUserProfile = (options: UsePollingUserProfileOptions = {}
       pollIntervalRef.current = null;
     }
 
-    console.log(`⏰ Starting profile polling (${interval / 1000}s interval, ${hasActiveTrades ? 'ACTIVE' : 'IDLE'} mode)`);
     setIsPolling(true);
 
     pollIntervalRef.current = setInterval(() => {
@@ -135,7 +124,6 @@ export const usePollingUserProfile = (options: UsePollingUserProfileOptions = {}
   // Stop polling function
   const stopPolling = useCallback(() => {
     if (pollIntervalRef.current) {
-      console.log('⏹️ Stopping profile polling');
       clearInterval(pollIntervalRef.current);
       pollIntervalRef.current = null;
       setIsPolling(false);
@@ -146,7 +134,6 @@ export const usePollingUserProfile = (options: UsePollingUserProfileOptions = {}
   useEffect(() => {
     const newInterval = getDynamicInterval();
     if (pollIntervalRef.current && currentIntervalRef.current !== newInterval) {
-      console.log(`🔄 Trading activity changed - switching to ${newInterval / 1000}s interval (${hasActiveTrades ? 'ACTIVE' : 'IDLE'} mode)`);
       startPolling(); // This will restart with new interval
     }
   }, [hasActiveTrades, getDynamicInterval, startPolling]);
@@ -173,13 +160,11 @@ export const usePollingUserProfile = (options: UsePollingUserProfileOptions = {}
 
   // Legacy compatibility functions
   const updateBalance = async (newBalance: number, newEquity: number, newUsedMargin: number, newAvailableMargin: number) => {
-    console.log('updateBalance called - triggering immediate refresh');
     await forceRefresh();
     return true;
   };
 
   const recalculateMargins = useCallback(async () => {
-    console.log('recalculateMargins called - triggering immediate refresh');
     await forceRefresh();
     return true;
   }, [forceRefresh]);

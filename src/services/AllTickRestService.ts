@@ -255,16 +255,14 @@ export class AllTickRestService {
   ]);
 
   constructor() {
-    console.log(`🔧 AllTick REST Service initialized via Supabase relay`);
+    // Service initialized
   }
 
   async connect(): Promise<boolean> {
     if (this.isPolling) {
-      console.log('⚠️ Already polling, skipping connect');
       return true;
     }
 
-    console.log('🚀 Starting AllTick REST API polling...');
     this.isPolling = true;
     this.startPolling();
     return true;
@@ -281,8 +279,6 @@ export class AllTickRestService {
 
   private async fetchBatch(): Promise<void> {
     try {
-      console.log('🔄 Fetching prices via AllTick relay...');
-      
       const response = await fetch(this.edgeFunctionUrl, {
         method: 'POST',
         headers: {
@@ -300,8 +296,6 @@ export class AllTickRestService {
         console.error('Invalid response from AllTick relay:', result);
         return;
       }
-
-      console.log(`✅ Received ${result.prices.length} price updates`);
       
       // Process each price update
       result.prices.forEach((priceData: any) => {
@@ -332,11 +326,9 @@ export class AllTickRestService {
 
   subscribeToPrices(callback: (update: PriceUpdate) => void): () => void {
     this.subscribers.add(callback);
-    console.log(`📝 Added price subscriber. Total: ${this.subscribers.size}`);
     
     return () => {
       this.subscribers.delete(callback);
-      console.log(`📝 Removed price subscriber. Total: ${this.subscribers.size}`);
     };
   }
 
@@ -349,8 +341,6 @@ export class AllTickRestService {
   }
 
   disconnect(): void {
-    console.log('🔌 Disconnecting AllTick REST service...');
-    
     if (this.pollingInterval) {
       clearInterval(this.pollingInterval);
       this.pollingInterval = null;

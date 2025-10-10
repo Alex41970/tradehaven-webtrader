@@ -154,8 +154,6 @@ export class TradingWebSocketService {
             this.handleReconnect();
           }
         }, 10000); // 10 second timeout for pong
-      } else if (!this.isUserActive) {
-        console.log('⏸️ Trading WebSocket: Skipping ping - user is inactive');
       }
     }, interval);
   }
@@ -179,7 +177,6 @@ export class TradingWebSocketService {
 
     // Don't connect if user is inactive
     if (!this.isUserActive) {
-      console.log('⏸️ Trading WebSocket: Skipping connection - user is inactive');
       return;
     }
 
@@ -318,7 +315,6 @@ export class TradingWebSocketService {
 
     // Don't reconnect if user is inactive
     if (!this.isUserActive) {
-      console.log('⏸️ Trading WebSocket: Not reconnecting - user is inactive');
       return;
     }
 
@@ -473,7 +469,6 @@ export class TradingWebSocketService {
     this.isUserActive = isActive;
 
     if (isActive && !wasActive) {
-      console.log('🔄 Trading WebSocket: User became active, resuming operations');
       if (!this.isConnected()) {
         this.connect();
       } else {
@@ -481,7 +476,6 @@ export class TradingWebSocketService {
         this.startKeepAlive(60000);
       }
     } else if (!isActive && wasActive) {
-      console.log('⏸️ Trading WebSocket: User became inactive, reducing operations');
       // Reduce keep-alive frequency but maintain connection for essential auth
       this.startKeepAlive(300000); // Ping every 5 minutes when inactive
     }

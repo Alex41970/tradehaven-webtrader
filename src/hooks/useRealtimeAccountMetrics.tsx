@@ -61,16 +61,6 @@ export const useRealtimeAccountMetrics = (): RealtimeAccountMetrics => {
     // Free margin = equity - used margin
     const realTimeFreeMargin = Math.max(0, realTimeEquity - totalUsedMargin);
 
-    console.log('📊 Real-time Account Metrics:', {
-      balance: realTimeBalance,
-      unrealizedPnL: totalPnL,
-      calculatedEquity: realTimeEquity,
-      usedMargin: totalUsedMargin,
-      freeMargin: realTimeFreeMargin,
-      isPolling,
-      lastProfileUpdate: lastUpdate
-    });
-
     return {
       realTimeBalance,
       realTimeEquity,

@@ -12,8 +12,6 @@ export const useEventDrivenUpdates = () => {
 
   // Trigger immediate update after trade actions
   const handleTradeAction = useCallback(async (action: 'open' | 'close', tradeDetails?: any) => {
-    console.log(`🎯 Trade ${action} detected - triggering immediate profile refresh`);
-    
     // Small delay to ensure backend has processed the trade
     setTimeout(async () => {
       await refreshProfile();
@@ -22,8 +20,6 @@ export const useEventDrivenUpdates = () => {
 
   // Trigger immediate update after balance modifications
   const handleBalanceModification = useCallback(async (action: 'deposit' | 'withdrawal' | 'admin_adjustment') => {
-    console.log(`💰 Balance ${action} detected - triggering immediate profile refresh`);
-    
     // Immediate refresh for balance changes
     await refreshProfile();
   }, [refreshProfile]);
@@ -33,7 +29,6 @@ export const useEventDrivenUpdates = () => {
     let hasTriggered = false;
     
     if (isConnected && !hasTriggered) {
-      console.log('🔌 Trading WebSocket reconnected - syncing profile data');
       hasTriggered = true;
       
       // Add small delay to prevent multiple rapid calls

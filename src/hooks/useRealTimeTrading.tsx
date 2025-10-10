@@ -64,7 +64,6 @@ export const useRealTimeTrading = () => {
     }
 
     const handleAuthSuccess = (message: TradingWebSocketMessage) => {
-      console.log('Real-time trading authenticated');
       setIsConnected(true);
       setLoading(false);
       setConnectionQuality('excellent');
@@ -88,8 +87,6 @@ export const useRealTimeTrading = () => {
     };
 
     const handleMarginUpdate = (message: TradingWebSocketMessage) => {
-      console.log('Margins updated via real-time:', message.data);
-      
       // Update profile with new margin data
       if (message.data) {
         setProfile(prev => prev ? {
@@ -115,8 +112,6 @@ export const useRealTimeTrading = () => {
     };
 
     const handleTradeOpened = (message: TradingWebSocketMessage) => {
-      console.log('Trade opened via real-time:', message.trade);
-      
       // Update trades
       if (message.trades) {
         setTrades(message.trades);
@@ -134,8 +129,6 @@ export const useRealTimeTrading = () => {
     };
 
     const handleTradeClosed = (message: TradingWebSocketMessage) => {
-      console.log('Trade closed via real-time:', message.trade);
-      
       // Update trades
       if (message.trades) {
         setTrades(message.trades);
@@ -165,7 +158,6 @@ export const useRealTimeTrading = () => {
     };
 
     const handleDisconnect = () => {
-      console.log('Real-time trading disconnected');
       setIsConnected(false);
       setConnectionQuality('offline');
       
