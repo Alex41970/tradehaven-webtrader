@@ -39,7 +39,8 @@ async function connectToAllTick() {
     return;
   }
   
-  const wsUrl = `wss://quote.alltick.io/quote-b-ws-api?token=${apiKey}`;
+  // AllTick expects ?t= not ?token= according to their docs
+  const wsUrl = `wss://quote.alltick.io/quote-b-ws-api?t=${apiKey}`;
   console.log('🔌 Connecting to AllTick WebSocket (single connection for all symbols)...');
   
   allTickWS = new WebSocket(wsUrl);
