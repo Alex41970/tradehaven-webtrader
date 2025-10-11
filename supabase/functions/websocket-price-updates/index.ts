@@ -1,4 +1,10 @@
 import { getAllTickSymbols } from '../_shared/allTickSymbolMapping.ts';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
+const supabase = createClient(
+  Deno.env.get('SUPABASE_URL') ?? '',
+  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+);
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -48,6 +54,34 @@ function stopCentralPoller() {
   }
   isPolling = false;
   console.log('⏸️ Central price poller stopped (no clients connected)');
+}
+
+async function updateDatabasePrices(prices: PriceUpdate[]) {
+  if (prices.length === 0) return;
+  
+  try {
+    const updates = prices.map(p => ({
+      symbol: p.symbol,
+      price: p.price,
+      price_updated_at: new Date(p.timestamp).toISOString()
+    }));
+    
+    // Batch update using Supabase upsert
+    const { error } = await supabase
+      .from('assets')
+      .upsert(updates, { 
+        onConflict: 'symbol',
+        ignoreDuplicates: false 
+      });
+      
+    if (error) {
+      console.error('❌ Failed to update database prices:', error);
+    } else {
+      console.log(`💾 Updated ${updates.length} prices in database`);
+    }
+  } catch (error) {
+    console.error('❌ Error updating database:', error);
+  }
 }
 
 async function fetchAndBroadcastPrices() {
@@ -116,6 +150,9 @@ async function fetchAndBroadcastPrices() {
     if (disconnectedClients > 0) {
       console.log(`🧹 Cleaned up ${disconnectedClients} disconnected clients`);
     }
+
+    // Update database with fresh prices
+    await updateDatabasePrices(prices);
 
   } catch (error) {
     console.error('❌ Error in central poller:', error);
