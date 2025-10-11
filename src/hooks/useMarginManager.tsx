@@ -53,29 +53,6 @@ export const useMarginManager = () => {
   }, [user?.id]);
 
   /**
-   * Validates margin consistency across all users
-   * Useful for periodic checks and cleanup
-   */
-  const validateAllMargins = useCallback(async (): Promise<boolean> => {
-    try {
-      console.log('Validating margin consistency for all users');
-      
-      const { error } = await supabase.rpc('validate_margin_consistency');
-
-      if (error) {
-        console.error('Error validating margins:', error);
-        return false;
-      }
-
-      console.log('Margin validation completed successfully');
-      return true;
-    } catch (error) {
-      console.error('Unexpected error during margin validation:', error);
-      return false;
-    }
-  }, []);
-
-  /**
    * Checks if a user's margins are consistent
    */
   const checkMarginConsistency = useCallback(async (userId?: string): Promise<{ consistent: boolean; details?: any }> => {
@@ -132,7 +109,6 @@ export const useMarginManager = () => {
 
   return {
     recalculateMargins,
-    validateAllMargins,
     checkMarginConsistency,
   };
 };

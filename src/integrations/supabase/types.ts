@@ -928,14 +928,6 @@ export type Database = {
         }
         Returns: Json
       }
-      recalculate_all_user_margins: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
-      recalculate_user_balance: {
-        Args: { user_uuid: string }
-        Returns: undefined
-      }
       recalculate_user_margins: {
         Args: { _user_id: string }
         Returns: Json
@@ -951,14 +943,6 @@ export type Database = {
       transfer_user_to_admin: {
         Args: { _new_admin_id: string; _user_id: string }
         Returns: boolean
-      }
-      validate_margin_consistency: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
-      validate_user_margins: {
-        Args: { _user_id: string }
-        Returns: Json
       }
     }
     Enums: {
