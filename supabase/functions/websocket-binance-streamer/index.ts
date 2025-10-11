@@ -100,168 +100,98 @@ serve(async (req) => {
   console.log('✅ Frontend client connected');
 
   socket.onopen = () => {
-    connectToBinance();
+    console.log('🔌 Client connected - starting REST polling (WebSocket blocked)');
+    startRestPolling();
   };
-
-  function connectToBinance() {
+  
+  // REST API polling as primary method (WebSocket connections are blocked)
+  function startRestPolling() {
+    // Send connected message
+    socket.send(JSON.stringify({
+      type: 'connected',
+      message: 'Connected to Binance REST API feed',
+      method: 'polling',
+      interval: '2s',
+      timestamp: Date.now()
+    }));
+    
+    // Initial fetch
+    fetchAllPrices();
+    
+    // Start intervals
+    if (pingInterval) clearInterval(pingInterval);
+    pingInterval = setInterval(() => {
+      if (socket.readyState === WebSocket.OPEN) {
+        socket.send(JSON.stringify({ type: 'ping', timestamp: Date.now() }));
+      }
+    }, 30000);
+    
+    // Fetch prices every 2 seconds
+    if (dbUpdateInterval) clearInterval(dbUpdateInterval);
+    dbUpdateInterval = setInterval(async () => {
+      await fetchAllPrices();
+    }, 2000);
+  }
+  
+  async function fetchAllPrices() {
     try {
       const binanceSymbols = Object.values(SYMBOL_MAP);
       
-      // Build stream list: btcusdt@trade/btcusdt@ticker/ethusdt@trade/...
-      const allStreams: string[] = [];
-      binanceSymbols.forEach(symbol => {
-        allStreams.push(`${symbol}@trade`);
-        allStreams.push(`${symbol}@ticker`);
-      });
+      // Fetch all ticker prices in one call
+      const response = await fetch('https://api.binance.com/api/v3/ticker/24hr');
       
-      // Split into chunks (24 streams per connection to keep URLs short)
-      const STREAMS_PER_CONNECTION = 24;
-      const chunks: string[][] = [];
-      
-      for (let i = 0; i < allStreams.length; i += STREAMS_PER_CONNECTION) {
-        chunks.push(allStreams.slice(i, i + STREAMS_PER_CONNECTION));
+      if (!response.ok) {
+        console.error(`❌ Binance API error: ${response.status}`);
+        return;
       }
       
-      console.log(`🔌 Creating ${chunks.length} Binance connections with ${allStreams.length} total streams`);
+      const allTickers = await response.json();
+      let updateCount = 0;
       
-      // Create a connection for each chunk using combined stream format
-      chunks.forEach((streamChunk, index) => {
-        const streamPath = streamChunk.join('/');
-        const url = `wss://stream.binance.com:9443/stream?streams=${streamPath}`;
+      // Process only our symbols
+      for (const ticker of allTickers) {
+        const binanceSymbol = ticker.symbol.toLowerCase();
+        const ourSymbol = REVERSE_SYMBOL_MAP[ticker.symbol];
         
-        console.log(`📡 Connection ${index + 1}/${chunks.length}: ${streamChunk.length} streams (URL length: ${url.length} chars)`);
-        
-        const ws = new WebSocket(url);
-        
-        ws.onopen = () => {
-          console.log(`✅ Connected to Binance (${index + 1}/${chunks.length})`);
-          reconnectAttempts = 0;
+        if (ourSymbol && binanceSymbols.includes(binanceSymbol)) {
+          const price = parseFloat(ticker.lastPrice);
+          const change = parseFloat(ticker.priceChangePercent);
           
-          // Send connected message only after first connection
-          if (index === 0) {
-            socket.send(JSON.stringify({
-              type: 'connected',
-              message: 'Connected to Binance real-time feed',
-              symbols: binanceSymbols.length,
-              connections: chunks.length,
-              timestamp: Date.now()
-            }));
-            
-            // Start ping interval (keep connection alive)
-            if (pingInterval) clearInterval(pingInterval);
-            pingInterval = setInterval(() => {
-              if (socket.readyState === WebSocket.OPEN) {
-                socket.send(JSON.stringify({ type: 'ping', timestamp: Date.now() }));
-              }
-            }, 30000);
-
-            // Start database update interval (every 10 seconds)
-            if (dbUpdateInterval) clearInterval(dbUpdateInterval);
-            dbUpdateInterval = setInterval(async () => {
-              await updateDatabase();
-            }, 10000);
-          }
-        };
-        
-        ws.onmessage = (event) => {
-          try {
-            const data = JSON.parse(event.data);
-            
-            // Combined stream format: { stream: "btcusdt@trade", data: {...} }
-            if (data.stream && data.data) {
-              const streamData = data.data;
-              
-              if (streamData.e === 'trade') {
-                // Process trade event
-                const trade: BinanceTradeData = streamData;
-                const binanceSymbol = trade.s;
-                const ourSymbol = REVERSE_SYMBOL_MAP[binanceSymbol];
-                
-                if (ourSymbol) {
-                  const price = parseFloat(trade.p);
-                  const existing = priceCache.get(ourSymbol);
-                  
-                  priceCache.set(ourSymbol, {
-                    symbol: ourSymbol,
-                    price: price,
-                    change_24h: existing?.change_24h || 0,
-                    timestamp: trade.E
-                  });
-                  
-                  // Broadcast to frontend
-                  socket.send(JSON.stringify({
-                    type: 'price_update',
-                    prices: [{
-                      symbol: ourSymbol,
-                      price: price,
-                      change_24h: existing?.change_24h || 0,
-                      timestamp: trade.E
-                    }],
-                    source: 'Binance'
-                  }));
-                }
-              } else if (streamData.e === '24hrTicker') {
-                // Process ticker event
-                const ticker: Binance24hrData = streamData;
-                const binanceSymbol = ticker.s;
-                const ourSymbol = REVERSE_SYMBOL_MAP[binanceSymbol];
-                
-                if (ourSymbol) {
-                  const changePercent = parseFloat(ticker.P);
-                  const existing = priceCache.get(ourSymbol);
-                  
-                  if (existing) {
-                    existing.change_24h = changePercent;
-                    priceCache.set(ourSymbol, existing);
-                  }
-                }
-              }
-            }
-          } catch (error) {
-            console.error(`❌ Error processing message (connection ${index + 1}):`, error);
-          }
-        };
-        
-        ws.onerror = (error) => {
-          console.error(`❌ Binance WS error (connection ${index + 1}):`, error);
-        };
-        
-        ws.onclose = () => {
-          console.log(`🔌 Binance WS closed (connection ${index + 1}/${chunks.length})`);
+          priceCache.set(ourSymbol, {
+            symbol: ourSymbol,
+            price: price,
+            change_24h: change,
+            timestamp: Date.now()
+          });
           
-          // Remove this connection from the array
-          binanceConnections = binanceConnections.filter(conn => conn !== ws);
-          
-          // Reconnect all connections if this was part of a full disconnect
-          if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS && socket.readyState === WebSocket.OPEN) {
-            reconnectAttempts++;
-            const backoffDelay = Math.min(1000 * Math.pow(2, reconnectAttempts - 1), 30000);
-            const jitter = Math.random() * 1000; // Add 0-1s jitter
-            
-            console.log(`🔄 Reconnecting in ${Math.floor(backoffDelay + jitter)}ms (attempt ${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})`);
-            
-            setTimeout(() => {
-              // Close all existing connections before reconnecting
-              binanceConnections.forEach(conn => {
-                if (conn.readyState === WebSocket.OPEN) {
-                  conn.close();
-                }
-              });
-              binanceConnections = [];
-              connectToBinance();
-            }, backoffDelay + jitter);
-          } else if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
-            console.error('❌ Max reconnection attempts reached. Please refresh the page.');
-          }
-        };
+          updateCount++;
+        }
+      }
+      
+      // Broadcast all prices to frontend
+      if (priceCache.size > 0) {
+        const prices = Array.from(priceCache.values());
+        socket.send(JSON.stringify({
+          type: 'price_update',
+          prices: prices,
+          source: 'Binance REST',
+          count: updateCount
+        }));
         
-        binanceConnections.push(ws);
-      });
+        console.log(`📊 Updated ${updateCount} prices via REST API`);
+      }
+      
+      // Update database every 5 fetches (~10 seconds)
+      if (Math.random() < 0.2) { // 20% chance = ~every 10s
+        await updateDatabase();
+      }
       
     } catch (error) {
-      console.error('❌ Failed to connect to Binance:', error);
+      console.error('❌ Error fetching prices:', error);
     }
   }
+
+  // WebSocket method removed - using REST polling instead due to connection blocks
 
   socket.onmessage = (event) => {
     try {
