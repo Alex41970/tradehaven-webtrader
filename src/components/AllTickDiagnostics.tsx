@@ -8,7 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 export const AllTickDiagnostics = () => {
   const [results, setResults] = useState<any[]>([]);
   const [testing, setTesting] = useState(false);
-  const apiKey = import.meta.env.VITE_ALLTICK_CLIENT_KEY;
+  // Note: API key is now stored securely in Supabase secrets, not in frontend env
 
   const runDiagnostics = async () => {
     setTesting(true);
@@ -59,7 +59,7 @@ Browser: ${navigator.userAgent}
 
 API CREDENTIALS:
 ---------------
-API Key (partial): ${apiKey?.substring(0, 20)}...${apiKey?.substring(apiKey.length - 6)}
+API Key: Stored securely in Supabase secrets (not exposed to frontend)
 
 DIAGNOSTIC TEST RESULTS:
 -----------------------
@@ -107,7 +107,7 @@ END OF REPORT
           </p>
         </div>
         <p className="text-sm text-muted-foreground mb-4">
-          API Key: {apiKey?.substring(0, 20)}...{apiKey?.substring(apiKey.length - 6)}
+          API Key: Stored securely in Supabase secrets (server-side only)
         </p>
         <div className="flex gap-2">
           <Button onClick={runDiagnostics} disabled={testing}>
