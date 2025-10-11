@@ -18,54 +18,213 @@ interface PriceUpdate {
   timestamp: number;
 }
 
-// Store all connected WebSocket clients
+// Store all connected frontend WebSocket clients
 const connectedClients = new Set<WebSocket>();
 
-// Central price polling state
-let pollingInterval: number | null = null;
-let isPolling = false;
+// AllTick WebSocket connection state
+let allTickWS: WebSocket | null = null;
+let isSubscribed = false;
+let reconnectTimeout: number | null = null;
+let heartbeatInterval: number | null = null;
 let lastPrices: PriceUpdate[] = [];
 
 /**
- * Central AllTick price poller - runs once every 3 seconds
- * Broadcasts to all connected WebSocket clients
+ * Connect to AllTick WebSocket API
+ * Single connection for all 100 symbols
  */
-async function startCentralPoller() {
-  if (isPolling) return;
-  
-  isPolling = true;
-  console.log('🚀 Starting central AllTick price poller (3s intervals, staggered requests)');
-  console.log('📊 Rate limiting: 2 requests per 3s poll (1.5s apart) = 40 req/min (limit: 60)');
-  console.log('⏱️  Request timing: Batch 1 at 0s, Batch 2 at 1.5s, Next poll at 3s');
-  
-  // Initial fetch
-  await fetchAndBroadcastPrices();
-  
-  // Poll every 3 seconds
-  pollingInterval = setInterval(async () => {
-    await fetchAndBroadcastPrices();
-  }, 3000);
-}
-
-function stopCentralPoller() {
-  if (pollingInterval) {
-    clearInterval(pollingInterval);
-    pollingInterval = null;
+async function connectToAllTick() {
+  const apiKey = Deno.env.get('ALLTICK_API_KEY');
+  if (!apiKey) {
+    console.error('❌ ALLTICK_API_KEY not configured');
+    return;
   }
-  isPolling = false;
-  console.log('⏸️ Central price poller stopped (no clients connected)');
+  
+  const wsUrl = `wss://quote.alltick.io/quote-b-ws-api?token=${apiKey}`;
+  console.log('🔌 Connecting to AllTick WebSocket (single connection for all symbols)...');
+  
+  allTickWS = new WebSocket(wsUrl);
+  
+  allTickWS.onopen = () => {
+    console.log('✅ Connected to AllTick WebSocket');
+    subscribeToAllSymbols();
+  };
+  
+  allTickWS.onmessage = (event) => {
+    handleAllTickMessage(event.data);
+  };
+  
+  allTickWS.onerror = (error) => {
+    console.error('❌ AllTick WebSocket error:', error);
+  };
+  
+  allTickWS.onclose = () => {
+    console.log('🔌 AllTick WebSocket closed, reconnecting in 3s...');
+    isSubscribed = false;
+    allTickWS = null;
+    reconnectTimeout = setTimeout(connectToAllTick, 3000);
+  };
 }
 
+/**
+ * Subscribe to ALL 100 symbols in a single subscription
+ * CRITICAL: AllTick only allows 1 subscription at a time, so we must send all symbols together
+ */
+function subscribeToAllSymbols() {
+  if (!allTickWS || isSubscribed) return;
+  
+  const allSymbols = getAllTickSymbols(); // All 100 symbols
+  
+  const subscribeMessage = {
+    cmd_id: 22002, // Real-time tick data subscription
+    seq_id: Date.now(),
+    trace: crypto.randomUUID(),
+    data: {
+      symbol_list: allSymbols.map(code => ({ code }))
+    }
+  };
+  
+  allTickWS.send(JSON.stringify(subscribeMessage));
+  isSubscribed = true;
+  console.log(`📡 Subscribed to ALL ${allSymbols.length} symbols in single subscription`);
+  console.log(`   Symbols: ${allSymbols.slice(0, 10).join(', ')}... (showing first 10)`);
+}
+
+/**
+ * Handle incoming messages from AllTick WebSocket
+ */
+function handleAllTickMessage(data: string) {
+  try {
+    const message = JSON.parse(data);
+    
+    // Subscription confirmation
+    if (message.cmd_id === 22002 && message.data?.code === 0) {
+      console.log('✅ Subscription confirmed by AllTick');
+      return;
+    }
+    
+    // Price updates
+    if (message.data?.tick_list || message.data?.tick) {
+      const tickList = message.data.tick_list || message.data.tick || [];
+      const prices: PriceUpdate[] = [];
+      
+      for (const tick of tickList) {
+        const price = parseFloat(tick.price || tick.last);
+        if (!isNaN(price)) {
+          prices.push({
+            symbol: tick.code,
+            price,
+            change_24h: parseFloat(tick.change_rate || 0),
+            timestamp: Date.now() // Use server time for freshness
+          });
+        }
+      }
+      
+      if (prices.length > 0) {
+        // Update cache - merge new prices with existing ones
+        const updatedSymbols = new Set(prices.map(p => p.symbol));
+        lastPrices = [
+          ...lastPrices.filter(p => !updatedSymbols.has(p.symbol)),
+          ...prices
+        ];
+        
+        // Broadcast to all connected frontend clients
+        broadcastPrices(prices);
+        
+        // Update database
+        updateDatabasePrices(prices);
+      }
+    }
+    
+    // Heartbeat response
+    if (message.cmd_id === 22000) {
+      console.log('💓 Heartbeat acknowledged by AllTick');
+    }
+    
+  } catch (error) {
+    console.error('❌ Error parsing AllTick message:', error);
+  }
+}
+
+/**
+ * Broadcast price updates to all connected frontend clients
+ */
+function broadcastPrices(prices: PriceUpdate[]) {
+  const message = JSON.stringify({
+    type: 'price_update',
+    prices,
+    timestamp: Date.now(),
+    stats: {
+      received: prices.length,
+      total_symbols: getAllTickSymbols().length,
+      cached_total: lastPrices.length,
+      successRate: `${((lastPrices.length / getAllTickSymbols().length) * 100).toFixed(1)}%`
+    }
+  });
+  
+  let disconnectedClients = 0;
+  connectedClients.forEach(client => {
+    try {
+      if (client.readyState === WebSocket.OPEN) {
+        client.send(message);
+      } else {
+        connectedClients.delete(client);
+        disconnectedClients++;
+      }
+    } catch (error) {
+      console.error('Error broadcasting to client:', error);
+      connectedClients.delete(client);
+      disconnectedClients++;
+    }
+  });
+  
+  if (disconnectedClients > 0) {
+    console.log(`🧹 Cleaned up ${disconnectedClients} disconnected clients`);
+  }
+}
+
+/**
+ * Start heartbeat/keepalive with AllTick
+ * Send ping every 30 seconds
+ */
+function startHeartbeat() {
+  if (heartbeatInterval) return;
+  
+  heartbeatInterval = setInterval(() => {
+    if (allTickWS?.readyState === WebSocket.OPEN) {
+      allTickWS.send(JSON.stringify({
+        cmd_id: 22000, // Ping
+        seq_id: Date.now(),
+        trace: crypto.randomUUID()
+      }));
+    }
+  }, 30000); // Every 30 seconds
+  
+  console.log('💓 Started heartbeat (30s intervals)');
+}
+
+/**
+ * Stop heartbeat
+ */
+function stopHeartbeat() {
+  if (heartbeatInterval) {
+    clearInterval(heartbeatInterval);
+    heartbeatInterval = null;
+    console.log('💔 Stopped heartbeat');
+  }
+}
+
+/**
+ * Update database with fresh prices
+ */
 async function updateDatabasePrices(prices: PriceUpdate[]) {
   if (prices.length === 0) return;
   
   try {
-    // Update each symbol individually to avoid NULL constraint violations
     let successCount = 0;
     let failCount = 0;
     
     for (const p of prices) {
-      // Use current server time instead of stale AllTick timestamp
+      // Use current server time
       const timestampISO = new Date().toISOString();
       
       // Log first few updates for debugging
@@ -80,14 +239,14 @@ async function updateDatabasePrices(prices: PriceUpdate[]) {
           price_updated_at: timestampISO
         })
         .eq('symbol', p.symbol)
-        .select('symbol, price, price_updated_at, updated_at');
+        .select('symbol, price, price_updated_at');
       
       if (error) {
         console.error(`❌ Failed to update ${p.symbol}:`, error);
         failCount++;
       } else if (data && data.length > 0) {
         if (successCount < 3) {
-          console.log(`✅ Updated ${p.symbol} - DB shows: price_updated_at=${data[0].price_updated_at}, updated_at=${data[0].updated_at}`);
+          console.log(`✅ Updated ${p.symbol} - DB shows: price_updated_at=${data[0].price_updated_at}`);
         }
         successCount++;
       } else {
@@ -97,146 +256,13 @@ async function updateDatabasePrices(prices: PriceUpdate[]) {
     }
     
     if (failCount > 0) {
-      console.log(`⚠️ Database update: ${successCount} succeeded, ${failCount} failed (likely missing assets)`);
+      console.log(`⚠️ Database update: ${successCount} succeeded, ${failCount} failed`);
     } else {
       console.log(`💾 Updated ${successCount} prices in database`);
     }
   } catch (error) {
     console.error('❌ Error updating database:', error);
   }
-}
-
-async function fetchAndBroadcastPrices() {
-  try {
-    const apiKey = Deno.env.get('ALLTICK_API_KEY');
-    if (!apiKey) {
-      console.error('❌ ALLTICK_API_KEY not configured');
-      return;
-    }
-
-    const allTickSymbols = getAllTickSymbols();
-    
-    // Split by API endpoint
-    const forexCryptoCommoditySymbols = allTickSymbols.filter(code => !/(\.US|\.IDX)$/.test(code));
-    const stockIndexSymbols = allTickSymbols.filter(code => /(\.US|\.IDX)$/.test(code));
-
-    const prices: PriceUpdate[] = [];
-
-    // Batch 1: Forex/Crypto/Commodities (quote-b-api)
-    if (forexCryptoCommoditySymbols.length > 0) {
-      const batch1 = await makeRequest('https://quote.alltick.io/quote-b-api', forexCryptoCommoditySymbols, apiKey);
-      prices.push(...batch1);
-      
-      // Wait 1.5 seconds before second batch to avoid rate limiting
-      await new Promise(resolve => setTimeout(resolve, 1500));
-    }
-
-    // Batch 2: Stocks/Indices (quote-stock-b-api)
-    if (stockIndexSymbols.length > 0) {
-      const batch2 = await makeRequest('https://quote.alltick.io/quote-stock-b-api', stockIndexSymbols, apiKey);
-      prices.push(...batch2);
-    }
-
-    lastPrices = prices;
-
-    // Broadcast to all connected clients
-    const message = JSON.stringify({
-      type: 'price_update',
-      prices,
-      timestamp: Date.now(),
-      stats: {
-        requested: allTickSymbols.length,
-        received: prices.length,
-        successRate: ((prices.length / allTickSymbols.length) * 100).toFixed(1) + '%'
-      }
-    });
-
-    let disconnectedClients = 0;
-    connectedClients.forEach(client => {
-      try {
-        if (client.readyState === WebSocket.OPEN) {
-          client.send(message);
-        } else {
-          connectedClients.delete(client);
-          disconnectedClients++;
-        }
-      } catch (error) {
-        console.error('Error sending to client:', error);
-        connectedClients.delete(client);
-        disconnectedClients++;
-      }
-    });
-
-    console.log(`✅ Broadcasted ${prices.length}/${allTickSymbols.length} prices to ${connectedClients.size} clients`);
-    
-    if (disconnectedClients > 0) {
-      console.log(`🧹 Cleaned up ${disconnectedClients} disconnected clients`);
-    }
-
-    // Update database with fresh prices
-    await updateDatabasePrices(prices);
-
-  } catch (error) {
-    console.error('❌ Error in central poller:', error);
-  }
-}
-
-async function makeRequest(baseUrl: string, symbols: string[], apiKey: string): Promise<PriceUpdate[]> {
-  if (symbols.length === 0) return [];
-  
-  const query = encodeURIComponent(JSON.stringify({
-    trace: `websocket_batch_${Date.now()}`,
-    data: { symbol_list: symbols.map(code => ({ code })) }
-  }));
-  
-  const url = `${baseUrl}/trade-tick?token=${apiKey}&query=${query}`;
-  const response = await fetch(url);
-
-  if (!response.ok) {
-    console.error(`❌ Request failed: ${response.status} ${response.statusText}`);
-    console.error(`   Requested symbols (${symbols.length}):`, symbols.join(', '));
-    return [];
-  }
-
-  const json: any = await response.json();
-  
-  if (json.ret === 600) {
-    console.warn(`⚠️ Symbols not available (ret:600): ${json.msg}`);
-    console.warn(`   Requested symbols (${symbols.length}):`, symbols.join(', '));
-    return [];
-  }
-  
-  if (json.ret !== 200 && json.code !== 0) {
-    console.error(`❌ API Error: ret=${json.ret}, msg=${json.msg}`);
-    console.error(`   Requested symbols (${symbols.length}):`, symbols.join(', '));
-    return [];
-  }
-  
-  const tickList = json?.data?.tick_list || [];
-  const updates: PriceUpdate[] = [];
-  const receivedSymbols = new Set<string>();
-  
-  for (const tick of tickList) {
-    const price = parseFloat(tick.price);
-    if (!isNaN(price)) {
-      receivedSymbols.add(tick.code);
-      updates.push({
-        symbol: tick.code,
-        price,
-        change_24h: 0,
-        timestamp: Number(tick.tick_time) || Date.now()
-      });
-    }
-  }
-  
-  // Log missing symbols
-  const missingSymbols = symbols.filter(s => !receivedSymbols.has(s));
-  if (missingSymbols.length > 0) {
-    console.warn(`⚠️ Missing ${missingSymbols.length} symbols from response:`);
-    console.warn(`   ${missingSymbols.join(', ')}`);
-  }
-  
-  return updates;
 }
 
 Deno.serve(async (req) => {
@@ -260,12 +286,13 @@ Deno.serve(async (req) => {
     connectedClients.add(socket);
     console.log(`🔌 Client connected (total: ${connectedClients.size})`);
     
-    // Start central poller if this is the first client
-    if (connectedClients.size === 1) {
-      startCentralPoller();
+    // Start AllTick WebSocket when first client connects
+    if (connectedClients.size === 1 && !allTickWS) {
+      connectToAllTick();
+      startHeartbeat();
     }
     
-    // Send last known prices immediately
+    // Send cached prices immediately
     if (lastPrices.length > 0) {
       socket.send(JSON.stringify({
         type: 'price_update',
@@ -278,7 +305,7 @@ Deno.serve(async (req) => {
     // Send connection confirmation
     socket.send(JSON.stringify({
       type: 'connected',
-      message: 'Connected to AllTick price feed',
+      message: 'Connected to AllTick real-time WebSocket feed',
       clientCount: connectedClients.size
     }));
   };
@@ -287,9 +314,17 @@ Deno.serve(async (req) => {
     connectedClients.delete(socket);
     console.log(`🔌 Client disconnected (remaining: ${connectedClients.size})`);
     
-    // Stop central poller if no clients left
-    if (connectedClients.size === 0) {
-      stopCentralPoller();
+    // Close AllTick connection when last client disconnects
+    if (connectedClients.size === 0 && allTickWS) {
+      allTickWS.close();
+      allTickWS = null;
+      isSubscribed = false;
+      stopHeartbeat();
+      
+      if (reconnectTimeout) {
+        clearTimeout(reconnectTimeout);
+        reconnectTimeout = null;
+      }
     }
   };
 
@@ -302,6 +337,7 @@ Deno.serve(async (req) => {
     try {
       const data = JSON.parse(event.data);
       
+      // Handle ping from frontend clients
       if (data.type === 'ping') {
         socket.send(JSON.stringify({ type: 'pong', timestamp: Date.now() }));
       }
