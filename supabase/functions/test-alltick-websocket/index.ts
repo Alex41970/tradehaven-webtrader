@@ -22,15 +22,15 @@ Deno.serve(async (req) => {
     console.log('🧪 Testing AllTick WebSocket connection...');
     console.log('📝 API Key format:', apiKey.substring(0, 20) + '...');
 
-    // Test Method 1: Token in URL with ?token=
+    // Test Method 1: Token in URL with ?token= (legacy format)
     const test1Url = `wss://quote.alltick.io/quote-b-ws-api?token=${apiKey}`;
     console.log('🔬 Test 1: Connecting with ?token= in URL...');
     
-    const result1 = await testConnection(test1Url, apiKey, 'token-in-url');
+    const result1 = await testConnection(test1Url, apiKey, 'legacy-token-format');
 
-    // Test Method 2: Token in URL with ?t=
+    // Test Method 2: Token in URL with ?t= (correct format per AllTick docs)
     const test2Url = `wss://quote.alltick.io/quote-b-ws-api?t=${apiKey}`;
-    console.log('🔬 Test 2: Connecting with ?t= in URL...');
+    console.log('🔬 Test 2: Connecting with ?t= in URL (correct format)...');
     
     const result2 = await testConnection(test2Url, apiKey, 'short-token-in-url');
 
@@ -41,10 +41,10 @@ Deno.serve(async (req) => {
     const result3 = await testConnection(test3Url, apiKey, 'auth-after-connect');
 
     const results = {
-      test1_token_in_url: result1,
-      test2_short_token: result2,
+      test1_legacy_token_format: result1,
+      test2_correct_t_parameter: result2,
       test3_auth_message: result3,
-      recommendation: result1.success ? 'Use ?token=' : result2.success ? 'Use ?t=' : result3.success ? 'Use auth message' : 'All methods failed'
+      recommendation: result2.success ? 'Use ?t= (CORRECT)' : result1.success ? 'Use ?token=' : result3.success ? 'Use auth message' : 'All methods failed'
     };
 
     console.log('📊 Test Results:', JSON.stringify(results, null, 2));

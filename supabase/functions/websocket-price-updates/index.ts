@@ -28,26 +28,44 @@ let reconnectTimeout: number | null = null;
 let heartbeatInterval: number | null = null;
 let lastPrices: PriceUpdate[] = [];
 
+// Reconnection state with exponential backoff
+let reconnectAttempts = 0;
+const MAX_RECONNECT_ATTEMPTS = 10;
+const BASE_RECONNECT_DELAY = 1000; // 1 second
+const MAX_RECONNECT_DELAY = 60000; // 60 seconds
+let circuitBreakerTripped = false;
+let lastTickReceived = 0;
+
 /**
  * Connect to AllTick WebSocket API
  * Token MUST be in URL per AllTick documentation
  * Single connection for all 100 symbols
  */
 async function connectToAllTick() {
+  // Check circuit breaker
+  if (circuitBreakerTripped) {
+    console.error('🚫 Circuit breaker tripped - not attempting reconnection');
+    return;
+  }
+  
   const apiKey = Deno.env.get('ALLTICK_API_KEY');
   if (!apiKey) {
     console.error('❌ ALLTICK_API_KEY not configured in Supabase secrets');
     return;
   }
   
-  // CRITICAL: Token goes in URL with ?token= parameter (per AllTick docs)
-  const wsUrl = `wss://quote.alltick.io/quote-b-ws-api?token=${apiKey}`;
-  console.log('🔌 Connecting to AllTick WebSocket...');
+  // CRITICAL: AllTick requires token with ?t= parameter (NOT ?token=)
+  // Reference: AllTick WebSocket documentation
+  const wsUrl = `wss://quote.alltick.io/quote-b-ws-api?t=${apiKey}`;
+  console.log(`🔌 Connecting to AllTick WebSocket (attempt ${reconnectAttempts + 1}/${MAX_RECONNECT_ATTEMPTS})...`);
   
   allTickWS = new WebSocket(wsUrl);
   
   allTickWS.onopen = () => {
     console.log('✅ Connected to AllTick WebSocket');
+    // Reset reconnection state on successful connection
+    reconnectAttempts = 0;
+    circuitBreakerTripped = false;
     // After connection, subscribe to symbols immediately
     subscribeToAllSymbols();
     // Start heartbeat
@@ -60,14 +78,46 @@ async function connectToAllTick() {
   
   allTickWS.onerror = (error) => {
     console.error('❌ AllTick WebSocket error:', error);
+    
+    // Check if this is a 400 Bad Request (authentication issue)
+    const errorMessage = error instanceof ErrorEvent ? error.message : String(error);
+    if (errorMessage.includes('400 Bad Request')) {
+      console.error('🚫 Authentication failed (400 Bad Request) - check API key format');
+      console.error('   Expected format: ?t=<api_key> in WebSocket URL');
+      circuitBreakerTripped = true;
+    }
   };
   
-  allTickWS.onclose = () => {
-    console.log('🔌 AllTick WebSocket closed, reconnecting in 5s...');
+  allTickWS.onclose = (event) => {
+    console.log(`🔌 AllTick WebSocket closed (code: ${event.code}, reason: ${event.reason || 'none'})`);
     isSubscribed = false;
     stopHeartbeat();
     allTickWS = null;
-    reconnectTimeout = setTimeout(connectToAllTick, 5000);
+    
+    // Don't reconnect if circuit breaker is tripped
+    if (circuitBreakerTripped) {
+      console.error('🚫 Not reconnecting due to circuit breaker');
+      return;
+    }
+    
+    // Check if we've exceeded max reconnect attempts
+    if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+      console.error(`🚫 Max reconnect attempts (${MAX_RECONNECT_ATTEMPTS}) reached - stopping reconnection`);
+      circuitBreakerTripped = true;
+      return;
+    }
+    
+    // Calculate exponential backoff with jitter
+    const exponentialDelay = Math.min(
+      BASE_RECONNECT_DELAY * Math.pow(2, reconnectAttempts),
+      MAX_RECONNECT_DELAY
+    );
+    const jitter = Math.random() * 1000; // 0-1s random jitter
+    const delay = exponentialDelay + jitter;
+    
+    reconnectAttempts++;
+    console.log(`🔄 Reconnecting in ${(delay / 1000).toFixed(1)}s...`);
+    reconnectTimeout = setTimeout(connectToAllTick, delay);
   };
 }
 
@@ -132,6 +182,15 @@ function handleAllTickMessage(data: string) {
       }
       
       if (prices.length > 0) {
+        // Update last tick received timestamp
+        lastTickReceived = Date.now();
+        
+        // Log tick reception (first few for debugging)
+        const timeSinceLastTick = lastTickReceived > 0 ? Date.now() - lastTickReceived : 0;
+        if (prices.length <= 3 || Math.random() < 0.1) { // Log occasionally to avoid spam
+          console.log(`📊 Received ${prices.length} price updates (${timeSinceLastTick}ms since last)`);
+        }
+        
         // Update cache - merge new prices with existing ones
         const updatedSymbols = new Set(prices.map(p => p.symbol));
         lastPrices = [
