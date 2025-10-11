@@ -94,26 +94,54 @@ serve(async (req) => {
   let pingInterval: number | null = null;
   let dbUpdateInterval: number | null = null;
   const priceCache = new Map<string, PriceUpdate>();
+  let reconnectAttempts = 0;
+  const MAX_RECONNECT_ATTEMPTS = 5;
   
-  console.log('🔌 Client connected to Binance streamer');
-
-  // Build Binance combined stream URL for all crypto symbols
-  const binanceSymbols = Object.values(SYMBOL_MAP);
-  const tradeStreams = binanceSymbols.map(s => `${s}@trade`).join('/');
-  const tickerStreams = binanceSymbols.map(s => `${s}@ticker`).join('/');
-  const binanceUrl = `wss://stream.binance.com:9443/stream?streams=${tradeStreams}/${tickerStreams}`;
+  console.log('✅ Frontend client connected');
 
   socket.onopen = () => {
-    console.log('✅ Frontend client connected');
-    
-    // Connect to Binance WebSocket
+    connectToBinance();
+  };
+
+  function connectToBinance() {
     try {
+      // Use simple WebSocket URL, then SUBSCRIBE after connection
+      const binanceUrl = 'wss://stream.binance.com:9443/ws';
+      console.log('🔌 Connecting to Binance WebSocket...');
+      
       binanceWs = new WebSocket(binanceUrl);
       
       binanceWs.onopen = () => {
-        console.log(`🚀 Connected to Binance (${binanceSymbols.length} symbols)`);
+        console.log('✅ Connected to Binance WebSocket (real-time crypto)');
+        reconnectAttempts = 0;
         
-        // Send welcome message
+        // Build subscription list from our symbol map
+        const binanceSymbols = Object.values(SYMBOL_MAP);
+        const streams: string[] = [];
+        
+        // Add both trade and ticker streams for each symbol
+        binanceSymbols.forEach(symbol => {
+          streams.push(`${symbol}@trade`);
+          streams.push(`${symbol}@ticker`);
+        });
+        
+        console.log(`📡 Subscribing to ${streams.length} streams (${binanceSymbols.length} symbols)...`);
+        
+        // Subscribe in batches of 40 streams to avoid overwhelming Binance
+        const BATCH_SIZE = 40;
+        for (let i = 0; i < streams.length; i += BATCH_SIZE) {
+          const batch = streams.slice(i, i + BATCH_SIZE);
+          const subscribeMessage = {
+            method: 'SUBSCRIBE',
+            params: batch,
+            id: Math.floor(Date.now() / 1000) + i
+          };
+          
+          binanceWs!.send(JSON.stringify(subscribeMessage));
+          console.log(`📥 Sent subscription batch ${Math.floor(i / BATCH_SIZE) + 1}/${Math.ceil(streams.length / BATCH_SIZE)} (${batch.length} streams)`);
+        }
+        
+        // Send welcome message to frontend
         socket.send(JSON.stringify({
           type: 'connected',
           message: 'Connected to Binance real-time feed',
@@ -122,6 +150,7 @@ serve(async (req) => {
         }));
 
         // Start ping interval (keep connection alive)
+        if (pingInterval) clearInterval(pingInterval);
         pingInterval = setInterval(() => {
           if (socket.readyState === WebSocket.OPEN) {
             socket.send(JSON.stringify({ type: 'ping', timestamp: Date.now() }));
@@ -129,6 +158,7 @@ serve(async (req) => {
         }, 30000);
 
         // Start database update interval (every 10 seconds)
+        if (dbUpdateInterval) clearInterval(dbUpdateInterval);
         dbUpdateInterval = setInterval(async () => {
           await updateDatabase();
         }, 10000);
@@ -138,54 +168,61 @@ serve(async (req) => {
         try {
           const data = JSON.parse(event.data);
           
-          // Binance sends data wrapped in {stream, data}
-          if (data.stream && data.data) {
-            const streamData = data.data;
-            const streamName = data.stream as string;
+          // Handle subscription confirmation
+          if (data.result === null && data.id) {
+            console.log(`✅ Subscription confirmed (ID: ${data.id})`);
+            return;
+          }
+          
+          // Handle subscription errors
+          if (data.error) {
+            console.error('❌ Binance subscription error:', data.error);
+            return;
+          }
+          
+          // Process price updates
+          if (data.e === 'trade') {
+            // Real-time trade update
+            const trade: BinanceTradeData = data;
+            const binanceSymbol = trade.s;
+            const ourSymbol = REVERSE_SYMBOL_MAP[binanceSymbol];
             
-            if (streamName.includes('@trade')) {
-              // Real-time trade update
-              const trade: BinanceTradeData = streamData;
-              const binanceSymbol = trade.s;
-              const ourSymbol = REVERSE_SYMBOL_MAP[binanceSymbol];
+            if (ourSymbol) {
+              const price = parseFloat(trade.p);
+              const existing = priceCache.get(ourSymbol);
               
-              if (ourSymbol) {
-                const price = parseFloat(trade.p);
-                const existing = priceCache.get(ourSymbol);
-                
-                priceCache.set(ourSymbol, {
+              priceCache.set(ourSymbol, {
+                symbol: ourSymbol,
+                price: price,
+                change_24h: existing?.change_24h || 0,
+                timestamp: trade.E
+              });
+
+              // Broadcast immediately to frontend
+              socket.send(JSON.stringify({
+                type: 'price_update',
+                prices: [{
                   symbol: ourSymbol,
                   price: price,
-                  change_24h: existing?.change_24h || 0, // Keep existing change until ticker update
+                  change_24h: existing?.change_24h || 0,
                   timestamp: trade.E
-                });
-
-                // Broadcast immediately to frontend
-                socket.send(JSON.stringify({
-                  type: 'price_update',
-                  prices: [{
-                    symbol: ourSymbol,
-                    price: price,
-                    change_24h: existing?.change_24h || 0,
-                    timestamp: trade.E
-                  }],
-                  source: 'Binance'
-                }));
-              }
-            } else if (streamName.includes('@ticker')) {
-              // 24hr ticker update (includes change %)
-              const ticker: Binance24hrData = streamData;
-              const binanceSymbol = ticker.s;
-              const ourSymbol = REVERSE_SYMBOL_MAP[binanceSymbol];
+                }],
+                source: 'Binance'
+              }));
+            }
+          } else if (data.e === '24hrTicker') {
+            // 24hr ticker update (includes change %)
+            const ticker: Binance24hrData = data;
+            const binanceSymbol = ticker.s;
+            const ourSymbol = REVERSE_SYMBOL_MAP[binanceSymbol];
+            
+            if (ourSymbol) {
+              const changePercent = parseFloat(ticker.P);
+              const existing = priceCache.get(ourSymbol);
               
-              if (ourSymbol) {
-                const changePercent = parseFloat(ticker.P);
-                const existing = priceCache.get(ourSymbol);
-                
-                if (existing) {
-                  existing.change_24h = changePercent;
-                  priceCache.set(ourSymbol, existing);
-                }
+              if (existing) {
+                existing.change_24h = changePercent;
+                priceCache.set(ourSymbol, existing);
               }
             }
           }
@@ -200,19 +237,25 @@ serve(async (req) => {
 
       binanceWs.onclose = () => {
         console.log('🔌 Binance WebSocket closed');
-        // Attempt to reconnect after 5 seconds
-        setTimeout(() => {
-          if (socket.readyState === WebSocket.OPEN) {
-            console.log('🔄 Reconnecting to Binance...');
-            socket.onopen?.(new Event('open'));
-          }
-        }, 5000);
+        
+        // Attempt to reconnect with backoff
+        if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS && socket.readyState === WebSocket.OPEN) {
+          reconnectAttempts++;
+          const backoffDelay = Math.min(1000 * Math.pow(2, reconnectAttempts - 1), 30000);
+          console.log(`🔄 Reconnecting to Binance in ${backoffDelay}ms (attempt ${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})...`);
+          
+          setTimeout(() => {
+            connectToBinance();
+          }, backoffDelay);
+        } else if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+          console.error('❌ Max reconnection attempts reached. Please refresh the page.');
+        }
       };
 
     } catch (error) {
-      console.error('Failed to connect to Binance:', error);
+      console.error('❌ Failed to connect to Binance:', error);
     }
-  };
+  }
 
   socket.onmessage = (event) => {
     try {
@@ -278,7 +321,6 @@ serve(async (req) => {
         for (const trade of openTrades) {
           const priceData = priceCache.get(trade.assets.symbol);
           if (priceData) {
-            // Crypto P&L calculation (simplified, no contract_size needed for crypto)
             const priceDiff = trade.trade_type === 'BUY'
               ? (priceData.price - trade.open_price)
               : (trade.open_price - priceData.price);

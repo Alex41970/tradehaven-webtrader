@@ -81,7 +81,7 @@ export class AllTickRestService {
                   price: priceData.price,
                   change_24h: priceData.change_24h || 0,
                   timestamp: priceData.timestamp || Date.now(),
-                  source: 'AllTick'
+                  source: 'Binance'
                 };
                 
                 this.subscribers.forEach(callback => {
