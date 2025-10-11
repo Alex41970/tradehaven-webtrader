@@ -65,7 +65,8 @@ async function updateDatabasePrices(prices: PriceUpdate[]) {
     let failCount = 0;
     
     for (const p of prices) {
-      const timestampISO = new Date(p.timestamp).toISOString();
+      // Use current server time instead of stale AllTick timestamp
+      const timestampISO = new Date().toISOString();
       
       // Log first few updates for debugging
       if (successCount < 3) {
