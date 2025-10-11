@@ -65,18 +65,33 @@ async function updateDatabasePrices(prices: PriceUpdate[]) {
     let failCount = 0;
     
     for (const p of prices) {
-      const { error } = await supabase
+      const timestampISO = new Date(p.timestamp).toISOString();
+      
+      // Log first few updates for debugging
+      if (successCount < 3) {
+        console.log(`📝 Updating ${p.symbol}: price=${p.price}, timestamp=${timestampISO}`);
+      }
+      
+      const { data, error } = await supabase
         .from('assets')
         .update({
           price: p.price,
-          price_updated_at: new Date(p.timestamp).toISOString()
+          price_updated_at: timestampISO
         })
-        .eq('symbol', p.symbol);
+        .eq('symbol', p.symbol)
+        .select('symbol, price, price_updated_at, updated_at');
       
       if (error) {
+        console.error(`❌ Failed to update ${p.symbol}:`, error);
         failCount++;
-      } else {
+      } else if (data && data.length > 0) {
+        if (successCount < 3) {
+          console.log(`✅ Updated ${p.symbol} - DB shows: price_updated_at=${data[0].price_updated_at}, updated_at=${data[0].updated_at}`);
+        }
         successCount++;
+      } else {
+        console.warn(`⚠️ No rows updated for symbol: ${p.symbol} (may not exist in DB)`);
+        failCount++;
       }
     }
     
