@@ -20,6 +20,11 @@ interface WebSocketMessage {
   clientCount?: number;
 }
 
+interface CoinGeckoPriceData {
+  usd: number;
+  usd_24h_change?: number;
+}
+
 /**
  * Binance REST Polling Service - Fetches crypto prices every 2 seconds
  * Uses Binance public REST API (no WebSocket due to geo-blocking)
@@ -120,33 +125,61 @@ export class AllTickRestService {
 
   private async fetchPrices(): Promise<void> {
     try {
-      // Fetch all 24hr ticker data in one call
-      const response = await fetch('https://api.binance.com/api/v3/ticker/24hr');
+      // Use CoinGecko API - has CORS enabled and no geo-blocking
+      // Fetch all coins in one request
+      const coinIds = [
+        'bitcoin', 'ethereum', 'binancecoin', 'ripple', 'cardano', 'solana',
+        'dogecoin', 'polkadot', 'polygon', 'litecoin', 'shiba-inu', 'avalanche',
+        'chainlink', 'uniswap', 'cosmos', 'tron', 'near', 'internet-computer',
+        'aptos', 'filecoin', 'algorand', 'the-graph', 'sandbox', 'decentraland',
+        'aave', 'stellar', 'vechain', 'eos', 'tezos', 'theta-token',
+        'axie-infinity', 'fantom', 'kusama', 'hedera-hashgraph', 'zcash',
+        'dash', 'thorchain', 'enjincoin', 'basic-attention-token', 'yearn-finance',
+        'horizen', 'illuvium', 'immutable-x'
+      ];
+      
+      const response = await fetch(
+        `https://api.coingecko.com/api/v3/simple/price?ids=${coinIds.join(',')}&vs_currencies=usd&include_24hr_change=true`,
+        { headers: { 'Accept': 'application/json' } }
+      );
       
       if (!response.ok) {
-        console.error(`❌ Binance API error: ${response.status} ${response.statusText}`);
+        console.error(`❌ CoinGecko API error: ${response.status} ${response.statusText}`);
         return;
       }
       
-      const allTickers = await response.json();
-      const binanceSymbols = Object.values(this.SYMBOL_MAP);
+      const data = await response.json() as Record<string, CoinGeckoPriceData>;
       let updateCount = 0;
       
-      // Process only our tracked symbols
-      for (const ticker of allTickers) {
-        const binanceSymbol = ticker.symbol.toLowerCase();
-        const ourSymbol = this.REVERSE_SYMBOL_MAP[ticker.symbol];
-        
-        if (ourSymbol && binanceSymbols.includes(binanceSymbol)) {
-          const price = parseFloat(ticker.lastPrice);
-          const change = parseFloat(ticker.priceChangePercent);
-          
+      // Map CoinGecko IDs to our symbols
+      const coinGeckoMap: Record<string, string> = {
+        'bitcoin': 'BTCUSD', 'ethereum': 'ETHUSD', 'binancecoin': 'BNBUSD',
+        'ripple': 'XRPUSD', 'cardano': 'ADAUSD', 'solana': 'SOLUSD',
+        'dogecoin': 'DOGEUSD', 'polkadot': 'DOTUSD', 'polygon': 'MATICUSD',
+        'litecoin': 'LTCUSD', 'shiba-inu': 'SHIBUSD', 'avalanche': 'AVAXUSD',
+        'chainlink': 'LINKUSD', 'uniswap': 'UNIUSD', 'cosmos': 'ATOMUSD',
+        'tron': 'TRXUSD', 'near': 'NEARUSD', 'internet-computer': 'ICPUSD',
+        'aptos': 'APTUSD', 'filecoin': 'FILUSD', 'algorand': 'ALGOUSD',
+        'the-graph': 'GRTUSD', 'sandbox': 'SANDUSD', 'decentraland': 'MANAUSD',
+        'aave': 'AAVEUSD', 'stellar': 'XLMUSD', 'vechain': 'VETUSD',
+        'eos': 'EOSUSD', 'tezos': 'XTZUSD', 'theta-token': 'THETAUSD',
+        'axie-infinity': 'AXSUSD', 'fantom': 'FTMUSD', 'kusama': 'KSMUSD',
+        'hedera-hashgraph': 'HBARUSD', 'zcash': 'ZECUSD', 'dash': 'DASHUSD',
+        'thorchain': 'RUNEUSD', 'enjincoin': 'ENJUSD', 'basic-attention-token': 'BATUSD',
+        'yearn-finance': 'YFIUSD', 'horizen': 'ZENUSDT', 'illuvium': 'ILVUSD',
+        'immutable-x': 'IMXUSD'
+      };
+      
+      // Process each coin
+      for (const [coinId, priceData] of Object.entries(data)) {
+        const ourSymbol = coinGeckoMap[coinId];
+        if (ourSymbol && priceData?.usd) {
           const update: PriceUpdate = {
             symbol: ourSymbol,
-            price: price,
-            change_24h: change,
+            price: priceData.usd,
+            change_24h: priceData.usd_24h_change || 0,
             timestamp: Date.now(),
-            source: 'Binance REST'
+            source: 'CoinGecko'
           };
           
           // Broadcast to all subscribers
@@ -163,7 +196,7 @@ export class AllTickRestService {
       }
       
       if (updateCount > 0) {
-        console.log(`📊 Updated ${updateCount} crypto prices via REST API`);
+        console.log(`📊 Updated ${updateCount} crypto prices via CoinGecko`);
       }
       
     } catch (error) {
