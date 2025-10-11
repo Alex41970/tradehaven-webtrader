@@ -56,15 +56,10 @@ export const EnhancedTradingPanel: React.FC<EnhancedTradingPanelProps> = ({
     setTakeProfit(selectedAsset.price * 1.03);
   }, [selectedAsset.id, selectedAsset.price]);
 
-  // Risk calculations
+  // Risk calculations (crypto-only, simplified)
   const calculations = useMemo(() => {
-    const positionSize = selectedAsset.category === 'forex' 
-      ? amount * selectedAsset.contract_size * selectedAsset.price * leverage
-      : amount * selectedAsset.price * leverage;
-    
-    const marginRequired = selectedAsset.category === 'forex'
-      ? (amount * selectedAsset.contract_size * selectedAsset.price) / leverage
-      : (amount * selectedAsset.price) / leverage;
+    const positionSize = amount * selectedAsset.price * leverage;
+    const marginRequired = (amount * selectedAsset.price) / leverage;
 
     const availableAfterTrade = userProfile ? userProfile.available_margin - marginRequired : 0;
     
@@ -210,35 +205,16 @@ export const EnhancedTradingPanel: React.FC<EnhancedTradingPanelProps> = ({
 
         {/* Amount */}
         <div className="space-y-2">
-          <Label htmlFor="amount">
-            {selectedAsset.category === 'forex' ? 'Lot Size' : 'Amount'}
-          </Label>
-          {selectedAsset.category === 'forex' ? (
-            <div className="space-y-1">
-              <Input
-                id="amount"
-                type="number"
-                value={amount}
-                onChange={(e) => onAmountChange(parseFloat(e.target.value) || 0)}
-                className="bg-trading-secondary/20 border-trading-secondary/30"
-                min={0.01}
-                step="0.01"
-              />
-              <p className="text-xs text-muted-foreground">
-                {amount} lot × {selectedAsset.contract_size.toLocaleString()} units = {(amount * selectedAsset.contract_size).toLocaleString()} units
-              </p>
-            </div>
-          ) : (
-            <Input
-              id="amount"
-              type="number"
-              value={amount}
-              onChange={(e) => onAmountChange(parseFloat(e.target.value) || 0)}
-              className="bg-trading-secondary/20 border-trading-secondary/30"
-              min={selectedAsset.min_trade_size}
-              step="0.01"
-            />
-          )}
+          <Label htmlFor="amount">Amount</Label>
+          <Input
+            id="amount"
+            type="number"
+            value={amount}
+            onChange={(e) => onAmountChange(parseFloat(e.target.value) || 0)}
+            className="bg-trading-secondary/20 border-trading-secondary/30"
+            min={selectedAsset.min_trade_size}
+            step="0.01"
+          />
         </div>
 
         {/* Risk Management */}

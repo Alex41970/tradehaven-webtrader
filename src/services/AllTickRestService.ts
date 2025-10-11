@@ -1,5 +1,3 @@
-import { getSymbolCount } from '@/config/allTickSymbolMapping';
-
 interface PriceUpdate {
   symbol: string;
   price: number;
@@ -23,10 +21,10 @@ interface WebSocketMessage {
 }
 
 /**
- * AllTick WebSocket Service - Receives real-time price broadcasts
- * Connects to websocket-price-updates edge function
- * ONE central poller broadcasts to ALL users (solves rate limiting!)
- * Rate: 20 requests/min total (regardless of user count)
+ * Binance WebSocket Service - Receives real-time crypto price updates
+ * Connects to websocket-binance-streamer edge function
+ * FREE unlimited real-time data from Binance
+ * Updates: 1-3 second latency for all crypto assets
  */
 export class AllTickRestService {
   private subscribers = new Set<(update: PriceUpdate) => void>();
@@ -38,15 +36,15 @@ export class AllTickRestService {
   private reconnectTimeout: NodeJS.Timeout | null = null;
   private pingInterval: NodeJS.Timeout | null = null;
   
-  private websocketUrl = 'wss://stdfkfutgkmnaajixguz.supabase.co/functions/v1/websocket-price-updates';
+  private websocketUrl = 'wss://stdfkfutgkmnaajixguz.supabase.co/functions/v1/websocket-binance-streamer';
 
   constructor() {
-    console.log('🔌 AllTick WebSocket Service initialized');
+    console.log('🔌 Binance WebSocket Service initialized');
   }
 
   async connect(): Promise<boolean> {
     if (this.websocket?.readyState === WebSocket.OPEN) {
-      console.log('✅ Already connected to AllTick WebSocket');
+      console.log('✅ Already connected to Binance WebSocket');
       return true;
     }
 
@@ -56,11 +54,11 @@ export class AllTickRestService {
   private connectWebSocket(): Promise<boolean> {
     return new Promise((resolve) => {
       try {
-        console.log('🔌 Connecting to AllTick WebSocket...');
+        console.log('🔌 Connecting to Binance WebSocket...');
         this.websocket = new WebSocket(this.websocketUrl);
 
         this.websocket.onopen = () => {
-          console.log('✅ Connected to AllTick WebSocket');
+          console.log('✅ Connected to Binance WebSocket (real-time crypto)');
           this.connected = true;
           this.reconnectAttempts = 0;
           this.reconnectDelay = 1000;
@@ -98,7 +96,7 @@ export class AllTickRestService {
               // Log stats
               if (message.stats) {
                 const isCached = message.cached ? ' (cached)' : '';
-                console.log(`📊 AllTick WS: ${message.stats.received}/${message.stats.requested} symbols (${message.stats.successRate})${isCached}`);
+                console.log(`📊 Binance: ${message.stats.received}/${message.stats.requested} symbols (${message.stats.successRate})${isCached}`);
               }
             } else if (message.type === 'connected') {
               console.log(`✅ ${message.message} (clients: ${message.clientCount})`);
@@ -178,14 +176,14 @@ export class AllTickRestService {
   }
 
   /**
-   * Get the number of symbols being monitored (100 total)
+   * Get the number of symbols being monitored (crypto only)
    */
   public getSymbolCount(): number {
-    return getSymbolCount(); // Returns 100 from shared config
+    return 43; // Total crypto assets
   }
 
   disconnect(): void {
-    console.log('🔌 Disconnecting from AllTick WebSocket');
+    console.log('🔌 Disconnecting from Binance WebSocket');
     
     this.stopPingInterval();
     

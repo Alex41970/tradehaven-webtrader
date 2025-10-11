@@ -28,7 +28,7 @@ export const MarketTicker = () => {
             return (
               <div key={`${asset.symbol}-${index}`} className="flex items-center gap-2 whitespace-nowrap px-4">
                 <span className="font-semibold text-sm">{asset.symbol}</span>
-                <span className="text-sm font-mono">{asset.price.toFixed(asset.category === 'forex' ? 4 : 2)}</span>
+                <span className="text-sm font-mono">{asset.price.toFixed(2)}</span>
                 <div className={`flex items-center gap-1 text-xs ${
                   percent >= 0 ? 'text-trading-success' : 'text-trading-danger'
                 }`}>

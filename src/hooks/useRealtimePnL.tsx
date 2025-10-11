@@ -79,17 +79,15 @@ export const useRealtimePnL = (trades: Trade[], assets: Asset[] = [], excludeTra
         const asset = assets.find(a => a.symbol === trade.symbol);
         const contractSize = asset?.contract_size || 1;
         
-        // Calculate real-time P&L
+        // Calculate real-time P&L (crypto only - no contract size)
         const realTimePnL = calculateRealTimePnL(
           {
             trade_type: trade.trade_type,
             amount: trade.amount,
             open_price: trade.open_price,
-            leverage: trade.leverage,
-            contract_size: contractSize
+            leverage: trade.leverage
           },
-          currentPrice,
-          contractSize
+          currentPrice
         );
         
         // Round to 2 decimal places for display
@@ -109,11 +107,9 @@ export const useRealtimePnL = (trades: Trade[], assets: Asset[] = [], excludeTra
               trade_type: trade.trade_type,
               amount: trade.amount,
               open_price: trade.open_price,
-              leverage: trade.leverage,
-              contract_size: contractSize
+              leverage: trade.leverage
             },
-            fallbackPrice,
-            contractSize
+            fallbackPrice
           );
           
           newPnL[trade.id] = Math.round(realTimePnL * 100) / 100;
