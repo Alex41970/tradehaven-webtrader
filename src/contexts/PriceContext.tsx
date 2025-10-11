@@ -49,12 +49,12 @@ export const PriceProvider: React.FC<PriceProviderProps> = ({ children }) => {
 
   const allTickServiceRef = useRef<AllTickRestService | null>(null);
 
-  // Initialize AllTick REST connection
+  // Initialize Binance WebSocket connection
   useEffect(() => {
-    console.log('🔥 PRICE PROVIDER USE EFFECT FIRED - STARTING ALLTICK REST CONNECTION');
+    console.log('🔥 PRICE PROVIDER USE EFFECT FIRED - STARTING BINANCE WEBSOCKET CONNECTION');
     
-    const initAllTick = async () => {
-      console.log('🚀 PriceProvider: Initializing AllTick REST service via backend relay...');
+    const initBinance = async () => {
+      console.log('🚀 PriceProvider: Initializing Binance WebSocket service...');
       
       try {
         allTickServiceRef.current = new AllTickRestService();
@@ -69,31 +69,31 @@ export const PriceProvider: React.FC<PriceProviderProps> = ({ children }) => {
           setConnectionStatus('connected');
         });
         
-        console.log('🔌 Starting AllTick REST polling...');
+        console.log('🔌 Connecting to Binance WebSocket...');
         const connected = await allTickServiceRef.current.connect();
         
         if (connected) {
-          console.log('✅ AllTick REST service started successfully');
-          console.log(`📊 AllTick monitoring ${allTickServiceRef.current.getSymbolCount()} symbols`);
-          setConnectionStatus('connecting');
+          console.log('✅ Binance WebSocket service started successfully');
+          console.log(`📊 Binance monitoring ${allTickServiceRef.current.getSymbolCount()} symbols`);
+          setConnectionStatus('connected');
         } else {
-          console.log('❌ AllTick REST service failed to start');
+          console.log('❌ Binance WebSocket service failed to start');
           setIsConnected(false);
           setConnectionStatus('error');
         }
         
         return unsubscribe;
       } catch (error) {
-        console.error('❌ AllTick REST service initialization error:', error);
+        console.error('❌ Binance WebSocket service initialization error:', error);
         setConnectionStatus('error');
       }
     };
 
-    initAllTick();
+    initBinance();
 
     return () => {
       if (allTickServiceRef.current) {
-        console.log('🔌 PriceProvider: Disconnecting AllTick REST service...');
+        console.log('🔌 PriceProvider: Disconnecting Binance WebSocket service...');
         allTickServiceRef.current.disconnect();
       }
     };

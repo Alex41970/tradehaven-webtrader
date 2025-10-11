@@ -56,7 +56,7 @@ export const useAssets = () => {
         .from('assets')
         .select('*')
         .eq('is_active', true)
-        .order('category', { ascending: true })
+        .eq('category', 'crypto')
         .order('symbol', { ascending: true });
 
       if (error) {
