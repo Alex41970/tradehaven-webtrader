@@ -29,7 +29,8 @@ let heartbeatInterval: number | null = null;
 let lastPrices: PriceUpdate[] = [];
 
 /**
- * Connect to AllTick WebSocket API using auth-after-connect
+ * Connect to AllTick WebSocket API
+ * Token MUST be in URL per AllTick documentation
  * Single connection for all 100 symbols
  */
 async function connectToAllTick() {
@@ -39,27 +40,18 @@ async function connectToAllTick() {
     return;
   }
   
-  // Connect WITHOUT token in URL - we'll authenticate after connection
-  const wsUrl = 'wss://quote.alltick.io/quote-b-ws-api';
-  console.log('🔌 Connecting to AllTick WebSocket (auth-after-connect method)...');
+  // CRITICAL: Token goes in URL with ?token= parameter (per AllTick docs)
+  const wsUrl = `wss://quote.alltick.io/quote-b-ws-api?token=${apiKey}`;
+  console.log('🔌 Connecting to AllTick WebSocket...');
   
   allTickWS = new WebSocket(wsUrl);
   
   allTickWS.onopen = () => {
-    console.log('✅ Connected to AllTick WebSocket, sending authentication...');
-    
-    // Authenticate AFTER connection is established
-    const authMessage = {
-      cmd_id: 22000, // Authentication command
-      seq_id: Date.now(),
-      trace: crypto.randomUUID(),
-      data: {
-        token: apiKey
-      }
-    };
-    
-    allTickWS!.send(JSON.stringify(authMessage));
-    console.log('🔑 Authentication message sent');
+    console.log('✅ Connected to AllTick WebSocket');
+    // After connection, subscribe to symbols immediately
+    subscribeToAllSymbols();
+    // Start heartbeat
+    startHeartbeat();
   };
   
   allTickWS.onmessage = (event) => {
@@ -73,6 +65,7 @@ async function connectToAllTick() {
   allTickWS.onclose = () => {
     console.log('🔌 AllTick WebSocket closed, reconnecting in 5s...');
     isSubscribed = false;
+    stopHeartbeat();
     allTickWS = null;
     reconnectTimeout = setTimeout(connectToAllTick, 5000);
   };
@@ -109,14 +102,9 @@ function handleAllTickMessage(data: string) {
   try {
     const message = JSON.parse(data);
     
-    // Authentication response
+    // Heartbeat response (cmd_id 22000 is for heartbeat, NOT auth)
     if (message.cmd_id === 22000) {
-      if (message.data?.code === 0) {
-        console.log('✅ Authentication successful! Now subscribing to symbols...');
-        subscribeToAllSymbols();
-      } else {
-        console.error('❌ Authentication failed:', message.data);
-      }
+      console.log('💓 Heartbeat acknowledged');
       return;
     }
     
@@ -159,10 +147,6 @@ function handleAllTickMessage(data: string) {
       }
     }
     
-    // Heartbeat/ping response (same cmd_id as auth but comes later)
-    if (message.cmd_id === 22001) {
-      console.log('💓 Heartbeat acknowledged by AllTick');
-    }
     
   } catch (error) {
     console.error('❌ Error parsing AllTick message:', error);
@@ -216,14 +200,14 @@ function startHeartbeat() {
   heartbeatInterval = setInterval(() => {
     if (allTickWS?.readyState === WebSocket.OPEN) {
       allTickWS.send(JSON.stringify({
-        cmd_id: 22001, // Ping/Heartbeat (different from auth cmd_id)
+        cmd_id: 22000, // Heartbeat/Ping (per AllTick docs)
         seq_id: Date.now(),
         trace: crypto.randomUUID()
       }));
     }
-  }, 30000); // Every 30 seconds
+  }, 10000); // Every 10 seconds (per AllTick docs requirement)
   
-  console.log('💓 Started heartbeat (30s intervals)');
+  console.log('💓 Started heartbeat (10s intervals per AllTick requirement)');
 }
 
 /**
@@ -313,7 +297,7 @@ Deno.serve(async (req) => {
     // Start AllTick WebSocket when first client connects
     if (connectedClients.size === 1 && !allTickWS) {
       connectToAllTick();
-      startHeartbeat();
+      // Note: startHeartbeat() is called inside connectToAllTick after connection
     }
     
     // Send cached prices immediately
