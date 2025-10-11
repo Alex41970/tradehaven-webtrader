@@ -69,9 +69,9 @@ async function connectToAllTick() {
     return;
   }
   
-  // CRITICAL: AllTick requires token with ?t= parameter (NOT ?token=)
-  // Reference: AllTick WebSocket documentation
-  const wsUrl = `wss://quote.alltick.io/quote-b-ws-api?t=${apiKey}`;
+  // CRITICAL: AllTick requires token with ?token= parameter (per official examples)
+  // Reference: AllTick GitHub examples (Go, Java, PHP, Python all use ?token=)
+  const wsUrl = `wss://quote.alltick.io/quote-b-ws-api?token=${apiKey}`;
   console.log(`🔌 Connecting to AllTick WebSocket (attempt ${reconnectAttempts + 1}/${MAX_RECONNECT_ATTEMPTS})...`);
   
   allTickWS = new WebSocket(wsUrl);
@@ -98,7 +98,7 @@ async function connectToAllTick() {
     const errorMessage = error instanceof ErrorEvent ? error.message : String(error);
     if (errorMessage.includes('400 Bad Request')) {
       console.error('🚫 Authentication failed (400 Bad Request) - check API key format');
-      console.error('   Expected format: ?t=<api_key> in WebSocket URL');
+      console.error('   Expected format: ?token=<api_key> in WebSocket URL');
       circuitBreakerTripped = true;
     }
   };
@@ -150,7 +150,7 @@ function subscribeToAllSymbols() {
     seq_id: Date.now(),
     trace: crypto.randomUUID(),
     data: {
-      symbol_list: allSymbols.map(code => ({ code }))
+      symbol_list: allSymbols.map(code => ({ code, depth_level: 5 }))
     }
   };
   
