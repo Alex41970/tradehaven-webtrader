@@ -36,6 +36,20 @@ const MAX_RECONNECT_DELAY = 60000; // 60 seconds
 let circuitBreakerTripped = false;
 let lastTickReceived = 0;
 
+// Sanitize and normalize AllTick API key from secrets
+function sanitizeAllTickKey(key: string | null): string | null {
+  if (!key) return null;
+  let k = key.trim().replace(/^['"]|['"]$/g, '');
+  // Remove all whitespace just in case and optional suffixes vendors append
+  k = k.replace(/\s+/g, '').replace(/-c-app$/i, '');
+  if (!/^[A-Za-z0-9]+$/.test(k)) {
+    console.warn('⚠️ ALLTICK_API_KEY contains unexpected characters; using sanitized value.');
+  }
+  const masked = k.length > 8 ? `${k.slice(0,4)}...${k.slice(-4)}` : k;
+  console.log(`🔑 Using sanitized AllTick key: ${masked}`);
+  return k;
+}
+
 /**
  * Connect to AllTick WebSocket API
  * Token MUST be in URL per AllTick documentation
@@ -48,9 +62,10 @@ async function connectToAllTick() {
     return;
   }
   
-  const apiKey = Deno.env.get('ALLTICK_API_KEY');
+  const rawKey = Deno.env.get('ALLTICK_API_KEY');
+  const apiKey = sanitizeAllTickKey(rawKey);
   if (!apiKey) {
-    console.error('❌ ALLTICK_API_KEY not configured in Supabase secrets');
+    console.error('❌ ALLTICK_API_KEY not configured or invalid in Supabase secrets');
     return;
   }
   

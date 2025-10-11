@@ -5,13 +5,27 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Sanitize and normalize AllTick API key from secrets
+function sanitizeAllTickKey(key: string | null): string | null {
+  if (!key) return null;
+  let k = key.trim().replace(/^['"]|['"]$/g, '');
+  k = k.replace(/\s+/g, '').replace(/-c-app$/i, '');
+  if (!/^[A-Za-z0-9]+$/.test(k)) {
+    console.warn('⚠️ ALLTICK_API_KEY contains unexpected characters; using sanitized value.');
+  }
+  const masked = k.length > 8 ? `${k.slice(0,4)}...${k.slice(-4)}` : k;
+  console.log(`🔑 Using sanitized AllTick key: ${masked}`);
+  return k;
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const apiKey = Deno.env.get('ALLTICK_API_KEY');
+    const rawKey = Deno.env.get('ALLTICK_API_KEY');
+    const apiKey = sanitizeAllTickKey(rawKey);
     if (!apiKey) {
       return new Response(
         JSON.stringify({ error: 'ALLTICK_API_KEY not configured' }),
@@ -20,7 +34,7 @@ Deno.serve(async (req) => {
     }
 
     console.log('🧪 Testing AllTick WebSocket connection...');
-    console.log('📝 API Key format:', apiKey.substring(0, 20) + '...');
+    console.log('📝 API Key sanitized and ready');
 
     // Test Method 1: Token in URL with ?token= (legacy format)
     const test1Url = `wss://quote.alltick.io/quote-b-ws-api?token=${apiKey}`;
