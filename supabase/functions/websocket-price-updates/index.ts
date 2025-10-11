@@ -60,24 +60,30 @@ async function updateDatabasePrices(prices: PriceUpdate[]) {
   if (prices.length === 0) return;
   
   try {
-    const updates = prices.map(p => ({
-      symbol: p.symbol,
-      price: p.price,
-      price_updated_at: new Date(p.timestamp).toISOString()
-    }));
+    // Update each symbol individually to avoid NULL constraint violations
+    let successCount = 0;
+    let failCount = 0;
     
-    // Batch update using Supabase upsert
-    const { error } = await supabase
-      .from('assets')
-      .upsert(updates, { 
-        onConflict: 'symbol',
-        ignoreDuplicates: false 
-      });
+    for (const p of prices) {
+      const { error } = await supabase
+        .from('assets')
+        .update({
+          price: p.price,
+          price_updated_at: new Date(p.timestamp).toISOString()
+        })
+        .eq('symbol', p.symbol);
       
-    if (error) {
-      console.error('❌ Failed to update database prices:', error);
+      if (error) {
+        failCount++;
+      } else {
+        successCount++;
+      }
+    }
+    
+    if (failCount > 0) {
+      console.log(`⚠️ Database update: ${successCount} succeeded, ${failCount} failed (likely missing assets)`);
     } else {
-      console.log(`💾 Updated ${updates.length} prices in database`);
+      console.log(`💾 Updated ${successCount} prices in database`);
     }
   } catch (error) {
     console.error('❌ Error updating database:', error);
