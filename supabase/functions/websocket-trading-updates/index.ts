@@ -322,7 +322,6 @@ async function handleOpenTrade(connection: ClientConnection, data: any) {
         take_profit_price: data.takeProfit,
         parent_order_id: data.parentOrderId,
         idempotency_key: idempotencyKey,
-        slippage_percent: priceDeviation,
         price_age_ms: priceAge,
         trade_source: 'user'
       })
@@ -344,7 +343,6 @@ async function handleOpenTrade(connection: ClientConnection, data: any) {
       action: 'open',
       requested_price: data.openPrice,
       executed_price: data.openPrice,
-      slippage_percent: priceDeviation,
       execution_source: data.tradeSource || 'user',
       executed_at: new Date().toISOString(),
     });
