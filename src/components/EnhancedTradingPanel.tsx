@@ -45,7 +45,6 @@ export const EnhancedTradingPanel: React.FC<EnhancedTradingPanelProps> = ({
   const [stopLoss, setStopLoss] = useState<number>(selectedAsset.price * 0.98);
   const [takeProfit, setTakeProfit] = useState<number>(selectedAsset.price * 1.03);
   const [expiryHours, setExpiryHours] = useState<number>(24);
-  const [maxSlippage, setMaxSlippage] = useState(0.5); // Phase 1: Slippage protection
   const [riskManagementOpen, setRiskManagementOpen] = useState(false);
   const [orderDetailsOpen, setOrderDetailsOpen] = useState(false);
 
@@ -100,8 +99,7 @@ export const EnhancedTradingPanel: React.FC<EnhancedTradingPanelProps> = ({
       stopLoss: useStopLoss ? stopLoss : undefined,
       takeProfit: useTakeProfit ? takeProfit : undefined,
       expiresAt: orderType !== 'market' ? new Date(Date.now() + expiryHours * 60 * 60 * 1000) : undefined,
-      maxSlippagePercent: maxSlippage, // Phase 1: Send slippage tolerance
-      idempotencyKey: crypto.randomUUID(), // Phase 1: Prevent duplicate trades
+      idempotencyKey: crypto.randomUUID(),
     };
     
     onTrade(orderData);
@@ -180,27 +178,6 @@ export const EnhancedTradingPanel: React.FC<EnhancedTradingPanelProps> = ({
               ))}
             </SelectContent>
           </Select>
-        </div>
-
-        {/* Slippage Protection */}
-        <div className="space-y-2">
-          <Label htmlFor="maxSlippage">
-            Max Slippage: {maxSlippage}%
-          </Label>
-          <Select value={maxSlippage.toString()} onValueChange={(value) => setMaxSlippage(parseFloat(value))}>
-            <SelectTrigger className="bg-trading-secondary/20 border-trading-secondary/30">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="0.1">0.1% (Tight)</SelectItem>
-              <SelectItem value="0.5">0.5% (Normal)</SelectItem>
-              <SelectItem value="1">1% (Relaxed)</SelectItem>
-              <SelectItem value="2">2% (Wide)</SelectItem>
-            </SelectContent>
-          </Select>
-          <p className="text-xs text-muted-foreground">
-            Trade rejected if price moves more than {maxSlippage}% from expected
-          </p>
         </div>
 
         {/* Amount */}

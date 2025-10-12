@@ -285,16 +285,6 @@ async function handleOpenTrade(connection: ClientConnection, data: any) {
       console.warn(`Bypassing staleness check (${(priceAge / 1000).toFixed(1)}s) due to degraded price feed.`);
     }
 
-    // ===== PHASE 1: SLIPPAGE PROTECTION =====
-    const maxSlippagePercent = data.maxSlippagePercent ?? 0.5;
-    const priceDeviation = asset.price ? Math.abs((data.openPrice - asset.price) / asset.price) * 100 : 0;
-
-    if (priceAge <= STALE_TOLERANCE_MS && asset.price && priceDeviation > maxSlippagePercent) {
-      throw new Error(
-        `Slippage exceeds maximum (${priceDeviation.toFixed(2)}% > ${maxSlippagePercent}%). Price moved from ${asset.price} to ${data.openPrice}`
-      );
-    }
-
     // Calculate margin used
     const marginUsed = (data.amount * data.openPrice) / data.leverage;
 
