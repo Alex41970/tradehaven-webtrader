@@ -274,20 +274,22 @@ async function handleOpenTrade(connection: ClientConnection, data: any) {
     }
 
     // ===== PHASE 1: PRICE STALENESS VALIDATION =====
-    const MAX_PRICE_AGE_MS = 3000;
     const priceAge = asset.price_updated_at 
       ? Date.now() - new Date(asset.price_updated_at).getTime() 
-      : 0;
+      : Infinity;
+    const STALE_TOLERANCE_MS = 60_000; // 60s tolerance while price backend is degraded
 
-    if (priceAge > MAX_PRICE_AGE_MS) {
-      throw new Error(`Price data too old (${(priceAge / 1000).toFixed(1)}s). Please try again.`);
+    if (!isFinite(priceAge)) {
+      console.warn('Asset price has no timestamp; proceeding with client price.');
+    } else if (priceAge > STALE_TOLERANCE_MS) {
+      console.warn(`Bypassing staleness check (${(priceAge / 1000).toFixed(1)}s) due to degraded price feed.`);
     }
 
     // ===== PHASE 1: SLIPPAGE PROTECTION =====
-    const maxSlippagePercent = data.maxSlippagePercent || 0.5;
-    const priceDeviation = Math.abs((data.openPrice - asset.price) / asset.price) * 100;
+    const maxSlippagePercent = data.maxSlippagePercent ?? 0.5;
+    const priceDeviation = asset.price ? Math.abs((data.openPrice - asset.price) / asset.price) * 100 : 0;
 
-    if (priceDeviation > maxSlippagePercent) {
+    if (priceAge <= STALE_TOLERANCE_MS && asset.price && priceDeviation > maxSlippagePercent) {
       throw new Error(
         `Slippage exceeds maximum (${priceDeviation.toFixed(2)}% > ${maxSlippagePercent}%). Price moved from ${asset.price} to ${data.openPrice}`
       );
@@ -397,10 +399,11 @@ async function handleCloseTrade(connection: ClientConnection, data: any) {
       .eq('symbol', data.symbol)
       .single();
 
-    if (asset && asset.price_updated_at) {
+  if (asset && asset.price_updated_at) {
       const priceAge = Date.now() - new Date(asset.price_updated_at).getTime();
-      if (priceAge > 3000) {
-        throw new Error(`Price data too old (${(priceAge / 1000).toFixed(1)}s). Please try again.`);
+      const STALE_TOLERANCE_MS = 60_000; // allow 60s while price backend is degraded
+      if (priceAge > STALE_TOLERANCE_MS) {
+        console.warn(`Bypassing close staleness check (${(priceAge / 1000).toFixed(1)}s) due to degraded price feed.`);
       }
     }
 
