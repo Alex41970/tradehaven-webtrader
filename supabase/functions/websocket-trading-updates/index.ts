@@ -265,10 +265,6 @@ async function handleOpenTrade(connection: ClientConnection, data: any) {
       throw new Error('Asset not found');
     }
 
-    if (data.leverage > asset.max_leverage) {
-      throw new Error(`Maximum leverage for ${asset.symbol} is ${asset.max_leverage}x`);
-    }
-
     if (data.amount < asset.min_trade_size) {
       throw new Error(`Minimum trade size is ${asset.min_trade_size}`);
     }
