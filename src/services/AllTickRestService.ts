@@ -6,29 +6,21 @@ interface PriceUpdate {
   source?: string;
 }
 
-interface WebSocketMessage {
-  type: string;
-  prices?: PriceUpdate[];
-  timestamp?: number;
-  stats?: {
-    requested: number;
-    received: number;
-    successRate: string;
-  };
-  cached?: boolean;
-  message?: string;
-  clientCount?: number;
-}
-
 interface CoinGeckoPriceData {
   usd: number;
   usd_24h_change?: number;
 }
 
+interface YahooQuoteResult {
+  symbol: string;
+  regularMarketPrice?: number;
+  regularMarketChangePercent?: number;
+}
+
 /**
- * Binance REST Polling Service - Fetches crypto prices every 2 seconds
- * Uses Binance public REST API (no WebSocket due to geo-blocking)
- * FREE unlimited data from browser (bypasses server IP blocks)
+ * Multi-Source REST Polling Service
+ * - CoinGecko API for crypto prices
+ * - Yahoo Finance API for forex, stocks, indices, commodities
  * Updates: ~2 second polling interval
  */
 export class AllTickRestService {
@@ -37,65 +29,54 @@ export class AllTickRestService {
   private pollingInterval: NodeJS.Timeout | null = null;
   private readonly POLLING_INTERVAL = 2000; // 2 seconds
 
-  // Symbol maps (our symbol -> binance stream symbol)
-  private readonly SYMBOL_MAP: Record<string, string> = {
-    'BTCUSD': 'btcusdt',
-    'ETHUSD': 'ethusdt',
-    'BNBUSD': 'bnbusdt',
-    'XRPUSD': 'xrpusdt',
-    'ADAUSD': 'adausdt',
-    'SOLUSD': 'solusdt',
-    'DOGEUSD': 'dogeusdt',
-    'DOTUSD': 'dotusdt',
-    'MATICUSD': 'maticusdt',
-    'LTCUSD': 'ltcusdt',
-    'SHIBUSD': 'shibusdt',
-    'AVAXUSD': 'avaxusdt',
-    'LINKUSD': 'linkusdt',
-    'UNIUSD': 'uniusdt',
-    'ATOMUSD': 'atomusdt',
-    'TRXUSD': 'trxusdt',
-    'NEARUSD': 'nearusdt',
-    'ICPUSD': 'icpusdt',
-    'APTUSD': 'aptusdt',
-    'FILUSD': 'filusdt',
-    'ALGOUSD': 'algousdt',
-    'GRTUSD': 'grtusdt',
-    'SANDUSD': 'sandusdt',
-    'MANAUSD': 'manausdt',
-    'AAVEUSD': 'aaveusdt',
-    'XLMUSD': 'xlmusdt',
-    'VETUSD': 'vetusdt',
-    'EOSUSD': 'eosusdt',
-    'XTZUSD': 'xtzusdt',
-    'THETAUSD': 'thetausdt',
-    'AXSUSD': 'axsusdt',
-    'FTMUSD': 'ftmusdt',
-    'KSMUSD': 'ksmusdt',
-    'HBARUSD': 'hbarusdt',
-    'ZECUSD': 'zecusdt',
-    'DASHUSD': 'dashusdt',
-    'RUNEUSD': 'runeusdt',
-    'ENJUSD': 'enjusdt',
-    'BATUSD': 'batusdt',
-    'YFIUSD': 'yfiusdt',
-    'ZENUSDT': 'zenusdt',
-    'ILVUSD': 'ilvusdt',
-    'IMXUSD': 'imxusdt'
+  // Yahoo Finance symbol mappings (our symbol -> Yahoo symbol)
+  private readonly YAHOO_SYMBOL_MAP: Record<string, string> = {
+    // Forex
+    'EURUSD': 'EURUSD=X',
+    'GBPUSD': 'GBPUSD=X',
+    'USDJPY': 'JPY=X',
+    'AUDUSD': 'AUDUSD=X',
+    'USDCAD': 'CAD=X',
+    'USDCHF': 'CHF=X',
+    'NZDUSD': 'NZDUSD=X',
+    'EURGBP': 'EURGBP=X',
+    'EURJPY': 'EURJPY=X',
+    'GBPJPY': 'GBPJPY=X',
+    // Indices
+    'US500': '^GSPC',      // S&P 500
+    'US30': '^DJI',        // Dow Jones
+    'US100': '^IXIC',      // NASDAQ
+    'GER40': '^GDAXI',     // DAX
+    'UK100': '^FTSE',      // FTSE 100
+    'JPN225': '^N225',     // Nikkei 225
+    'FRA40': '^FCHI',      // CAC 40
+    'AUS200': '^AXJO',     // ASX 200
+    // Commodities
+    'XAUUSD': 'GC=F',      // Gold
+    'XAGUSD': 'SI=F',      // Silver
+    'USOIL': 'CL=F',       // Crude Oil WTI
+    'UKOIL': 'BZ=F',       // Brent Crude
+    'NATGAS': 'NG=F',      // Natural Gas
+    // Major Stocks (use as-is)
+    'AAPL': 'AAPL',
+    'MSFT': 'MSFT',
+    'GOOGL': 'GOOGL',
+    'AMZN': 'AMZN',
+    'TSLA': 'TSLA',
+    'META': 'META',
+    'NVDA': 'NVDA',
+    'JPM': 'JPM',
+    'V': 'V',
+    'JNJ': 'JNJ'
   };
-  private readonly REVERSE_SYMBOL_MAP: Record<string, string> =
-    Object.entries(this.SYMBOL_MAP).reduce((acc, [k, v]) => {
-      acc[v.toUpperCase()] = k;
-      return acc;
-    }, {} as Record<string, string>);
 
   constructor() {
-    console.log('🔌 Binance REST Polling Service initialized');
+    console.log('🔌 Multi-Source REST Polling Service initialized');
   }
 
   async connect(): Promise<boolean> {
     if (this.connected && this.pollingInterval) {
-      console.log('✅ Already polling Binance REST API');
+      console.log('✅ Already polling price APIs');
       return true;
     }
 
@@ -104,18 +85,18 @@ export class AllTickRestService {
 
   private async startPolling(): Promise<boolean> {
     try {
-      console.log('🔌 Starting Binance REST API polling (browser-based)...');
+      console.log('🔌 Starting multi-source REST API polling...');
       
       // Initial fetch
-      await this.fetchPrices();
+      await this.fetchAllPrices();
       
       // Start polling interval
       this.pollingInterval = setInterval(() => {
-        this.fetchPrices();
+        this.fetchAllPrices();
       }, this.POLLING_INTERVAL);
       
       this.connected = true;
-      console.log(`✅ Polling Binance REST API every ${this.POLLING_INTERVAL}ms`);
+      console.log(`✅ Polling price APIs every ${this.POLLING_INTERVAL}ms`);
       return true;
     } catch (error) {
       console.error('❌ Failed to start polling:', error);
@@ -123,10 +104,15 @@ export class AllTickRestService {
     }
   }
 
-  private async fetchPrices(): Promise<void> {
+  private async fetchAllPrices(): Promise<void> {
+    await Promise.all([
+      this.fetchCryptoPrices(),
+      this.fetchYahooPrices()
+    ]);
+  }
+
+  private async fetchCryptoPrices(): Promise<void> {
     try {
-      // Use CoinGecko API - has CORS enabled and no geo-blocking
-      // Fetch all coins in one request
       const coinIds = [
         'bitcoin', 'ethereum', 'binancecoin', 'ripple', 'cardano', 'solana',
         'dogecoin', 'polkadot', 'polygon', 'litecoin', 'shiba-inu', 'avalanche',
@@ -144,14 +130,12 @@ export class AllTickRestService {
       );
       
       if (!response.ok) {
-        console.error(`❌ CoinGecko API error: ${response.status} ${response.statusText}`);
+        console.error(`❌ CoinGecko API error: ${response.status}`);
         return;
       }
       
       const data = await response.json() as Record<string, CoinGeckoPriceData>;
-      let updateCount = 0;
       
-      // Map CoinGecko IDs to our symbols
       const coinGeckoMap: Record<string, string> = {
         'bitcoin': 'BTCUSD', 'ethereum': 'ETHUSD', 'binancecoin': 'BNBUSD',
         'ripple': 'XRPUSD', 'cardano': 'ADAUSD', 'solana': 'SOLUSD',
@@ -170,7 +154,7 @@ export class AllTickRestService {
         'immutable-x': 'IMXUSD'
       };
       
-      // Process each coin
+      let updateCount = 0;
       for (const [coinId, priceData] of Object.entries(data)) {
         const ourSymbol = coinGeckoMap[coinId];
         if (ourSymbol && priceData?.usd) {
@@ -182,7 +166,6 @@ export class AllTickRestService {
             source: 'CoinGecko'
           };
           
-          // Broadcast to all subscribers
           this.subscribers.forEach(callback => {
             try {
               callback(update);
@@ -198,9 +181,64 @@ export class AllTickRestService {
       if (updateCount > 0) {
         console.log(`📊 Updated ${updateCount} crypto prices via CoinGecko`);
       }
-      
     } catch (error) {
-      console.error('❌ Error fetching prices:', error);
+      console.error('❌ Error fetching crypto prices:', error);
+    }
+  }
+
+  private async fetchYahooPrices(): Promise<void> {
+    try {
+      const yahooSymbols = Object.values(this.YAHOO_SYMBOL_MAP);
+      if (yahooSymbols.length === 0) return;
+
+      const symbolsParam = yahooSymbols.join(',');
+      const response = await fetch(
+        `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${symbolsParam}&fields=regularMarketPrice,regularMarketChangePercent`,
+        { headers: { 'Accept': 'application/json' } }
+      );
+
+      if (!response.ok) {
+        console.error(`❌ Yahoo Finance API error: ${response.status}`);
+        return;
+      }
+
+      const data = await response.json();
+      const results = data?.quoteResponse?.result as YahooQuoteResult[] || [];
+
+      const reverseMap = Object.entries(this.YAHOO_SYMBOL_MAP).reduce((acc, [our, yahoo]) => {
+        acc[yahoo] = our;
+        return acc;
+      }, {} as Record<string, string>);
+
+      let updateCount = 0;
+      for (const quote of results) {
+        const ourSymbol = reverseMap[quote.symbol];
+        if (ourSymbol && quote.regularMarketPrice) {
+          const update: PriceUpdate = {
+            symbol: ourSymbol,
+            price: quote.regularMarketPrice,
+            change_24h: quote.regularMarketChangePercent || 0,
+            timestamp: Date.now(),
+            source: 'Yahoo'
+          };
+
+          this.subscribers.forEach(callback => {
+            try {
+              callback(update);
+            } catch (error) {
+              console.error('Error in price update callback:', error);
+            }
+          });
+
+          updateCount++;
+        }
+      }
+
+      if (updateCount > 0) {
+        console.log(`📊 Updated ${updateCount} prices via Yahoo Finance`);
+      }
+    } catch (error) {
+      console.error('❌ Error fetching Yahoo prices:', error);
     }
   }
 
@@ -218,15 +256,15 @@ export class AllTickRestService {
   }
 
   /**
-   * Get the number of symbols being monitored (crypto only)
+   * Get the total number of symbols being monitored
    */
   public getSymbolCount(): number {
-    return Object.keys(this.SYMBOL_MAP).length;
+    return Object.keys(this.YAHOO_SYMBOL_MAP).length + 43; // 43 crypto from CoinGecko
   }
 
  
   disconnect(): void {
-    console.log('🔌 Stopping Binance REST polling');
+    console.log('🔌 Stopping price polling');
     
     if (this.pollingInterval) {
       clearInterval(this.pollingInterval);

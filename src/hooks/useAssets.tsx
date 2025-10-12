@@ -7,7 +7,7 @@ export interface Asset {
   id: string;
   symbol: string;
   name: string;
-  category: 'crypto'; // Crypto-only platform
+  category: 'crypto' | 'forex' | 'stock' | 'index' | 'commodity';
   price: number;
   change_24h: number;
   is_active: boolean;
@@ -56,7 +56,6 @@ export const useAssets = () => {
         .from('assets')
         .select('*')
         .eq('is_active', true)
-        .eq('category', 'crypto')
         .order('symbol', { ascending: true });
 
       if (error) {

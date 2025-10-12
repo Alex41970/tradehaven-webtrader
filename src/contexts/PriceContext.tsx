@@ -49,18 +49,18 @@ export const PriceProvider: React.FC<PriceProviderProps> = ({ children }) => {
 
   const allTickServiceRef = useRef<AllTickRestService | null>(null);
 
-  // Initialize Binance WebSocket connection
+  // Initialize price polling service
   useEffect(() => {
-    console.log('🔥 PRICE PROVIDER USE EFFECT FIRED - STARTING BINANCE WEBSOCKET CONNECTION');
+    console.log('🔥 PRICE PROVIDER USE EFFECT FIRED - STARTING PRICE POLLING');
     
-    const initBinance = async () => {
-      console.log('🚀 PriceProvider: Initializing Binance WebSocket service...');
+    const initPriceService = async () => {
+      console.log('🚀 PriceProvider: Initializing multi-source price service...');
       
       try {
         allTickServiceRef.current = new AllTickRestService();
         
         const unsubscribe = allTickServiceRef.current.subscribeToPrices((priceUpdate) => {
-          console.log(`⚡ REST PRICE RECEIVED: ${priceUpdate.symbol} = $${priceUpdate.price} (${priceUpdate.change_24h}%) - Source: ${priceUpdate.source}`);
+          console.log(`⚡ PRICE RECEIVED: ${priceUpdate.symbol} = $${priceUpdate.price} (${priceUpdate.change_24h}%) - Source: ${priceUpdate.source}`);
           addPriceUpdate(priceUpdate);
           console.log(`📊 Price added to Map, current Map size: ${prices.size}`);
           
@@ -69,31 +69,31 @@ export const PriceProvider: React.FC<PriceProviderProps> = ({ children }) => {
           setConnectionStatus('connected');
         });
         
-        console.log('🔌 Connecting to Binance WebSocket...');
+        console.log('🔌 Starting price polling...');
         const connected = await allTickServiceRef.current.connect();
         
         if (connected) {
-          console.log('✅ Binance WebSocket service started successfully');
-          console.log(`📊 Binance monitoring ${allTickServiceRef.current.getSymbolCount()} symbols`);
+          console.log('✅ Price service started successfully');
+          console.log(`📊 Monitoring ${allTickServiceRef.current.getSymbolCount()} symbols`);
           setConnectionStatus('connected');
         } else {
-          console.log('❌ Binance WebSocket service failed to start');
+          console.log('❌ Price service failed to start');
           setIsConnected(false);
           setConnectionStatus('error');
         }
         
         return unsubscribe;
       } catch (error) {
-        console.error('❌ Binance WebSocket service initialization error:', error);
+        console.error('❌ Price service initialization error:', error);
         setConnectionStatus('error');
       }
     };
 
-    initBinance();
+    initPriceService();
 
     return () => {
       if (allTickServiceRef.current) {
-        console.log('🔌 PriceProvider: Disconnecting Binance WebSocket service...');
+        console.log('🔌 PriceProvider: Disconnecting price service...');
         allTickServiceRef.current.disconnect();
       }
     };
