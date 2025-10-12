@@ -87,10 +87,10 @@ export const WebTrader = () => {
     }
   }, [realtimeAssets]); // Removed selectedAsset from dependencies
 
-  // Always set leverage to max when asset changes
+  // Always set leverage to 100x when asset changes
   useEffect(() => {
     if (selectedAsset) {
-      setLeverage(selectedAsset.max_leverage);
+      setLeverage(100);
     }
   }, [selectedAsset?.id]);
 
