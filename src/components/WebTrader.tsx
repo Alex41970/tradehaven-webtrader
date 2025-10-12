@@ -40,7 +40,7 @@ export const WebTrader = () => {
 
   const [selectedAsset, setSelectedAsset] = useState(null);
   const [amount, setAmount] = useState(1);
-  const [leverage, setLeverage] = useState(1);
+  const [leverage, setLeverage] = useState(100);
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [isExecuting, setIsExecuting] = useState(false);

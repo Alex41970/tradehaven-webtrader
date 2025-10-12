@@ -173,14 +173,11 @@ export const EnhancedTradingPanel: React.FC<EnhancedTradingPanelProps> = ({
               <SelectValue placeholder={`${leverage}x`} />
             </SelectTrigger>
             <SelectContent>
-              {Array.from(new Set([1, 2, 5, 10, 20, 50, 100, selectedAsset.max_leverage]))
-                .filter(lev => lev <= selectedAsset.max_leverage)
-                .sort((a, b) => a - b)
-                .map((lev) => (
-                  <SelectItem key={lev} value={lev.toString()}>
-                    {lev}x
-                  </SelectItem>
-                ))}
+              {[1, 2, 5, 10, 20, 50, 100].map((lev) => (
+                <SelectItem key={lev} value={lev.toString()}>
+                  {lev}x
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
