@@ -448,7 +448,7 @@ async function recalculateUserMargins(userId: string) {
     let totalUsedMargin = 0;
     let totalClosedPnL = 0;
     let totalUnrealizedPnL = 0;
-    const baseBalance = 10000.00;
+    const baseBalance = 0.00;
 
     // Get open trades with full details for unrealized PnL calculation
     const { data: openTrades, error: openError } = await supabase

@@ -53,7 +53,7 @@ serve(async (req) => {
     const totalClosedPnl = closedTrades?.reduce((sum, trade) => sum + (trade.pnl || 0), 0) || 0;
 
     // Calculate new balance
-    const baseBalance = 10000.00;
+    const baseBalance = 0.00;
     const newBalance = baseBalance + totalClosedPnl;
     const availableMargin = Math.max(newBalance - totalUsedMargin, 0);
 
