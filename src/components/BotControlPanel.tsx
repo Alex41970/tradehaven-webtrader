@@ -6,6 +6,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { formatLargeNumber, getResponsiveTextSize, formatPnL } from "@/utils/numberFormatter";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useNotifications } from "@/hooks/useNotifications";
+import { toast } from "@/hooks/use-toast";
 import { 
   Bot, 
   Pause, 
@@ -68,6 +70,7 @@ export const BotControlPanel: React.FC<BotControlPanelProps> = ({
 }) => {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const isMobile = useIsMobile();
+  const { requestPermission } = useNotifications();
   
   // Bot settings state
   const [settings, setSettings] = useState<BotSettings>({
@@ -81,15 +84,35 @@ export const BotControlPanel: React.FC<BotControlPanelProps> = ({
     trailingStopPercent: 1.5,
     maxTradesPerDay: 10,
     minTimeBetweenTrades: 15,
-    notifyTradeOpened: true,
-    notifyTradeClosed: true,
-    notifyProfitLoss: true,
+    notifyTradeOpened: false,
+    notifyTradeClosed: false,
+    notifyProfitLoss: false,
   });
 
   const handleSettingChange = (key: keyof BotSettings, value: any) => {
     const newSettings = { ...settings, [key]: value };
     setSettings(newSettings);
     onUpdateSettings?.(newSettings);
+  };
+
+  const handleNotificationToggle = async (key: keyof BotSettings, checked: boolean) => {
+    // If turning ON a notification, request browser permission first
+    if (checked && typeof Notification !== 'undefined') {
+      const granted = await requestPermission();
+      
+      if (!granted) {
+        // Permission denied - don't enable the notification
+        toast({
+          title: 'Notifications Blocked',
+          description: 'Please allow notifications in your browser to enable bot alerts.',
+          variant: 'destructive',
+        });
+        return; // Don't proceed with toggle
+      }
+    }
+    
+    // Permission granted or user is turning OFF notification - proceed normally
+    handleSettingChange(key, checked);
   };
 
   const totalPnL = closedBotTrades.reduce((sum, t) => sum + t.pnl, 0);
@@ -507,26 +530,14 @@ export const BotControlPanel: React.FC<BotControlPanelProps> = ({
                   Notifications
                 </h3>
 
-                {/* Permission Banner */}
-                {typeof Notification !== 'undefined' && Notification.permission === 'default' && (
-                  <div className="bg-muted/50 border border-border rounded-lg p-3">
-                    <p className="text-sm mb-2">Enable browser notifications to receive alerts even when the tab is inactive.</p>
-                    <Button 
-                      size="sm" 
-                      onClick={async () => {
-                        await Notification.requestPermission();
-                        // Force re-render by triggering a state change
-                        window.dispatchEvent(new Event('notification-permission-change'));
-                      }}
-                    >
-                      Enable Browser Notifications
-                    </Button>
-                  </div>
-                )}
-                
-                {typeof Notification !== 'undefined' && Notification.permission === 'denied' && (
+                {/* Permission Denied Warning - Only show if user enabled notifications but denied permission */}
+                {typeof Notification !== 'undefined' && Notification.permission === 'denied' && 
+                 (settings.notifyTradeOpened || settings.notifyTradeClosed || settings.notifyProfitLoss) && (
                   <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-3">
-                    <p className="text-sm text-destructive">Browser notifications are blocked. Enable them in your browser settings.</p>
+                    <p className="text-sm text-destructive">
+                      Browser notifications are blocked. To receive alerts, please enable notifications in your browser settings, 
+                      then toggle your notification preferences again.
+                    </p>
                   </div>
                 )}
                 
@@ -535,21 +546,21 @@ export const BotControlPanel: React.FC<BotControlPanelProps> = ({
                     <Label>Trade Opened</Label>
                     <Switch 
                       checked={settings.notifyTradeOpened}
-                      onCheckedChange={(checked) => handleSettingChange('notifyTradeOpened', checked)}
+                      onCheckedChange={(checked) => handleNotificationToggle('notifyTradeOpened', checked)}
                     />
                   </div>
                   <div className="flex items-center justify-between">
                     <Label>Trade Closed</Label>
                     <Switch 
                       checked={settings.notifyTradeClosed}
-                      onCheckedChange={(checked) => handleSettingChange('notifyTradeClosed', checked)}
+                      onCheckedChange={(checked) => handleNotificationToggle('notifyTradeClosed', checked)}
                     />
                   </div>
                   <div className="flex items-center justify-between">
                     <Label>Profit/Loss Alerts</Label>
                     <Switch 
                       checked={settings.notifyProfitLoss}
-                      onCheckedChange={(checked) => handleSettingChange('notifyProfitLoss', checked)}
+                      onCheckedChange={(checked) => handleNotificationToggle('notifyProfitLoss', checked)}
                     />
                   </div>
                 </div>
