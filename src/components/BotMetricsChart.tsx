@@ -1,9 +1,10 @@
 import React from "react";
-import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, PieChart, Pie, Cell, AreaChart, Area } from "recharts";
+import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar, ComposedChart, Area, CartesianGrid, ReferenceLine, Label } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { TrendingUp, TrendingDown, Target, Activity, BarChart3 } from "lucide-react";
 import { usePerformanceMetrics } from "@/hooks/usePerformanceMetrics";
+import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from "@/components/ui/chart";
 
 interface BotMetricsChartProps {
   trades: any[];
@@ -12,6 +13,26 @@ interface BotMetricsChartProps {
 
 export const BotMetricsChart: React.FC<BotMetricsChartProps> = ({ trades, balance }) => {
   const { metrics } = usePerformanceMetrics(trades, balance);
+
+  // Chart configurations
+  const chartConfig = {
+    equity: {
+      label: "Equity",
+      color: "hsl(var(--trading-accent))",
+    },
+    wins: {
+      label: "Wins",
+      color: "hsl(var(--trading-success))",
+    },
+    losses: {
+      label: "Losses",
+      color: "hsl(var(--trading-danger))",
+    },
+    pnl: {
+      label: "P&L",
+      color: "hsl(var(--trading-accent))",
+    }
+  };
   
   // Generate equity curve data
   const equityCurveData = trades
@@ -52,7 +73,7 @@ export const BotMetricsChart: React.FC<BotMetricsChartProps> = ({ trades, balanc
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
       {/* Equity Curve */}
-      <Card className="col-span-1 lg:col-span-2 border-primary/20 bg-gradient-to-br from-card via-card/95 to-trading-primary/5 backdrop-blur-xl">
+      <Card className="col-span-1 lg:col-span-2 border-primary/20 bg-gradient-to-br from-card/50 via-card to-trading-primary/10 backdrop-blur-xl hover:scale-[1.01] transition-all duration-300 hover:shadow-lg">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-trading-accent">
             <TrendingUp className="h-5 w-5" />
@@ -60,22 +81,48 @@ export const BotMetricsChart: React.FC<BotMetricsChartProps> = ({ trades, balanc
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="h-48">
+          <div className="h-64">
             {equityCurveData.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={equityCurveData}>
-                  <XAxis dataKey="trade" hide />
-                  <YAxis hide />
+              <ChartContainer config={chartConfig}>
+                <ComposedChart data={equityCurveData}>
+                  <defs>
+                    <linearGradient id="equityGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="hsl(var(--trading-accent))" stopOpacity={0.3} />
+                      <stop offset="100%" stopColor="hsl(var(--trading-accent))" stopOpacity={0.05} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.2} />
+                  <XAxis 
+                    dataKey="trade" 
+                    stroke="hsl(var(--muted-foreground))"
+                    fontSize={12}
+                    tickLine={false}
+                    axisLine={false}
+                  />
+                  <YAxis 
+                    stroke="hsl(var(--muted-foreground))"
+                    fontSize={12}
+                    tickLine={false}
+                    axisLine={false}
+                    tickFormatter={(value) => `$${value.toLocaleString()}`}
+                  />
+                  <ChartTooltip content={<ChartTooltipContent />} />
+                  <Area
+                    type="monotone"
+                    dataKey="equity"
+                    stroke="none"
+                    fill="url(#equityGradient)"
+                  />
                   <Line
                     type="monotone"
                     dataKey="equity"
                     stroke="hsl(var(--trading-accent))"
                     strokeWidth={3}
-                    dot={false}
-                    strokeDasharray="none"
+                    dot={{ fill: "hsl(var(--trading-accent))", r: 4, strokeWidth: 2, stroke: "hsl(var(--background))" }}
+                    activeDot={{ r: 6, fill: "hsl(var(--trading-accent))", stroke: "hsl(var(--background))", strokeWidth: 2 }}
                   />
-                </LineChart>
-              </ResponsiveContainer>
+                </ComposedChart>
+              </ChartContainer>
             ) : (
               <div className="h-full flex items-center justify-center text-muted-foreground">
                 No closed trades yet
@@ -86,7 +133,7 @@ export const BotMetricsChart: React.FC<BotMetricsChartProps> = ({ trades, balanc
       </Card>
 
       {/* Win/Loss Ratio */}
-      <Card className="border-primary/20 bg-gradient-to-br from-card via-card/95 to-trading-success/5 backdrop-blur-xl">
+      <Card className="border-primary/20 bg-gradient-to-br from-card/50 via-card to-trading-success/10 backdrop-blur-xl hover:scale-[1.01] transition-all duration-300 hover:shadow-lg">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-trading-success">
             <Target className="h-5 w-5" />
@@ -94,40 +141,48 @@ export const BotMetricsChart: React.FC<BotMetricsChartProps> = ({ trades, balanc
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="h-32 flex items-center justify-center">
+          <div className="h-48 flex items-center justify-center relative">
             {winLossData.some(d => d.value > 0) ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={winLossData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={30}
-                    outerRadius={50}
-                    dataKey="value"
-                  >
-                    {winLossData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                </PieChart>
-              </ResponsiveContainer>
+              <>
+                <ChartContainer config={chartConfig}>
+                  <PieChart>
+                    <Pie
+                      data={winLossData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={80}
+                      dataKey="value"
+                      label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                      labelLine={false}
+                    >
+                      {winLossData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <ChartTooltip content={<ChartTooltipContent />} />
+                  </PieChart>
+                </ChartContainer>
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                  <div className="text-center">
+                    <div className="text-3xl font-bold text-trading-success">
+                      {metrics.winRate.toFixed(1)}%
+                    </div>
+                    <div className="text-xs text-muted-foreground">Win Rate</div>
+                  </div>
+                </div>
+              </>
             ) : (
               <div className="text-center text-muted-foreground">
                 No data yet
               </div>
             )}
           </div>
-          <div className="mt-4 text-center">
-            <div className="text-2xl font-bold text-trading-success">
-              {metrics.winRate.toFixed(1)}%
-            </div>
-          </div>
         </CardContent>
       </Card>
 
-      {/* Daily P&L Area Chart */}
-      <Card className="col-span-1 lg:col-span-2 border-primary/20 bg-gradient-to-br from-card via-card/95 to-trading-accent/5 backdrop-blur-xl">
+      {/* Daily P&L Bar Chart */}
+      <Card className="col-span-1 lg:col-span-2 border-primary/20 bg-gradient-to-br from-card/50 via-card to-trading-accent/10 backdrop-blur-xl hover:scale-[1.01] transition-all duration-300 hover:shadow-lg">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-trading-accent">
             <BarChart3 className="h-5 w-5" />
@@ -135,21 +190,57 @@ export const BotMetricsChart: React.FC<BotMetricsChartProps> = ({ trades, balanc
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="h-32">
+          <div className="h-64">
             {dailyPnlData.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={dailyPnlData}>
-                  <XAxis dataKey="displayDate" hide />
-                  <YAxis hide />
-                  <Area
-                    type="monotone"
-                    dataKey="pnl"
-                    stroke="hsl(var(--trading-accent))"
-                    fill="hsl(var(--trading-accent) / 0.2)"
-                    strokeWidth={2}
+              <ChartContainer config={chartConfig}>
+                <BarChart data={dailyPnlData}>
+                  <defs>
+                    <linearGradient id="profitGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="hsl(var(--trading-success))" stopOpacity={0.8} />
+                      <stop offset="100%" stopColor="hsl(var(--trading-success))" stopOpacity={0.3} />
+                    </linearGradient>
+                    <linearGradient id="lossGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="hsl(var(--trading-danger))" stopOpacity={0.3} />
+                      <stop offset="100%" stopColor="hsl(var(--trading-danger))" stopOpacity={0.8} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.2} />
+                  <XAxis 
+                    dataKey="displayDate" 
+                    stroke="hsl(var(--muted-foreground))"
+                    fontSize={12}
+                    tickLine={false}
+                    axisLine={false}
+                    angle={-45}
+                    textAnchor="end"
+                    height={60}
                   />
-                </AreaChart>
-              </ResponsiveContainer>
+                  <YAxis 
+                    stroke="hsl(var(--muted-foreground))"
+                    fontSize={12}
+                    tickLine={false}
+                    axisLine={false}
+                    tickFormatter={(value) => `$${value.toFixed(0)}`}
+                  />
+                  <ChartTooltip 
+                    content={<ChartTooltipContent />}
+                    cursor={{ fill: 'hsl(var(--muted) / 0.1)' }}
+                  />
+                  <ReferenceLine y={0} stroke="hsl(var(--border))" strokeWidth={2} />
+                  <Bar 
+                    dataKey="pnl" 
+                    radius={[8, 8, 0, 0]}
+                    fill="url(#profitGradient)"
+                  >
+                    {dailyPnlData.map((entry, index) => (
+                      <Cell 
+                        key={`cell-${index}`} 
+                        fill={entry.pnl >= 0 ? "url(#profitGradient)" : "url(#lossGradient)"} 
+                      />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ChartContainer>
             ) : (
               <div className="h-full flex items-center justify-center text-muted-foreground">
                 No daily data available
@@ -160,7 +251,7 @@ export const BotMetricsChart: React.FC<BotMetricsChartProps> = ({ trades, balanc
       </Card>
 
       {/* Advanced Metrics */}
-      <Card className="border-primary/20 bg-gradient-to-br from-card via-card/95 to-trading-secondary/5 backdrop-blur-xl">
+      <Card className="border-primary/20 bg-gradient-to-br from-card/50 via-card to-trading-secondary/10 backdrop-blur-xl hover:scale-[1.01] transition-all duration-300 hover:shadow-lg">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Activity className="h-5 w-5" />
