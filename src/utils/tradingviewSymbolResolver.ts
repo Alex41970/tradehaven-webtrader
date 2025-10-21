@@ -35,7 +35,12 @@ const CRYPTO_OVERRIDES: Record<string, string> = {
  */
 export function resolveTVSymbol(asset: Asset): string {
   let symbol = asset.symbol.trim().toUpperCase();
-  const category = asset.category?.toLowerCase() || 'crypto';
+  
+  // Normalize plural categories to singular for consistent handling
+  let category = asset.category?.toLowerCase() || 'crypto';
+  if (category === 'indices') category = 'index';
+  if (category === 'commodities') category = 'commodity';
+  if (category === 'stocks') category = 'stock';
 
   // Handle Forex pairs
   if (category === 'forex') {

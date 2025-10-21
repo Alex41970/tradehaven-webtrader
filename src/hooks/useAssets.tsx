@@ -7,7 +7,7 @@ export interface Asset {
   id: string;
   symbol: string;
   name: string;
-  category: 'crypto' | 'forex' | 'stock' | 'index' | 'commodity';
+  category: 'crypto' | 'forex' | 'stock' | 'stocks' | 'index' | 'indices' | 'commodity' | 'commodities';
   price: number;
   change_24h: number;
   is_active: boolean;

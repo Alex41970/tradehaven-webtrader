@@ -409,9 +409,9 @@ export const WebTrader = () => {
                         <SelectItem value="all">All Categories</SelectItem>
                         <SelectItem value="forex">Forex</SelectItem>
                         <SelectItem value="crypto">Cryptocurrency</SelectItem>
-                        <SelectItem value="stock">Stocks</SelectItem>
-                        <SelectItem value="commodity">Commodities</SelectItem>
-                        <SelectItem value="index">Indices</SelectItem>
+                        <SelectItem value="stocks">Stocks</SelectItem>
+                        <SelectItem value="commodities">Commodities</SelectItem>
+                        <SelectItem value="indices">Indices</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
