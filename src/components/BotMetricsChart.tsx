@@ -1,10 +1,9 @@
 import React from "react";
-import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar, ComposedChart, Area, CartesianGrid, ReferenceLine, Label } from "recharts";
+import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar, ComposedChart, Area, CartesianGrid, ReferenceLine, Label, Tooltip } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { TrendingUp, TrendingDown, Target, Activity, BarChart3 } from "lucide-react";
 import { usePerformanceMetrics } from "@/hooks/usePerformanceMetrics";
-import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from "@/components/ui/chart";
 
 interface BotMetricsChartProps {
   trades: any[];
@@ -109,8 +108,15 @@ export const BotMetricsChart: React.FC<BotMetricsChartProps> = ({ trades, balanc
                     axisLine={false}
                     tickFormatter={(value) => `$${value.toLocaleString()}`}
                   />
-                  <ChartTooltip 
-                    content={<ChartTooltipContent />}
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: 'hsl(var(--background))',
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '8px',
+                      padding: '12px'
+                    }}
+                    labelStyle={{ color: 'hsl(var(--foreground))' }}
+                    formatter={(value: any) => [`$${Number(value).toLocaleString()}`, 'Equity']}
                   />
                   <Area
                     type="monotone"
@@ -164,7 +170,7 @@ export const BotMetricsChart: React.FC<BotMetricsChartProps> = ({ trades, balanc
                           <Cell key={`cell-${index}`} fill={entry.color} />
                         ))}
                       </Pie>
-                      <ChartTooltip 
+                      <Tooltip 
                         content={({ active, payload }) => {
                           if (active && payload && payload.length) {
                             return (
@@ -253,7 +259,7 @@ export const BotMetricsChart: React.FC<BotMetricsChartProps> = ({ trades, balanc
                     axisLine={false}
                     tickFormatter={(value) => `$${value.toFixed(0)}`}
                   />
-                  <ChartTooltip 
+                  <Tooltip 
                     content={({ active, payload }) => {
                       if (active && payload && payload.length) {
                         const value = payload[0].value as number;
