@@ -565,13 +565,6 @@ export const BotControlPanel: React.FC<BotControlPanelProps> = ({
                   </div>
                 </div>
               </div>
-
-              <div className="pt-4 border-t">
-                <Button className="w-full" size="lg">
-                  <CheckCircle2 className="h-4 w-4 mr-2" />
-                  Save Settings
-                </Button>
-              </div>
             </CardContent>
           </Card>
         </TabsContent>
