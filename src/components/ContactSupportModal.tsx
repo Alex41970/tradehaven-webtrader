@@ -67,7 +67,12 @@ export const ContactSupportModal: React.FC<ContactSupportModalProps> = ({ isOpen
               <CardContent className="p-4 text-center">
                 <Mail className="h-6 w-6 mx-auto mb-2 text-primary" />
                 <h4 className="font-semibold text-sm">Email Support</h4>
-                <p className="text-xs text-muted-foreground break-all">support@lexingtoncapitalinvesting.com</p>
+                <a 
+                  href="mailto:support@lexingtoncapitalinvesting.com"
+                  className="text-xs text-muted-foreground hover:text-primary transition-colors break-all underline"
+                >
+                  support@lexingtoncapitalinvesting.com
+                </a>
               </CardContent>
             </Card>
 
@@ -75,7 +80,20 @@ export const ContactSupportModal: React.FC<ContactSupportModalProps> = ({ isOpen
               <CardContent className="p-4 text-center">
                 <Phone className="h-6 w-6 mx-auto mb-2 text-primary" />
                 <h4 className="font-semibold text-sm">Phone Support</h4>
-                <p className="text-xs text-muted-foreground">+1 (555) 123-4567</p>
+                <div className="text-xs text-muted-foreground space-y-1">
+                  <a 
+                    href="tel:+13433040557"
+                    className="block hover:text-primary transition-colors underline"
+                  >
+                    +1 (343) 304-0557
+                  </a>
+                  <a 
+                    href="tel:+442080404627"
+                    className="block hover:text-primary transition-colors underline"
+                  >
+                    +44 20 8040 4627
+                  </a>
+                </div>
               </CardContent>
             </Card>
 
