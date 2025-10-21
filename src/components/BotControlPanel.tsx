@@ -489,6 +489,7 @@ export const BotControlPanel: React.FC<BotControlPanelProps> = ({
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="0">None</SelectItem>
                       <SelectItem value="5">5 minutes</SelectItem>
                       <SelectItem value="15">15 minutes</SelectItem>
                       <SelectItem value="30">30 minutes</SelectItem>
