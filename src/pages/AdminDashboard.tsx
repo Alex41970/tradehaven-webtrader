@@ -17,9 +17,8 @@ import { UserPaymentSettings } from "@/components/UserPaymentSettings";
 import { useAssets } from "@/hooks/useAssets";
 import { useRealTimePrices } from "@/hooks/useRealTimePrices";
 import { calculateRealTimePnL } from "@/utils/pnlCalculator";
-import { Users, DollarSign, TrendingUp, Settings, LogOut, Bot, Loader2, Search, Filter, Activity, BarChart3, Key, LogIn, AlertCircle, Shield } from "lucide-react";
+import { Users, DollarSign, TrendingUp, Settings, LogOut, Bot, Loader2, Search, Filter, Activity, BarChart3 } from "lucide-react";
 import { Navigate } from "react-router-dom";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface UserProfile {
   user_id: string;
@@ -75,17 +74,6 @@ const AdminDashboard = () => {
   const [selectedTradeForClose, setSelectedTradeForClose] = useState<UserTrade | null>(null);
   const [closingTrade, setClosingTrade] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
-  
-  // Password management states
-  const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [updatingPassword, setUpdatingPassword] = useState(false);
-  const [selectedUserForPassword, setSelectedUserForPassword] = useState<UserProfile | null>(null);
-  
-  // Audit log states
-  const [auditLogs, setAuditLogs] = useState<any[]>([]);
-  const [loadingAuditLogs, setLoadingAuditLogs] = useState(false);
 
   // Form states
   const [selectedUserId, setSelectedUserId] = useState("");
@@ -300,36 +288,6 @@ const AdminDashboard = () => {
     }
   }, [user, roleLoading, role, fetchAdminData]);
 
-  const fetchAuditLogs = useCallback(async () => {
-    if (!user) return;
-    
-    setLoadingAuditLogs(true);
-    try {
-      const { data, error } = await supabase
-        .from('admin_audit_log')
-        .select(`
-          *,
-          admin:user_profiles!admin_audit_log_admin_id_fkey(email),
-          target_user:user_profiles!admin_audit_log_user_id_fkey(email)
-        `)
-        .order('performed_at', { ascending: false })
-        .limit(100);
-      
-      if (error) throw error;
-      setAuditLogs(data || []);
-    } catch (error) {
-      console.error('Error fetching audit logs:', error);
-    } finally {
-      setLoadingAuditLogs(false);
-    }
-  }, [user]);
-
-  useEffect(() => {
-    if (user && (role === 'admin' || role === 'super_admin')) {
-      fetchAuditLogs();
-    }
-  }, [user, role, fetchAuditLogs]);
-
 
   const handleModifyBalance = async () => {
     if (!user || !selectedUserId || !balanceAmount) return;
@@ -524,125 +482,6 @@ const AdminDashboard = () => {
       });
     } finally {
       setCreatingTrade(false);
-    }
-  };
-
-  const handleUpdatePassword = async () => {
-    if (!user || !selectedUserForPassword) return;
-    
-    if (newPassword !== confirmPassword) {
-      toast({
-        title: "Error",
-        description: "Passwords do not match",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    if (newPassword.length < 8) {
-      toast({
-        title: "Error",
-        description: "Password must be at least 8 characters",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    setUpdatingPassword(true);
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      const response = await fetch(
-        'https://stdfkfutgkmnaajixguz.supabase.co/functions/v1/admin-update-user-password',
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${session?.access_token}`
-          },
-          body: JSON.stringify({
-            userId: selectedUserForPassword.user_id,
-            newPassword: newPassword,
-            adminId: user.id
-          })
-        }
-      );
-      
-      const data = await response.json();
-      
-      if (response.ok) {
-        toast({
-          title: "Success",
-          description: "User password updated successfully"
-        });
-        setPasswordDialogOpen(false);
-        setNewPassword('');
-        setConfirmPassword('');
-        setSelectedUserForPassword(null);
-        fetchAuditLogs();
-      } else {
-        throw new Error(data.error);
-      }
-    } catch (error) {
-      console.error('Error updating password:', error);
-      toast({
-        title: "Error",
-        description: "Failed to update password",
-        variant: "destructive"
-      });
-    } finally {
-      setUpdatingPassword(false);
-    }
-  };
-
-  const handleImpersonateUser = async (targetUser: UserProfile) => {
-    const confirmed = window.confirm(
-      `You are about to log in as ${targetUser.email}.\n\n` +
-      `This action will be logged for security purposes.\n\n` +
-      `Continue?`
-    );
-    
-    if (!confirmed) return;
-    
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      const response = await fetch(
-        'https://stdfkfutgkmnaajixguz.supabase.co/functions/v1/admin-impersonate-user',
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${session?.access_token}`
-          },
-          body: JSON.stringify({
-            userId: targetUser.user_id,
-            adminId: user?.id
-          })
-        }
-      );
-      
-      const data = await response.json();
-      
-      if (response.ok) {
-        window.open(data.impersonationUrl, '_blank');
-        
-        toast({
-          title: "Impersonation Started",
-          description: `Logged in as ${targetUser.email} in new tab`
-        });
-        
-        fetchAuditLogs();
-      } else {
-        throw new Error(data.error);
-      }
-    } catch (error) {
-      console.error('Error impersonating user:', error);
-      toast({
-        title: "Error",
-        description: "Failed to impersonate user",
-        variant: "destructive"
-      });
     }
   };
 
@@ -882,7 +721,6 @@ const AdminDashboard = () => {
             <TabsTrigger value="deposits">Deposits & Withdrawals</TabsTrigger>
             <TabsTrigger value="bot-licenses">Bot Licenses</TabsTrigger>
             <TabsTrigger value="payment-settings">User Payment Settings</TabsTrigger>
-            <TabsTrigger value="audit-log">Audit Log</TabsTrigger>
           </TabsList>
 
           <TabsContent value="users" className="space-y-4">
@@ -906,7 +744,6 @@ const AdminDashboard = () => {
                           <TableHead>Available Margin</TableHead>
                           <TableHead>Promo Code</TableHead>
                           <TableHead>Joined</TableHead>
-                          <TableHead>Actions</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -927,29 +764,6 @@ const AdminDashboard = () => {
                             </TableCell>
                             <TableCell>
                               {new Date(user.created_at).toLocaleDateString()}
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex items-center gap-2">
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => {
-                                    setSelectedUserForPassword(user);
-                                    setPasswordDialogOpen(true);
-                                  }}
-                                >
-                                  <Key className="h-4 w-4 mr-1" />
-                                  Password
-                                </Button>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => handleImpersonateUser(user)}
-                                >
-                                  <LogIn className="h-4 w-4 mr-1" />
-                                  Login
-                                </Button>
-                              </div>
                             </TableCell>
                           </TableRow>
                         ))}
@@ -1645,63 +1459,6 @@ const AdminDashboard = () => {
             </Card>
           </TabsContent>
 
-          <TabsContent value="audit-log">
-            <Card>
-              <CardHeader>
-                <CardTitle>Admin Audit Log</CardTitle>
-                <CardDescription>
-                  Track all password changes and user impersonations
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {loadingAuditLogs ? (
-                  <div className="flex items-center justify-center p-8">
-                    <Loader2 className="h-8 w-8 animate-spin" />
-                  </div>
-                ) : auditLogs.length === 0 ? (
-                  <div className="text-center p-8 text-muted-foreground">
-                    No audit logs found
-                  </div>
-                ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Timestamp</TableHead>
-                        <TableHead>Admin</TableHead>
-                        <TableHead>User</TableHead>
-                        <TableHead>Action</TableHead>
-                        <TableHead>Reason</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {auditLogs.map((log) => (
-                        <TableRow key={log.id}>
-                          <TableCell>
-                            {new Date(log.performed_at).toLocaleString()}
-                          </TableCell>
-                          <TableCell>{log.admin?.email || 'Unknown'}</TableCell>
-                          <TableCell>{log.target_user?.email || 'Unknown'}</TableCell>
-                          <TableCell>
-                            <Badge variant={
-                              log.action === 'password_updated' ? 'default' :
-                              log.action === 'impersonation_started' ? 'secondary' :
-                              'outline'
-                            }>
-                              {log.action}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="max-w-xs truncate">
-                            {log.reason || 'No reason provided'}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
         </Tabs>
       </div>
 
@@ -1823,70 +1580,6 @@ const AdminDashboard = () => {
           </div>
         </div>
       )}
-      
-      {/* Password Management Dialog */}
-      <Dialog open={passwordDialogOpen} onOpenChange={setPasswordDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Update User Password</DialogTitle>
-            <DialogDescription>
-              Set a new password for {selectedUserForPassword?.email}
-            </DialogDescription>
-          </DialogHeader>
-          <Alert>
-            <Shield className="h-4 w-4" />
-            <AlertDescription>
-              This will immediately change the user's password. This action is logged for security.
-            </AlertDescription>
-          </Alert>
-          <div className="space-y-4">
-            <div>
-              <Label>New Password</Label>
-              <Input 
-                type="password" 
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                placeholder="Enter new password (min 8 characters)"
-              />
-            </div>
-            <div>
-              <Label>Confirm Password</Label>
-              <Input 
-                type="password" 
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="Confirm new password"
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button 
-              variant="outline" 
-              onClick={() => {
-                setPasswordDialogOpen(false);
-                setNewPassword('');
-                setConfirmPassword('');
-                setSelectedUserForPassword(null);
-              }}
-            >
-              Cancel
-            </Button>
-            <Button 
-              onClick={handleUpdatePassword}
-              disabled={updatingPassword || !newPassword || !confirmPassword}
-            >
-              {updatingPassword ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Updating...
-                </>
-              ) : (
-                'Update Password'
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };
