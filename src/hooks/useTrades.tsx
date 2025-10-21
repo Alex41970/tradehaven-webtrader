@@ -146,40 +146,28 @@ export const useTrades = () => {
       if (isConnected) {
         console.log('Closing trade via WebSocket:', tradeId, 'at price:', closePrice);
         await realtimeCloseTrade(tradeId, closePrice);
-      } else {
-        // Fallback to direct database update
-        console.log('Closing trade via database (WebSocket not connected)');
-        
-        // Get trade details for P&L calculation
-        const { data: trade } = await supabase
-          .from('trades')
-          .select('*')
-          .eq('id', tradeId)
-          .single();
+    } else {
+      // Fallback to RPC (WebSocket not connected)
+      console.log('Closing trade via RPC fallback:', tradeId, 'at price:', closePrice);
+      
+      const { data: result, error } = await supabase
+        .rpc('close_trade_with_pnl', {
+          p_trade_id: tradeId,
+          p_close_price: closePrice
+        });
 
-        if (!trade) throw new Error('Trade not found');
+      if (error) throw error;
 
-        // Calculate P&L
-        const pnl = trade.trade_type === 'BUY' 
-          ? (closePrice - trade.open_price) * trade.amount * trade.leverage
-          : (trade.open_price - closePrice) * trade.amount * trade.leverage;
-
-        // Update trade
-        const { error } = await supabase
-          .from('trades')
-          .update({
-            status: 'closed',
-            close_price: closePrice,
-            pnl,
-            closed_at: new Date().toISOString()
-          })
-          .eq('id', tradeId);
-
-        if (error) throw error;
-        
-        // Refresh database data
-        await fetchTrades();
+      const rpcResult = result as any;
+      if (rpcResult?.error) {
+        throw new Error(rpcResult.error);
       }
+
+      console.log('Trade closed via RPC fallback. P&L:', rpcResult?.pnl, 'New balance:', rpcResult?.new_balance);
+      
+      // Refresh database data
+      await fetchTrades();
+    }
       
       return true;
     } catch (error) {
