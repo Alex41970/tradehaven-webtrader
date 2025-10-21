@@ -19,8 +19,31 @@ import {
   Shield,
   TrendingUp,
   AlertTriangle,
-  CheckCircle2
+  CheckCircle2,
+  Sliders,
+  Bell
 } from "lucide-react";
+import { Label } from "@/components/ui/label";
+import { Slider } from "@/components/ui/slider";
+import { Switch } from "@/components/ui/switch";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
+interface BotSettings {
+  maxDrawdown: number;
+  dailyLossLimit: number;
+  maxOpenPositions: number;
+  riskLevel: string;
+  autoTakeProfit: number;
+  autoStopLoss: number;
+  trailingStopEnabled: boolean;
+  trailingStopPercent: number;
+  maxTradesPerDay: number;
+  minTimeBetweenTrades: number;
+  notifyTradeOpened: boolean;
+  notifyTradeClosed: boolean;
+  notifyProfitLoss: boolean;
+}
 
 interface BotControlPanelProps {
   botStatus: 'active' | 'paused';
@@ -30,6 +53,7 @@ interface BotControlPanelProps {
   botTrades: any[];
   openBotTrades: any[];
   closedBotTrades: any[];
+  onUpdateSettings?: (settings: BotSettings) => void;
 }
 
 export const BotControlPanel: React.FC<BotControlPanelProps> = ({
@@ -40,9 +64,33 @@ export const BotControlPanel: React.FC<BotControlPanelProps> = ({
   botTrades,
   openBotTrades,
   closedBotTrades,
+  onUpdateSettings,
 }) => {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const isMobile = useIsMobile();
+  
+  // Bot settings state
+  const [settings, setSettings] = useState<BotSettings>({
+    maxDrawdown: 10,
+    dailyLossLimit: 1000,
+    maxOpenPositions: 3,
+    riskLevel: 'moderate',
+    autoTakeProfit: 5,
+    autoStopLoss: 2,
+    trailingStopEnabled: false,
+    trailingStopPercent: 1.5,
+    maxTradesPerDay: 10,
+    minTimeBetweenTrades: 15,
+    notifyTradeOpened: true,
+    notifyTradeClosed: true,
+    notifyProfitLoss: true,
+  });
+
+  const handleSettingChange = (key: keyof BotSettings, value: any) => {
+    const newSettings = { ...settings, [key]: value };
+    setSettings(newSettings);
+    onUpdateSettings?.(newSettings);
+  };
 
   const totalPnL = closedBotTrades.reduce((sum, t) => sum + t.pnl, 0);
   const winRate = closedBotTrades.length > 0 
@@ -111,7 +159,7 @@ export const BotControlPanel: React.FC<BotControlPanelProps> = ({
 
       {/* Control Tabs */}
       <Tabs defaultValue="overview" className="space-y-4 md:space-y-6">
-        <TabsList className={`grid w-full max-w-full ${isMobile ? 'grid-cols-4 gap-0 px-0' : 'grid-cols-4'} bg-card/50 backdrop-blur-sm box-border`}>
+        <TabsList className={`grid w-full max-w-full ${isMobile ? 'grid-cols-5 gap-0 px-0' : 'grid-cols-5'} bg-card/50 backdrop-blur-sm box-border`}>
           <TabsTrigger value="overview" className={`flex items-center justify-center ${isMobile ? 'gap-0 px-0.5 py-2 min-w-0 text-xs' : 'gap-2 px-3 py-2'} box-border`}>
             <BarChart3 className={`${isMobile ? 'h-3 w-3' : 'h-4 w-4'} flex-shrink-0`} />
             {!isMobile && <span className="truncate">Overview</span>}
@@ -121,6 +169,11 @@ export const BotControlPanel: React.FC<BotControlPanelProps> = ({
             <Settings className={`${isMobile ? 'h-3 w-3' : 'h-4 w-4'} flex-shrink-0`} />
             {!isMobile && <span className="truncate">Controls</span>}
             {isMobile && <span className="sr-only">Controls</span>}
+          </TabsTrigger>
+          <TabsTrigger value="bot-settings" className={`flex items-center justify-center ${isMobile ? 'gap-0 px-0.5 py-2 min-w-0 text-xs' : 'gap-2 px-3 py-2'} box-border`}>
+            <Sliders className={`${isMobile ? 'h-3 w-3' : 'h-4 w-4'} flex-shrink-0`} />
+            {!isMobile && <span className="truncate">Bot Settings</span>}
+            {isMobile && <span className="sr-only">Bot Settings</span>}
           </TabsTrigger>
           <TabsTrigger value="performance" className={`flex items-center justify-center ${isMobile ? 'gap-0 px-0.5 py-2 min-w-0 text-xs' : 'gap-2 px-3 py-2'} box-border`}>
             <TrendingUp className={`${isMobile ? 'h-3 w-3' : 'h-4 w-4'} flex-shrink-0`} />
@@ -261,6 +314,228 @@ export const BotControlPanel: React.FC<BotControlPanelProps> = ({
                 <p className={`${isMobile ? 'text-xs' : 'text-sm'} text-muted-foreground`}>
                   <strong>Note:</strong> {isMobile ? "Pausing stops new trades. Disconnecting closes all positions." : "Pausing the bot will stop new trade execution but keep existing positions open. Disconnecting will close all open positions and remove the bot license."}
                 </p>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="bot-settings" className="space-y-3 md:space-y-4">
+          <Card className="border-primary/20 bg-gradient-to-br from-card via-card/95 to-trading-primary/5 backdrop-blur-xl">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Sliders className="h-5 w-5" />
+                Bot Configuration
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Risk Management */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold flex items-center gap-2">
+                  <Shield className="h-5 w-5 text-trading-danger" />
+                  Risk Management
+                </h3>
+                
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label>Max Drawdown Limit</Label>
+                    <span className="text-sm font-semibold text-primary">{settings.maxDrawdown}%</span>
+                  </div>
+                  <Slider 
+                    value={[settings.maxDrawdown]} 
+                    onValueChange={([value]) => handleSettingChange('maxDrawdown', value)}
+                    min={5} 
+                    max={50} 
+                    step={5}
+                  />
+                  <p className="text-xs text-muted-foreground">Bot pauses when this loss threshold is reached</p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Daily Loss Limit ($)</Label>
+                  <Input 
+                    type="number" 
+                    value={settings.dailyLossLimit}
+                    onChange={(e) => handleSettingChange('dailyLossLimit', Number(e.target.value))}
+                    min={100}
+                    step={100}
+                  />
+                  <p className="text-xs text-muted-foreground">Maximum loss allowed per day</p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Max Open Positions</Label>
+                  <Input 
+                    type="number" 
+                    value={settings.maxOpenPositions}
+                    onChange={(e) => handleSettingChange('maxOpenPositions', Number(e.target.value))}
+                    min={1}
+                    max={10}
+                  />
+                  <p className="text-xs text-muted-foreground">Limit concurrent trades</p>
+                </div>
+              </div>
+
+              {/* Trading Strategy */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold flex items-center gap-2">
+                  <TrendingUp className="h-5 w-5 text-trading-accent" />
+                  Trading Strategy
+                </h3>
+                
+                <div className="space-y-2">
+                  <Label>Risk Level</Label>
+                  <Select value={settings.riskLevel} onValueChange={(value) => handleSettingChange('riskLevel', value)}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="conservative">Conservative</SelectItem>
+                      <SelectItem value="moderate">Moderate</SelectItem>
+                      <SelectItem value="aggressive">Aggressive</SelectItem>
+                      <SelectItem value="very_aggressive">Very Aggressive</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">Adjust bot's trading aggression</p>
+                </div>
+              </div>
+
+              {/* Position Management */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold flex items-center gap-2">
+                  <BarChart3 className="h-5 w-5 text-trading-success" />
+                  Position Settings
+                </h3>
+                
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label>Auto Take-Profit</Label>
+                    <span className="text-sm font-semibold text-trading-success">{settings.autoTakeProfit}%</span>
+                  </div>
+                  <Slider 
+                    value={[settings.autoTakeProfit]} 
+                    onValueChange={([value]) => handleSettingChange('autoTakeProfit', value)}
+                    min={1} 
+                    max={20} 
+                    step={0.5}
+                  />
+                  <p className="text-xs text-muted-foreground">Default profit target for new trades</p>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label>Auto Stop-Loss</Label>
+                    <span className="text-sm font-semibold text-trading-danger">{settings.autoStopLoss}%</span>
+                  </div>
+                  <Slider 
+                    value={[settings.autoStopLoss]} 
+                    onValueChange={([value]) => handleSettingChange('autoStopLoss', value)}
+                    min={0.5} 
+                    max={10} 
+                    step={0.5}
+                  />
+                  <p className="text-xs text-muted-foreground">Default loss limit for new trades</p>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label>Trailing Stop</Label>
+                    <Switch 
+                      checked={settings.trailingStopEnabled}
+                      onCheckedChange={(checked) => handleSettingChange('trailingStopEnabled', checked)}
+                    />
+                  </div>
+                  {settings.trailingStopEnabled && (
+                    <>
+                      <Input 
+                        type="number" 
+                        value={settings.trailingStopPercent}
+                        onChange={(e) => handleSettingChange('trailingStopPercent', Number(e.target.value))}
+                        min={0.5}
+                        max={5}
+                        step={0.1}
+                      />
+                      <p className="text-xs text-muted-foreground">Distance from peak price (%)</p>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {/* Frequency Controls */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold flex items-center gap-2">
+                  <Activity className="h-5 w-5 text-primary" />
+                  Frequency Controls
+                </h3>
+                
+                <div className="space-y-2">
+                  <Label>Max Trades Per Day</Label>
+                  <Input 
+                    type="number" 
+                    value={settings.maxTradesPerDay}
+                    onChange={(e) => handleSettingChange('maxTradesPerDay', Number(e.target.value))}
+                    min={1}
+                    max={50}
+                  />
+                  <p className="text-xs text-muted-foreground">Limit daily trade count</p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Min Time Between Trades (minutes)</Label>
+                  <Select 
+                    value={settings.minTimeBetweenTrades.toString()} 
+                    onValueChange={(value) => handleSettingChange('minTimeBetweenTrades', Number(value))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="5">5 minutes</SelectItem>
+                      <SelectItem value="15">15 minutes</SelectItem>
+                      <SelectItem value="30">30 minutes</SelectItem>
+                      <SelectItem value="60">1 hour</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">Cooling period between trades</p>
+                </div>
+              </div>
+
+              {/* Notifications */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold flex items-center gap-2">
+                  <Bell className="h-5 w-5 text-trading-accent" />
+                  Notifications
+                </h3>
+                
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <Label>Trade Opened</Label>
+                    <Switch 
+                      checked={settings.notifyTradeOpened}
+                      onCheckedChange={(checked) => handleSettingChange('notifyTradeOpened', checked)}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <Label>Trade Closed</Label>
+                    <Switch 
+                      checked={settings.notifyTradeClosed}
+                      onCheckedChange={(checked) => handleSettingChange('notifyTradeClosed', checked)}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <Label>Profit/Loss Alerts</Label>
+                    <Switch 
+                      checked={settings.notifyProfitLoss}
+                      onCheckedChange={(checked) => handleSettingChange('notifyProfitLoss', checked)}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-4 border-t">
+                <Button className="w-full" size="lg">
+                  <CheckCircle2 className="h-4 w-4 mr-2" />
+                  Save Settings
+                </Button>
               </div>
             </CardContent>
           </Card>

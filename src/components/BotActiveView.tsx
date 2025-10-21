@@ -7,6 +7,7 @@ import { useRealTimePrices } from "@/hooks/useRealTimePrices";
 import { BotMetricsChart } from "./BotMetricsChart";
 import { BotTerminal } from "./BotTerminal";
 import { BotControlPanel } from "./BotControlPanel";
+import { useBotStatus } from "@/hooks/useBotStatus";
 
 interface BotActiveViewProps {
   botStatus: 'active' | 'paused';
@@ -25,6 +26,7 @@ export const BotActiveView: React.FC<BotActiveViewProps> = ({
 }) => {
   const { botTrades, openBotTrades, closedBotTrades, loading } = useTrades();
   const { getUpdatedAsset } = useRealTimePrices();
+  const { updateBotSettings } = useBotStatus();
 
   return (
     <div className="min-h-screen bg-trading-pattern p-2 md:p-6 relative overflow-x-hidden">
@@ -78,6 +80,7 @@ export const BotActiveView: React.FC<BotActiveViewProps> = ({
               botTrades={botTrades}
               openBotTrades={openBotTrades}
               closedBotTrades={closedBotTrades}
+              onUpdateSettings={updateBotSettings}
             />
           </div>
 

@@ -4,6 +4,22 @@ import { useAuth } from "./useAuth";
 import { useToast } from "./use-toast";
 import { getActivityAwareSubscriptionManager } from "@/services/ActivityAwareSubscriptionManager";
 
+export interface BotSettings {
+  maxDrawdown: number;
+  dailyLossLimit: number;
+  maxOpenPositions: number;
+  riskLevel: string;
+  autoTakeProfit: number;
+  autoStopLoss: number;
+  trailingStopEnabled: boolean;
+  trailingStopPercent: number;
+  maxTradesPerDay: number;
+  minTimeBetweenTrades: number;
+  notifyTradeOpened: boolean;
+  notifyTradeClosed: boolean;
+  notifyProfitLoss: boolean;
+}
+
 export interface BotStatus {
   isConnected: boolean;
   botStatus: 'active' | 'paused';
@@ -12,6 +28,7 @@ export interface BotStatus {
     trade_execution: boolean;
     history_access: boolean;
     analytics_access: boolean;
+    settings?: BotSettings;
   };
   loading: boolean;
 }
@@ -233,12 +250,49 @@ export const useBotStatus = () => {
     }
   };
 
+  const updateBotSettings = async (settings: BotSettings) => {
+    try {
+      const { error } = await supabase
+        .from('user_bot_status')
+        .update({ 
+          permissions: {
+            ...botStatus.permissions,
+            settings,
+          } as any
+        })
+        .eq('user_id', user?.id);
+
+      if (error) throw error;
+
+      setBotStatus(prev => ({
+        ...prev,
+        permissions: {
+          ...prev.permissions,
+          settings,
+        }
+      }));
+
+      toast({
+        title: "Settings Saved",
+        description: "Bot settings have been updated successfully.",
+      });
+    } catch (error) {
+      console.error('Error updating bot settings:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save bot settings.",
+        variant: "destructive",
+      });
+    }
+  };
+
   return {
     botStatus,
     activateLicense,
     pauseBot,
     resumeBot,
     disconnectBot,
+    updateBotSettings,
     refetch: fetchBotStatus,
   };
 };
