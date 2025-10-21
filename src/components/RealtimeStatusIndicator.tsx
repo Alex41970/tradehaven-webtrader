@@ -57,7 +57,7 @@ const RealtimeStatusIndicator: React.FC = () => {
       {isConnected ? (
         <>
           <Zap className="h-3 w-3" />
-          AllTick Live ({connectionCount})
+          Live ({connectionCount})
         </>
       ) : tradingConnected ? (
         <>

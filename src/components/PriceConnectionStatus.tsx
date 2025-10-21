@@ -23,7 +23,7 @@ export const PriceConnectionStatus: React.FC = () => {
       return (
         <AlertTriangle 
           className="h-4 w-4 text-red-500" 
-          aria-label="AllTick connection error"
+          aria-label="Connection error"
         />
       );
     }
@@ -31,12 +31,12 @@ export const PriceConnectionStatus: React.FC = () => {
     return isConnected ? (
       <Wifi 
         className="h-4 w-4 text-green-500" 
-        aria-label="AllTick live prices"
+        aria-label="Live prices"
       />
     ) : (
       <WifiOff 
         className="h-4 w-4 text-red-500" 
-        aria-label="AllTick offline"
+        aria-label="Offline"
       />
     );
   }
@@ -55,7 +55,7 @@ export const PriceConnectionStatus: React.FC = () => {
     return (
       <Badge variant="outline" className="flex items-center gap-1 text-xs border-red-500/50 text-red-600">
         <AlertTriangle className="h-3 w-3" />
-        AllTick Offline
+        Offline
       </Badge>
     );
   }
@@ -68,7 +68,7 @@ export const PriceConnectionStatus: React.FC = () => {
       {isConnected ? (
         <>
           <Wifi className="h-3 w-3" />
-          AllTick Live
+          Live
           {lastUpdate && (
             <span className="text-xs opacity-70">
               • {lastUpdate.toLocaleTimeString([], { timeStyle: 'short' })}
@@ -78,7 +78,7 @@ export const PriceConnectionStatus: React.FC = () => {
       ) : (
         <>
           <WifiOff className="h-3 w-3" />
-          AllTick Offline
+          Offline
         </>
       )}
     </Badge>
