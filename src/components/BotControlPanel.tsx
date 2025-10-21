@@ -506,6 +506,29 @@ export const BotControlPanel: React.FC<BotControlPanelProps> = ({
                   <Bell className="h-5 w-5 text-trading-accent" />
                   Notifications
                 </h3>
+
+                {/* Permission Banner */}
+                {typeof Notification !== 'undefined' && Notification.permission === 'default' && (
+                  <div className="bg-muted/50 border border-border rounded-lg p-3">
+                    <p className="text-sm mb-2">Enable browser notifications to receive alerts even when the tab is inactive.</p>
+                    <Button 
+                      size="sm" 
+                      onClick={async () => {
+                        await Notification.requestPermission();
+                        // Force re-render by triggering a state change
+                        window.dispatchEvent(new Event('notification-permission-change'));
+                      }}
+                    >
+                      Enable Browser Notifications
+                    </Button>
+                  </div>
+                )}
+                
+                {typeof Notification !== 'undefined' && Notification.permission === 'denied' && (
+                  <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-3">
+                    <p className="text-sm text-destructive">Browser notifications are blocked. Enable them in your browser settings.</p>
+                  </div>
+                )}
                 
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">

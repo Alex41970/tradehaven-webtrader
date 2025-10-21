@@ -426,6 +426,7 @@ async function handleCloseTrade(connection: ClientConnection, data: any) {
       tradeId: data.tradeId,
       pnl: result.pnl,
       closePrice: data.closePrice,
+      tradeSource: data.tradeSource || 'user',
       profile,
       trades,
     }));

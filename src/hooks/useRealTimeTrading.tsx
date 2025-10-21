@@ -4,6 +4,8 @@ import { useAuth } from './useAuth';
 import { useConnectionMonitor } from './useConnectionMonitor';
 import { useActivity } from '@/contexts/ActivityContext';
 import { toast } from '@/hooks/use-toast';
+import { useNotifications } from './useNotifications';
+import { useBotStatus } from './useBotStatus';
 
 export interface RealTimeUserProfile {
   id: string;
@@ -45,6 +47,8 @@ export const useRealTimeTrading = () => {
   const { user } = useAuth();
   const { isOnline, isSlowConnection } = useConnectionMonitor();
   const { isUserActive } = useActivity();
+  const { showNotification } = useNotifications();
+  const { botStatus } = useBotStatus();
   const [isConnected, setIsConnected] = useState(false);
   const [profile, setProfile] = useState<RealTimeUserProfile | null>(null);
   const [trades, setTrades] = useState<RealTimeTrade[]>([]);
@@ -122,10 +126,22 @@ export const useRealTimeTrading = () => {
         setProfile(message.profile);
       }
       
+      // Show toast notification
       toast({
         title: "Trade Opened",
         description: `${message.trade.trade_type} ${message.trade.symbol}`,
       });
+
+      // Show bot notification if it's a bot trade
+      if (message.trade?.trade_source === 'bot' && botStatus.permissions?.settings) {
+        showNotification({
+          title: '🤖 Bot Trade Opened',
+          body: `${message.trade.symbol} ${message.trade.trade_type} - $${message.trade.amount.toFixed(2)}`,
+          type: 'trade_opened',
+          tradeSource: 'bot',
+          botSettings: botStatus.permissions.settings,
+        });
+      }
     };
 
     const handleTradeClosed = (message: TradingWebSocketMessage) => {
@@ -139,12 +155,26 @@ export const useRealTimeTrading = () => {
         setProfile(message.profile);
       }
       
-      const pnl = message.trade.pnl || 0;
+      const pnl = message.pnl || message.trade?.pnl || 0;
+      
+      // Show toast notification
       toast({
         title: "Trade Closed",
         description: `P&L: ${pnl >= 0 ? '+' : ''}$${pnl.toFixed(2)}`,
         variant: pnl >= 0 ? "default" : "destructive",
       });
+
+      // Show bot notification if it's a bot trade
+      if (message.tradeSource === 'bot' && botStatus.permissions?.settings) {
+        const isProfitable = pnl > 0;
+        showNotification({
+          title: '🤖 Bot Trade Closed',
+          body: `${isProfitable ? '✅ Profit' : '❌ Loss'}: $${Math.abs(pnl).toFixed(2)}`,
+          type: 'trade_closed',
+          tradeSource: 'bot',
+          botSettings: botStatus.permissions.settings,
+        });
+      }
     };
 
     const handleTradeError = (message: TradingWebSocketMessage) => {
