@@ -31,7 +31,7 @@ export class AllTickRestService {
 
   // Yahoo Finance symbol mappings (our symbol -> Yahoo symbol)
   private readonly YAHOO_SYMBOL_MAP: Record<string, string> = {
-    // Forex
+    // Forex - Major Pairs
     'EURUSD': 'EURUSD=X',
     'GBPUSD': 'GBPUSD=X',
     'USDJPY': 'JPY=X',
@@ -39,9 +39,21 @@ export class AllTickRestService {
     'USDCAD': 'CAD=X',
     'USDCHF': 'CHF=X',
     'NZDUSD': 'NZDUSD=X',
+    // Forex - Cross Pairs
     'EURGBP': 'EURGBP=X',
     'EURJPY': 'EURJPY=X',
     'GBPJPY': 'GBPJPY=X',
+    'EURAUD': 'EURAUD=X',
+    'EURNZD': 'EURNZD=X',
+    'EURCHF': 'EURCHF=X',
+    'AUDJPY': 'AUDJPY=X',
+    'AUDNZD': 'AUDNZD=X',
+    'NZDJPY': 'NZDJPY=X',
+    'GBPAUD': 'GBPAUD=X',
+    'GBPCAD': 'GBPCAD=X',
+    // Forex - Exotics
+    'USDMXN': 'MXN=X',
+    'USDZAR': 'ZAR=X',
     // Indices
     'US500': '^GSPC',      // S&P 500
     'US30': '^DJI',        // Dow Jones
@@ -54,6 +66,7 @@ export class AllTickRestService {
     // Commodities
     'XAUUSD': 'GC=F',      // Gold
     'XAGUSD': 'SI=F',      // Silver
+    'XPTUSD': 'PL=F',      // Platinum
     'USOIL': 'CL=F',       // Crude Oil WTI
     'UKOIL': 'BZ=F',       // Brent Crude
     'NATGAS': 'NG=F',      // Natural Gas
@@ -65,9 +78,12 @@ export class AllTickRestService {
     'TSLA': 'TSLA',
     'META': 'META',
     'NVDA': 'NVDA',
+    'NFLX': 'NFLX',
     'JPM': 'JPM',
     'V': 'V',
-    'JNJ': 'JNJ'
+    'JNJ': 'JNJ',
+    'WMT': 'WMT',
+    'PG': 'PG'
   };
 
   constructor() {
@@ -259,7 +275,7 @@ export class AllTickRestService {
    * Get the total number of symbols being monitored
    */
   public getSymbolCount(): number {
-    return Object.keys(this.YAHOO_SYMBOL_MAP).length + 43; // 43 crypto from CoinGecko
+    return Object.keys(this.YAHOO_SYMBOL_MAP).length + 43; // 43 crypto from CoinGecko + Yahoo symbols
   }
 
  

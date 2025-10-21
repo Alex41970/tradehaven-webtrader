@@ -39,9 +39,7 @@ export function resolveTVSymbol(asset: Asset): string {
 
   // Handle Forex pairs
   if (category === 'forex') {
-    // Remove USD suffix to get pair (e.g., EURUSD -> EURUSD)
-    const pair = symbol.replace(/USD$/, 'USD');
-    const tvSymbol = `FX:${pair}`;
+    const tvSymbol = `FX:${symbol}`;
     console.debug('TradingView symbol resolved (forex)', { appSymbol: symbol, tvSymbol });
     return tvSymbol;
   }
@@ -50,8 +48,9 @@ export function resolveTVSymbol(asset: Asset): string {
   if (category === 'commodity') {
     const commodityMap: Record<string, string> = {
       'XAUUSD': 'OANDA:XAUUSD',  // Gold
-      'XAGUSD': 'OANDA:XAGUUSD',  // Silver
-      'USOIL': 'TVC:USOIL',       // Crude Oil
+      'XAGUSD': 'OANDA:XAGUSD',  // Silver
+      'XPTUSD': 'OANDA:XPTUSD',  // Platinum
+      'USOIL': 'TVC:USOIL',       // Crude Oil WTI
       'UKOIL': 'TVC:UKOIL',       // Brent Oil
       'NATGAS': 'NYMEX:NG1!',     // Natural Gas
     };
@@ -63,13 +62,14 @@ export function resolveTVSymbol(asset: Asset): string {
   // Handle Indices
   if (category === 'index') {
     const indexMap: Record<string, string> = {
-      'SPX500': 'TVC:SPX',      // S&P 500
-      'NAS100': 'TVC:NDX',      // NASDAQ 100
-      'US30': 'DJ:DJI',         // Dow Jones
-      'UK100': 'TVC:UKX',       // FTSE 100
-      'GER40': 'XETR:DAX',      // DAX
-      'FRA40': 'EURONEXT:PX1',  // CAC 40
-      'JP225': 'TVC:NI225',     // Nikkei 225
+      'US500': 'TVC:SPX',         // S&P 500
+      'US100': 'NASDAQ:NDX',      // NASDAQ 100
+      'US30': 'DJ:DJI',           // Dow Jones
+      'GER40': 'XETR:DAX',        // DAX
+      'UK100': 'TVC:UKX',         // FTSE 100
+      'JPN225': 'TVC:NI225',      // Nikkei 225
+      'FRA40': 'EURONEXT:PX1',    // CAC 40
+      'AUS200': 'ASX:XJO',        // ASX 200
     };
     const tvSymbol = indexMap[symbol] || `TVC:${symbol}`;
     console.debug('TradingView symbol resolved (index)', { appSymbol: symbol, tvSymbol });
@@ -78,14 +78,11 @@ export function resolveTVSymbol(asset: Asset): string {
 
   // Handle Stocks
   if (category === 'stock') {
-    // Strip USD suffix for stock symbols
-    const ticker = symbol.replace(/USD$/, '');
-    
     // Major tech stocks are typically on NASDAQ
-    const nasdaqStocks = ['AAPL', 'GOOGL', 'MSFT', 'AMZN', 'TSLA', 'NVDA', 'META', 'NFLX', 'ADBE'];
-    const exchange = nasdaqStocks.includes(ticker) ? 'NASDAQ' : 'NYSE';
+    const nasdaqStocks = ['AAPL', 'GOOGL', 'MSFT', 'AMZN', 'TSLA', 'NVDA', 'META', 'NFLX'];
+    const exchange = nasdaqStocks.includes(symbol) ? 'NASDAQ' : 'NYSE';
     
-    const tvSymbol = `${exchange}:${ticker}`;
+    const tvSymbol = `${exchange}:${symbol}`;
     console.debug('TradingView symbol resolved (stock)', { appSymbol: symbol, tvSymbol });
     return tvSymbol;
   }
