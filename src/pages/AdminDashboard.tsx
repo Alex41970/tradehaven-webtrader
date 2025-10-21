@@ -398,11 +398,22 @@ const AdminDashboard = () => {
         _close_price: closePrice
       });
 
-      if (error || !data) {
+      if (error) {
         console.error('Error closing trade:', error);
         toast({
           title: "Error",
-          description: "Failed to close trade",
+          description: error.message || "Failed to close trade",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Handle JSON response from updated RPC
+      const result = data as any;
+      if (!result?.success) {
+        toast({
+          title: "Error",
+          description: result?.error || "Failed to close trade",
           variant: "destructive",
         });
         return;
@@ -410,7 +421,7 @@ const AdminDashboard = () => {
 
       toast({
         title: "Success",
-        description: "Trade closed successfully",
+        description: `Trade closed. P&L: $${result.pnl?.toFixed(2)}, New balance: $${result.new_balance?.toFixed(2)}`,
       });
 
       // Refresh data

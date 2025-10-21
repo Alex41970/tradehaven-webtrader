@@ -810,7 +810,7 @@ export type Database = {
       }
       admin_close_trade: {
         Args: { _admin_id: string; _close_price: number; _trade_id: string }
-        Returns: boolean
+        Returns: Json
       }
       admin_create_trade: {
         Args: {
