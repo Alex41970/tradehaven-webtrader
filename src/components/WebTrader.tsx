@@ -26,6 +26,7 @@ import { PulsingPriceIndicator } from "./PulsingPriceIndicator";
 import { PriceConnectionStatus } from "./PriceConnectionStatus";
 import { useEventDrivenUpdates } from "@/hooks/useEventDrivenUpdates";
 import { WebTraderSkeleton } from "./WebTraderSkeleton";
+import { useRealtimeAccountMetrics } from "@/hooks/useRealtimeAccountMetrics";
 
 export const WebTrader = () => {
   const { openTrade, closeTrade, openTrades } = useTrades();
@@ -35,6 +36,7 @@ export const WebTrader = () => {
   const { getUpdatedAssets, isConnected, lastUpdate } = useRealTimePrices();
   const { createOrder } = useTradeOrders();
   const { handleTradeAction } = useEventDrivenUpdates();
+  const { canOpenTrade } = useRealtimeAccountMetrics();
   const isMobile = useIsMobile();
   const navigate = useNavigate();
 
@@ -132,7 +134,8 @@ export const WebTrader = () => {
       return;
     }
 
-    if (profile.available_margin < calculateMargin) {
+    // Real-time margin validation
+    if (!canOpenTrade(calculateMargin)) {
       toast({
         title: "Insufficient Margin",
         description: "You don't have enough available margin for this trade",

@@ -59,6 +59,3 @@ verify_jwt = false
 
 [functions.websocket-price-updates]
 verify_jwt = false
-
-[functions.websocket-binance-streamer]
-verify_jwt = false

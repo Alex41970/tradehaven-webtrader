@@ -33,6 +33,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useRealtimeAccountMetrics } from "@/hooks/useRealtimeAccountMetrics";
 import { ContactSupportModal } from "@/components/ContactSupportModal";
+import { MarginCallWarning } from "@/components/MarginCallWarning";
 
 const Dashboard = () => {
   const { user, signOut } = useAuth();
@@ -161,6 +162,15 @@ const Dashboard = () => {
 
   return (
       <div className="min-h-screen bg-background">
+        {/* Margin Call Warning System */}
+        {realTimeEquity > 0 && totalUsedMargin > 0 && (
+          <MarginCallWarning 
+            equity={realTimeEquity} 
+            usedMargin={totalUsedMargin}
+            className="mx-4 mt-4"
+          />
+        )}
+        
         {/* Header */}
         <header className="border-b bg-card">
           <div className="container mx-auto px-4 py-3">

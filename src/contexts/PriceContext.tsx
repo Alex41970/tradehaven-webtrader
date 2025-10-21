@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { AllTickRestService } from '@/services/AllTickRestService';
 import { useOptimizedPriceUpdates } from '@/hooks/useOptimizedPriceUpdates';
+import { logger } from '@/utils/logger';
 
 interface PriceUpdate {
   symbol: string;
@@ -33,7 +34,7 @@ interface PriceProviderProps {
 }
 
 export const PriceProvider: React.FC<PriceProviderProps> = ({ children }) => {
-  console.log('🔥 PRICE PROVIDER COMPONENT CREATED - INITIALIZING NOW');
+  logger.debug('🔥 PRICE PROVIDER COMPONENT CREATED - INITIALIZING NOW');
   
   const [isConnected, setIsConnected] = useState(false);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
@@ -51,40 +52,40 @@ export const PriceProvider: React.FC<PriceProviderProps> = ({ children }) => {
 
   // Initialize price polling service
   useEffect(() => {
-    console.log('🔥 PRICE PROVIDER USE EFFECT FIRED - STARTING PRICE POLLING');
+    logger.debug('🔥 PRICE PROVIDER USE EFFECT FIRED - STARTING PRICE POLLING');
     
     const initPriceService = async () => {
-      console.log('🚀 PriceProvider: Initializing multi-source price service...');
+      logger.debug('🚀 PriceProvider: Initializing multi-source price service...');
       
       try {
         allTickServiceRef.current = new AllTickRestService();
         
         const unsubscribe = allTickServiceRef.current.subscribeToPrices((priceUpdate) => {
-          console.log(`⚡ PRICE RECEIVED: ${priceUpdate.symbol} = $${priceUpdate.price} (${priceUpdate.change_24h}%) - Source: ${priceUpdate.source}`);
+          logger.debug(`⚡ PRICE RECEIVED: ${priceUpdate.symbol} = $${priceUpdate.price} (${priceUpdate.change_24h}%) - Source: ${priceUpdate.source}`);
           addPriceUpdate(priceUpdate);
-          console.log(`📊 Price added to Map, current Map size: ${prices.size}`);
+          logger.debug(`📊 Price added to Map, current Map size: ${prices.size}`);
           
           setLastUpdate(new Date(priceUpdate.timestamp));
           setIsConnected(true);
           setConnectionStatus('connected');
         });
         
-        console.log('🔌 Starting price polling...');
+        logger.debug('🔌 Starting price polling...');
         const connected = await allTickServiceRef.current.connect();
         
         if (connected) {
-          console.log('✅ Price service started successfully');
-          console.log(`📊 Monitoring ${allTickServiceRef.current.getSymbolCount()} symbols`);
+          logger.debug('✅ Price service started successfully');
+          logger.debug(`📊 Monitoring ${allTickServiceRef.current.getSymbolCount()} symbols`);
           setConnectionStatus('connected');
         } else {
-          console.log('❌ Price service failed to start');
+          logger.error('❌ Price service failed to start');
           setIsConnected(false);
           setConnectionStatus('error');
         }
         
         return unsubscribe;
       } catch (error) {
-        console.error('❌ Price service initialization error:', error);
+        logger.error('❌ Price service initialization error:', error);
         setConnectionStatus('error');
       }
     };
@@ -93,7 +94,7 @@ export const PriceProvider: React.FC<PriceProviderProps> = ({ children }) => {
 
     return () => {
       if (allTickServiceRef.current) {
-        console.log('🔌 PriceProvider: Disconnecting price service...');
+        logger.debug('🔌 PriceProvider: Disconnecting price service...');
         allTickServiceRef.current.disconnect();
       }
     };
@@ -103,10 +104,10 @@ export const PriceProvider: React.FC<PriceProviderProps> = ({ children }) => {
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.hidden) {
-        console.log('🔇 Page hidden - marking as paused');
+        logger.debug('🔇 Page hidden - marking as paused');
         setIsPaused(true);
       } else {
-        console.log('🔊 Page visible - resuming');
+        logger.debug('🔊 Page visible - resuming');
         setIsPaused(false);
       }
     };

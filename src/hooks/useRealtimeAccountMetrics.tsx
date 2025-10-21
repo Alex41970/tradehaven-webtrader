@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useSharedUserProfile } from './useSharedUserProfile';
 import { useTrades } from './useTrades';
 import { useRealtimePnL } from './useRealtimePnL';
@@ -19,6 +19,9 @@ interface RealtimeAccountMetrics {
   // Trade closing management
   excludeTradeFromPnL: (tradeId: string) => void;
   includeTradeInPnL: (tradeId: string) => void;
+  
+  // Trade opening validation
+  canOpenTrade: (requiredMargin: number) => boolean;
 }
 
 export const useRealtimeAccountMetrics = (): RealtimeAccountMetrics => {
@@ -69,6 +72,12 @@ export const useRealtimeAccountMetrics = (): RealtimeAccountMetrics => {
     };
   }, [profile?.balance, totalPnL, openTrades]);
 
+  // Validate if user can open a new trade
+  const canOpenTrade = useCallback((requiredMargin: number): boolean => {
+    const availableMargin = Math.max(0, metrics.realTimeEquity - metrics.totalUsedMargin);
+    return availableMargin >= requiredMargin;
+  }, [metrics.realTimeEquity, metrics.totalUsedMargin]);
+
   // Update timestamps and indicators when values change
   useEffect(() => {
     if (pnlLastUpdated) {
@@ -90,5 +99,6 @@ export const useRealtimeAccountMetrics = (): RealtimeAccountMetrics => {
     isUpdating,
     excludeTradeFromPnL,
     includeTradeInPnL,
+    canOpenTrade,
   };
 };

@@ -49,6 +49,7 @@ export class TradingWebSocketService {
   private circuitBreakerResetTime = 5 * 60 * 1000; // 5 minutes
   private lastCircuitBreakerReset = 0;
   private isUserActive = true;
+  private connecting = false; // Prevent race conditions
   
   private readonly wsUrl = `wss://stdfkfutgkmnaajixguz.functions.supabase.co/functions/v1/websocket-trading-updates`;
 
@@ -171,6 +172,12 @@ export class TradingWebSocketService {
   }
 
   async connect() {
+    // Add connection lock check FIRST
+    if (this.connecting) {
+      console.log('Connection already in progress, skipping');
+      return;
+    }
+
     if (this.isReconnecting) {
       return;
     }
@@ -188,12 +195,16 @@ export class TradingWebSocketService {
     }
 
     try {
+      this.connecting = true; // Set lock
+      
       if (this.ws && (this.ws.readyState === WebSocket.CONNECTING || this.ws.readyState === WebSocket.OPEN)) {
+        this.connecting = false;
         return;
       }
 
       // Check if we're online
       if (typeof navigator !== 'undefined' && !navigator.onLine) {
+        this.connecting = false;
         return;
       }
 
@@ -210,6 +221,7 @@ export class TradingWebSocketService {
       this.ws.onopen = async () => {
         clearTimeout(connectionTimeout);
         this.isReconnecting = false;
+        this.connecting = false; // Release lock on success
         await this.authenticate();
       };
 
@@ -226,6 +238,7 @@ export class TradingWebSocketService {
         clearTimeout(connectionTimeout);
         this.isAuthenticated = false;
         this.isReconnecting = false;
+        this.connecting = false; // Release lock on close
         this.connectionState.quality = 'offline';
         this.stopKeepAlive();
         
@@ -240,12 +253,14 @@ export class TradingWebSocketService {
         console.error('Trading WebSocket error:', error);
         this.isAuthenticated = false;
         this.isReconnecting = false;
+        this.connecting = false; // Release lock on error
         this.connectionState.quality = 'offline';
       };
 
     } catch (error) {
       console.error('Failed to connect to trading WebSocket:', error);
       this.isReconnecting = false;
+      this.connecting = false; // Always release lock in finally
       this.handleReconnect();
     }
   }

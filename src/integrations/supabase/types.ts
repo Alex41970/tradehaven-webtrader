@@ -17,6 +17,7 @@ export type Database = {
       admin_audit_log: {
         Row: {
           action: string
+          action_details: Json | null
           admin_id: string
           id: string
           ip_address: unknown | null
@@ -28,6 +29,7 @@ export type Database = {
         }
         Insert: {
           action: string
+          action_details?: Json | null
           admin_id: string
           id?: string
           ip_address?: unknown | null
@@ -39,6 +41,7 @@ export type Database = {
         }
         Update: {
           action?: string
+          action_details?: Json | null
           admin_id?: string
           id?: string
           ip_address?: unknown | null
@@ -863,6 +866,10 @@ export type Database = {
               trade_type: string
             }
         Returns: number
+      }
+      check_and_liquidate_positions: {
+        Args: { _user_id: string }
+        Returns: Json
       }
       close_trade_with_pnl: {
         Args: { p_close_price: number; p_trade_id: string }
