@@ -331,35 +331,57 @@ const AdminDashboard = () => {
     if (!user?.id) return;
 
     try {
-      const { error } = await supabase.rpc('admin_modify_trade_open_price', {
-        _admin_id: user.id,
-        _trade_id: tradeId,
-        _new_open_price: newOpenPrice
-      });
+      // Direct update with RLS policy enforcement
+      const { data, error } = await supabase
+        .from('trades')
+        .update({ 
+          open_price: newOpenPrice,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', tradeId)
+        .select();
 
       if (error) {
-        console.error('Error modifying trade price:', error);
+        console.error('Error updating trade:', error);
         toast({
           title: "Error",
-          description: "Failed to modify trade price",
+          description: error.message || "Failed to update trade price",
           variant: "destructive",
         });
         return;
       }
 
+      if (!data || data.length === 0) {
+        toast({
+          title: "Access Denied",
+          description: "You don't have permission to edit this trade",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Update local state optimistically
+      setTrades(prev => prev.map(trade => 
+        trade.id === tradeId 
+          ? { ...trade, open_price: newOpenPrice }
+          : trade
+      ));
+
       toast({
         title: "Success",
-        description: "Trade price updated successfully",
+        description: `Trade open price updated to $${newOpenPrice}`,
       });
 
-      // Refresh data
-      fetchAdminData();
       setSelectedTradeForEdit(null);
+
+      // Refetch to confirm
+      fetchAdminData();
+
     } catch (error) {
       console.error('Error:', error);
       toast({
         title: "Error",
-        description: "Failed to modify trade price",
+        description: "An unexpected error occurred",
         variant: "destructive",
       });
     }

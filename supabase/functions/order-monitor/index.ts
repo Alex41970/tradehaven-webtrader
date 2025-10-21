@@ -273,48 +273,38 @@ async function closeTrade(trade: any, currentPrice: number, reason: string) {
   try {
     console.log(`🎯 Closing trade ${trade.id} (${reason}) for ${trade.symbol} at ${currentPrice}`);
     
-    // Calculate P&L
-    const { data: pnlResult, error: pnlError } = await supabase
-      .rpc('calculate_pnl', {
-        trade_type: trade.trade_type,
-        amount: trade.amount,
-        open_price: trade.open_price,
-        current_price: currentPrice,
-        leverage_param: trade.leverage || 1
+    // Use the proper RPC that handles balance updates correctly
+    const { data: closeResult, error: closeError } = await supabase
+      .rpc('close_trade_with_pnl', {
+        p_trade_id: trade.id,
+        p_close_price: currentPrice
       });
 
-    if (pnlError) {
-      console.error('Error calculating P&L:', pnlError);
+    if (closeError) {
+      console.error('Error closing trade via RPC:', closeError);
       return;
     }
 
-    // Close the trade
-    const { error: updateError } = await supabase
-      .from('trades')
-      .update({
-        close_price: currentPrice,
-        pnl: pnlResult,
-        status: 'closed',
-        closed_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', trade.id);
-
-    if (updateError) {
-      console.error('Error closing trade:', updateError);
+    if (closeResult?.error) {
+      console.error('Trade closure returned error:', closeResult.error);
       return;
     }
 
-    // Recalculate user margins
-    await recalculateUserMargins(trade.user_id);
-
-    console.log(`✅ Trade ${trade.id} closed via ${reason}, P&L: $${pnlResult}`);
+    console.log(`✅ Trade ${trade.id} closed via ${reason}`);
+    console.log(`   P&L: $${closeResult.pnl}`);
+    console.log(`   New balance: $${closeResult.new_balance}`);
     
-    // Broadcast to user via WebSocket if possible
+    // Broadcast to user via WebSocket
     await broadcastTradeUpdate(trade.user_id, {
       type: 'trade_auto_closed',
-      trade: { ...trade, close_price: currentPrice, pnl: pnlResult, status: 'closed' },
-      reason
+      trade: { 
+        ...trade, 
+        close_price: closeResult.close_price, 
+        pnl: closeResult.pnl, 
+        status: 'closed' 
+      },
+      reason,
+      new_balance: closeResult.new_balance
     });
 
   } catch (error) {
