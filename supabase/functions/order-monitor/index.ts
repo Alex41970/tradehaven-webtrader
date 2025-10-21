@@ -324,10 +324,17 @@ async function closeTrade(trade: any, currentPrice: number, reason: string) {
 
 async function recalculateUserMargins(userId: string) {
   try {
-    // This mirrors the logic from websocket-trading-updates
+    // Get CURRENT balance (preserves admin deposits!)
+    const { data: profile } = await supabase
+      .from('user_profiles')
+      .select('balance')
+      .eq('user_id', userId)
+      .single();
+    
+    const currentBalance = profile?.balance || 0;
+    console.log('Recalculating margins - current balance (preserved):', currentBalance);
+
     let totalUsedMargin = 0;
-    let totalClosedPnL = 0;
-    const baseBalance = 0.00;
 
     // Get open trades
     const { data: openTrades, error: openError } = await supabase
@@ -340,30 +347,20 @@ async function recalculateUserMargins(userId: string) {
       totalUsedMargin = openTrades.reduce((sum, trade) => sum + (trade.margin_used || 0), 0);
     }
 
-    // Get closed trades P&L
-    const { data: closedTrades, error: closedError } = await supabase
-      .from('trades')
-      .select('pnl')
-      .eq('user_id', userId)
-      .eq('status', 'closed');
+    const availableMargin = Math.max(currentBalance - totalUsedMargin, 0);
 
-    if (!closedError && closedTrades) {
-      totalClosedPnL = closedTrades.reduce((sum, trade) => sum + (trade.pnl || 0), 0);
-    }
-
-    const newBalance = baseBalance + totalClosedPnL;
-    const availableMargin = Math.max(newBalance - totalUsedMargin, 0);
-
-    // Update user profile
+    // Update ONLY margins (preserve balance!)
     await supabase
       .from('user_profiles')
       .update({
-        balance: newBalance,
         used_margin: totalUsedMargin,
         available_margin: availableMargin,
+        equity: currentBalance, // Frontend adds unrealized P&L
         updated_at: new Date().toISOString()
       })
       .eq('user_id', userId);
+    
+    console.log('Margins updated - balance preserved:', currentBalance, 'used:', totalUsedMargin, 'available:', availableMargin);
 
   } catch (error) {
     console.error('Error recalculating margins:', error);

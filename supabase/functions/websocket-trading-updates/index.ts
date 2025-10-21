@@ -444,11 +444,19 @@ async function recalculateUserMargins(userId: string) {
   try {
     console.log('Recalculating margins for user:', userId);
 
+    // Get CURRENT balance (preserves admin deposits!)
+    const { data: profile } = await supabase
+      .from('user_profiles')
+      .select('balance')
+      .eq('user_id', userId)
+      .single();
+    
+    const currentBalance = profile?.balance || 0;
+    console.log('Current balance (preserved):', currentBalance);
+
     // Calculate totals
     let totalUsedMargin = 0;
-    let totalClosedPnL = 0;
     let totalUnrealizedPnL = 0;
-    const baseBalance = 0.00;
 
     // Get open trades with full details for unrealized PnL calculation
     const { data: openTrades, error: openError } = await supabase
@@ -495,28 +503,16 @@ async function recalculateUserMargins(userId: string) {
       }
     }
 
-    // Get closed trades P&L
-    const { data: closedTrades, error: closedError } = await supabase
-      .from('trades')
-      .select('pnl')
-      .eq('user_id', userId)
-      .eq('status', 'closed');
+    // Balance stays as-is (preserves admin deposits and accumulated P&L)
+    // Only update margins and equity
+    const realTimeEquity = currentBalance + totalUnrealizedPnL;
+    const availableMargin = Math.max(currentBalance - totalUsedMargin, 0);
 
-    if (!closedError && closedTrades) {
-      totalClosedPnL = closedTrades.reduce((sum, trade) => sum + (trade.pnl || 0), 0);
-    }
-
-    const newBalance = baseBalance + totalClosedPnL;
-    // Don't include unrealized P&L in stored equity - frontend will add it real-time
-    const equity = newBalance; // Same as balance, frontend adds unrealized P&L
-    const availableMargin = Math.max(newBalance - totalUsedMargin, 0);
-
-    // Update user profile
+    // Update ONLY margins and equity (preserve balance!)
     const { error: updateError } = await supabase
       .from('user_profiles')
       .update({
-        balance: newBalance,
-        equity: equity,
+        equity: realTimeEquity,
         used_margin: totalUsedMargin,
         available_margin: availableMargin,
         updated_at: new Date().toISOString()
@@ -530,12 +526,12 @@ async function recalculateUserMargins(userId: string) {
 
     console.log('Margins updated:', {
       userId,
-      balance: newBalance,
-      equity: equity, // Now same as balance, frontend adds unrealized P&L
+      balance: currentBalance, // Preserved!
+      equity: realTimeEquity,
       usedMargin: totalUsedMargin,
       availableMargin,
       unrealizedPnL: totalUnrealizedPnL,
-      note: 'Equity = balance (no unrealized P&L), frontend will add real-time P&L'
+      note: 'Balance preserved, only margins updated'
     });
 
     // Broadcast margin update to connected user immediately
@@ -543,10 +539,10 @@ async function recalculateUserMargins(userId: string) {
       type: 'margin_update',
       data: {
         userId,
-        balance: newBalance, // Base + closed P&L only
+        balance: currentBalance, // Preserved!
         usedMargin: totalUsedMargin,
         availableMargin,
-        equity: equity // Same as balance, frontend adds unrealized P&L
+        equity: realTimeEquity
       }
     });
 
