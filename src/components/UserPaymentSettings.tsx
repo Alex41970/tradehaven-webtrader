@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { useUserRole } from '@/hooks/useUserRole';
 import { supabase } from '@/integrations/supabase/client';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { Trash2, Plus } from 'lucide-react';
+import { logger } from '@/utils/logger';
 
 interface CryptoWallet {
   currency: string;
@@ -36,6 +38,7 @@ interface UserPaymentSettingsProps {
 
 export const UserPaymentSettings: React.FC<UserPaymentSettingsProps> = ({ users }) => {
   const { user } = useAuth();
+  const { isSuperAdmin } = useUserRole();
   const [selectedUserId, setSelectedUserId] = useState<string>('');
   const [cryptoWallets, setCryptoWallets] = useState<CryptoWallet[]>([]);
   const [bankDetails, setBankDetails] = useState<BankDetails>({
@@ -135,6 +138,27 @@ export const UserPaymentSettings: React.FC<UserPaymentSettingsProps> = ({ users 
 
     setIsSaving(true);
     try {
+      // Permission preflight: ensure admin is assigned or is super admin
+      if (!isSuperAdmin()) {
+        const { data: relationship, error: relError } = await supabase
+          .from('admin_user_relationships')
+          .select('id')
+          .eq('admin_id', user.id)
+          .eq('user_id', selectedUserId)
+          .maybeSingle();
+
+        if (relError) {
+          logger.error('Assignment preflight failed', relError);
+          toast.error(`Permission check failed: ${relError.message}${relError.code ? ` (code: ${relError.code})` : ''}`);
+          return;
+        }
+
+        if (!relationship) {
+          toast.error("You're not assigned to this user. Ask a super admin to assign them to you first.");
+          return;
+        }
+      }
+
       // Convert crypto wallets to object format
       const cryptoWalletsObj = cryptoWallets.reduce((acc, wallet) => {
         if (wallet.currency && wallet.address) {
@@ -153,26 +177,35 @@ export const UserPaymentSettings: React.FC<UserPaymentSettingsProps> = ({ users 
 
       const { error } = await supabase
         .from('user_payment_settings')
-        .upsert({
-          user_id: selectedUserId,
-          admin_id: user.id,
-          crypto_wallets: cryptoWalletsObj,
-          bank_wire_details: filteredBankDetails,
-          is_active: true
-        }, {
-          onConflict: 'user_id'
-        });
+        .upsert(
+          {
+            user_id: selectedUserId,
+            admin_id: user.id,
+            crypto_wallets: cryptoWalletsObj,
+            bank_wire_details: filteredBankDetails,
+            is_active: true
+          },
+          {
+            onConflict: 'user_id'
+          }
+        );
 
       if (error) {
-        console.error('Error saving payment settings:', error);
-        toast.error(`Failed to save payment settings: ${error.message}`);
+        logger.error('Error saving payment settings', error);
+        const details = [error.message, error.details, error.hint, error.code]
+          .filter(Boolean)
+          .join(' | ');
+        toast.error(`Failed to save payment settings: ${details}`);
         return;
       }
 
       toast.success('Payment settings saved successfully');
-    } catch (error) {
-      console.error('Error saving payment settings:', error);
-      toast.error('Failed to save payment settings');
+    } catch (err: any) {
+      logger.error('Unexpected error saving payment settings', err);
+      const details = [err?.message, err?.details, err?.hint, err?.code]
+        .filter(Boolean)
+        .join(' | ');
+      toast.error(`Failed to save payment settings: ${details || 'Unknown error'}`);
     } finally {
       setIsSaving(false);
     }
