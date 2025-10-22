@@ -159,11 +159,13 @@ export const UserPaymentSettings: React.FC<UserPaymentSettingsProps> = ({ users 
           crypto_wallets: cryptoWalletsObj,
           bank_wire_details: filteredBankDetails,
           is_active: true
+        }, {
+          onConflict: 'user_id'
         });
 
       if (error) {
         console.error('Error saving payment settings:', error);
-        toast.error('Failed to save payment settings');
+        toast.error(`Failed to save payment settings: ${error.message}`);
         return;
       }
 
