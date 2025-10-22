@@ -20,7 +20,7 @@ export type Database = {
           action_details: Json | null
           admin_id: string
           id: string
-          ip_address: unknown | null
+          ip_address: unknown
           new_value: Json | null
           old_value: Json | null
           performed_at: string | null
@@ -32,7 +32,7 @@ export type Database = {
           action_details?: Json | null
           admin_id: string
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           new_value?: Json | null
           old_value?: Json | null
           performed_at?: string | null
@@ -44,7 +44,7 @@ export type Database = {
           action_details?: Json | null
           admin_id?: string
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           new_value?: Json | null
           old_value?: Json | null
           performed_at?: string | null
@@ -326,7 +326,7 @@ export type Database = {
           executed_price: number | null
           execution_source: string | null
           id: string
-          ip_address: unknown | null
+          ip_address: unknown
           notes: string | null
           requested_price: number | null
           slippage_percent: number | null
@@ -341,7 +341,7 @@ export type Database = {
           executed_price?: number | null
           execution_source?: string | null
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           notes?: string | null
           requested_price?: number | null
           slippage_percent?: number | null
@@ -356,7 +356,7 @@ export type Database = {
           executed_price?: number | null
           execution_source?: string | null
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           notes?: string | null
           requested_price?: number | null
           slippage_percent?: number | null
@@ -842,31 +842,31 @@ export type Database = {
         Args: { _promo_code: string; _user_id: string }
         Returns: Json
       }
-      auto_fix_detected_issues: {
-        Args: Record<PropertyKey, never>
-        Returns: Json
-      }
+      auto_fix_detected_issues: { Args: never; Returns: Json }
       auto_recalculate_user_margins: {
         Args: { _user_id: string }
         Returns: undefined
       }
-      calculate_pnl: {
-        Args:
-          | {
+      calculate_pnl:
+        | {
+            Args: {
+              amount: number
+              current_price: number
+              open_price: number
+              trade_type: string
+            }
+            Returns: number
+          }
+        | {
+            Args: {
               amount: number
               current_price: number
               leverage_param?: number
               open_price: number
               trade_type: string
             }
-          | {
-              amount: number
-              current_price: number
-              open_price: number
-              trade_type: string
-            }
-        Returns: number
-      }
+            Returns: number
+          }
       check_and_liquidate_positions: {
         Args: { _user_id: string }
         Returns: Json
@@ -879,16 +879,13 @@ export type Database = {
         Args: { _admin_id: string; _license_id: string }
         Returns: Json
       }
-      gen_random_uuid: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
+      gen_random_uuid: { Args: never; Returns: string }
       generate_bot_license: {
         Args: { _admin_id: string; _expires_at?: string }
         Returns: string
       }
       get_promo_code_stats: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           admin_email: string
           admin_id: string
@@ -906,10 +903,7 @@ export type Database = {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
       }
-      get_valid_bot_status: {
-        Args: { _user_id: string }
-        Returns: Json
-      }
+      get_valid_bot_status: { Args: { _user_id: string }; Returns: Json }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -935,18 +929,9 @@ export type Database = {
         }
         Returns: Json
       }
-      recalculate_user_margins: {
-        Args: { _user_id: string }
-        Returns: Json
-      }
-      run_system_health_check: {
-        Args: Record<PropertyKey, never>
-        Returns: Json
-      }
-      sync_admin_user_relationships: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
+      recalculate_user_margins: { Args: { _user_id: string }; Returns: Json }
+      run_system_health_check: { Args: never; Returns: Json }
+      sync_admin_user_relationships: { Args: never; Returns: undefined }
       transfer_user_to_admin: {
         Args: { _new_admin_id: string; _user_id: string }
         Returns: boolean
