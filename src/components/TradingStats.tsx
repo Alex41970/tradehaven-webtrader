@@ -61,8 +61,8 @@ export const TradingStats = () => {
   return (
     <>
       {/* Mobile: Horizontal scroll cards */}
-      <div className="sm:hidden -mx-4">
-        <div className="flex overflow-x-auto gap-4 pb-4 snap-x snap-mandatory px-4 scrollbar-hide" style={{ touchAction: 'pan-x' }}>
+      <div className="sm:hidden min-w-0 w-full">
+        <div className="flex w-full overflow-x-auto overscroll-x-contain gap-4 pb-4 snap-x snap-mandatory px-4 scrollbar-hide" style={{ touchAction: 'pan-x' }}>
           {stats.map((stat, index) => (
             <div key={index} className="flex-shrink-0 w-[240px] snap-center">
               <div className="bg-card/50 backdrop-blur-sm border border-accent/20 rounded-xl p-6 text-center hover:border-accent/40 transition-all">
