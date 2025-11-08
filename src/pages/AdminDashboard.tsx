@@ -308,12 +308,12 @@ const AdminDashboard = () => {
 
       if (error) throw error;
 
-      const result = data as { success: boolean; error?: string; message?: string } | null;
+      const result = data as { success: boolean; error?: string; message?: string; previous_balance?: number; new_balance?: number; created_deposit_id?: string | null; created_withdrawal_id?: string | null } | null;
 
-      if (result && !result.success) {
+      if (!result || result.success !== true) {
         toast({
           title: "Error",
-          description: result.error || "Failed to modify balance",
+          description: result?.error || "Failed to modify balance",
           variant: "destructive"
         });
         return;
@@ -321,7 +321,7 @@ const AdminDashboard = () => {
 
       toast({
         title: "Success",
-        description: `Balance ${operation === 'add' ? 'added' : 'deducted'} successfully`
+        description: result.message || `Balance ${operation === 'add' ? 'added' : operation === 'deduct' ? 'deducted' : 'updated'} successfully`
       });
       fetchAdminData();
     } catch (error) {
