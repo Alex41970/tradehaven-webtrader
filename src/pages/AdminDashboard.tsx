@@ -699,6 +699,14 @@ const AdminDashboard = () => {
             <Badge variant="secondary" className="text-lg px-4 py-2">
               {role === 'super_admin' ? 'Super Admin' : 'Admin'}
             </Badge>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => window.location.href = '/admin/promo-analytics'}
+            >
+              <BarChart3 className="h-4 w-4 mr-2" />
+              Promo Analytics
+            </Button>
             <Button variant="outline" size="sm" onClick={handleSignOut} disabled={signingOut}>
               <LogOut className="h-4 w-4 mr-2" />
               {signingOut ? "Signing Out..." : "Sign Out"}

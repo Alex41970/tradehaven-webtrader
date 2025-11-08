@@ -318,6 +318,42 @@ export type Database = {
         }
         Relationships: []
       }
+      promo_validation_attempts: {
+        Row: {
+          attempted_at: string
+          created_user_id: string | null
+          error_reason: string | null
+          id: string
+          ip_address: unknown
+          promo_code: string
+          resulted_in_signup: boolean | null
+          user_agent: string | null
+          was_valid: boolean
+        }
+        Insert: {
+          attempted_at?: string
+          created_user_id?: string | null
+          error_reason?: string | null
+          id?: string
+          ip_address?: unknown
+          promo_code: string
+          resulted_in_signup?: boolean | null
+          user_agent?: string | null
+          was_valid: boolean
+        }
+        Update: {
+          attempted_at?: string
+          created_user_id?: string | null
+          error_reason?: string | null
+          id?: string
+          ip_address?: unknown
+          promo_code?: string
+          resulted_in_signup?: boolean | null
+          user_agent?: string | null
+          was_valid?: boolean
+        }
+        Relationships: []
+      }
       trade_execution_log: {
         Row: {
           action: string

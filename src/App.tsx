@@ -32,6 +32,7 @@ import Education from "./pages/Education";
 import { WebTrader } from "./components/WebTrader";
 import { MobilePortfolio } from "./pages/MobilePortfolio";
 import { MobileTradingHistory } from "./pages/MobileTradingHistory";
+import PromoCodeAnalytics from "./pages/PromoCodeAnalytics";
 
 const queryClient = new QueryClient();
 
@@ -80,6 +81,11 @@ const App = () => (
                 <Route path="/super-admin" element={
                   <RoleBasedRoute allowedRoles={['super_admin']}>
                     <SuperAdminDashboard />
+                  </RoleBasedRoute>
+                } />
+                <Route path="/admin/promo-analytics" element={
+                  <RoleBasedRoute allowedRoles={['admin', 'super_admin']}>
+                    <PromoCodeAnalytics />
                   </RoleBasedRoute>
                 } />
                 <Route path="/webtrader" element={
