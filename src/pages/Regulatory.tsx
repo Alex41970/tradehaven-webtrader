@@ -1,20 +1,29 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Shield, FileCheck, Building, Scale } from "lucide-react";
+import { ArrowLeft, Shield, FileCheck, Building, Scale } from "lucide-react";
 
 const Regulatory = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="border-b border-border/40 backdrop-blur-sm sticky top-0 z-50 bg-background/80">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <Link to="/" className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-            TradePro
-          </Link>
-          <Link to="/">
-            <Button variant="ghost">Back to Home</Button>
-          </Link>
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex items-center gap-4">
+            <Link to="/">
+              <Button variant="ghost" size="sm" className="flex items-center gap-2">
+                <ArrowLeft className="h-4 w-4" />
+                Back to Home
+              </Button>
+            </Link>
+            <div className="flex-1 flex justify-center">
+              <Link to="/" className="text-xl md:text-2xl font-bold bg-gradient-to-r from-trading-primary to-trading-accent bg-clip-text text-transparent">
+                <span className="hidden md:inline">Lexington Capital Investing</span>
+                <span className="md:hidden">LCI</span>
+              </Link>
+            </div>
+            <div className="w-[100px]"></div> {/* Spacer for center alignment */}
+          </div>
         </div>
       </header>
 
@@ -25,7 +34,7 @@ const Regulatory = () => {
             Regulatory Information
           </h1>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-            TradePro is fully authorized and regulated by leading financial authorities worldwide, ensuring the highest standards of security and compliance.
+            Lexington Capital is fully authorized and regulated by leading financial authorities worldwide, ensuring the highest standards of security and compliance.
           </p>
         </div>
 
@@ -68,7 +77,7 @@ const Regulatory = () => {
                   <h3 className="text-2xl font-bold mb-2">United Kingdom - FCA</h3>
                   <p className="text-muted-foreground mb-4">Financial Conduct Authority</p>
                   <div className="space-y-2 text-sm">
-                    <p><strong>Entity:</strong> TradePro UK Limited</p>
+                    <p><strong>Entity:</strong> Lexington Capital UK Limited</p>
                     <p><strong>Registration:</strong> Authorized and regulated by the FCA</p>
                     <p><strong>License Number:</strong> FCA 987654</p>
                     <p><strong>Address:</strong> 123 Financial District, Canary Wharf, London E14 5AB, UK</p>
@@ -91,7 +100,7 @@ const Regulatory = () => {
                   <h3 className="text-2xl font-bold mb-2">Cyprus - CySEC</h3>
                   <p className="text-muted-foreground mb-4">Cyprus Securities and Exchange Commission</p>
                   <div className="space-y-2 text-sm">
-                    <p><strong>Entity:</strong> TradePro (CY) Limited</p>
+                    <p><strong>Entity:</strong> Lexington Capital (CY) Limited</p>
                     <p><strong>Registration:</strong> Licensed and regulated by CySEC</p>
                     <p><strong>License Number:</strong> CySEC 123/45</p>
                     <p><strong>Address:</strong> 456 Limassol Avenue, Limassol 3030, Cyprus</p>
@@ -114,7 +123,7 @@ const Regulatory = () => {
                   <h3 className="text-2xl font-bold mb-2">Australia - ASIC</h3>
                   <p className="text-muted-foreground mb-4">Australian Securities and Investments Commission</p>
                   <div className="space-y-2 text-sm">
-                    <p><strong>Entity:</strong> TradePro Australia Pty Ltd</p>
+                    <p><strong>Entity:</strong> Lexington Capital Australia Pty Ltd</p>
                     <p><strong>Registration:</strong> Authorized and regulated by ASIC</p>
                     <p><strong>AFSL Number:</strong> 456789</p>
                     <p><strong>Address:</strong> 789 Collins Street, Melbourne VIC 3000, Australia</p>
@@ -135,7 +144,7 @@ const Regulatory = () => {
             <Card className="p-6">
               <h3 className="text-xl font-bold mb-4 text-primary">Segregated Client Funds</h3>
               <p className="text-muted-foreground mb-4">
-                All client funds are held in segregated accounts with tier-1 banks, completely separate from TradePro's operational funds. This ensures your money is protected even in the unlikely event of company insolvency.
+                All client funds are held in segregated accounts with tier-1 banks, completely separate from Lexington Capital's operational funds. This ensures your money is protected even in the unlikely event of company insolvency.
               </p>
               <ul className="list-disc list-inside space-y-2 text-sm text-foreground/90">
                 <li>Held with top-rated financial institutions</li>

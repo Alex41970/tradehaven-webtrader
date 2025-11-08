@@ -1,20 +1,29 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Newspaper, Award, Download, Mail } from "lucide-react";
+import { ArrowLeft, Award, Download, Mail } from "lucide-react";
 
 const Press = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="border-b border-border/40 backdrop-blur-sm sticky top-0 z-50 bg-background/80">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <Link to="/" className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-            TradePro
-          </Link>
-          <Link to="/">
-            <Button variant="ghost">Back to Home</Button>
-          </Link>
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex items-center gap-4">
+            <Link to="/">
+              <Button variant="ghost" size="sm" className="flex items-center gap-2">
+                <ArrowLeft className="h-4 w-4" />
+                Back to Home
+              </Button>
+            </Link>
+            <div className="flex-1 flex justify-center">
+              <Link to="/" className="text-xl md:text-2xl font-bold bg-gradient-to-r from-trading-primary to-trading-accent bg-clip-text text-transparent">
+                <span className="hidden md:inline">Lexington Capital Investing</span>
+                <span className="md:hidden">LCI</span>
+              </Link>
+            </div>
+            <div className="w-[100px]"></div> {/* Spacer for center alignment */}
+          </div>
         </div>
       </header>
 
@@ -25,7 +34,7 @@ const Press = () => {
             Press & Media
           </h1>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-            Latest news, press releases, and media coverage about TradePro.
+            Latest news, press releases, and media coverage about Lexington Capital Investing.
           </p>
         </div>
 
@@ -40,7 +49,7 @@ const Press = () => {
               </div>
             </div>
             <div className="text-center md:text-right">
-              <p className="font-semibold mb-1">press@tradepro.com</p>
+              <p className="font-semibold mb-1">press@lexingtoncapital.com</p>
               <p className="text-sm text-muted-foreground">Response within 24 hours</p>
             </div>
           </div>
@@ -53,25 +62,25 @@ const Press = () => {
             {[
               {
                 date: "January 15, 2024",
-                title: "TradePro Surpasses 2 Million Active Traders Milestone",
+                title: "Lexington Capital Surpasses 2 Million Active Traders Milestone",
                 excerpt: "Leading trading platform celebrates significant growth with users across 120+ countries and $100B+ in monthly trading volume.",
                 category: "Company News"
               },
               {
                 date: "December 3, 2023",
-                title: "TradePro Launches AI-Powered Trading Assistant",
+                title: "Lexington Capital Launches AI-Powered Trading Assistant",
                 excerpt: "Revolutionary new feature uses advanced machine learning to provide personalized trading insights and strategy recommendations.",
                 category: "Product Launch"
               },
               {
                 date: "October 20, 2023",
-                title: "TradePro Wins 'Best Trading Platform 2023' Award",
+                title: "Lexington Capital Wins 'Best Trading Platform 2023' Award",
                 excerpt: "Industry recognition for innovation, user experience, and customer satisfaction from Global Finance Awards.",
                 category: "Awards"
               },
               {
                 date: "September 8, 2023",
-                title: "TradePro Expands to Asian Markets with Singapore Office",
+                title: "Lexington Capital Expands to Asian Markets with Singapore Office",
                 excerpt: "Strategic expansion includes new regional headquarters and 24/7 multilingual support for Asian traders.",
                 category: "Expansion"
               }

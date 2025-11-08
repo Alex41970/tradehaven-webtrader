@@ -4,20 +4,29 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Mail, Phone, MapPin, Clock, MessageSquare } from "lucide-react";
+import { ArrowLeft, Mail, Phone, MapPin, Clock, MessageSquare } from "lucide-react";
 
 const Contact = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="border-b border-border/40 backdrop-blur-sm sticky top-0 z-50 bg-background/80">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <Link to="/" className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-            TradePro
-          </Link>
-          <Link to="/">
-            <Button variant="ghost">Back to Home</Button>
-          </Link>
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex items-center gap-4">
+            <Link to="/">
+              <Button variant="ghost" size="sm" className="flex items-center gap-2">
+                <ArrowLeft className="h-4 w-4" />
+                Back to Home
+              </Button>
+            </Link>
+            <div className="flex-1 flex justify-center">
+              <Link to="/" className="text-xl md:text-2xl font-bold bg-gradient-to-r from-trading-primary to-trading-accent bg-clip-text text-transparent">
+                <span className="hidden md:inline">Lexington Capital Investing</span>
+                <span className="md:hidden">LCI</span>
+              </Link>
+            </div>
+            <div className="w-[100px]"></div> {/* Spacer for center alignment */}
+          </div>
         </div>
       </header>
 
@@ -48,7 +57,7 @@ const Contact = () => {
               <Mail className="w-12 h-12 text-accent mb-4" />
               <h3 className="text-xl font-bold mb-2">Email Support</h3>
               <p className="text-muted-foreground mb-2">
-                support@tradepro.com
+                support@lexingtoncapital.com
               </p>
               <p className="text-sm text-muted-foreground">
                 Response within 24 hours

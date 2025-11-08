@@ -1,20 +1,29 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Trophy, Globe, Shield, TrendingUp, Users, Award } from "lucide-react";
+import { ArrowLeft, Globe, Shield, TrendingUp, Users, Award } from "lucide-react";
 
 const AboutUs = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="border-b border-border/40 backdrop-blur-sm sticky top-0 z-50 bg-background/80">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <Link to="/" className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-            TradePro
-          </Link>
-          <Link to="/">
-            <Button variant="ghost">Back to Home</Button>
-          </Link>
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex items-center gap-4">
+            <Link to="/">
+              <Button variant="ghost" size="sm" className="flex items-center gap-2">
+                <ArrowLeft className="h-4 w-4" />
+                Back to Home
+              </Button>
+            </Link>
+            <div className="flex-1 flex justify-center">
+              <Link to="/" className="text-xl md:text-2xl font-bold bg-gradient-to-r from-trading-primary to-trading-accent bg-clip-text text-transparent">
+                <span className="hidden md:inline">Lexington Capital Investing</span>
+                <span className="md:hidden">LCI</span>
+              </Link>
+            </div>
+            <div className="w-[100px]"></div> {/* Spacer for center alignment */}
+          </div>
         </div>
       </header>
 
@@ -22,7 +31,7 @@ const AboutUs = () => {
         {/* Hero Section */}
         <div className="text-center mb-16 animate-fade-in">
           <h1 className="text-5xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent">
-            About TradePro
+            About Lexington Capital
           </h1>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
             Leading the future of digital trading with innovative technology, unmatched security, and a commitment to trader success since 2015.
@@ -70,7 +79,7 @@ const AboutUs = () => {
           <h2 className="text-3xl font-bold text-center mb-12">Our Journey</h2>
           <div className="space-y-8 relative before:absolute before:left-8 before:top-0 before:bottom-0 before:w-0.5 before:bg-primary/30">
             {[
-              { year: "2015", title: "Founded", desc: "TradePro established with a vision to revolutionize online trading" },
+              { year: "2015", title: "Founded", desc: "Lexington Capital established with a vision to revolutionize online trading" },
               { year: "2017", title: "100K Users", desc: "Reached 100,000 active traders across 50 countries" },
               { year: "2019", title: "Advanced Platform", desc: "Launched AI-powered trading analytics and automated strategies" },
               { year: "2021", title: "1M Users", desc: "Surpassed 1 million traders and $50B in monthly volume" },

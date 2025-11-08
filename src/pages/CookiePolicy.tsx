@@ -1,19 +1,29 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { ArrowLeft } from "lucide-react";
 
 const CookiePolicy = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="border-b border-border/40 backdrop-blur-sm sticky top-0 z-50 bg-background/80">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <Link to="/" className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-            TradePro
-          </Link>
-          <Link to="/">
-            <Button variant="ghost">Back to Home</Button>
-          </Link>
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex items-center gap-4">
+            <Link to="/">
+              <Button variant="ghost" size="sm" className="flex items-center gap-2">
+                <ArrowLeft className="h-4 w-4" />
+                Back to Home
+              </Button>
+            </Link>
+            <div className="flex-1 flex justify-center">
+              <Link to="/" className="text-xl md:text-2xl font-bold bg-gradient-to-r from-trading-primary to-trading-accent bg-clip-text text-transparent">
+                <span className="hidden md:inline">Lexington Capital Investing</span>
+                <span className="md:hidden">LCI</span>
+              </Link>
+            </div>
+            <div className="w-[100px]"></div> {/* Spacer for center alignment */}
+          </div>
         </div>
       </header>
 
@@ -25,7 +35,7 @@ const CookiePolicy = () => {
           <div className="prose prose-invert max-w-none space-y-8">
             <Card className="p-6 bg-primary/10 border-primary/20">
               <p className="text-foreground/90 leading-relaxed mb-0">
-                This Cookie Policy explains how TradePro ("we", "us", or "our") uses cookies and similar technologies when you visit our website and use our services.
+                This Cookie Policy explains how Lexington Capital Investing ("we", "us", or "our") uses cookies and similar technologies when you visit our website and use our services.
               </p>
             </Card>
 
@@ -126,7 +136,7 @@ const CookiePolicy = () => {
               </p>
               <Card className="p-6 mt-4 bg-card/50">
                 <p className="text-foreground/90">
-                  <strong>Email:</strong> privacy@tradepro.com<br />
+                  <strong>Email:</strong> privacy@lexingtoncapital.com<br />
                   <strong>Address:</strong> 123 Financial District, Canary Wharf, London E14 5AB, UK<br />
                   <strong>Phone:</strong> +44 20 1234 5678
                 </p>

@@ -1,20 +1,29 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { AlertTriangle } from "lucide-react";
+import { ArrowLeft, AlertTriangle } from "lucide-react";
 
 const RiskDisclosure = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="border-b border-border/40 backdrop-blur-sm sticky top-0 z-50 bg-background/80">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <Link to="/" className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-            TradePro
-          </Link>
-          <Link to="/">
-            <Button variant="ghost">Back to Home</Button>
-          </Link>
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex items-center gap-4">
+            <Link to="/">
+              <Button variant="ghost" size="sm" className="flex items-center gap-2">
+                <ArrowLeft className="h-4 w-4" />
+                Back to Home
+              </Button>
+            </Link>
+            <div className="flex-1 flex justify-center">
+              <Link to="/" className="text-xl md:text-2xl font-bold bg-gradient-to-r from-trading-primary to-trading-accent bg-clip-text text-transparent">
+                <span className="hidden md:inline">Lexington Capital Investing</span>
+                <span className="md:hidden">LCI</span>
+              </Link>
+            </div>
+            <div className="w-[100px]"></div> {/* Spacer for center alignment */}
+          </div>
         </div>
       </header>
 
@@ -36,7 +45,7 @@ const RiskDisclosure = () => {
             <section>
               <h2 className="text-2xl font-bold mb-4 text-primary">General Risk Warning</h2>
               <p className="text-foreground/90 leading-relaxed">
-                Before you decide to trade leveraged financial products offered by TradePro, you should carefully consider your investment objectives, level of experience, and risk appetite. There is a possibility that you may sustain a loss of some or all of your initial investment, and therefore you should not invest money that you cannot afford to lose.
+                Before you decide to trade leveraged financial products offered by Lexington Capital Investing, you should carefully consider your investment objectives, level of experience, and risk appetite. There is a possibility that you may sustain a loss of some or all of your initial investment, and therefore you should not invest money that you cannot afford to lose.
               </p>
               <p className="text-foreground/90 leading-relaxed mt-4">
                 You should be aware of all the risks associated with trading leveraged products and seek advice from an independent financial advisor if you have any doubts.
@@ -78,7 +87,7 @@ const RiskDisclosure = () => {
 
               <h3 className="text-xl font-semibold mb-3 text-accent">7. Counterparty Risk</h3>
               <p className="text-foreground/90 leading-relaxed">
-                When you trade with TradePro, you are exposed to our creditworthiness as your counterparty. While client funds are held in segregated accounts and we maintain strong capital reserves, there is a risk that we may not be able to meet our obligations in extreme circumstances.
+                When you trade with Lexington Capital, you are exposed to our creditworthiness as your counterparty. While client funds are held in segregated accounts and we maintain strong capital reserves, there is a risk that we may not be able to meet our obligations in extreme circumstances.
               </p>
             </section>
 
@@ -121,7 +130,7 @@ const RiskDisclosure = () => {
             <section>
               <h2 className="text-2xl font-bold mb-4 text-primary">No Investment Advice</h2>
               <p className="text-foreground/90 leading-relaxed">
-                The information provided by TradePro is for general information purposes only and should not be considered as investment advice. We do not provide personal recommendations or advice on the merits of any particular trade. You are solely responsible for your trading decisions and should seek independent financial advice if you have any doubts.
+                The information provided by Lexington Capital is for general information purposes only and should not be considered as investment advice. We do not provide personal recommendations or advice on the merits of any particular trade. You are solely responsible for your trading decisions and should seek independent financial advice if you have any doubts.
               </p>
             </section>
 
@@ -135,7 +144,7 @@ const RiskDisclosure = () => {
             <section>
               <h2 className="text-2xl font-bold mb-4 text-primary">Regulatory Information</h2>
               <p className="text-foreground/90 leading-relaxed">
-                TradePro is authorized and regulated by major financial authorities. However, regulatory protection varies by jurisdiction. Please refer to our <Link to="/regulatory" className="text-primary hover:underline">Regulatory Information</Link> page for details about the protections available in your region.
+                Lexington Capital is authorized and regulated by major financial authorities. However, regulatory protection varies by jurisdiction. Please refer to our <Link to="/regulatory" className="text-primary hover:underline">Regulatory Information</Link> page for details about the protections available in your region.
               </p>
             </section>
 
@@ -153,7 +162,7 @@ const RiskDisclosure = () => {
               </p>
               <Card className="p-6 mt-4 bg-card/50">
                 <p className="text-foreground/90">
-                  <strong>Email:</strong> risk@tradepro.com<br />
+                  <strong>Email:</strong> risk@lexingtoncapital.com<br />
                   <strong>Phone:</strong> +44 20 1234 5678<br />
                   <strong>Address:</strong> 123 Financial District, Canary Wharf, London E14 5AB, UK
                 </p>
@@ -162,7 +171,7 @@ const RiskDisclosure = () => {
 
             <Card className="p-6 bg-trading-danger/10 border-trading-danger/30 mt-8">
               <p className="text-foreground font-semibold mb-4">
-                By opening an account and trading with TradePro, you acknowledge that you have read, understood, and accepted this Risk Disclosure statement.
+                By opening an account and trading with Lexington Capital, you acknowledge that you have read, understood, and accepted this Risk Disclosure statement.
               </p>
               <p className="text-foreground/90 mb-0">
                 Trading leveraged products is not suitable for everyone. Please ensure you fully understand the risks involved and seek independent advice if necessary.

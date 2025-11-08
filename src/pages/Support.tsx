@@ -3,20 +3,29 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Search, BookOpen, Video, MessageSquare, FileText, HelpCircle } from "lucide-react";
+import { ArrowLeft, Search, BookOpen, Video, MessageSquare, FileText, HelpCircle } from "lucide-react";
 
 const Support = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="border-b border-border/40 backdrop-blur-sm sticky top-0 z-50 bg-background/80">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <Link to="/" className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-            TradePro
-          </Link>
-          <Link to="/">
-            <Button variant="ghost">Back to Home</Button>
-          </Link>
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex items-center gap-4">
+            <Link to="/">
+              <Button variant="ghost" size="sm" className="flex items-center gap-2">
+                <ArrowLeft className="h-4 w-4" />
+                Back to Home
+              </Button>
+            </Link>
+            <div className="flex-1 flex justify-center">
+              <Link to="/" className="text-xl md:text-2xl font-bold bg-gradient-to-r from-trading-primary to-trading-accent bg-clip-text text-transparent">
+                <span className="hidden md:inline">Lexington Capital Investing</span>
+                <span className="md:hidden">LCI</span>
+              </Link>
+            </div>
+            <div className="w-[100px]"></div> {/* Spacer for center alignment */}
+          </div>
         </div>
       </header>
 
@@ -27,7 +36,7 @@ const Support = () => {
             Help Center
           </h1>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto mb-8">
-            Find answers, tutorials, and resources to help you succeed on TradePro.
+            Find answers, tutorials, and resources to help you succeed on Lexington Capital.
           </p>
           
           {/* Search Bar */}
@@ -98,7 +107,7 @@ const Support = () => {
           <h2 className="text-3xl font-bold mb-8">Popular Articles</h2>
           <Card className="divide-y divide-border">
             {[
-              "How do I create an account on TradePro?",
+              "How do I create an account on Lexington Capital?",
               "What payment methods are supported?",
               "How to place my first trade?",
               "Understanding leverage and margin",
@@ -139,7 +148,7 @@ const Support = () => {
 
             <AccordionItem value="item-3" className="border rounded-lg px-6 bg-card">
               <AccordionTrigger className="text-left">
-                Is my money safe with TradePro?
+                Is my money safe with Lexington Capital?
               </AccordionTrigger>
               <AccordionContent className="text-muted-foreground">
                 Yes, your funds are protected through multiple layers of security. We use segregated accounts to keep client funds separate from company funds, employ bank-level encryption, and are fully regulated by major financial authorities. Client deposits are also covered by investor protection schemes up to applicable limits.
@@ -148,10 +157,10 @@ const Support = () => {
 
             <AccordionItem value="item-4" className="border rounded-lg px-6 bg-card">
               <AccordionTrigger className="text-left">
-                Can I use TradePro on mobile devices?
+                Can I use Lexington Capital on mobile devices?
               </AccordionTrigger>
               <AccordionContent className="text-muted-foreground">
-                Absolutely! TradePro offers native mobile apps for both iOS and Android, as well as a fully responsive web platform. You can trade, manage your account, and access all features seamlessly across all your devices.
+                Absolutely! Lexington Capital offers native mobile apps for both iOS and Android, as well as a fully responsive web platform. You can trade, manage your account, and access all features seamlessly across all your devices.
               </AccordionContent>
             </AccordionItem>
 
@@ -160,7 +169,7 @@ const Support = () => {
                 What trading instruments are available?
               </AccordionTrigger>
               <AccordionContent className="text-muted-foreground">
-                TradePro offers a wide range of trading instruments including Forex (60+ currency pairs), Commodities (Gold, Silver, Oil, etc.), Indices (US500, UK100, etc.), Cryptocurrencies (Bitcoin, Ethereum, etc.), and Stocks (1000+ global stocks). Check our Markets page for the complete list.
+                Lexington Capital offers a wide range of trading instruments including Forex (60+ currency pairs), Commodities (Gold, Silver, Oil, etc.), Indices (US500, UK100, etc.), Cryptocurrencies (Bitcoin, Ethereum, etc.), and Stocks (1000+ global stocks). Check our Markets page for the complete list.
               </AccordionContent>
             </AccordionItem>
 

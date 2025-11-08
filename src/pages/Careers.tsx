@@ -1,20 +1,29 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Briefcase, Heart, Zap, Globe, TrendingUp, Award } from "lucide-react";
+import { ArrowLeft, Briefcase, Heart, Zap, Globe, TrendingUp, Award } from "lucide-react";
 
 const Careers = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="border-b border-border/40 backdrop-blur-sm sticky top-0 z-50 bg-background/80">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <Link to="/" className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-            TradePro
-          </Link>
-          <Link to="/">
-            <Button variant="ghost">Back to Home</Button>
-          </Link>
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex items-center gap-4">
+            <Link to="/">
+              <Button variant="ghost" size="sm" className="flex items-center gap-2">
+                <ArrowLeft className="h-4 w-4" />
+                Back to Home
+              </Button>
+            </Link>
+            <div className="flex-1 flex justify-center">
+              <Link to="/" className="text-xl md:text-2xl font-bold bg-gradient-to-r from-trading-primary to-trading-accent bg-clip-text text-transparent">
+                <span className="hidden md:inline">Lexington Capital Investing</span>
+                <span className="md:hidden">LCI</span>
+              </Link>
+            </div>
+            <div className="w-[100px]"></div> {/* Spacer for center alignment */}
+          </div>
         </div>
       </header>
 
@@ -22,7 +31,7 @@ const Careers = () => {
         {/* Hero */}
         <div className="text-center mb-16 animate-fade-in">
           <h1 className="text-5xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent">
-            Build Your Career at TradePro
+            Build Your Career at LCI
           </h1>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
             Join a team of innovators, traders, and technologists shaping the future of financial markets.
@@ -31,7 +40,7 @@ const Careers = () => {
 
         {/* Why Work Here */}
         <div className="mb-16">
-          <h2 className="text-3xl font-bold text-center mb-12">Why TradePro?</h2>
+          <h2 className="text-3xl font-bold text-center mb-12">Why Lexington Capital?</h2>
           <div className="grid md:grid-cols-3 gap-8">
             <Card className="p-6 hover:shadow-xl transition-all hover:-translate-y-1">
               <Zap className="w-12 h-12 text-accent mb-4" />
