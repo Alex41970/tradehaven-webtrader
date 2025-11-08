@@ -12,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { BotLicenseManagement } from "@/components/BotLicenseManagement";
-import { UserPaymentSettings } from "@/components/UserPaymentSettings";
+import { ManagePaymentSettingsDialog } from "@/components/admin/ManagePaymentSettingsDialog";
 import { UserSearchSelect } from "@/components/admin/UserSearchSelect";
 import { ModifyBalanceDialog } from "@/components/admin/ModifyBalanceDialog";
 import { CreateTradeDialog } from "@/components/admin/CreateTradeDialog";
@@ -78,6 +78,7 @@ const AdminDashboard = () => {
   
   // Dialog states
   const [modifyBalanceDialogOpen, setModifyBalanceDialogOpen] = useState(false);
+  const [paymentSettingsDialogOpen, setPaymentSettingsDialogOpen] = useState(false);
   const [createTradeDialogOpen, setCreateTradeDialogOpen] = useState(false);
   const [selectedUserForAction, setSelectedUserForAction] = useState<UserProfile | null>(null);
   
@@ -774,7 +775,6 @@ const AdminDashboard = () => {
             <TabsTrigger value="trades">Trades</TabsTrigger>
             <TabsTrigger value="financial-requests">Financial Requests</TabsTrigger>
             <TabsTrigger value="bot-licenses">Bot Management</TabsTrigger>
-            <TabsTrigger value="payment-settings">Payment Settings</TabsTrigger>
           </TabsList>
 
           <TabsContent value="users" className="space-y-4">
@@ -861,9 +861,8 @@ const AdminDashboard = () => {
                                   size="sm"
                                   variant="outline"
                                   onClick={() => {
-                                    // Switch to payment settings tab
-                                    const paymentTab = document.querySelector('[value="payment-settings"]') as HTMLElement;
-                                    paymentTab?.click();
+                                    setSelectedUserForAction(user);
+                                    setPaymentSettingsDialogOpen(true);
                                   }}
                                 >
                                   <CreditCard className="h-4 w-4 mr-1" />
@@ -1346,20 +1345,6 @@ const AdminDashboard = () => {
             <BotLicenseManagement />
           </TabsContent>
 
-          <TabsContent value="payment-settings" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>User Payment Settings</CardTitle>
-                <CardDescription>
-                  Configure personalized cryptocurrency wallets and bank transfer details for each user's deposits.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <UserPaymentSettings users={users} />
-              </CardContent>
-            </Card>
-          </TabsContent>
-
         </Tabs>
       </div>
 
@@ -1369,6 +1354,13 @@ const AdminDashboard = () => {
         onOpenChange={setModifyBalanceDialogOpen}
         user={selectedUserForAction}
         onModifyBalance={handleModifyBalance}
+      />
+
+      <ManagePaymentSettingsDialog
+        open={paymentSettingsDialogOpen}
+        onOpenChange={setPaymentSettingsDialogOpen}
+        user={selectedUserForAction}
+        onSave={fetchAdminData}
       />
 
       <CreateTradeDialog
