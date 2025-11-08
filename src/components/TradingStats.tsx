@@ -61,11 +61,11 @@ export const TradingStats = () => {
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8">
       {stats.map((stat, index) => (
-        <div key={index} className="text-center group">
-          <div className="mx-auto w-16 h-16 bg-gradient-to-br from-trading-accent/20 to-trading-primary/20 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
-            <stat.icon className="h-8 w-8 text-trading-accent" />
+        <div key={index} className="text-center">
+          <div className="mx-auto w-16 h-16 bg-accent/10 rounded-lg flex items-center justify-center mb-4">
+            <stat.icon className="h-8 w-8 text-accent" />
           </div>
-          <div className="mb-2">
+          <div className="mb-2 text-accent">
             <AnimatedCounter 
               end={parseInt(stat.value)} 
               prefix={stat.suffix === "$" ? "$" : ""} 

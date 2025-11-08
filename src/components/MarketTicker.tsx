@@ -19,16 +19,16 @@ export const MarketTicker = () => {
   const changePercent = (asset: any) => asset.change_24h;
 
   return (
-    <div className="w-full overflow-hidden bg-trading-secondary/20 border-b border-border/50">
+    <div className="w-full overflow-hidden bg-secondary border-b border-border">
       <div className="flex items-center">
         <MarketTickIndicator />
-        <div className="flex animate-[scroll_60s_linear_infinite] gap-8 py-2 flex-1">
+        <div className="flex animate-[scroll_60s_linear_infinite] gap-8 py-3 flex-1">
           {[...tickerAssets, ...tickerAssets].map((asset, index) => {
             const percent = changePercent(asset);
             return (
               <div key={`${asset.symbol}-${index}`} className="flex items-center gap-2 whitespace-nowrap px-4">
-                <span className="font-semibold text-sm">{asset.symbol}</span>
-                <span className="text-sm font-mono">{asset.price.toFixed(2)}</span>
+                <span className="font-semibold text-sm text-foreground">{asset.symbol}</span>
+                <span className="text-sm font-mono text-foreground">{asset.price.toFixed(2)}</span>
                 <div className={`flex items-center gap-1 text-xs ${
                   percent >= 0 ? 'text-trading-success' : 'text-trading-danger'
                 }`}>

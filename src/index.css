@@ -2,198 +2,89 @@
 @tailwind components;
 @tailwind utilities;
 
-@layer utilities {
-  .animate-pulse-subtle {
-    animation: pulse-subtle 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-  }
-}
-
-@keyframes pulse-subtle {
-  0%, 100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.8;
-    transform: scale(1.02);
-  }
-}
-
-@keyframes gradient-shift {
-  0%, 100% {
-    background-position: 0% 50%;
-  }
-  50% {
-    background-position: 100% 50%;
-  }
-}
-
-@keyframes hero-gradient-shift {
-  0%, 100% {
-    background-position: 0% 50%, 100% 50%, 0 0;
-  }
-  25% {
-    background-position: 25% 60%, 75% 40%, 0 0;
-  }
-  50% {
-    background-position: 100% 50%, 0% 50%, 0 0;
-  }
-  75% {
-    background-position: 75% 40%, 25% 60%, 0 0;
-  }
-}
-
-@keyframes float {
-  0%, 100% {
-    transform: translateY(0px);
-  }
-  50% {
-    transform: translateY(-20px);
-  }
-}
-
-@keyframes particle-float-hero {
-  0%, 100% {
-    transform: translate(0, 0) scale(1);
-    opacity: 0.4;
-  }
-  33% {
-    transform: translate(30px, -30px) scale(1.1);
-    opacity: 0.6;
-  }
-  66% {
-    transform: translate(-20px, -40px) scale(0.9);
-    opacity: 0.5;
-  }
-}
-
-@keyframes glow {
-  0%, 100% {
-    opacity: 0.5;
-  }
-  50% {
-    opacity: 1;
-  }
-}
-
-@keyframes glow-pulse {
-  0%, 100% {
-    text-shadow: 0 0 15px hsl(199 89% 48% / 0.2),
-                 0 0 30px hsl(199 89% 48% / 0.1);
-  }
-  50% {
-    text-shadow: 0 0 20px hsl(199 89% 48% / 0.3),
-                 0 0 40px hsl(199 89% 48% / 0.15);
-  }
-}
-
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
+/* Binance-inspired Professional Trading Platform Design System */
+/* All colors MUST be HSL */
 
 @layer base {
   :root {
-    --background: 220 15% 8%;
-    --foreground: 210 40% 98%;
+    /* Core Backgrounds - Binance Dark Theme */
+    --background: 222 13% 7%;           /* #0B0E11 - Very dark background */
+    --foreground: 210 17% 93%;          /* #EAECEF - Light text */
 
-    --card: 220 15% 12%;
-    --card-foreground: 210 40% 98%;
+    --card: 218 17% 18%;                /* #2B3139 - Card background */
+    --card-foreground: 210 17% 93%;
 
-    --popover: 220 15% 12%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 218 17% 18%;
+    --popover-foreground: 210 17% 93%;
 
-    --primary: 220 91% 20%;
-    --primary-foreground: 210 40% 98%;
+    /* Primary - Binance Blue */
+    --primary: 225 100% 61%;            /* #3861FB - Blue accent */
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 220 15% 16%;
-    --secondary-foreground: 210 40% 98%;
+    /* Secondary - Dark gray */
+    --secondary: 218 13% 18%;           /* #1E2329 - Secondary dark */
+    --secondary-foreground: 210 17% 93%;
 
-    --muted: 220 15% 16%;
-    --muted-foreground: 215 20% 65%;
+    --muted: 218 13% 18%;
+    --muted-foreground: 215 14% 58%;    /* #848E9C - Muted gray */
 
-    --accent: 199 89% 48%;
-    --accent-foreground: 220 15% 8%;
+    /* Accent - Binance Gold */
+    --accent: 45 98% 50%;               /* #F0B90B - Gold */
+    --accent-foreground: 222 13% 7%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 349 89% 63%;         /* #F6465D - Red */
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 220 15% 20%;
-    --input: 220 15% 16%;
-    --ring: 199 89% 48%;
+    --border: 218 17% 18%;              /* #2B3139 - Subtle border */
+    --input: 218 17% 18%;
+    --ring: 225 100% 61%;
 
     --radius: 0.5rem;
 
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 240 5.9% 10%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 240 4.8% 95.9%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
-    
-    /* Trading-specific colors */
-    --trading-primary: 220 91% 20%;
-    --trading-secondary: 215 25% 27%;
-    --trading-accent: 199 89% 48%;
-    --trading-success: 142 76% 36%;
-    --trading-danger: 0 84% 60%;
-    --trading-neutral: 215 16% 47%;
-    --trading-bg-gradient: linear-gradient(135deg, hsl(220 91% 20%), hsl(217 91% 60%));
-    --trading-hero-gradient: linear-gradient(135deg, hsl(220 91% 20%) 0%, hsl(217 91% 60%) 100%);
-    --trading-card-gradient: linear-gradient(145deg, hsl(0 0% 100% / 0.05), hsl(0 0% 100% / 0.02));
-    --trading-shadow: 0 25px 50px -12px hsl(220 91% 20% / 0.25);
-    --trading-glow: 0 0 30px hsl(199 89% 48% / 0.1);
+    /* Trading-specific colors - Binance palette */
+    --trading-primary: 225 100% 61%;    /* Blue */
+    --trading-secondary: 218 13% 18%;   /* Dark gray */
+    --trading-accent: 45 98% 50%;       /* Gold */
+    --trading-success: 145 63% 49%;     /* #0ECB81 - Green */
+    --trading-danger: 349 89% 63%;      /* #F6465D - Red */
+    --trading-neutral: 215 14% 58%;     /* Gray */
   }
 
   .dark {
-    --background: 220 91% 4%;
-    --foreground: 210 40% 98%;
+    --background: 222 13% 7%;
+    --foreground: 210 17% 93%;
 
-    --card: 220 91% 6%;
-    --card-foreground: 210 40% 98%;
+    --card: 218 17% 18%;
+    --card-foreground: 210 17% 93%;
 
-    --popover: 220 91% 6%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 218 17% 18%;
+    --popover-foreground: 210 17% 93%;
 
-    --primary: 43 96% 56%;
-    --primary-foreground: 220 91% 4%;
+    --primary: 225 100% 61%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 215 25% 16%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 218 13% 18%;
+    --secondary-foreground: 210 17% 93%;
 
-    --muted: 215 25% 16%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted: 218 13% 18%;
+    --muted-foreground: 215 14% 58%;
 
-    --accent: 199 89% 48%;
-    --accent-foreground: 220 91% 4%;
+    --accent: 45 98% 50%;
+    --accent-foreground: 222 13% 7%;
 
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 349 89% 63%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 215 25% 16%;
-    --input: 215 25% 16%;
-    --ring: 199 89% 48%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
-    
-    /* Dark mode trading colors */
-    --trading-primary: 199 89% 48%;
-    --trading-secondary: 215 25% 16%;
-    --trading-accent: 199 89% 48%;
-    --trading-success: 142 76% 36%;
-    --trading-danger: 0 84% 60%;
-    --trading-neutral: 215 20% 65%;
-    --trading-bg-gradient: linear-gradient(135deg, hsl(220 91% 4%), hsl(217 91% 60%));
-    --trading-hero-gradient: linear-gradient(135deg, hsl(220 91% 4%) 0%, hsl(217 91% 60%) 100%);
-    --trading-card-gradient: linear-gradient(145deg, hsl(0 0% 100% / 0.05), hsl(0 0% 100% / 0.02));
-    --trading-shadow: 0 25px 50px -12px hsl(220 91% 2% / 0.8);
-    --trading-glow: 0 0 30px hsl(199 89% 48% / 0.15);
+    --border: 218 17% 18%;
+    --input: 218 17% 18%;
+    --ring: 225 100% 61%;
+
+    --trading-primary: 225 100% 61%;
+    --trading-secondary: 218 13% 18%;
+    --trading-accent: 45 98% 50%;
+    --trading-success: 145 63% 49%;
+    --trading-danger: 349 89% 63%;
+    --trading-neutral: 215 14% 58%;
   }
 }
 
@@ -204,83 +95,80 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   }
 
+  /* Typography Scale - Professional & Clean */
+  h1 {
+    @apply text-4xl md:text-5xl lg:text-6xl font-bold leading-tight;
+  }
+
+  h2 {
+    @apply text-3xl md:text-4xl lg:text-5xl font-bold leading-tight;
+  }
+
+  h3 {
+    @apply text-xl md:text-2xl font-semibold;
+  }
+
+  /* Market Ticker Animation */
   @keyframes scroll {
     0% { transform: translateX(0); }
     100% { transform: translateX(-50%); }
   }
 
-  .bg-grid-white\/\[0\.02\] {
-    background-image: radial-gradient(circle, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+  /* Simple Background Utilities */
+  .bg-trading-dark {
+    background: linear-gradient(180deg, hsl(222 13% 7%) 0%, hsl(218 13% 10%) 100%);
   }
 
-  .bg-chart-depth {
-    background-color: hsl(220 20% 8%);
-    background-image: url("data:image/svg+xml,%3Csvg width='1200' height='800' xmlns='http://www.w3.org/2000/svg'%3E%3Cdefs%3E%3Cpattern id='grid' width='60' height='40' patternUnits='userSpaceOnUse'%3E%3Cpath d='M 60 0 L 0 0 0 40' fill='none' stroke='rgba(14, 165, 233, 0.1)' stroke-width='0.5'/%3E%3C/pattern%3E%3C/defs%3E%3Crect width='1200' height='800' fill='hsl(220, 20%25, 8%25)'/%3E%3Crect width='1200' height='800' fill='url(%23grid)'/%3E%3C!-- Price scale --%3E%3Ctext x='10' y='50' fill='rgba(148, 163, 184, 0.6)' font-size='10' font-family='monospace'%3E48,250%3C/text%3E%3Ctext x='10' y='150' fill='rgba(148, 163, 184, 0.6)' font-size='10' font-family='monospace'%3E47,800%3C/text%3E%3Ctext x='10' y='250' fill='rgba(148, 163, 184, 0.6)' font-size='10' font-family='monospace'%3E47,350%3C/text%3E%3Ctext x='10' y='350' fill='rgba(148, 163, 184, 0.6)' font-size='10' font-family='monospace'%3E46,900%3C/text%3E%3Ctext x='10' y='450' fill='rgba(148, 163, 184, 0.6)' font-size='10' font-family='monospace'%3E46,450%3C/text%3E%3Ctext x='10' y='550' fill='rgba(148, 163, 184, 0.6)' font-size='10' font-family='monospace'%3E46,000%3C/text%3E%3Ctext x='10' y='650' fill='rgba(148, 163, 184, 0.6)' font-size='10' font-family='monospace'%3E45,550%3C/text%3E%3C!-- Time scale --%3E%3Ctext x='100' y='790' fill='rgba(148, 163, 184, 0.6)' font-size='10' font-family='monospace'%3E09:00%3C/text%3E%3Ctext x='280' y='790' fill='rgba(148, 163, 184, 0.6)' font-size='10' font-family='monospace'%3E12:00%3C/text%3E%3Ctext x='460' y='790' fill='rgba(148, 163, 184, 0.6)' font-size='10' font-family='monospace'%3E15:00%3C/text%3E%3Ctext x='640' y='790' fill='rgba(148, 163, 184, 0.6)' font-size='10' font-family='monospace'%3E18:00%3C/text%3E%3Ctext x='820' y='790' fill='rgba(148, 163, 184, 0.6)' font-size='10' font-family='monospace'%3E21:00%3C/text%3E%3Ctext x='1000' y='790' fill='rgba(148, 163, 184, 0.6)' font-size='10' font-family='monospace'%3E00:00%3C/text%3E%3C!-- Moving averages --%3E%3Cpath d='M 80 320 Q 200 280, 320 300 T 560 310 T 800 290 T 1040 270 L 1180 260' fill='none' stroke='rgba(234, 179, 8, 0.4)' stroke-width='2'%3E%3Canimate attributeName='opacity' values='0.3;0.5;0.3' dur='4s' repeatCount='indefinite'/%3E%3C/path%3E%3Cpath d='M 80 340 Q 200 310, 320 330 T 560 345 T 800 330 T 1040 315 L 1180 300' fill='none' stroke='rgba(139, 92, 246, 0.4)' stroke-width='2'%3E%3Canimate attributeName='opacity' values='0.3;0.5;0.3' dur='5s' repeatCount='indefinite'/%3E%3C/path%3E%3C!-- Candlesticks with animations --%3E%3Cg%3E%3Cline x1='100' y1='420' x2='100' y2='350' stroke='rgba(34, 197, 94, 0.5)' stroke-width='1'/%3E%3Crect x='95' y='370' width='10' height='40' fill='rgba(34, 197, 94, 0.6)' stroke='rgba(34, 197, 94, 0.8)' stroke-width='1'%3E%3Canimate attributeName='opacity' values='0.5;0.8;0.5' dur='3s' begin='0s' repeatCount='indefinite'/%3E%3C/rect%3E%3C/g%3E%3Cg%3E%3Cline x1='160' y1='400' x2='160' y2='320' stroke='rgba(34, 197, 94, 0.5)' stroke-width='1'/%3E%3Crect x='155' y='340' width='10' height='50' fill='rgba(34, 197, 94, 0.6)' stroke='rgba(34, 197, 94, 0.8)' stroke-width='1'%3E%3Canimate attributeName='opacity' values='0.5;0.8;0.5' dur='3s' begin='0.2s' repeatCount='indefinite'/%3E%3C/rect%3E%3C/g%3E%3Cg%3E%3Cline x1='220' y1='370' x2='220' y2='310' stroke='rgba(239, 68, 68, 0.5)' stroke-width='1'/%3E%3Crect x='215' y='310' width='10' height='40' fill='rgba(239, 68, 68, 0.6)' stroke='rgba(239, 68, 68, 0.8)' stroke-width='1'%3E%3Canimate attributeName='opacity' values='0.5;0.8;0.5' dur='3s' begin='0.4s' repeatCount='indefinite'/%3E%3C/rect%3E%3C/g%3E%3Cg%3E%3Cline x1='280' y1='390' x2='280' y2='330' stroke='rgba(34, 197, 94, 0.5)' stroke-width='1'/%3E%3Crect x='275' y='350' width='10' height='30' fill='rgba(34, 197, 94, 0.6)' stroke='rgba(34, 197, 94, 0.8)' stroke-width='1'%3E%3Canimate attributeName='opacity' values='0.5;0.8;0.5' dur='3s' begin='0.6s' repeatCount='indefinite'/%3E%3C/rect%3E%3C/g%3E%3Cg%3E%3Cline x1='340' y1='360' x2='340' y2='290' stroke='rgba(239, 68, 68, 0.5)' stroke-width='1'/%3E%3Crect x='335' y='290' width='10' height='50' fill='rgba(239, 68, 68, 0.6)' stroke='rgba(239, 68, 68, 0.8)' stroke-width='1'%3E%3Canimate attributeName='opacity' values='0.5;0.8;0.5' dur='3s' begin='0.8s' repeatCount='indefinite'/%3E%3C/rect%3E%3C/g%3E%3Cg%3E%3Cline x1='400' y1='340' x2='400' y2='270' stroke='rgba(34, 197, 94, 0.5)' stroke-width='1'/%3E%3Crect x='395' y='290' width='10' height='40' fill='rgba(34, 197, 94, 0.6)' stroke='rgba(34, 197, 94, 0.8)' stroke-width='1'%3E%3Canimate attributeName='opacity' values='0.5;0.8;0.5' dur='3s' begin='1s' repeatCount='indefinite'/%3E%3C/rect%3E%3C/g%3E%3Cg%3E%3Cline x1='460' y1='370' x2='460' y2='300' stroke='rgba(34, 197, 94, 0.5)' stroke-width='1'/%3E%3Crect x='455' y='320' width='10' height='40' fill='rgba(34, 197, 94, 0.6)' stroke='rgba(34, 197, 94, 0.8)' stroke-width='1'%3E%3Canimate attributeName='opacity' values='0.5;0.8;0.5' dur='3s' begin='1.2s' repeatCount='indefinite'/%3E%3C/rect%3E%3C/g%3E%3Cg%3E%3Cline x1='520' y1='350' x2='520' y2='280' stroke='rgba(239, 68, 68, 0.5)' stroke-width='1'/%3E%3Crect x='515' y='280' width='10' height='50' fill='rgba(239, 68, 68, 0.6)' stroke='rgba(239, 68, 68, 0.8)' stroke-width='1'%3E%3Canimate attributeName='opacity' values='0.5;0.8;0.5' dur='3s' begin='1.4s' repeatCount='indefinite'/%3E%3C/rect%3E%3C/g%3E%3Cg%3E%3Cline x1='580' y1='380' x2='580' y2='310' stroke='rgba(34, 197, 94, 0.5)' stroke-width='1'/%3E%3Crect x='575' y='330' width='10' height='40' fill='rgba(34, 197, 94, 0.6)' stroke='rgba(34, 197, 94, 0.8)' stroke-width='1'%3E%3Canimate attributeName='opacity' values='0.5;0.8;0.5' dur='3s' begin='1.6s' repeatCount='indefinite'/%3E%3C/rect%3E%3C/g%3E%3Cg%3E%3Cline x1='640' y1='360' x2='640' y2='290' stroke='rgba(34, 197, 94, 0.5)' stroke-width='1'/%3E%3Crect x='635' y='310' width='10' height='40' fill='rgba(34, 197, 94, 0.6)' stroke='rgba(34, 197, 94, 0.8)' stroke-width='1'%3E%3Canimate attributeName='opacity' values='0.5;0.8;0.5' dur='3s' begin='1.8s' repeatCount='indefinite'/%3E%3C/rect%3E%3C/g%3E%3Cg%3E%3Cline x1='700' y1='340' x2='700' y2='270' stroke='rgba(239, 68, 68, 0.5)' stroke-width='1'/%3E%3Crect x='695' y='270' width='10' height='50' fill='rgba(239, 68, 68, 0.6)' stroke='rgba(239, 68, 68, 0.8)' stroke-width='1'%3E%3Canimate attributeName='opacity' values='0.5;0.8;0.5' dur='3s' begin='2s' repeatCount='indefinite'/%3E%3C/rect%3E%3C/g%3E%3Cg%3E%3Cline x1='760' y1='370' x2='760' y2='300' stroke='rgba(34, 197, 94, 0.5)' stroke-width='1'/%3E%3Crect x='755' y='320' width='10' height='40' fill='rgba(34, 197, 94, 0.6)' stroke='rgba(34, 197, 94, 0.8)' stroke-width='1'%3E%3Canimate attributeName='opacity' values='0.5;0.8;0.5' dur='3s' begin='2.2s' repeatCount='indefinite'/%3E%3C/rect%3E%3C/g%3E%3Cg%3E%3Cline x1='820' y1='350' x2='820' y2='280' stroke='rgba(34, 197, 94, 0.5)' stroke-width='1'/%3E%3Crect x='815' y='300' width='10' height='40' fill='rgba(34, 197, 94, 0.6)' stroke='rgba(34, 197, 94, 0.8)' stroke-width='1'%3E%3Canimate attributeName='opacity' values='0.5;0.8;0.5' dur='3s' begin='2.4s' repeatCount='indefinite'/%3E%3C/rect%3E%3C/g%3E%3Cg%3E%3Cline x1='880' y1='380' x2='880' y2='310' stroke='rgba(239, 68, 68, 0.5)' stroke-width='1'/%3E%3Crect x='875' y='310' width='10' height='50' fill='rgba(239, 68, 68, 0.6)' stroke='rgba(239, 68, 68, 0.8)' stroke-width='1'%3E%3Canimate attributeName='opacity' values='0.5;0.8;0.5' dur='3s' begin='2.6s' repeatCount='indefinite'/%3E%3C/rect%3E%3C/g%3E%3Cg%3E%3Cline x1='940' y1='360' x2='940' y2='290' stroke='rgba(34, 197, 94, 0.5)' stroke-width='1'/%3E%3Crect x='935' y='310' width='10' height='40' fill='rgba(34, 197, 94, 0.6)' stroke='rgba(34, 197, 94, 0.8)' stroke-width='1'%3E%3Canimate attributeName='opacity' values='0.5;0.8;0.5' dur='3s' begin='2.8s' repeatCount='indefinite'/%3E%3C/rect%3E%3C/g%3E%3Cg%3E%3Cline x1='1000' y1='340' x2='1000' y2='270' stroke='rgba(34, 197, 94, 0.5)' stroke-width='1'/%3E%3Crect x='995' y='290' width='10' height='40' fill='rgba(34, 197, 94, 0.6)' stroke='rgba(34, 197, 94, 0.8)' stroke-width='1'%3E%3Canimate attributeName='opacity' values='0.5;0.8;0.5' dur='3s' begin='0.5s' repeatCount='indefinite'/%3E%3C/rect%3E%3C/g%3E%3Cg%3E%3Cline x1='1060' y1='320' x2='1060' y2='250' stroke='rgba(34, 197, 94, 0.5)' stroke-width='1'/%3E%3Crect x='1055' y='270' width='10' height='40' fill='rgba(34, 197, 94, 0.6)' stroke='rgba(34, 197, 94, 0.8)' stroke-width='1'%3E%3Canimate attributeName='opacity' values='0.5;0.8;0.5' dur='3s' begin='1.5s' repeatCount='indefinite'/%3E%3C/rect%3E%3C/g%3E%3Cg%3E%3Cline x1='1120' y1='310' x2='1120' y2='240' stroke='rgba(34, 197, 94, 0.5)' stroke-width='1'/%3E%3Crect x='1115' y='260' width='10' height='40' fill='rgba(34, 197, 94, 0.6)' stroke='rgba(34, 197, 94, 0.8)' stroke-width='1'%3E%3Canimate attributeName='opacity' values='0.5;0.8;0.5' dur='3s' begin='2.5s' repeatCount='indefinite'/%3E%3C/rect%3E%3C/g%3E%3C!-- Volume bars with animations --%3E%3Crect x='95' y='680' width='10' height='60' fill='rgba(34, 197, 94, 0.3)'%3E%3Canimate attributeName='opacity' values='0.2;0.4;0.2' dur='2s' begin='0s' repeatCount='indefinite'/%3E%3Canimate attributeName='height' values='60;65;60' dur='2s' begin='0s' repeatCount='indefinite'/%3E%3C/rect%3E%3Crect x='155' y='660' width='10' height='80' fill='rgba(34, 197, 94, 0.3)'%3E%3Canimate attributeName='opacity' values='0.2;0.4;0.2' dur='2s' begin='0.2s' repeatCount='indefinite'/%3E%3Canimate attributeName='height' values='80;85;80' dur='2s' begin='0.2s' repeatCount='indefinite'/%3E%3C/rect%3E%3Crect x='215' y='700' width='10' height='40' fill='rgba(239, 68, 68, 0.3)'%3E%3Canimate attributeName='opacity' values='0.2;0.4;0.2' dur='2s' begin='0.4s' repeatCount='indefinite'/%3E%3Canimate attributeName='height' values='40;45;40' dur='2s' begin='0.4s' repeatCount='indefinite'/%3E%3C/rect%3E%3Crect x='275' y='690' width='10' height='50' fill='rgba(34, 197, 94, 0.3)'%3E%3Canimate attributeName='opacity' values='0.2;0.4;0.2' dur='2s' begin='0.6s' repeatCount='indefinite'/%3E%3Canimate attributeName='height' values='50;55;50' dur='2s' begin='0.6s' repeatCount='indefinite'/%3E%3C/rect%3E%3Crect x='335' y='670' width='10' height='70' fill='rgba(239, 68, 68, 0.3)'%3E%3Canimate attributeName='opacity' values='0.2;0.4;0.2' dur='2s' begin='0.8s' repeatCount='indefinite'/%3E%3Canimate attributeName='height' values='70;75;70' dur='2s' begin='0.8s' repeatCount='indefinite'/%3E%3C/rect%3E%3Crect x='395' y='680' width='10' height='60' fill='rgba(34, 197, 94, 0.3)'%3E%3Canimate attributeName='opacity' values='0.2;0.4;0.2' dur='2s' begin='1s' repeatCount='indefinite'/%3E%3Canimate attributeName='height' values='60;65;60' dur='2s' begin='1s' repeatCount='indefinite'/%3E%3C/rect%3E%3Crect x='455' y='685' width='10' height='55' fill='rgba(34, 197, 94, 0.3)'%3E%3Canimate attributeName='opacity' values='0.2;0.4;0.2' dur='2s' begin='1.2s' repeatCount='indefinite'/%3E%3Canimate attributeName='height' values='55;60;55' dur='2s' begin='1.2s' repeatCount='indefinite'/%3E%3C/rect%3E%3Crect x='515' y='665' width='10' height='75' fill='rgba(239, 68, 68, 0.3)'%3E%3Canimate attributeName='opacity' values='0.2;0.4;0.2' dur='2s' begin='1.4s' repeatCount='indefinite'/%3E%3Canimate attributeName='height' values='75;80;75' dur='2s' begin='1.4s' repeatCount='indefinite'/%3E%3C/rect%3E%3Crect x='575' y='690' width='10' height='50' fill='rgba(34, 197, 94, 0.3)'%3E%3Canimate attributeName='opacity' values='0.2;0.4;0.2' dur='2s' begin='1.6s' repeatCount='indefinite'/%3E%3Canimate attributeName='height' values='50;55;50' dur='2s' begin='1.6s' repeatCount='indefinite'/%3E%3C/rect%3E%3Crect x='635' y='685' width='10' height='55' fill='rgba(34, 197, 94, 0.3)'%3E%3Canimate attributeName='opacity' values='0.2;0.4;0.2' dur='2s' begin='1.8s' repeatCount='indefinite'/%3E%3Canimate attributeName='height' values='55;60;55' dur='2s' begin='1.8s' repeatCount='indefinite'/%3E%3C/rect%3E%3Crect x='695' y='675' width='10' height='65' fill='rgba(239, 68, 68, 0.3)'%3E%3Canimate attributeName='opacity' values='0.2;0.4;0.2' dur='2s' begin='0.1s' repeatCount='indefinite'/%3E%3Canimate attributeName='height' values='65;70;65' dur='2s' begin='0.1s' repeatCount='indefinite'/%3E%3C/rect%3E%3Crect x='755' y='690' width='10' height='50' fill='rgba(34, 197, 94, 0.3)'%3E%3Canimate attributeName='opacity' values='0.2;0.4;0.2' dur='2s' begin='0.3s' repeatCount='indefinite'/%3E%3Canimate attributeName='height' values='50;55;50' dur='2s' begin='0.3s' repeatCount='indefinite'/%3E%3C/rect%3E%3Crect x='815' y='685' width='10' height='55' fill='rgba(34, 197, 94, 0.3)'%3E%3Canimate attributeName='opacity' values='0.2;0.4;0.2' dur='2s' begin='0.5s' repeatCount='indefinite'/%3E%3Canimate attributeName='height' values='55;60;55' dur='2s' begin='0.5s' repeatCount='indefinite'/%3E%3C/rect%3E%3Crect x='875' y='670' width='10' height='70' fill='rgba(239, 68, 68, 0.3)'%3E%3Canimate attributeName='opacity' values='0.2;0.4;0.2' dur='2s' begin='0.7s' repeatCount='indefinite'/%3E%3Canimate attributeName='height' values='70;75;70' dur='2s' begin='0.7s' repeatCount='indefinite'/%3E%3C/rect%3E%3Crect x='935' y='685' width='10' height='55' fill='rgba(34, 197, 94, 0.3)'%3E%3Canimate attributeName='opacity' values='0.2;0.4;0.2' dur='2s' begin='0.9s' repeatCount='indefinite'/%3E%3Canimate attributeName='height' values='55;60;55' dur='2s' begin='0.9s' repeatCount='indefinite'/%3E%3C/rect%3E%3Crect x='995' y='680' width='10' height='60' fill='rgba(34, 197, 94, 0.3)'%3E%3Canimate attributeName='opacity' values='0.2;0.4;0.2' dur='2s' begin='1.1s' repeatCount='indefinite'/%3E%3Canimate attributeName='height' values='60;65;60' dur='2s' begin='1.1s' repeatCount='indefinite'/%3E%3C/rect%3E%3Crect x='1055' y='675' width='10' height='65' fill='rgba(34, 197, 94, 0.3)'%3E%3Canimate attributeName='opacity' values='0.2;0.4;0.2' dur='2s' begin='1.3s' repeatCount='indefinite'/%3E%3Canimate attributeName='height' values='65;70;65' dur='2s' begin='1.3s' repeatCount='indefinite'/%3E%3C/rect%3E%3Crect x='1115' y='670' width='10' height='70' fill='rgba(34, 197, 94, 0.3)'%3E%3Canimate attributeName='opacity' values='0.2;0.4;0.2' dur='2s' begin='1.5s' repeatCount='indefinite'/%3E%3Canimate attributeName='height' values='70;75;70' dur='2s' begin='1.5s' repeatCount='indefinite'/%3E%3C/rect%3E%3C/svg%3E");
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
-  }
-
-  .bg-fixed-parallax {
-    background-attachment: fixed;
-    background-size: cover;
-    background-position: center center;
-    background-repeat: no-repeat;
-  }
-
-  .content-overlay {
-    background: linear-gradient(
-      to bottom,
-      hsl(220 15% 6% / 0.85) 0%,
-      hsl(220 15% 6% / 0.75) 50%,
-      hsl(220 15% 6% / 0.85) 100%
-    );
-  }
-
-  .animate-float {
-    animation: float 6s ease-in-out infinite;
-  }
-
-  .animate-glow {
-    animation: glow 3s ease-in-out infinite;
-  }
-
-  .animate-glow-pulse {
-    animation: glow-pulse 3s ease-in-out infinite;
-  }
-
-  .bg-chart-lines {
+  .bg-subtle-grid {
     background-image: 
-      linear-gradient(90deg, hsl(220 15% 12% / 0.3) 1px, transparent 1px),
-      linear-gradient(hsl(220 15% 12% / 0.3) 1px, transparent 1px);
-    background-size: 40px 40px;
+      linear-gradient(rgba(56, 97, 251, 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(56, 97, 251, 0.03) 1px, transparent 1px);
+    background-size: 50px 50px;
   }
 
-  .hover-shine {
-    position: relative;
-    overflow: hidden;
+  /* Hover Effects - Minimal & Professional */
+  .hover-lift {
+    @apply transition-transform duration-200 hover:-translate-y-1;
   }
 
-  .hover-shine::before {
-    content: '';
-    position: absolute;
-    top: -50%;
-    left: -50%;
-    width: 200%;
-    height: 200%;
-    background: linear-gradient(
-      45deg,
-      transparent 30%,
-      rgba(255, 255, 255, 0.1) 50%,
-      transparent 70%
-    );
-    transform: translateX(-100%) translateY(-100%);
-    transition: transform 0.6s;
+  .hover-border {
+    @apply transition-colors duration-200 hover:border-primary;
+  }
+}
+
+/* Remove ALL blur effects, complex gradients, and excessive animations */
+/* Only keep essential accordion animations */
+@layer utilities {
+  .animate-accordion-down {
+    animation: accordion-down 0.2s ease-out;
   }
 
-  .hover-shine:hover::before {
-    transform: translateX(100%) translateY(100%);
+  .animate-accordion-up {
+    animation: accordion-up 0.2s ease-out;
+  }
+}
+
+@keyframes accordion-down {
+  from {
+    height: 0;
+    opacity: 0;
+  }
+  to {
+    height: var(--radix-accordion-content-height);
+    opacity: 1;
+  }
+}
+
+@keyframes accordion-up {
+  from {
+    height: var(--radix-accordion-content-height);
+    opacity: 1;
+  }
+  to {
+    height: 0;
+    opacity: 0;
   }
 }
