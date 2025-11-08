@@ -62,10 +62,10 @@ export const TradingStats = () => {
     <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8">
       {stats.map((stat, index) => (
         <div key={index} className="text-center">
-          <div className="mx-auto w-16 h-16 bg-accent/10 rounded-lg flex items-center justify-center mb-4">
+          <div className="mx-auto w-16 h-16 bg-gradient-to-br from-accent/20 to-accent/5 rounded-lg flex items-center justify-center mb-4 border border-accent/30">
             <stat.icon className="h-8 w-8 text-accent" />
           </div>
-          <div className="mb-2 text-accent">
+          <div className="mb-2 text-accent drop-shadow-[0_0_8px_rgba(240,185,11,0.3)]">
             <AnimatedCounter 
               end={parseInt(stat.value)} 
               prefix={stat.suffix === "$" ? "$" : ""} 

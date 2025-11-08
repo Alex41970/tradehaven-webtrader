@@ -29,8 +29,8 @@ export const TrustBadges = () => {
       <h3 className="text-2xl font-bold text-center mb-8">Trusted by Traders Worldwide</h3>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {badges.map((badge, index) => (
-          <div key={index} className="text-center">
-            <div className="mx-auto w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-3">
+          <div key={index} className="text-center group">
+            <div className="mx-auto w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-3 border border-primary/20 transition-all duration-300 group-hover:bg-primary/20 group-hover:border-primary/40">
               <badge.icon className="h-6 w-6 text-primary" />
             </div>
             <h4 className="font-semibold mb-2 text-foreground">{badge.title}</h4>

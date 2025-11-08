@@ -58,8 +58,16 @@ export default {
 					accent: 'hsl(var(--trading-accent))',
 					success: 'hsl(var(--trading-success))',
 					danger: 'hsl(var(--trading-danger))',
-					neutral: 'hsl(var(--trading-neutral))'
-				}
+					neutral: 'hsl(var(--trading-neutral))',
+					'blue-dark': 'hsl(225 25% 18%)',
+					'blue-light': 'hsl(225 100% 70%)',
+					'gold-dark': 'hsl(45 90% 40%)',
+				},
+				green: {
+					'500': 'hsl(145 63% 49%)',
+					'600': 'hsl(145 63% 42%)',
+				},
+				'card-border': 'hsl(var(--card-border))'
 			},
 			borderRadius: {
 				lg: 'var(--radius)',

@@ -161,9 +161,9 @@ const Index = () => {
           </div>
           
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-16">
-            <div className="p-6 bg-card rounded-lg border border-border hover:border-primary transition-colors">
-              <div className="h-12 w-12 bg-trading-success/10 rounded-lg flex items-center justify-center mb-4">
-                <Shield className="h-6 w-6 text-trading-success" />
+            <div className="p-6 bg-gradient-to-br from-green-500/5 to-transparent rounded-lg border-2 border-border/50 hover:border-green-500/50 transition-all duration-300">
+              <div className="h-14 w-14 bg-gradient-to-br from-green-500/20 to-green-500/5 rounded-xl flex items-center justify-center mb-4 border border-green-500/30">
+                <Shield className="h-7 w-7 text-trading-success" />
               </div>
               <h3 className="text-xl font-semibold mb-3 text-foreground">Regulated & Secure</h3>
               <p className="text-muted-foreground mb-4">
@@ -172,9 +172,9 @@ const Index = () => {
               <div className="text-sm text-trading-success font-medium">Funds up to £85,000 protected</div>
             </div>
 
-            <div className="p-6 bg-card rounded-lg border border-border hover:border-primary transition-colors">
-              <div className="h-12 w-12 bg-accent/10 rounded-lg flex items-center justify-center mb-4">
-                <Zap className="h-6 w-6 text-accent" />
+            <div className="p-6 bg-gradient-to-br from-accent/5 to-transparent rounded-lg border-2 border-border/50 hover:border-accent/50 transition-all duration-300">
+              <div className="h-14 w-14 bg-gradient-to-br from-accent/20 to-accent/5 rounded-xl flex items-center justify-center mb-4 border border-accent/30">
+                <Zap className="h-7 w-7 text-accent" />
               </div>
               <h3 className="text-xl font-semibold mb-3 text-foreground">Ultra-Fast Execution</h3>
               <p className="text-muted-foreground mb-4">
@@ -183,9 +183,9 @@ const Index = () => {
               <div className="text-sm text-accent font-medium">Average execution: 0.03 seconds</div>
             </div>
 
-            <div className="p-6 bg-card rounded-lg border border-border hover:border-primary transition-colors">
-              <div className="h-12 w-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
-                <BarChart3 className="h-6 w-6 text-primary" />
+            <div className="p-6 bg-gradient-to-br from-primary/10 to-transparent rounded-lg border-2 border-border/50 hover:border-primary/50 transition-all duration-300">
+              <div className="h-14 w-14 bg-gradient-to-br from-primary/20 to-primary/5 rounded-xl flex items-center justify-center mb-4 border border-primary/30">
+                <BarChart3 className="h-7 w-7 text-primary" />
               </div>
               <h3 className="text-xl font-semibold mb-3 text-foreground">Advanced Analytics</h3>
               <p className="text-muted-foreground mb-4">
@@ -194,9 +194,9 @@ const Index = () => {
               <div className="text-sm text-primary font-medium">100+ technical indicators</div>
             </div>
 
-            <div className="p-6 bg-card rounded-lg border border-border hover:border-primary transition-colors">
-              <div className="h-12 w-12 bg-trading-success/10 rounded-lg flex items-center justify-center mb-4">
-                <Globe className="h-6 w-6 text-trading-success" />
+            <div className="p-6 bg-gradient-to-br from-green-500/5 to-transparent rounded-lg border-2 border-border/50 hover:border-green-500/50 transition-all duration-300">
+              <div className="h-14 w-14 bg-gradient-to-br from-green-500/20 to-green-500/5 rounded-xl flex items-center justify-center mb-4 border border-green-500/30">
+                <Globe className="h-7 w-7 text-trading-success" />
               </div>
               <h3 className="text-xl font-semibold mb-3 text-foreground">Global Markets</h3>
               <p className="text-muted-foreground mb-4">
@@ -205,9 +205,9 @@ const Index = () => {
               <div className="text-sm text-trading-success font-medium">10,000+ instruments available</div>
             </div>
 
-            <div className="p-6 bg-card rounded-lg border border-border hover:border-primary transition-colors">
-              <div className="h-12 w-12 bg-accent/10 rounded-lg flex items-center justify-center mb-4">
-                <Users className="h-6 w-6 text-accent" />
+            <div className="p-6 bg-gradient-to-br from-accent/5 to-transparent rounded-lg border-2 border-border/50 hover:border-accent/50 transition-all duration-300">
+              <div className="h-14 w-14 bg-gradient-to-br from-accent/20 to-accent/5 rounded-xl flex items-center justify-center mb-4 border border-accent/30">
+                <Users className="h-7 w-7 text-accent" />
               </div>
               <h3 className="text-xl font-semibold mb-3 text-foreground">24/7 Expert Support</h3>
               <p className="text-muted-foreground mb-4">
@@ -216,9 +216,9 @@ const Index = () => {
               <div className="text-sm text-accent font-medium">Available in 25 languages</div>
             </div>
 
-            <div className="p-6 bg-card rounded-lg border border-border hover:border-primary transition-colors">
-              <div className="h-12 w-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
-                <Award className="h-6 w-6 text-primary" />
+            <div className="p-6 bg-gradient-to-br from-primary/10 to-transparent rounded-lg border-2 border-border/50 hover:border-primary/50 transition-all duration-300">
+              <div className="h-14 w-14 bg-gradient-to-br from-primary/20 to-primary/5 rounded-xl flex items-center justify-center mb-4 border border-primary/30">
+                <Award className="h-7 w-7 text-primary" />
               </div>
               <h3 className="text-xl font-semibold mb-3 text-foreground">Award Winning</h3>
               <p className="text-muted-foreground mb-4">
@@ -233,28 +233,29 @@ const Index = () => {
       </section>
 
       {/* Statistics Section */}
-      <section className="py-20 bg-secondary">
-        <div className="container mx-auto px-4">
+      <section className="py-20 bg-secondary relative">
+        <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-transparent pointer-events-none"></div>
+        <div className="container mx-auto px-4 relative">
           <div className="text-center mb-12">
             <h2 className="text-3xl lg:text-5xl font-bold mb-4 text-foreground">Trusted Globally</h2>
             <p className="text-xl text-muted-foreground">Join a worldwide community of successful traders</p>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-            <div className="text-center p-6 bg-card rounded-lg border border-border">
-              <div className="text-4xl lg:text-5xl font-bold text-accent mb-2">500K+</div>
-              <div className="text-muted-foreground">Active Traders</div>
+            <div className="text-center p-6 bg-gradient-to-br from-card to-card/50 rounded-lg border-2 border-card-border hover:border-accent/50 transition-all duration-300">
+              <div className="text-4xl lg:text-5xl font-bold text-accent mb-2 drop-shadow-[0_0_12px_rgba(240,185,11,0.3)]">500K+</div>
+              <div className="text-muted-foreground font-medium">Active Traders</div>
             </div>
-            <div className="text-center p-6 bg-card rounded-lg border border-border">
-              <div className="text-4xl lg:text-5xl font-bold text-trading-success mb-2">$50B+</div>
-              <div className="text-muted-foreground">Monthly Volume</div>
+            <div className="text-center p-6 bg-gradient-to-br from-card to-card/50 rounded-lg border-2 border-card-border hover:border-trading-success/50 transition-all duration-300">
+              <div className="text-4xl lg:text-5xl font-bold text-trading-success mb-2 drop-shadow-[0_0_12px_rgba(14,203,129,0.3)]">$50B+</div>
+              <div className="text-muted-foreground font-medium">Monthly Volume</div>
             </div>
-            <div className="text-center p-6 bg-card rounded-lg border border-border">
-              <div className="text-4xl lg:text-5xl font-bold text-primary mb-2">10K+</div>
-              <div className="text-muted-foreground">Instruments</div>
+            <div className="text-center p-6 bg-gradient-to-br from-card to-card/50 rounded-lg border-2 border-card-border hover:border-primary/50 transition-all duration-300">
+              <div className="text-4xl lg:text-5xl font-bold text-primary mb-2 drop-shadow-[0_0_12px_rgba(56,97,251,0.3)]">10K+</div>
+              <div className="text-muted-foreground font-medium">Instruments</div>
             </div>
-            <div className="text-center p-6 bg-card rounded-lg border border-border">
-              <div className="text-4xl lg:text-5xl font-bold text-accent mb-2">0.03s</div>
-              <div className="text-muted-foreground">Avg Execution</div>
+            <div className="text-center p-6 bg-gradient-to-br from-card to-card/50 rounded-lg border-2 border-card-border hover:border-accent/50 transition-all duration-300">
+              <div className="text-4xl lg:text-5xl font-bold text-accent mb-2 drop-shadow-[0_0_12px_rgba(240,185,11,0.3)]">0.03s</div>
+              <div className="text-muted-foreground font-medium">Avg Execution</div>
             </div>
           </div>
         </div>

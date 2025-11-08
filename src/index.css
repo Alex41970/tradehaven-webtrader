@@ -7,12 +7,13 @@
 
 @layer base {
   :root {
-    /* Core Backgrounds - Binance Dark Theme */
+    /* Core Backgrounds - Enhanced with blue tints for depth */
     --background: 222 13% 7%;           /* #0B0E11 - Very dark background */
     --foreground: 210 17% 93%;          /* #EAECEF - Light text */
 
-    --card: 218 17% 18%;                /* #2B3139 - Card background */
+    --card: 220 20% 16%;                /* #252B35 - Blue-tinted card background */
     --card-foreground: 210 17% 93%;
+    --card-border: 220 20% 25%;         /* #3A424E - Visible card borders */
 
     --popover: 218 17% 18%;
     --popover-foreground: 210 17% 93%;
@@ -54,8 +55,9 @@
     --background: 222 13% 7%;
     --foreground: 210 17% 93%;
 
-    --card: 218 17% 18%;
+    --card: 220 20% 16%;
     --card-foreground: 210 17% 93%;
+    --card-border: 220 20% 25%;
 
     --popover: 218 17% 18%;
     --popover-foreground: 210 17% 93%;
@@ -117,9 +119,13 @@
     100% { transform: translateX(-50%); }
   }
 
-  /* Simple Background Utilities */
+  /* Enhanced Background Utilities */
   .bg-trading-dark {
-    background: linear-gradient(180deg, hsl(222 13% 7%) 0%, hsl(218 13% 10%) 100%);
+    background: linear-gradient(180deg, hsl(222 13% 7%) 0%, hsl(222 13% 10%) 50%, hsl(218 17% 13%) 100%);
+  }
+
+  .bg-section-alt {
+    background: linear-gradient(180deg, hsl(218 17% 13%) 0%, hsl(220 18% 15%) 100%);
   }
 
   .bg-subtle-grid {
@@ -127,6 +133,14 @@
       linear-gradient(rgba(56, 97, 251, 0.03) 1px, transparent 1px),
       linear-gradient(90deg, rgba(56, 97, 251, 0.03) 1px, transparent 1px);
     background-size: 50px 50px;
+  }
+
+  .bg-accent-glow::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 50% 0%, hsl(225 100% 61% / 0.08) 0%, transparent 60%);
+    pointer-events: none;
   }
 
   /* Hover Effects - Minimal & Professional */
