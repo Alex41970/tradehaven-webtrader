@@ -1,6 +1,50 @@
 import { Link } from "react-router-dom";
 import { TrendingUp } from "lucide-react";
 
+const PAYMENT_ICON_SOURCES: Record<string, string[]> = {
+  visa: [
+    "https://cdn.simpleicons.org/visa/9ca3af",
+    "https://cdn.simpleicons.org/visa/ffffff",
+  ],
+  mastercard: [
+    "https://cdn.simpleicons.org/mastercard/9ca3af",
+    "https://cdn.simpleicons.org/mastercard/ffffff",
+  ],
+  paypal: [
+    "https://cdn.simpleicons.org/paypal/9ca3af",
+    "https://cdn.simpleicons.org/paypal/ffffff",
+  ],
+};
+
+type PaymentName = "visa" | "mastercard" | "paypal";
+
+function PaymentIcon({ name, label }: { name: PaymentName; label: string }) {
+  const sources = PAYMENT_ICON_SOURCES[name];
+  return (
+    <span className="inline-flex items-center justify-center w-12 h-6 opacity-60 hover:opacity-80 transition-opacity">
+      <img
+        src={sources[0]}
+        alt={label}
+        loading="lazy"
+        decoding="async"
+        referrerPolicy="no-referrer"
+        className="h-6 w-auto select-none pointer-events-none"
+        onError={(e) => {
+          const img = e.currentTarget;
+          const current = img.getAttribute("data-idx") ? parseInt(img.getAttribute("data-idx")!, 10) : 0;
+          const next = current + 1;
+          if (sources[next]) {
+            img.setAttribute("data-idx", String(next));
+            img.src = sources[next];
+          } else {
+            img.style.display = "none";
+          }
+        }}
+      />
+    </span>
+  );
+}
+
 export const Footer = () => {
   return (
     <footer className="bg-card border-t border-border">
@@ -77,22 +121,10 @@ export const Footer = () => {
                 Trading involves risk of loss.
               </p>
             </div>
-            <div className="flex items-center gap-4">
-              <img 
-                src="https://cdn.worldvectorlogo.com/logos/visa-10.svg" 
-                alt="Visa" 
-                className="h-6 opacity-50 hover:opacity-70 transition-opacity" 
-              />
-              <img 
-                src="https://cdn.worldvectorlogo.com/logos/mastercard-6.svg" 
-                alt="Mastercard" 
-                className="h-6 opacity-50 hover:opacity-70 transition-opacity" 
-              />
-              <img 
-                src="https://cdn.worldvectorlogo.com/logos/paypal-2.svg" 
-                alt="PayPal" 
-                className="h-8 opacity-50 hover:opacity-70 transition-opacity" 
-              />
+            <div className="flex items-center gap-4 text-muted-foreground">
+              <PaymentIcon name="visa" label="Visa" />
+              <PaymentIcon name="mastercard" label="Mastercard" />
+              <PaymentIcon name="paypal" label="PayPal" />
             </div>
           </div>
           
