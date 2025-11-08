@@ -86,7 +86,8 @@ const Index = () => {
       {/* Header */}
       <header className="sticky top-0 z-50 bg-secondary border-b border-border">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <Logo size="lg" className="hover:scale-105 transition-transform" />
+          <Logo size="md" className="lg:hidden hover:scale-105 transition-transform" />
+          <Logo size="lg" className="hidden lg:block hover:scale-105 transition-transform" />
           <div className="flex items-center gap-4">
             <Button variant="ghost" className="hidden md:flex" onClick={() => navigate("/markets")}>
               Markets
@@ -111,14 +112,19 @@ const Index = () => {
                 <Award className="h-4 w-4" />
                 Best Trading Platform 2024
               </div>
-              <h1 className="text-4xl lg:text-6xl font-bold mb-6 leading-tight text-foreground">
-                Trade Smarter, Not Harder
-                <span className="block text-accent mt-2">Professional Trading Made Simple</span>
+              <h1 className="text-3xl md:text-4xl lg:text-6xl font-bold mb-6 leading-tight text-foreground">
+                <span className="block">Trade Global</span>
+                <span className="block text-accent mt-1">Markets 24/7</span>
               </h1>
-              <p className="text-xl text-foreground/80 mb-8 max-w-xl leading-relaxed">
-                Access global markets with institutional-grade tools. Trade 10,000+ instruments including forex, stocks, commodities, and cryptocurrencies on a single platform trusted by 500,000+ traders worldwide.
+              {/* Mobile version - short and focused */}
+              <p className="text-base md:hidden text-foreground/80 mb-8 leading-relaxed">
+                Professional trading platform with 10,000+ instruments. Forex, stocks, crypto, and more.
               </p>
-              <div className="flex flex-col sm:flex-row gap-4 mb-12">
+              {/* Desktop version - more detail */}
+              <p className="hidden md:block text-lg lg:text-xl text-foreground/80 mb-8 max-w-xl leading-relaxed">
+                Access global markets with institutional-grade tools. Trade forex, stocks, commodities, and cryptocurrencies on a single platform.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-3 mb-8 md:mb-12">
                 <Button size="lg" variant="trading" onClick={() => navigate("/auth")}>
                   Start Trading Now
                   <ArrowRight className="ml-2 h-5 w-5" />
