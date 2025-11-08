@@ -17,10 +17,11 @@ import { UserSearchSelect } from "@/components/admin/UserSearchSelect";
 import { ModifyBalanceDialog } from "@/components/admin/ModifyBalanceDialog";
 import { CreateTradeDialog } from "@/components/admin/CreateTradeDialog";
 import { RejectRequestDialog } from "@/components/admin/RejectRequestDialog";
+import { ViewWithdrawalDetailsDialog } from "@/components/admin/ViewWithdrawalDetailsDialog";
 import { useAssets } from "@/hooks/useAssets";
 import { useRealTimePrices } from "@/hooks/useRealTimePrices";
 import { calculateRealTimePnL } from "@/utils/pnlCalculator";
-import { Users, DollarSign, TrendingUp, Settings, LogOut, Search, Filter, Activity, BarChart3, Plus, CreditCard } from "lucide-react";
+import { Users, DollarSign, TrendingUp, Settings, LogOut, Search, Filter, Activity, BarChart3, Plus, CreditCard, Eye } from "lucide-react";
 import { Navigate } from "react-router-dom";
 
 interface UserProfile {
@@ -89,6 +90,8 @@ const AdminDashboard = () => {
     amount: number;
     userName: string;
   } | null>(null);
+  const [viewDetailsDialogOpen, setViewDetailsDialogOpen] = useState(false);
+  const [selectedWithdrawalRequest, setSelectedWithdrawalRequest] = useState<any>(null);
   
   // Search and filter states
   const [userSearchQuery, setUserSearchQuery] = useState("");
@@ -1334,15 +1337,21 @@ const AdminDashboard = () => {
                               </Badge>
                             </div>
                           </div>
-                          <div className="text-sm space-y-1">
+                          <div className="text-sm space-y-2">
                             <p><span className="text-muted-foreground">Type:</span> {request.withdrawal_type.toUpperCase()}</p>
                             <p><span className="text-muted-foreground">Date:</span> {new Date(request.created_at).toLocaleDateString()}</p>
-                            {request.crypto_wallet_address && (
-                              <p><span className="text-muted-foreground">Wallet:</span> <code className="text-xs">{request.crypto_wallet_address}</code></p>
-                            )}
-                            {request.bank_details && (
-                              <p><span className="text-muted-foreground">Bank:</span> {request.bank_details.bankName || 'Bank details provided'}</p>
-                            )}
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="w-full"
+                              onClick={() => {
+                                setSelectedWithdrawalRequest(request);
+                                setViewDetailsDialogOpen(true);
+                              }}
+                            >
+                              <Eye className="h-4 w-4 mr-2" />
+                              View Withdrawal Details
+                            </Button>
                           </div>
                           {request.status === 'pending' && (
                             <div className="flex space-x-2">
@@ -1541,6 +1550,13 @@ const AdminDashboard = () => {
           </div>
         </div>
       )}
+
+      {/* View Withdrawal Details Dialog */}
+      <ViewWithdrawalDetailsDialog
+        open={viewDetailsDialogOpen}
+        onOpenChange={setViewDetailsDialogOpen}
+        request={selectedWithdrawalRequest}
+      />
     </div>
   );
 };
