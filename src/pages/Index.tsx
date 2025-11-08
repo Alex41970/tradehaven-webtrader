@@ -40,10 +40,10 @@ const Index = () => {
             </h1>
           </div>
           <div className="flex items-center gap-4">
-            <Button variant="ghost" className="hidden md:flex">
+            <Button variant="ghost" className="hidden md:flex" onClick={() => navigate("/markets")}>
               Markets
             </Button>
-            <Button variant="ghost" className="hidden md:flex">
+            <Button variant="ghost" className="hidden md:flex" onClick={() => navigate("/education")}>
               Education
             </Button>
             <Button variant="trading" onClick={() => navigate("/auth")}>

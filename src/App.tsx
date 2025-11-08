@@ -27,6 +27,8 @@ import Support from "./pages/Support";
 import CookiePolicy from "./pages/CookiePolicy";
 import RiskDisclosure from "./pages/RiskDisclosure";
 import Regulatory from "./pages/Regulatory";
+import Markets from "./pages/Markets";
+import Education from "./pages/Education";
 import { WebTrader } from "./components/WebTrader";
 import { MobilePortfolio } from "./pages/MobilePortfolio";
 import { MobileTradingHistory } from "./pages/MobileTradingHistory";
@@ -63,6 +65,8 @@ const App = () => (
           <Route path="/cookies" element={<CookiePolicy />} />
           <Route path="/risk-disclosure" element={<RiskDisclosure />} />
           <Route path="/regulatory" element={<Regulatory />} />
+          <Route path="/markets" element={<Markets />} />
+          <Route path="/education" element={<Education />} />
                 <Route path="/dashboard" element={
                   <ProtectedRoute>
                     <Dashboard />
