@@ -63,6 +63,16 @@ const Auth = () => {
       });
       return;
     }
+
+    // Validate promo code is provided
+    if (!promoCode.trim()) {
+      toast({
+        title: "Promo Code Required",
+        description: "A valid promo code is required to create an account. Contact your administrator to receive a promo code.",
+        variant: "destructive"
+      });
+      return;
+    }
     
     setLoading(true);
 
@@ -82,8 +92,8 @@ const Auth = () => {
 
       if (error) throw error;
 
-      // If promo code is provided and user was created, assign to admin
-      if (data.user && promoCode.trim()) {
+      // Assign user to admin via promo code
+      if (data.user) {
         // Add a small delay to ensure user profile is created
         await new Promise(resolve => setTimeout(resolve, 1000));
         
@@ -96,9 +106,9 @@ const Auth = () => {
           if (promoError) {
             console.error('Promo code assignment error:', promoError);
             toast({
-              title: "Warning", 
-              description: "Account created but promo code assignment failed. Please contact support.",
-              variant: "default"
+              title: "Invalid Promo Code", 
+              description: "The promo code provided is invalid, expired, or fully used. Please contact your administrator.",
+              variant: "destructive"
             });
           } else if (result && typeof result === 'object' && 'success' in result) {
             const assignmentResult = result as { success: boolean; error?: string; admin_id?: string };
@@ -107,9 +117,9 @@ const Auth = () => {
             } else {
               console.error('Promo code assignment failed:', assignmentResult.error);
               toast({
-                title: "Warning",
-                description: assignmentResult.error || "Invalid promo code",
-                variant: "default"
+                title: "Invalid Promo Code",
+                description: assignmentResult.error || "Unable to validate promo code. Please check the code and try again.",
+                variant: "destructive"
               });
             }
           }
@@ -324,14 +334,18 @@ const Auth = () => {
                   )}
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="promo-code">Promo Code (Optional)</Label>
+                  <Label htmlFor="promo-code">Promo Code (Required)</Label>
                   <Input
                     id="promo-code"
                     type="text"
-                    placeholder="Enter promo code"
+                    placeholder="Required - Contact admin for code"
                     value={promoCode}
                     onChange={(e) => setPromoCode(e.target.value)}
+                    required
                   />
+                  <p className="text-xs text-muted-foreground">
+                    Contact your assigned administrator to receive a valid promo code
+                  </p>
                 </div>
                 <div className="flex items-start space-x-2">
                   <Checkbox
