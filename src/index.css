@@ -216,48 +216,11 @@ All colors MUST be HSL.
   }
 
   .bg-chart-depth {
-    background-color: hsl(220 15% 6%);
-    background-image:
-      /* Horizontal price grid lines */
-      repeating-linear-gradient(
-        0deg,
-        transparent,
-        transparent 49px,
-        hsl(199 89% 48% / 0.08) 49px,
-        hsl(199 89% 48% / 0.08) 50px
-      ),
-      /* Vertical time grid lines */
-      repeating-linear-gradient(
-        90deg,
-        transparent,
-        transparent 79px,
-        hsl(217 91% 60% / 0.06) 79px,
-        hsl(217 91% 60% / 0.06) 80px
-      ),
-      /* Depth chart gradients on sides */
-      linear-gradient(
-        90deg,
-        hsl(142 76% 36% / 0.04) 0%,
-        transparent 15%,
-        transparent 85%,
-        hsl(0 84% 60% / 0.04) 100%
-      ),
-      /* Subtle candlestick pattern */
-      repeating-linear-gradient(
-        90deg,
-        transparent,
-        transparent 15px,
-        hsl(142 76% 36% / 0.02) 15px,
-        hsl(142 76% 36% / 0.02) 16px,
-        transparent 16px,
-        transparent 20px,
-        hsl(0 84% 60% / 0.02) 20px,
-        hsl(0 84% 60% / 0.02) 21px,
-        transparent 21px,
-        transparent 40px
-      );
-    background-size: 100% 50px, 80px 100%, 100% 100%, 40px 100%;
-    background-position: 0 0, 0 0, 0 0, 0 0;
+    background-color: hsl(220 20% 8%);
+    background-image: url("data:image/svg+xml,%3Csvg width='1200' height='800' xmlns='http://www.w3.org/2000/svg'%3E%3Cdefs%3E%3Cpattern id='grid' width='60' height='40' patternUnits='userSpaceOnUse'%3E%3Cpath d='M 60 0 L 0 0 0 40' fill='none' stroke='rgba(14, 165, 233, 0.1)' stroke-width='0.5'/%3E%3C/pattern%3E%3C/defs%3E%3Crect width='1200' height='800' fill='hsl(220, 20%25, 8%25)'/%3E%3Crect width='1200' height='800' fill='url(%23grid)'/%3E%3C!-- Price scale --%3E%3Ctext x='10' y='50' fill='rgba(148, 163, 184, 0.6)' font-size='10' font-family='monospace'%3E48,250%3C/text%3E%3Ctext x='10' y='150' fill='rgba(148, 163, 184, 0.6)' font-size='10' font-family='monospace'%3E47,800%3C/text%3E%3Ctext x='10' y='250' fill='rgba(148, 163, 184, 0.6)' font-size='10' font-family='monospace'%3E47,350%3C/text%3E%3Ctext x='10' y='350' fill='rgba(148, 163, 184, 0.6)' font-size='10' font-family='monospace'%3E46,900%3C/text%3E%3Ctext x='10' y='450' fill='rgba(148, 163, 184, 0.6)' font-size='10' font-family='monospace'%3E46,450%3C/text%3E%3Ctext x='10' y='550' fill='rgba(148, 163, 184, 0.6)' font-size='10' font-family='monospace'%3E46,000%3C/text%3E%3Ctext x='10' y='650' fill='rgba(148, 163, 184, 0.6)' font-size='10' font-family='monospace'%3E45,550%3C/text%3E%3C!-- Time scale --%3E%3Ctext x='100' y='790' fill='rgba(148, 163, 184, 0.6)' font-size='10' font-family='monospace'%3E09:00%3C/text%3E%3Ctext x='280' y='790' fill='rgba(148, 163, 184, 0.6)' font-size='10' font-family='monospace'%3E12:00%3C/text%3E%3Ctext x='460' y='790' fill='rgba(148, 163, 184, 0.6)' font-size='10' font-family='monospace'%3E15:00%3C/text%3E%3Ctext x='640' y='790' fill='rgba(148, 163, 184, 0.6)' font-size='10' font-family='monospace'%3E18:00%3C/text%3E%3Ctext x='820' y='790' fill='rgba(148, 163, 184, 0.6)' font-size='10' font-family='monospace'%3E21:00%3C/text%3E%3Ctext x='1000' y='790' fill='rgba(148, 163, 184, 0.6)' font-size='10' font-family='monospace'%3E00:00%3C/text%3E%3C!-- Moving averages --%3E%3Cpath d='M 80 320 Q 200 280, 320 300 T 560 310 T 800 290 T 1040 270 L 1180 260' fill='none' stroke='rgba(234, 179, 8, 0.4)' stroke-width='2'/%3E%3Cpath d='M 80 340 Q 200 310, 320 330 T 560 345 T 800 330 T 1040 315 L 1180 300' fill='none' stroke='rgba(139, 92, 246, 0.4)' stroke-width='2'/%3E%3C!-- Candlesticks --%3E%3Cline x1='100' y1='420' x2='100' y2='350' stroke='rgba(34, 197, 94, 0.5)' stroke-width='1'/%3E%3Crect x='95' y='370' width='10' height='40' fill='rgba(34, 197, 94, 0.6)' stroke='rgba(34, 197, 94, 0.8)' stroke-width='1'/%3E%3Cline x1='160' y1='400' x2='160' y2='320' stroke='rgba(34, 197, 94, 0.5)' stroke-width='1'/%3E%3Crect x='155' y='340' width='10' height='50' fill='rgba(34, 197, 94, 0.6)' stroke='rgba(34, 197, 94, 0.8)' stroke-width='1'/%3E%3Cline x1='220' y1='370' x2='220' y2='310' stroke='rgba(239, 68, 68, 0.5)' stroke-width='1'/%3E%3Crect x='215' y='310' width='10' height='40' fill='rgba(239, 68, 68, 0.6)' stroke='rgba(239, 68, 68, 0.8)' stroke-width='1'/%3E%3Cline x1='280' y1='390' x2='280' y2='330' stroke='rgba(34, 197, 94, 0.5)' stroke-width='1'/%3E%3Crect x='275' y='350' width='10' height='30' fill='rgba(34, 197, 94, 0.6)' stroke='rgba(34, 197, 94, 0.8)' stroke-width='1'/%3E%3Cline x1='340' y1='360' x2='340' y2='290' stroke='rgba(239, 68, 68, 0.5)' stroke-width='1'/%3E%3Crect x='335' y='290' width='10' height='50' fill='rgba(239, 68, 68, 0.6)' stroke='rgba(239, 68, 68, 0.8)' stroke-width='1'/%3E%3Cline x1='400' y1='340' x2='400' y2='270' stroke='rgba(34, 197, 94, 0.5)' stroke-width='1'/%3E%3Crect x='395' y='290' width='10' height='40' fill='rgba(34, 197, 94, 0.6)' stroke='rgba(34, 197, 94, 0.8)' stroke-width='1'/%3E%3Cline x1='460' y1='370' x2='460' y2='300' stroke='rgba(34, 197, 94, 0.5)' stroke-width='1'/%3E%3Crect x='455' y='320' width='10' height='40' fill='rgba(34, 197, 94, 0.6)' stroke='rgba(34, 197, 94, 0.8)' stroke-width='1'/%3E%3Cline x1='520' y1='350' x2='520' y2='280' stroke='rgba(239, 68, 68, 0.5)' stroke-width='1'/%3E%3Crect x='515' y='280' width='10' height='50' fill='rgba(239, 68, 68, 0.6)' stroke='rgba(239, 68, 68, 0.8)' stroke-width='1'/%3E%3Cline x1='580' y1='380' x2='580' y2='310' stroke='rgba(34, 197, 94, 0.5)' stroke-width='1'/%3E%3Crect x='575' y='330' width='10' height='40' fill='rgba(34, 197, 94, 0.6)' stroke='rgba(34, 197, 94, 0.8)' stroke-width='1'/%3E%3Cline x1='640' y1='360' x2='640' y2='290' stroke='rgba(34, 197, 94, 0.5)' stroke-width='1'/%3E%3Crect x='635' y='310' width='10' height='40' fill='rgba(34, 197, 94, 0.6)' stroke='rgba(34, 197, 94, 0.8)' stroke-width='1'/%3E%3Cline x1='700' y1='340' x2='700' y2='270' stroke='rgba(239, 68, 68, 0.5)' stroke-width='1'/%3E%3Crect x='695' y='270' width='10' height='50' fill='rgba(239, 68, 68, 0.6)' stroke='rgba(239, 68, 68, 0.8)' stroke-width='1'/%3E%3Cline x1='760' y1='370' x2='760' y2='300' stroke='rgba(34, 197, 94, 0.5)' stroke-width='1'/%3E%3Crect x='755' y='320' width='10' height='40' fill='rgba(34, 197, 94, 0.6)' stroke='rgba(34, 197, 94, 0.8)' stroke-width='1'/%3E%3Cline x1='820' y1='350' x2='820' y2='280' stroke='rgba(34, 197, 94, 0.5)' stroke-width='1'/%3E%3Crect x='815' y='300' width='10' height='40' fill='rgba(34, 197, 94, 0.6)' stroke='rgba(34, 197, 94, 0.8)' stroke-width='1'/%3E%3Cline x1='880' y1='380' x2='880' y2='310' stroke='rgba(239, 68, 68, 0.5)' stroke-width='1'/%3E%3Crect x='875' y='310' width='10' height='50' fill='rgba(239, 68, 68, 0.6)' stroke='rgba(239, 68, 68, 0.8)' stroke-width='1'/%3E%3Cline x1='940' y1='360' x2='940' y2='290' stroke='rgba(34, 197, 94, 0.5)' stroke-width='1'/%3E%3Crect x='935' y='310' width='10' height='40' fill='rgba(34, 197, 94, 0.6)' stroke='rgba(34, 197, 94, 0.8)' stroke-width='1'/%3E%3Cline x1='1000' y1='340' x2='1000' y2='270' stroke='rgba(34, 197, 94, 0.5)' stroke-width='1'/%3E%3Crect x='995' y='290' width='10' height='40' fill='rgba(34, 197, 94, 0.6)' stroke='rgba(34, 197, 94, 0.8)' stroke-width='1'/%3E%3Cline x1='1060' y1='320' x2='1060' y2='250' stroke='rgba(34, 197, 94, 0.5)' stroke-width='1'/%3E%3Crect x='1055' y='270' width='10' height='40' fill='rgba(34, 197, 94, 0.6)' stroke='rgba(34, 197, 94, 0.8)' stroke-width='1'/%3E%3Cline x1='1120' y1='310' x2='1120' y2='240' stroke='rgba(34, 197, 94, 0.5)' stroke-width='1'/%3E%3Crect x='1115' y='260' width='10' height='40' fill='rgba(34, 197, 94, 0.6)' stroke='rgba(34, 197, 94, 0.8)' stroke-width='1'/%3E%3C!-- Volume bars --%3E%3Crect x='95' y='680' width='10' height='60' fill='rgba(34, 197, 94, 0.3)'/%3E%3Crect x='155' y='660' width='10' height='80' fill='rgba(34, 197, 94, 0.3)'/%3E%3Crect x='215' y='700' width='10' height='40' fill='rgba(239, 68, 68, 0.3)'/%3E%3Crect x='275' y='690' width='10' height='50' fill='rgba(34, 197, 94, 0.3)'/%3E%3Crect x='335' y='670' width='10' height='70' fill='rgba(239, 68, 68, 0.3)'/%3E%3Crect x='395' y='680' width='10' height='60' fill='rgba(34, 197, 94, 0.3)'/%3E%3Crect x='455' y='685' width='10' height='55' fill='rgba(34, 197, 94, 0.3)'/%3E%3Crect x='515' y='665' width='10' height='75' fill='rgba(239, 68, 68, 0.3)'/%3E%3Crect x='575' y='690' width='10' height='50' fill='rgba(34, 197, 94, 0.3)'/%3E%3Crect x='635' y='685' width='10' height='55' fill='rgba(34, 197, 94, 0.3)'/%3E%3Crect x='695' y='675' width='10' height='65' fill='rgba(239, 68, 68, 0.3)'/%3E%3Crect x='755' y='690' width='10' height='50' fill='rgba(34, 197, 94, 0.3)'/%3E%3Crect x='815' y='685' width='10' height='55' fill='rgba(34, 197, 94, 0.3)'/%3E%3Crect x='875' y='670' width='10' height='70' fill='rgba(239, 68, 68, 0.3)'/%3E%3Crect x='935' y='685' width='10' height='55' fill='rgba(34, 197, 94, 0.3)'/%3E%3Crect x='995' y='680' width='10' height='60' fill='rgba(34, 197, 94, 0.3)'/%3E%3Crect x='1055' y='675' width='10' height='65' fill='rgba(34, 197, 94, 0.3)'/%3E%3Crect x='1115' y='670' width='10' height='70' fill='rgba(34, 197, 94, 0.3)'/%3E%3C/svg%3E");
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
   }
 
   .bg-fixed-parallax {
