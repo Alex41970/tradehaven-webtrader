@@ -27,6 +27,21 @@
   }
 }
 
+@keyframes hero-gradient-shift {
+  0%, 100% {
+    background-position: 0% 50%, 100% 50%, 0 0;
+  }
+  25% {
+    background-position: 25% 60%, 75% 40%, 0 0;
+  }
+  50% {
+    background-position: 100% 50%, 0% 50%, 0 0;
+  }
+  75% {
+    background-position: 75% 40%, 25% 60%, 0 0;
+  }
+}
+
 @keyframes float {
   0%, 100% {
     transform: translateY(0px);
@@ -36,12 +51,38 @@
   }
 }
 
+@keyframes particle-float-hero {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+    opacity: 0.4;
+  }
+  33% {
+    transform: translate(30px, -30px) scale(1.1);
+    opacity: 0.6;
+  }
+  66% {
+    transform: translate(-20px, -40px) scale(0.9);
+    opacity: 0.5;
+  }
+}
+
 @keyframes glow {
   0%, 100% {
     opacity: 0.5;
   }
   50% {
     opacity: 1;
+  }
+}
+
+@keyframes glow-pulse {
+  0%, 100% {
+    text-shadow: 0 0 20px hsl(43 96% 56% / 0.3),
+                 0 0 40px hsl(43 96% 56% / 0.2);
+  }
+  50% {
+    text-shadow: 0 0 30px hsl(43 96% 56% / 0.5),
+                 0 0 60px hsl(43 96% 56% / 0.3);
   }
 }
 
@@ -176,15 +217,23 @@ All colors MUST be HSL.
 
   .bg-trading-pattern {
     background-image: 
-      linear-gradient(135deg, hsl(220 15% 8%) 0%, hsl(220 20% 10%) 50%, hsl(220 15% 6%) 100%),
-      radial-gradient(circle at 20% 80%, hsl(43 96% 56% / 0.05) 0%, transparent 50%),
-      radial-gradient(circle at 80% 20%, hsl(142 76% 36% / 0.05) 0%, transparent 50%),
-      radial-gradient(circle at 50% 50%, hsl(43 96% 56% / 0.03) 0%, transparent 80%),
-      linear-gradient(90deg, transparent 49%, hsl(220 15% 12% / 0.3) 50%, transparent 51%),
-      linear-gradient(0deg, transparent 49%, hsl(220 15% 12% / 0.2) 50%, transparent 51%);
-    background-size: 100% 100%, 1000px 1000px, 800px 800px, 1200px 1200px, 80px 80px, 80px 80px;
-    background-position: 0 0, 0 0, 100% 100%, 50% 50%, 0 0, 0 0;
-    animation: gradient-shift 20s ease infinite, float 8s ease-in-out infinite;
+      linear-gradient(135deg, hsl(220 15% 8%) 0%, hsl(220 18% 9%) 50%, hsl(220 15% 7%) 100%),
+      radial-gradient(circle at 20% 80%, hsl(43 96% 56% / 0.03) 0%, transparent 60%),
+      radial-gradient(circle at 80% 20%, hsl(142 76% 36% / 0.03) 0%, transparent 60%),
+      radial-gradient(circle at 50% 50%, hsl(43 96% 56% / 0.02) 0%, transparent 80%),
+      radial-gradient(circle, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
+    background-size: 100% 100%, 1200px 1200px, 1000px 1000px, 1400px 1400px, 60px 60px;
+    background-position: 0 0, 0 0, 100% 100%, 50% 50%, 0 0;
+    animation: gradient-shift 30s ease infinite;
+  }
+
+  .bg-hero-premium {
+    background: 
+      radial-gradient(circle at 30% 20%, hsl(43 96% 56% / 0.08) 0%, transparent 40%),
+      radial-gradient(circle at 70% 80%, hsl(220 91% 30% / 0.12) 0%, transparent 50%),
+      linear-gradient(135deg, hsl(220 20% 8%) 0%, hsl(220 25% 6%) 50%, hsl(220 20% 4%) 100%);
+    position: relative;
+    animation: hero-gradient-shift 15s ease infinite;
   }
 
   .animate-float {
@@ -195,10 +244,40 @@ All colors MUST be HSL.
     animation: glow 3s ease-in-out infinite;
   }
 
+  .animate-glow-pulse {
+    animation: glow-pulse 3s ease-in-out infinite;
+  }
+
   .bg-chart-lines {
     background-image: 
       linear-gradient(90deg, hsl(220 15% 12% / 0.3) 1px, transparent 1px),
       linear-gradient(hsl(220 15% 12% / 0.3) 1px, transparent 1px);
     background-size: 40px 40px;
+  }
+
+  .hover-shine {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .hover-shine::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: linear-gradient(
+      45deg,
+      transparent 30%,
+      rgba(255, 255, 255, 0.1) 50%,
+      transparent 70%
+    );
+    transform: translateX(-100%) translateY(-100%);
+    transition: transform 0.6s;
+  }
+
+  .hover-shine:hover::before {
+    transform: translateX(100%) translateY(100%);
   }
 }
