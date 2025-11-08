@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2 } from "lucide-react";
 
@@ -18,7 +19,7 @@ interface ModifyBalanceDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   user: UserProfile | null;
-  onModifyBalance: (userId: string, amount: number, operation: "add" | "deduct") => Promise<void>;
+  onModifyBalance: (userId: string, amount: number, operation: "add" | "deduct", reason?: string) => Promise<void>;
 }
 
 export const ModifyBalanceDialog = ({ 
@@ -29,6 +30,7 @@ export const ModifyBalanceDialog = ({
 }: ModifyBalanceDialogProps) => {
   const [amount, setAmount] = useState("");
   const [operation, setOperation] = useState<"add" | "deduct">("add");
+  const [reason, setReason] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async () => {
@@ -36,9 +38,10 @@ export const ModifyBalanceDialog = ({
     
     setLoading(true);
     try {
-      await onModifyBalance(user.user_id, parseFloat(amount), operation);
+      await onModifyBalance(user.user_id, parseFloat(amount), operation, reason);
       setAmount("");
       setOperation("add");
+      setReason("");
       onOpenChange(false);
     } finally {
       setLoading(false);
@@ -82,6 +85,17 @@ export const ModifyBalanceDialog = ({
               placeholder="0.00"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
+            />
+          </div>
+          
+          <div>
+            <Label htmlFor="reason">Reason for Adjustment (Optional)</Label>
+            <Textarea
+              id="reason"
+              placeholder="e.g., 'Promotion bonus', 'Compensation for system error', 'Manual correction'"
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              className="min-h-[80px]"
             />
           </div>
           

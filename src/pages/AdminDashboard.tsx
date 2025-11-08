@@ -294,7 +294,7 @@ const AdminDashboard = () => {
   }, [user, roleLoading, role, fetchAdminData]);
 
 
-  const handleModifyBalance = async (userId: string, amount: number, operation: "add" | "deduct") => {
+  const handleModifyBalance = async (userId: string, amount: number, operation: "add" | "deduct", reason?: string) => {
     if (!user) return;
 
     try {
@@ -308,6 +308,34 @@ const AdminDashboard = () => {
       if (error) throw error;
 
       if (data) {
+        // Create corresponding deposit/withdrawal record for transaction history
+        const transactionRecord = {
+          user_id: userId,
+          amount: amount,
+          status: 'approved',
+          processed_by_admin: user.id,
+          processed_at: new Date().toISOString(),
+          admin_notes: reason || `Balance ${operation === 'add' ? 'added' : 'deducted'} by admin`,
+        };
+
+        if (operation === 'add') {
+          // Create deposit request
+          await supabase
+            .from('deposit_requests')
+            .insert({
+              ...transactionRecord,
+              deposit_type: 'admin_adjustment'
+            });
+        } else {
+          // Create withdrawal request
+          await supabase
+            .from('withdrawal_requests')
+            .insert({
+              ...transactionRecord,
+              withdrawal_type: 'admin_adjustment'
+            });
+        }
+
         toast({
           title: "Success",
           description: `Balance ${operation === 'add' ? 'added' : 'deducted'} successfully`
