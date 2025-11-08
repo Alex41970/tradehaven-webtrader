@@ -870,9 +870,10 @@ export type Database = {
           _admin_id: string
           _amount: number
           _operation: string
+          _reason?: string
           _user_id: string
         }
-        Returns: boolean
+        Returns: Json
       }
       assign_user_to_admin_via_promo: {
         Args: { _promo_code: string; _user_id: string }

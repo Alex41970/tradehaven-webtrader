@@ -302,63 +302,28 @@ const AdminDashboard = () => {
         _admin_id: user.id,
         _user_id: userId,
         _amount: amount,
-        _operation: operation
+        _operation: operation,
+        _reason: reason || null
       });
 
       if (error) throw error;
 
-      if (data) {
-        // Create corresponding deposit/withdrawal record for transaction history
-        const transactionRecord = {
-          user_id: userId,
-          amount: amount,
-          status: 'approved',
-          processed_by_admin: user.id,
-          processed_at: new Date().toISOString(),
-          admin_notes: reason || `Balance ${operation === 'add' ? 'added' : 'deducted'} by admin`,
-        };
+      const result = data as { success: boolean; error?: string; message?: string } | null;
 
-        // Record in transaction history with proper error handling
-        let logError: any = null;
-        if (operation === 'add') {
-          const { error: depositErr } = await supabase
-            .from('deposit_requests')
-            .insert({
-              ...transactionRecord,
-              deposit_type: 'admin_adjustment'
-            });
-          if (depositErr) logError = depositErr;
-        } else {
-          const { error: withdrawalErr } = await supabase
-            .from('withdrawal_requests')
-            .insert({
-              ...transactionRecord,
-              withdrawal_type: 'admin_adjustment'
-            });
-          if (withdrawalErr) logError = withdrawalErr;
-        }
-
-        if (logError) {
-          console.error('Failed to log transaction history:', logError);
-          toast({
-            title: 'Partial success',
-            description: 'Balance updated, but failed to log Recent Actions (permissions).',
-            variant: 'destructive'
-          });
-        } else {
-          toast({
-            title: 'Success',
-            description: `Balance ${operation === 'add' ? 'added' : 'deducted'} successfully`
-          });
-        }
-        fetchAdminData();
-      } else {
+      if (result && !result.success) {
         toast({
           title: "Error",
-          description: "Unauthorized or user not found",
+          description: result.error || "Failed to modify balance",
           variant: "destructive"
         });
+        return;
       }
+
+      toast({
+        title: "Success",
+        description: `Balance ${operation === 'add' ? 'added' : 'deducted'} successfully`
+      });
+      fetchAdminData();
     } catch (error) {
       console.error('Error modifying balance:', error);
       toast({
