@@ -104,7 +104,7 @@ const Index = () => {
       </header>
 
       {/* Hero Section */}
-      <section className="relative py-16 lg:py-24 bg-subtle-grid overflow-hidden">
+      <section className="relative py-16 lg:py-24 bg-subtle-grid overflow-y-hidden">
         <div className="container mx-auto px-6 md:px-4">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div className="text-left w-full max-w-full">
@@ -137,7 +137,9 @@ const Index = () => {
                   Try Demo Account
                 </Button>
               </div>
-              <TradingStats />
+              <div className="overflow-x-visible -mx-6 md:mx-0">
+                <TradingStats />
+              </div>
             </div>
             <div className="hidden lg:block">
               <HeroChart />
