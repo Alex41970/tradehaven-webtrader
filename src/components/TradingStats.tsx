@@ -59,15 +59,41 @@ const AnimatedCounter = ({ end, duration = 2000, prefix = "", suffix = "" }: {
 
 export const TradingStats = () => {
   return (
-    <div className="flex flex-col sm:grid sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-8">
-      {stats.map((stat, index) => (
-        <div key={index} className="flex sm:flex-col items-center sm:text-center gap-4 sm:gap-0">
-          <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-br from-accent/20 to-accent/5 rounded-lg flex items-center justify-center border border-accent/30 flex-shrink-0 sm:mx-auto sm:mb-4">
-            <stat.icon className="h-6 w-6 sm:h-8 sm:w-8 text-accent" />
-          </div>
-          <div className="flex-1 sm:flex-none">
-            <div className="mb-1 sm:mb-2 text-accent drop-shadow-[0_0_8px_rgba(240,185,11,0.3)]">
-              <span className="font-bold text-xl sm:text-2xl md:text-3xl">
+    <>
+      {/* Mobile: Horizontal scroll cards */}
+      <div className="sm:hidden">
+        <div className="flex overflow-x-auto gap-4 pb-4 snap-x snap-mandatory -mx-4 px-4 scrollbar-hide">
+          {stats.map((stat, index) => (
+            <div key={index} className="flex-shrink-0 w-[280px] snap-center">
+              <div className="bg-card/50 backdrop-blur-sm border border-accent/20 rounded-xl p-6 text-center hover:border-accent/40 transition-all">
+                <div className="w-14 h-14 bg-gradient-to-br from-accent/20 to-accent/5 rounded-lg flex items-center justify-center mb-4 mx-auto border border-accent/30">
+                  <stat.icon className="h-7 w-7 text-accent" />
+                </div>
+                <div className="mb-2 text-accent drop-shadow-[0_0_8px_rgba(240,185,11,0.3)]">
+                  <span className="font-bold text-2xl">
+                    <AnimatedCounter 
+                      end={parseInt(stat.value)} 
+                      prefix={stat.suffix === "$" ? "$" : ""} 
+                      suffix={stat.suffix !== "$" ? stat.suffix : ""} 
+                    />
+                  </span>
+                </div>
+                <p className="text-sm text-muted-foreground font-medium">{stat.label}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Tablet: 2x2 grid */}
+      <div className="hidden sm:grid lg:hidden sm:grid-cols-2 gap-6">
+        {stats.map((stat, index) => (
+          <div key={index} className="text-center">
+            <div className="mx-auto w-16 h-16 bg-gradient-to-br from-accent/20 to-accent/5 rounded-lg flex items-center justify-center mb-4 border border-accent/30">
+              <stat.icon className="h-8 w-8 text-accent" />
+            </div>
+            <div className="mb-2 text-accent drop-shadow-[0_0_8px_rgba(240,185,11,0.3)]">
+              <span className="font-bold text-2xl md:text-3xl">
                 <AnimatedCounter 
                   end={parseInt(stat.value)} 
                   prefix={stat.suffix === "$" ? "$" : ""} 
@@ -75,10 +101,31 @@ export const TradingStats = () => {
                 />
               </span>
             </div>
-            <p className="text-xs sm:text-sm text-muted-foreground font-medium">{stat.label}</p>
+            <p className="text-sm text-muted-foreground font-medium">{stat.label}</p>
           </div>
-        </div>
-      ))}
-    </div>
+        ))}
+      </div>
+
+      {/* Desktop: 4-column grid */}
+      <div className="hidden lg:grid lg:grid-cols-4 gap-8">
+        {stats.map((stat, index) => (
+          <div key={index} className="text-center">
+            <div className="mx-auto w-16 h-16 bg-gradient-to-br from-accent/20 to-accent/5 rounded-lg flex items-center justify-center mb-4 border border-accent/30">
+              <stat.icon className="h-8 w-8 text-accent" />
+            </div>
+            <div className="mb-2 text-accent drop-shadow-[0_0_8px_rgba(240,185,11,0.3)]">
+              <span className="font-bold text-2xl md:text-3xl">
+                <AnimatedCounter 
+                  end={parseInt(stat.value)} 
+                  prefix={stat.suffix === "$" ? "$" : ""} 
+                  suffix={stat.suffix !== "$" ? stat.suffix : ""} 
+                />
+              </span>
+            </div>
+            <p className="text-sm text-muted-foreground font-medium">{stat.label}</p>
+          </div>
+        ))}
+      </div>
+    </>
   );
 };
