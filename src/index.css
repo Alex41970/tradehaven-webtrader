@@ -77,12 +77,12 @@
 
 @keyframes glow-pulse {
   0%, 100% {
-    text-shadow: 0 0 20px hsl(43 96% 56% / 0.3),
-                 0 0 40px hsl(43 96% 56% / 0.2);
+    text-shadow: 0 0 15px hsl(199 89% 48% / 0.2),
+                 0 0 30px hsl(199 89% 48% / 0.1);
   }
   50% {
-    text-shadow: 0 0 30px hsl(43 96% 56% / 0.5),
-                 0 0 60px hsl(43 96% 56% / 0.3);
+    text-shadow: 0 0 20px hsl(199 89% 48% / 0.3),
+                 0 0 40px hsl(199 89% 48% / 0.15);
   }
 }
 
@@ -110,7 +110,7 @@ All colors MUST be HSL.
     --muted: 220 15% 16%;
     --muted-foreground: 215 20% 65%;
 
-    --accent: 43 96% 56%;
+    --accent: 199 89% 48%;
     --accent-foreground: 220 15% 8%;
 
     --destructive: 0 84.2% 60.2%;
@@ -118,7 +118,7 @@ All colors MUST be HSL.
 
     --border: 220 15% 20%;
     --input: 220 15% 16%;
-    --ring: 43 96% 56%;
+    --ring: 199 89% 48%;
 
     --radius: 0.5rem;
 
@@ -134,15 +134,15 @@ All colors MUST be HSL.
     /* Trading-specific colors */
     --trading-primary: 220 91% 20%;
     --trading-secondary: 215 25% 27%;
-    --trading-accent: 43 96% 56%;
+    --trading-accent: 199 89% 48%;
     --trading-success: 142 76% 36%;
     --trading-danger: 0 84% 60%;
     --trading-neutral: 215 16% 47%;
-    --trading-bg-gradient: linear-gradient(135deg, hsl(220 91% 20%), hsl(215 25% 27%));
-    --trading-hero-gradient: linear-gradient(135deg, hsl(220 91% 20%) 0%, hsl(215 25% 27%) 50%, hsl(220 91% 15%) 100%);
+    --trading-bg-gradient: linear-gradient(135deg, hsl(220 91% 20%), hsl(217 91% 60%));
+    --trading-hero-gradient: linear-gradient(135deg, hsl(220 91% 20%) 0%, hsl(217 91% 60%) 100%);
     --trading-card-gradient: linear-gradient(145deg, hsl(0 0% 100% / 0.05), hsl(0 0% 100% / 0.02));
     --trading-shadow: 0 25px 50px -12px hsl(220 91% 20% / 0.25);
-    --trading-glow: 0 0 50px hsl(43 96% 56% / 0.15);
+    --trading-glow: 0 0 30px hsl(199 89% 48% / 0.1);
   }
 
   .dark {
@@ -164,7 +164,7 @@ All colors MUST be HSL.
     --muted: 215 25% 16%;
     --muted-foreground: 215 20.2% 65.1%;
 
-    --accent: 43 96% 56%;
+    --accent: 199 89% 48%;
     --accent-foreground: 220 91% 4%;
 
     --destructive: 0 62.8% 30.6%;
@@ -172,7 +172,7 @@ All colors MUST be HSL.
 
     --border: 215 25% 16%;
     --input: 215 25% 16%;
-    --ring: 43 96% 56%;
+    --ring: 199 89% 48%;
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
     --sidebar-primary: 224.3 76.3% 48%;
@@ -183,17 +183,17 @@ All colors MUST be HSL.
     --sidebar-ring: 217.2 91.2% 59.8%;
     
     /* Dark mode trading colors */
-    --trading-primary: 43 96% 56%;
+    --trading-primary: 199 89% 48%;
     --trading-secondary: 215 25% 16%;
-    --trading-accent: 43 96% 56%;
+    --trading-accent: 199 89% 48%;
     --trading-success: 142 76% 36%;
     --trading-danger: 0 84% 60%;
     --trading-neutral: 215 20% 65%;
-    --trading-bg-gradient: linear-gradient(135deg, hsl(220 91% 4%), hsl(215 25% 8%));
-    --trading-hero-gradient: linear-gradient(135deg, hsl(220 91% 4%) 0%, hsl(215 25% 8%) 50%, hsl(220 91% 2%) 100%);
+    --trading-bg-gradient: linear-gradient(135deg, hsl(220 91% 4%), hsl(217 91% 60%));
+    --trading-hero-gradient: linear-gradient(135deg, hsl(220 91% 4%) 0%, hsl(217 91% 60%) 100%);
     --trading-card-gradient: linear-gradient(145deg, hsl(0 0% 100% / 0.05), hsl(0 0% 100% / 0.02));
     --trading-shadow: 0 25px 50px -12px hsl(220 91% 2% / 0.8);
-    --trading-glow: 0 0 50px hsl(43 96% 56% / 0.2);
+    --trading-glow: 0 0 30px hsl(199 89% 48% / 0.15);
   }
 }
 
@@ -217,23 +217,21 @@ All colors MUST be HSL.
 
   .bg-trading-pattern {
     background-image: 
-      linear-gradient(135deg, hsl(220 15% 8%) 0%, hsl(220 18% 9%) 50%, hsl(220 15% 7%) 100%),
-      radial-gradient(circle at 20% 80%, hsl(43 96% 56% / 0.03) 0%, transparent 60%),
-      radial-gradient(circle at 80% 20%, hsl(142 76% 36% / 0.03) 0%, transparent 60%),
-      radial-gradient(circle at 50% 50%, hsl(43 96% 56% / 0.02) 0%, transparent 80%),
+      linear-gradient(135deg, hsl(220 15% 8%) 0%, hsl(220 18% 9%) 100%),
+      radial-gradient(circle at 20% 80%, hsl(199 89% 48% / 0.02) 0%, transparent 60%),
+      radial-gradient(circle at 80% 20%, hsl(217 91% 60% / 0.02) 0%, transparent 60%),
       radial-gradient(circle, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
-    background-size: 100% 100%, 1200px 1200px, 1000px 1000px, 1400px 1400px, 60px 60px;
-    background-position: 0 0, 0 0, 100% 100%, 50% 50%, 0 0;
+    background-size: 100% 100%, 1200px 1200px, 1000px 1000px, 60px 60px;
+    background-position: 0 0, 0 0, 100% 100%, 0 0;
     animation: gradient-shift 30s ease infinite;
   }
 
   .bg-hero-premium {
     background: 
-      radial-gradient(circle at 30% 20%, hsl(43 96% 56% / 0.08) 0%, transparent 40%),
-      radial-gradient(circle at 70% 80%, hsl(220 91% 30% / 0.12) 0%, transparent 50%),
-      linear-gradient(135deg, hsl(220 20% 8%) 0%, hsl(220 25% 6%) 50%, hsl(220 20% 4%) 100%);
+      radial-gradient(circle at 30% 20%, hsl(199 89% 48% / 0.05) 0%, transparent 40%),
+      radial-gradient(circle at 70% 80%, hsl(217 91% 60% / 0.06) 0%, transparent 50%),
+      linear-gradient(135deg, hsl(220 20% 8%) 0%, hsl(220 25% 6%) 100%);
     position: relative;
-    animation: hero-gradient-shift 15s ease infinite;
   }
 
   .animate-float {
