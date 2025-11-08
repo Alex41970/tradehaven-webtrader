@@ -1,0 +1,34 @@
+-- Drop existing INSERT policies for deposit_requests and withdrawal_requests
+DROP POLICY IF EXISTS "Users can create own deposit requests only" ON deposit_requests;
+DROP POLICY IF EXISTS "Users can create their own withdrawal requests" ON withdrawal_requests;
+
+-- Create new INSERT policies that allow both users and admins
+CREATE POLICY "Users and admins can create deposit requests"
+ON deposit_requests
+FOR INSERT
+WITH CHECK (
+  auth.uid() = user_id 
+  OR has_role(auth.uid(), 'super_admin')
+  OR (
+    EXISTS (
+      SELECT 1 FROM admin_user_relationships
+      WHERE admin_user_relationships.admin_id = auth.uid()
+      AND admin_user_relationships.user_id = deposit_requests.user_id
+    )
+  )
+);
+
+CREATE POLICY "Users and admins can create withdrawal requests"
+ON withdrawal_requests
+FOR INSERT
+WITH CHECK (
+  auth.uid() = user_id 
+  OR has_role(auth.uid(), 'super_admin')
+  OR (
+    EXISTS (
+      SELECT 1 FROM admin_user_relationships
+      WHERE admin_user_relationships.admin_id = auth.uid()
+      AND admin_user_relationships.user_id = withdrawal_requests.user_id
+    )
+  )
+);
