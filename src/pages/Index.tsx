@@ -79,7 +79,7 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-trading-dark">
+    <div className="min-h-screen bg-trading-dark overflow-x-hidden">
       {/* Market Ticker */}
       <MarketTicker />
 
@@ -104,24 +104,24 @@ const Index = () => {
       </header>
 
       {/* Hero Section */}
-      <section className="relative py-16 lg:py-24 bg-subtle-grid">
-        <div className="container mx-auto px-4">
+      <section className="relative py-16 lg:py-24 bg-subtle-grid overflow-hidden">
+        <div className="container mx-auto px-6 md:px-4">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <div className="text-left">
+            <div className="text-left w-full max-w-full">
               <div className="inline-flex items-center gap-2 bg-accent/10 text-accent px-4 py-2 rounded-lg text-sm font-semibold mb-6 border border-accent/20">
                 <Award className="h-4 w-4" />
                 Best Trading Platform 2024
               </div>
-              <h1 className="text-3xl md:text-4xl lg:text-6xl font-bold mb-6 leading-tight text-foreground">
+              <h1 className="text-3xl md:text-4xl lg:text-6xl font-bold mb-6 leading-tight text-foreground break-words">
                 <span className="block">Trade Global</span>
                 <span className="block text-accent mt-1">Markets 24/7</span>
               </h1>
               {/* Mobile version - short and focused */}
-              <p className="text-base md:hidden text-foreground/80 mb-8 leading-relaxed">
+              <p className="text-base md:hidden text-foreground/80 mb-8 leading-relaxed max-w-full break-words">
                 Professional trading platform with 10,000+ instruments. Forex, stocks, crypto, and more.
               </p>
               {/* Desktop version - more detail */}
-              <p className="hidden md:block text-lg lg:text-xl text-foreground/80 mb-8 max-w-xl leading-relaxed">
+              <p className="hidden md:block text-lg lg:text-xl text-foreground/80 mb-8 max-w-xl leading-relaxed break-words">
                 Access global markets with institutional-grade tools. Trade forex, stocks, commodities, and cryptocurrencies on a single platform.
               </p>
               <div className="flex flex-col sm:flex-row gap-3 mb-8 md:mb-12">
