@@ -749,7 +749,7 @@ const AdminDashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background dashboard-theme">
       <div className="container mx-auto p-6">
         <div className="flex items-center justify-between mb-6">
           <div>

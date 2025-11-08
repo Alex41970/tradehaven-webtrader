@@ -162,7 +162,7 @@ const Dashboard = () => {
   }
 
   return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-background dashboard-theme">
         {/* Margin Call Warning System */}
         {realTimeEquity > 0 && totalUsedMargin > 0 && (
           <MarginCallWarning 

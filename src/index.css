@@ -42,13 +42,29 @@
 
     --radius: 0.5rem;
 
-    /* Trading-specific colors - Binance palette */
+  /* Trading-specific colors - Binance palette */
     --trading-primary: 225 100% 61%;    /* Blue */
     --trading-secondary: 218 13% 18%;   /* Dark gray */
     --trading-accent: 45 98% 50%;       /* Gold */
     --trading-success: 145 63% 49%;     /* #0ECB81 - Green */
     --trading-danger: 349 89% 63%;      /* #F6465D - Red */
     --trading-neutral: 215 14% 58%;     /* Gray */
+  }
+
+  /* Dashboard-specific theme - Vibrant gold accents */
+  .dashboard-theme {
+    --card: 220 20% 16%;                /* Darker, richer cards */
+    --card-secondary: 218 15% 20%;
+    --card-accent: 225 25% 18%;
+    --card-border: 220 20% 25%;         /* More visible borders */
+    
+    --border: 220 20% 25%;              /* Brighter borders for dashboard */
+    --accent: 45 98% 50%;               /* Keep vibrant gold */
+    --primary: 225 100% 61%;            /* Keep blue accent */
+    
+    /* Enhanced gradients for dashboard cards */
+    --card-gradient-start: 220 20% 16%;
+    --card-gradient-end: 220 15% 14%;
   }
 
   .dark {
@@ -150,6 +166,22 @@
 
   .hover-border {
     @apply transition-colors duration-200 hover:border-primary;
+  }
+
+  /* Dashboard-specific card enhancements */
+  .dashboard-theme .dashboard-card {
+    background: linear-gradient(135deg, hsl(var(--card-gradient-start)) 0%, hsl(var(--card-gradient-end)) 100%);
+    border: 1px solid hsl(var(--card-border));
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+  }
+
+  .dashboard-theme .accent-card {
+    border-color: hsl(var(--accent) / 0.3);
+    background: linear-gradient(135deg, hsl(var(--card)) 0%, hsl(220 20% 18%) 100%);
+  }
+
+  .dashboard-theme .accent-glow {
+    box-shadow: 0 0 20px hsl(var(--accent) / 0.2);
   }
 }
 
