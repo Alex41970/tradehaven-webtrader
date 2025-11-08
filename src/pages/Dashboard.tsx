@@ -395,12 +395,12 @@ const Dashboard = () => {
         <div className="container mx-auto px-4 py-6">
           {/* Quick Stats */}
           <div className="grid md:grid-cols-3 gap-6 mb-6">
-            <Card className="bg-gradient-to-br from-card via-card to-card/95 border-2 border-primary/10 shadow-lg hover:shadow-xl transition-shadow duration-300">
+            <Card className="bg-gradient-to-br from-card via-card to-card/95 border-2 border-accent/20 shadow-lg hover:shadow-xl transition-shadow duration-300">
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
-                    <div className="p-2 bg-primary/10 rounded-full">
-                      <DollarSign className="h-5 w-5 text-primary" />
+                    <div className="p-2 bg-accent/10 rounded-full">
+                      <DollarSign className="h-5 w-5 text-accent" />
                     </div>
                     <div>
                       <CardTitle className="text-lg font-bold text-foreground">
@@ -414,7 +414,7 @@ const Dashboard = () => {
                       </CardDescription>
                     </div>
                   </div>
-                  <Badge variant="outline" className="text-xs bg-primary/5 text-primary border-primary/20">
+                  <Badge variant="outline" className="text-xs bg-accent/5 text-accent border-accent/20">
                     <Shield className="w-3 h-3 mr-1" />
                     Verified
                   </Badge>
@@ -423,10 +423,10 @@ const Dashboard = () => {
               <CardContent className="pt-0">
                 <div className="space-y-4">
                   {/* Account Balance Section */}
-                  <div className="bg-gradient-to-r from-primary/5 to-primary/10 rounded-lg p-4 border border-primary/10">
+                  <div className="bg-gradient-to-r from-accent/5 to-accent/10 rounded-lg p-4 border border-accent/20">
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-sm font-medium text-muted-foreground">Total Account Balance</span>
-                      <Trophy className="h-4 w-4 text-primary" />
+                      <Trophy className="h-4 w-4 text-accent" />
                     </div>
                     <TooltipProvider>
                       <Tooltip>
@@ -470,7 +470,7 @@ const Dashboard = () => {
                       </TooltipProvider>
                       <div className="text-xs text-muted-foreground">
                         {profile?.balance ? formatPercentage((realTimeEquity / profile.balance) * 100) : '0.0%'} of base balance
-                        {metricsUpdating && <span className="ml-2 text-primary animate-pulse">●</span>}
+                        {metricsUpdating && <span className="ml-2 text-accent animate-pulse">●</span>}
                       </div>
                     </div>
                     
@@ -493,7 +493,7 @@ const Dashboard = () => {
                       </TooltipProvider>
                       <div className="text-xs text-muted-foreground">
                         {realTimeEquity > 0 ? formatPercentage((realTimeFreeMargin / realTimeEquity) * 100) : '0.0%'} available
-                        {metricsUpdating && <span className="ml-2 text-primary animate-pulse">●</span>}
+                        {metricsUpdating && <span className="ml-2 text-accent animate-pulse">●</span>}
                       </div>
                     </div>
                   </div>

@@ -19,7 +19,7 @@ export const MarketTicker = () => {
   const changePercent = (asset: any) => asset.change_24h;
 
   return (
-    <div className="w-full overflow-hidden bg-gradient-to-r from-secondary via-secondary/95 to-secondary border-b border-border border-t border-primary/10">
+    <div className="w-full overflow-hidden bg-gradient-to-r from-secondary via-secondary/95 to-secondary border-b border-border border-t border-accent/20">
       <div className="flex items-center">
         <MarketTickIndicator />
         <div className="flex animate-[scroll_60s_linear_infinite] gap-8 py-3 flex-1">

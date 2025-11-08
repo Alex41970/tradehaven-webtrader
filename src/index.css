@@ -60,7 +60,8 @@
     
     --border: 220 20% 25%;              /* Brighter borders for dashboard */
     --accent: 45 98% 50%;               /* Keep vibrant gold */
-    --primary: 225 100% 61%;            /* Keep blue accent */
+    --primary: 45 98% 50%;              /* Override primary to gold for dashboard */
+    --primary-foreground: 222 13% 7%;   /* Dark text on gold */
     
     /* Enhanced gradients for dashboard cards */
     --card-gradient-start: 220 20% 16%;
