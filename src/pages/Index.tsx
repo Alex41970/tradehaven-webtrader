@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
-import { TrendingUp, Shield, Zap, Users, ArrowRight, BarChart3, Globe, Award, CheckCircle, Star, Quote } from "lucide-react";
+import { Shield, Zap, Users, ArrowRight, BarChart3, Globe, Award, CheckCircle, Star, Quote } from "lucide-react";
 import { MarketTicker } from "@/components/MarketTicker";
 import { HeroChart } from "@/components/HeroChart";
 import { TradingStats } from "@/components/TradingStats";
@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
+import { Logo } from "@/components/Logo";
 
 const demoRequestSchema = z.object({
   email: z.string().trim().email({ message: "Please enter a valid email address" }).max(255, { message: "Email must be less than 255 characters" }),
@@ -85,15 +86,7 @@ const Index = () => {
       {/* Header */}
       <header className="sticky top-0 z-50 bg-secondary border-b border-border">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <div className="flex items-center space-x-2">
-            <div className="h-10 w-10 bg-accent rounded-lg flex items-center justify-center">
-              <TrendingUp className="h-6 w-6 text-accent-foreground" />
-            </div>
-            <h1 className="text-2xl font-bold text-foreground">
-              <span className="hidden md:inline">Lexington Capital Investing</span>
-              <span className="md:hidden">LCI</span>
-            </h1>
-          </div>
+          <Logo size="lg" className="hover:scale-105 transition-transform" />
           <div className="flex items-center gap-4">
             <Button variant="ghost" className="hidden md:flex" onClick={() => navigate("/markets")}>
               Markets

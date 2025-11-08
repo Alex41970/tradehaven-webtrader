@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { TrendingUp } from "lucide-react";
+import { Logo } from "@/components/Logo";
 
 const PAYMENT_ICON_SOURCES: Record<string, string[]> = {
   visa: [
@@ -52,12 +52,7 @@ export const Footer = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
           {/* Company Info */}
           <div>
-            <div className="flex items-center space-x-2 mb-4">
-              <div className="h-8 w-8 bg-gradient-to-br from-trading-primary to-trading-accent rounded-lg flex items-center justify-center">
-                <TrendingUp className="h-5 w-5 text-white" />
-              </div>
-              <h3 className="text-lg font-bold">LCI</h3>
-            </div>
+            <Logo size="md" className="mb-4" />
             <p className="text-sm text-muted-foreground">
               Professional trading platform trusted by over 500,000 traders worldwide. 
               Trade with confidence on our regulated and secure platform.

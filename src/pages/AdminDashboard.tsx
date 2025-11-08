@@ -21,8 +21,9 @@ import { ViewWithdrawalDetailsDialog } from "@/components/admin/ViewWithdrawalDe
 import { useAssets } from "@/hooks/useAssets";
 import { useRealTimePrices } from "@/hooks/useRealTimePrices";
 import { calculateRealTimePnL } from "@/utils/pnlCalculator";
-import { Users, DollarSign, TrendingUp, Settings, LogOut, Search, Filter, Activity, BarChart3, Plus, CreditCard, Eye } from "lucide-react";
+import { Users, DollarSign, Settings, LogOut, Search, Filter, Activity, BarChart3, Plus, CreditCard, Eye } from "lucide-react";
 import { Navigate } from "react-router-dom";
+import { Logo } from "@/components/Logo";
 
 interface UserProfile {
   user_id: string;
@@ -797,7 +798,7 @@ const AdminDashboard = () => {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Active Trades</CardTitle>
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+              <Activity className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stats.activeTrades}</div>
@@ -994,7 +995,7 @@ const AdminDashboard = () => {
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Total P&L</CardTitle>
-                  <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                  <DollarSign className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
                   <div className={`text-2xl font-bold ${tradeStats.totalPnL >= 0 ? 'text-green-600' : 'text-red-600'}`}>

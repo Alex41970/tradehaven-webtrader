@@ -13,8 +13,9 @@ import { WithdrawModal } from "@/components/WithdrawModal";
 import { TransactionHistoryPopup } from "@/components/TransactionHistoryPopup";
 import TradingStatusIndicator from "@/components/TradingStatusIndicator";
 import { ConnectionStatus } from "@/components/ConnectionStatus";
-import { LogOut, TrendingUp, DollarSign, Activity, ExternalLink, Plus, Minus, BarChart3, Target, Trophy, Shield, TrendingDown, Zap, Award, Bot, History, ArrowUpRight, ArrowDownLeft, Clock, CheckCircle, XCircle, Loader, Menu, User, CircleDollarSign, MessageCircle, Settings } from "lucide-react";
+import { LogOut, DollarSign, Activity, ExternalLink, Plus, Minus, BarChart3, Target, Trophy, Shield, TrendingDown, Zap, Award, Bot, History, ArrowUpRight, ArrowDownLeft, Clock, CheckCircle, XCircle, Loader, Menu, User, CircleDollarSign, MessageCircle, Settings } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { Logo } from "@/components/Logo";
 import { useSharedUserProfile } from "@/hooks/useSharedUserProfile";
 import { useTrades } from "@/hooks/useTrades";
 import { useAssets } from "@/hooks/useAssets";
@@ -177,10 +178,7 @@ const Dashboard = () => {
             {isMobile ? (
               /* Mobile Header */
               <div className="flex justify-between items-center">
-                <div className="flex items-center space-x-2">
-                  <TrendingUp className="h-5 w-5 text-primary" />
-                  <h1 className="text-lg font-bold">LCI</h1>
-                </div>
+                <Logo size="sm" iconOnly />
                 <div className="flex items-center space-x-2">
                   <ConnectionStatus />
                   {botStatus.isConnected && !showBotFullScreen && (
@@ -261,7 +259,7 @@ const Dashboard = () => {
                                 setMobileMenuOpen(false);
                               }}
                             >
-                              <TrendingUp className="h-4 w-4 mr-2" />
+                              <BarChart3 className="h-4 w-4 mr-2" />
                               Web Trader
                             </Button>
                             <Button 
@@ -349,10 +347,7 @@ const Dashboard = () => {
             ) : (
               /* Desktop Header */
               <div className="flex justify-between items-center">
-                <div className="flex items-center space-x-2">
-                  <TrendingUp className="h-6 w-6 text-primary" />
-                  <h1 className="text-2xl font-bold">Lexington Capital Investing</h1>
-                </div>
+                <Logo size="lg" />
                 <div className="flex items-center space-x-4">
                   {botStatus.isConnected && !showBotFullScreen ? (
                     <Button 
@@ -682,7 +677,7 @@ const Dashboard = () => {
 
                   <div className="flex items-center justify-between">
                     <span className="text-xs text-muted-foreground flex items-center">
-                      <TrendingUp className="w-3 h-3 mr-1" />
+                      <Trophy className="w-3 h-3 mr-1" />
                       Largest Win
                     </span>
                     <span className="text-sm font-medium text-trading-success">
