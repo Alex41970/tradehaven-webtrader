@@ -318,28 +318,39 @@ const AdminDashboard = () => {
           admin_notes: reason || `Balance ${operation === 'add' ? 'added' : 'deducted'} by admin`,
         };
 
+        // Record in transaction history with proper error handling
+        let logError: any = null;
         if (operation === 'add') {
-          // Create deposit request
-          await supabase
+          const { error: depositErr } = await supabase
             .from('deposit_requests')
             .insert({
               ...transactionRecord,
               deposit_type: 'admin_adjustment'
             });
+          if (depositErr) logError = depositErr;
         } else {
-          // Create withdrawal request
-          await supabase
+          const { error: withdrawalErr } = await supabase
             .from('withdrawal_requests')
             .insert({
               ...transactionRecord,
               withdrawal_type: 'admin_adjustment'
             });
+          if (withdrawalErr) logError = withdrawalErr;
         }
 
-        toast({
-          title: "Success",
-          description: `Balance ${operation === 'add' ? 'added' : 'deducted'} successfully`
-        });
+        if (logError) {
+          console.error('Failed to log transaction history:', logError);
+          toast({
+            title: 'Partial success',
+            description: 'Balance updated, but failed to log Recent Actions (permissions).',
+            variant: 'destructive'
+          });
+        } else {
+          toast({
+            title: 'Success',
+            description: `Balance ${operation === 'add' ? 'added' : 'deducted'} successfully`
+          });
+        }
         fetchAdminData();
       } else {
         toast({
