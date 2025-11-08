@@ -177,13 +177,14 @@ All colors MUST be HSL.
   .bg-trading-pattern {
     background-image: 
       linear-gradient(135deg, hsl(220 15% 8%) 0%, hsl(220 20% 10%) 50%, hsl(220 15% 6%) 100%),
-      radial-gradient(circle at 20% 80%, hsl(43 96% 56% / 0.03) 0%, transparent 50%),
-      radial-gradient(circle at 80% 20%, hsl(142 76% 36% / 0.03) 0%, transparent 50%),
+      radial-gradient(circle at 20% 80%, hsl(43 96% 56% / 0.05) 0%, transparent 50%),
+      radial-gradient(circle at 80% 20%, hsl(142 76% 36% / 0.05) 0%, transparent 50%),
+      radial-gradient(circle at 50% 50%, hsl(43 96% 56% / 0.03) 0%, transparent 80%),
       linear-gradient(90deg, transparent 49%, hsl(220 15% 12% / 0.3) 50%, transparent 51%),
       linear-gradient(0deg, transparent 49%, hsl(220 15% 12% / 0.2) 50%, transparent 51%);
-    background-size: 100% 100%, 800px 800px, 600px 600px, 100px 100px, 100px 100px;
-    background-position: 0 0, 0 0, 100% 100%, 0 0, 0 0;
-    animation: gradient-shift 15s ease infinite;
+    background-size: 100% 100%, 1000px 1000px, 800px 800px, 1200px 1200px, 80px 80px, 80px 80px;
+    background-position: 0 0, 0 0, 100% 100%, 50% 50%, 0 0, 0 0;
+    animation: gradient-shift 20s ease infinite, float 8s ease-in-out infinite;
   }
 
   .animate-float {

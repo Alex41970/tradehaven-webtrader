@@ -19,6 +19,14 @@ import SuperAdminDashboard from "./pages/SuperAdminDashboard";
 import NotFound from "./pages/NotFound";
 import Terms from "./pages/Terms";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
+import AboutUs from "./pages/AboutUs";
+import Careers from "./pages/Careers";
+import Press from "./pages/Press";
+import Contact from "./pages/Contact";
+import Support from "./pages/Support";
+import CookiePolicy from "./pages/CookiePolicy";
+import RiskDisclosure from "./pages/RiskDisclosure";
+import Regulatory from "./pages/Regulatory";
 import { WebTrader } from "./components/WebTrader";
 import { MobilePortfolio } from "./pages/MobilePortfolio";
 import { MobileTradingHistory } from "./pages/MobileTradingHistory";
@@ -45,8 +53,16 @@ const App = () => (
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/auth" element={<Auth />} />
-                <Route path="/terms" element={<Terms />} />
-                <Route path="/privacy" element={<PrivacyPolicy />} />
+          <Route path="/terms" element={<Terms />} />
+          <Route path="/privacy" element={<PrivacyPolicy />} />
+          <Route path="/about" element={<AboutUs />} />
+          <Route path="/careers" element={<Careers />} />
+          <Route path="/press" element={<Press />} />
+          <Route path="/contact" element={<Contact />} />
+          <Route path="/support" element={<Support />} />
+          <Route path="/cookies" element={<CookiePolicy />} />
+          <Route path="/risk-disclosure" element={<RiskDisclosure />} />
+          <Route path="/regulatory" element={<Regulatory />} />
                 <Route path="/dashboard" element={
                   <ProtectedRoute>
                     <Dashboard />
