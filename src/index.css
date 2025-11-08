@@ -18,6 +18,33 @@
   }
 }
 
+@keyframes gradient-shift {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-20px);
+  }
+}
+
+@keyframes glow {
+  0%, 100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
 /* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
 All colors MUST be HSL.
 */
@@ -156,6 +183,15 @@ All colors MUST be HSL.
       linear-gradient(0deg, transparent 49%, hsl(220 15% 12% / 0.2) 50%, transparent 51%);
     background-size: 100% 100%, 800px 800px, 600px 600px, 100px 100px, 100px 100px;
     background-position: 0 0, 0 0, 100% 100%, 0 0, 0 0;
+    animation: gradient-shift 15s ease infinite;
+  }
+
+  .animate-float {
+    animation: float 6s ease-in-out infinite;
+  }
+
+  .animate-glow {
+    animation: glow 3s ease-in-out infinite;
   }
 
   .bg-chart-lines {

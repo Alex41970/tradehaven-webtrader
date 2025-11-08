@@ -2,11 +2,13 @@ import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
-import { TrendingUp, Shield, Zap, Users, ArrowRight, BarChart3, Globe, Award } from "lucide-react";
+import { TrendingUp, Shield, Zap, Users, ArrowRight, BarChart3, Globe, Award, CheckCircle, Star, Quote } from "lucide-react";
 import { MarketTicker } from "@/components/MarketTicker";
 import { HeroChart } from "@/components/HeroChart";
 import { TradingStats } from "@/components/TradingStats";
 import { TrustBadges } from "@/components/TrustBadges";
+import { Footer } from "@/components/Footer";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 const Index = () => {
   const { user } = useAuth();
@@ -175,6 +177,214 @@ const Index = () => {
         </div>
       </section>
 
+      {/* Statistics Section */}
+      <section className="py-20 relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-b from-muted/20 to-transparent"></div>
+        <div className="container mx-auto px-4 relative">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl lg:text-4xl font-bold mb-4">Trusted by Traders Worldwide</h2>
+            <p className="text-xl text-muted-foreground">Join a global community of successful traders</p>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+            <div className="text-center p-6 bg-card/30 backdrop-blur-sm rounded-xl border border-border/50">
+              <div className="text-4xl lg:text-5xl font-bold text-trading-accent mb-2">500K+</div>
+              <div className="text-muted-foreground">Active Traders</div>
+            </div>
+            <div className="text-center p-6 bg-card/30 backdrop-blur-sm rounded-xl border border-border/50">
+              <div className="text-4xl lg:text-5xl font-bold text-trading-success mb-2">$50B+</div>
+              <div className="text-muted-foreground">Monthly Volume</div>
+            </div>
+            <div className="text-center p-6 bg-card/30 backdrop-blur-sm rounded-xl border border-border/50">
+              <div className="text-4xl lg:text-5xl font-bold text-trading-primary mb-2">10K+</div>
+              <div className="text-muted-foreground">Instruments</div>
+            </div>
+            <div className="text-center p-6 bg-card/30 backdrop-blur-sm rounded-xl border border-border/50">
+              <div className="text-4xl lg:text-5xl font-bold text-trading-accent mb-2">0.03s</div>
+              <div className="text-muted-foreground">Avg Execution</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* How It Works Section */}
+      <section className="py-20 bg-muted/20">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl lg:text-4xl font-bold mb-4">Start Trading in 3 Simple Steps</h2>
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+              Get started in minutes and access global markets instantly
+            </p>
+          </div>
+          <div className="grid md:grid-cols-3 gap-8">
+            <div className="relative">
+              <div className="text-center">
+                <div className="inline-flex h-16 w-16 bg-gradient-to-br from-trading-primary to-trading-accent rounded-full items-center justify-center mb-6">
+                  <span className="text-3xl font-bold text-white">1</span>
+                </div>
+                <h3 className="text-xl font-semibold mb-3">Create Your Account</h3>
+                <p className="text-muted-foreground">
+                  Sign up in minutes with just your email. Complete our simple verification process to ensure your account security.
+                </p>
+              </div>
+            </div>
+            <div className="relative">
+              <div className="text-center">
+                <div className="inline-flex h-16 w-16 bg-gradient-to-br from-trading-accent to-trading-success rounded-full items-center justify-center mb-6">
+                  <span className="text-3xl font-bold text-white">2</span>
+                </div>
+                <h3 className="text-xl font-semibold mb-3">Fund Your Account</h3>
+                <p className="text-muted-foreground">
+                  Deposit funds securely using your preferred payment method. Start with as little as $100, no hidden fees.
+                </p>
+              </div>
+            </div>
+            <div className="relative">
+              <div className="text-center">
+                <div className="inline-flex h-16 w-16 bg-gradient-to-br from-trading-success to-trading-primary rounded-full items-center justify-center mb-6">
+                  <span className="text-3xl font-bold text-white">3</span>
+                </div>
+                <h3 className="text-xl font-semibold mb-3">Start Trading</h3>
+                <p className="text-muted-foreground">
+                  Access 10,000+ instruments and start trading with our professional-grade platform and tools.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Testimonials Section */}
+      <section className="py-20 relative overflow-hidden">
+        <div className="absolute inset-0 bg-chart-lines opacity-10"></div>
+        <div className="container mx-auto px-4 relative">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl lg:text-4xl font-bold mb-4">What Our Traders Say</h2>
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+              Real feedback from real traders
+            </p>
+          </div>
+          <div className="grid md:grid-cols-3 gap-8">
+            <div className="p-8 bg-card/50 backdrop-blur-sm rounded-xl border border-border/50">
+              <Quote className="h-10 w-10 text-trading-accent mb-4 opacity-50" />
+              <p className="text-muted-foreground mb-6">
+                "Best trading platform I've used. The execution speed is incredible and the interface is so intuitive. Made my first profitable trade within hours!"
+              </p>
+              <div className="flex items-center gap-3">
+                <div className="h-12 w-12 rounded-full bg-gradient-to-br from-trading-primary to-trading-accent flex items-center justify-center text-white font-semibold">
+                  JD
+                </div>
+                <div>
+                  <div className="font-semibold">James Davidson</div>
+                  <div className="text-sm text-muted-foreground">Day Trader</div>
+                </div>
+              </div>
+              <div className="flex gap-1 mt-4">
+                {[...Array(5)].map((_, i) => (
+                  <Star key={i} className="h-4 w-4 fill-trading-accent text-trading-accent" />
+                ))}
+              </div>
+            </div>
+            <div className="p-8 bg-card/50 backdrop-blur-sm rounded-xl border border-border/50">
+              <Quote className="h-10 w-10 text-trading-accent mb-4 opacity-50" />
+              <p className="text-muted-foreground mb-6">
+                "Professional-grade tools at an affordable price. The analytics and charting capabilities have transformed my trading strategy completely."
+              </p>
+              <div className="flex items-center gap-3">
+                <div className="h-12 w-12 rounded-full bg-gradient-to-br from-trading-accent to-trading-success flex items-center justify-center text-white font-semibold">
+                  SC
+                </div>
+                <div>
+                  <div className="font-semibold">Sarah Chen</div>
+                  <div className="text-sm text-muted-foreground">Forex Trader</div>
+                </div>
+              </div>
+              <div className="flex gap-1 mt-4">
+                {[...Array(5)].map((_, i) => (
+                  <Star key={i} className="h-4 w-4 fill-trading-accent text-trading-accent" />
+                ))}
+              </div>
+            </div>
+            <div className="p-8 bg-card/50 backdrop-blur-sm rounded-xl border border-border/50">
+              <Quote className="h-10 w-10 text-trading-accent mb-4 opacity-50" />
+              <p className="text-muted-foreground mb-6">
+                "Customer support is outstanding. They helped me set up my account and answered all my questions. Highly recommended for beginners and pros alike."
+              </p>
+              <div className="flex items-center gap-3">
+                <div className="h-12 w-12 rounded-full bg-gradient-to-br from-trading-success to-trading-primary flex items-center justify-center text-white font-semibold">
+                  MP
+                </div>
+                <div>
+                  <div className="font-semibold">Michael Peters</div>
+                  <div className="text-sm text-muted-foreground">Crypto Trader</div>
+                </div>
+              </div>
+              <div className="flex gap-1 mt-4">
+                {[...Array(5)].map((_, i) => (
+                  <Star key={i} className="h-4 w-4 fill-trading-accent text-trading-accent" />
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* FAQ Section */}
+      <section className="py-20 bg-muted/20">
+        <div className="container mx-auto px-4 max-w-3xl">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl lg:text-4xl font-bold mb-4">Frequently Asked Questions</h2>
+            <p className="text-xl text-muted-foreground">
+              Everything you need to know about trading with us
+            </p>
+          </div>
+          <Accordion type="single" collapsible className="w-full space-y-4">
+            <AccordionItem value="item-1" className="bg-card/50 backdrop-blur-sm rounded-lg border border-border/50 px-6">
+              <AccordionTrigger className="text-left">Is my money safe with Lexington Capital Investing?</AccordionTrigger>
+              <AccordionContent className="text-muted-foreground">
+                Absolutely. We are fully regulated by the FCA and your funds are held in segregated accounts with tier-1 banks. 
+                We also provide investor protection up to £85,000 and use 256-bit SSL encryption for all transactions.
+              </AccordionContent>
+            </AccordionItem>
+            <AccordionItem value="item-2" className="bg-card/50 backdrop-blur-sm rounded-lg border border-border/50 px-6">
+              <AccordionTrigger className="text-left">What is the minimum deposit required?</AccordionTrigger>
+              <AccordionContent className="text-muted-foreground">
+                You can start trading with as little as $100. We believe in making trading accessible to everyone, 
+                regardless of their capital size. There are no hidden fees or minimum balance requirements.
+              </AccordionContent>
+            </AccordionItem>
+            <AccordionItem value="item-3" className="bg-card/50 backdrop-blur-sm rounded-lg border border-border/50 px-6">
+              <AccordionTrigger className="text-left">Can I try the platform before depositing real money?</AccordionTrigger>
+              <AccordionContent className="text-muted-foreground">
+                Yes! We offer a free demo account with $10,000 in virtual funds. You can test all features, 
+                practice your strategies, and get comfortable with the platform before committing real capital.
+              </AccordionContent>
+            </AccordionItem>
+            <AccordionItem value="item-4" className="bg-card/50 backdrop-blur-sm rounded-lg border border-border/50 px-6">
+              <AccordionTrigger className="text-left">How long do withdrawals take?</AccordionTrigger>
+              <AccordionContent className="text-muted-foreground">
+                Withdrawal requests are typically processed within 24 hours. The time to receive funds in your account 
+                depends on your payment method: bank transfers take 1-3 business days, while e-wallets are usually instant.
+              </AccordionContent>
+            </AccordionItem>
+            <AccordionItem value="item-5" className="bg-card/50 backdrop-blur-sm rounded-lg border border-border/50 px-6">
+              <AccordionTrigger className="text-left">What trading instruments are available?</AccordionTrigger>
+              <AccordionContent className="text-muted-foreground">
+                We offer over 10,000 instruments including Forex (70+ currency pairs), Stocks (global exchanges), 
+                Commodities (gold, silver, oil), Cryptocurrencies (Bitcoin, Ethereum, and more), and Indices 
+                (S&P 500, FTSE 100, DAX, etc.).
+              </AccordionContent>
+            </AccordionItem>
+            <AccordionItem value="item-6" className="bg-card/50 backdrop-blur-sm rounded-lg border border-border/50 px-6">
+              <AccordionTrigger className="text-left">Do you offer educational resources for beginners?</AccordionTrigger>
+              <AccordionContent className="text-muted-foreground">
+                Yes! We provide comprehensive educational materials including video tutorials, webinars, trading guides, 
+                market analysis, and a glossary of trading terms. Our 24/7 support team is also available to help you learn.
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
+        </div>
+      </section>
+
       {/* CTA */}
       <section className="py-20 bg-gradient-to-r from-trading-primary via-trading-secondary to-trading-primary relative overflow-hidden">
         <div className="absolute inset-0 bg-grid-white/[0.02] bg-[size:60px_60px]"></div>
@@ -200,6 +410,9 @@ const Index = () => {
           </p>
         </div>
       </section>
+
+      {/* Footer */}
+      <Footer />
     </div>
   );
 };

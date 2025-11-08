@@ -17,6 +17,8 @@ import Dashboard from "./pages/Dashboard";
 import AdminDashboard from "./pages/AdminDashboard";
 import SuperAdminDashboard from "./pages/SuperAdminDashboard";
 import NotFound from "./pages/NotFound";
+import Terms from "./pages/Terms";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
 import { WebTrader } from "./components/WebTrader";
 import { MobilePortfolio } from "./pages/MobilePortfolio";
 import { MobileTradingHistory } from "./pages/MobileTradingHistory";
@@ -43,6 +45,8 @@ const App = () => (
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/auth" element={<Auth />} />
+                <Route path="/terms" element={<Terms />} />
+                <Route path="/privacy" element={<PrivacyPolicy />} />
                 <Route path="/dashboard" element={
                   <ProtectedRoute>
                     <Dashboard />
