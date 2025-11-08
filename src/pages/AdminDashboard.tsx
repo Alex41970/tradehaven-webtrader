@@ -16,6 +16,7 @@ import { ManagePaymentSettingsDialog } from "@/components/admin/ManagePaymentSet
 import { UserSearchSelect } from "@/components/admin/UserSearchSelect";
 import { ModifyBalanceDialog } from "@/components/admin/ModifyBalanceDialog";
 import { CreateTradeDialog } from "@/components/admin/CreateTradeDialog";
+import { RejectRequestDialog } from "@/components/admin/RejectRequestDialog";
 import { useAssets } from "@/hooks/useAssets";
 import { useRealTimePrices } from "@/hooks/useRealTimePrices";
 import { calculateRealTimePnL } from "@/utils/pnlCalculator";
@@ -81,6 +82,13 @@ const AdminDashboard = () => {
   const [paymentSettingsDialogOpen, setPaymentSettingsDialogOpen] = useState(false);
   const [createTradeDialogOpen, setCreateTradeDialogOpen] = useState(false);
   const [selectedUserForAction, setSelectedUserForAction] = useState<UserProfile | null>(null);
+  const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
+  const [requestToReject, setRequestToReject] = useState<{
+    id: string;
+    type: 'deposit' | 'withdrawal';
+    amount: number;
+    userName: string;
+  } | null>(null);
   
   // Search and filter states
   const [userSearchQuery, setUserSearchQuery] = useState("");
@@ -527,6 +535,20 @@ const AdminDashboard = () => {
         variant: "destructive"
       });
     }
+  };
+
+  const handleRejectWithReason = async (reason: string) => {
+    if (!requestToReject) return;
+    
+    await handleProcessRequest(
+      requestToReject.id,
+      'rejected',
+      requestToReject.type,
+      reason
+    );
+    
+    setRejectDialogOpen(false);
+    setRequestToReject(null);
   };
 
 
@@ -1258,7 +1280,15 @@ const AdminDashboard = () => {
                               <Button 
                                 size="sm" 
                                 variant="destructive"
-                                onClick={() => handleProcessRequest(request.id, 'rejected', 'deposit')}
+                                onClick={() => {
+                                  setRequestToReject({
+                                    id: request.id,
+                                    type: 'deposit',
+                                    amount: request.amount,
+                                    userName: `${request.user_profiles?.first_name || ''} ${request.user_profiles?.surname || ''}`.trim() || 'User'
+                                  });
+                                  setRejectDialogOpen(true);
+                                }}
                               >
                                 Reject
                               </Button>
@@ -1326,7 +1356,15 @@ const AdminDashboard = () => {
                               <Button 
                                 size="sm" 
                                 variant="destructive"
-                                onClick={() => handleProcessRequest(request.id, 'rejected', 'withdrawal')}
+                                onClick={() => {
+                                  setRequestToReject({
+                                    id: request.id,
+                                    type: 'withdrawal',
+                                    amount: request.amount,
+                                    userName: `${request.user_profiles?.first_name || ''} ${request.user_profiles?.surname || ''}`.trim() || 'User'
+                                  });
+                                  setRejectDialogOpen(true);
+                                }}
                               >
                                 Reject
                               </Button>
@@ -1371,6 +1409,18 @@ const AdminDashboard = () => {
         onCreateTrade={handleCreateTrade}
         getPriceForAsset={getPriceForAsset}
         isConnected={isConnected}
+      />
+
+      <RejectRequestDialog
+        open={rejectDialogOpen}
+        onOpenChange={(open) => {
+          setRejectDialogOpen(open);
+          if (!open) setRequestToReject(null);
+        }}
+        requestType={requestToReject?.type || 'withdrawal'}
+        requestAmount={requestToReject?.amount || 0}
+        userName={requestToReject?.userName || 'User'}
+        onConfirm={handleRejectWithReason}
       />
 
       {/* Edit Trade Price Dialog */}
