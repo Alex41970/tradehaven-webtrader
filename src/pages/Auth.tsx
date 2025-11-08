@@ -64,7 +64,7 @@ const Auth = () => {
       return;
     }
 
-    // Validate promo code is provided
+    // PRE-VALIDATE promo code before creating account
     if (!promoCode.trim()) {
       toast({
         title: "Promo Code Required",
@@ -73,8 +73,40 @@ const Auth = () => {
       });
       return;
     }
-    
+
     setLoading(true);
+
+    // Validate promo code with database BEFORE creating account
+    const { data: validationResult, error: validationError } = await supabase.rpc(
+      'validate_promo_code_for_signup',
+      { _promo_code: promoCode.trim() }
+    );
+
+    if (validationError) {
+      console.error('Promo code validation error:', validationError);
+      toast({
+        title: "Validation Error",
+        description: "Unable to validate promo code. Please try again.",
+        variant: "destructive"
+      });
+      setLoading(false);
+      return;
+    }
+
+    // Check validation result
+    const validation = validationResult as { valid: boolean; error?: string; admin_id?: string };
+    if (!validation || !validation.valid) {
+      toast({
+        title: "Invalid Promo Code",
+        description: validation?.error || "The promo code is invalid, expired, or fully used.",
+        variant: "destructive"
+      });
+      setLoading(false);
+      return;
+    }
+
+    // Promo code is VALID - proceed with account creation
+    console.log('Promo code validated successfully, proceeding with signup...');
 
     try {
       const { data, error } = await supabase.auth.signUp({
@@ -106,8 +138,8 @@ const Auth = () => {
           if (promoError) {
             console.error('Promo code assignment error:', promoError);
             toast({
-              title: "Invalid Promo Code", 
-              description: "The promo code provided is invalid, expired, or fully used. Please contact your administrator.",
+              title: "Assignment Error", 
+              description: "Account created but admin assignment failed unexpectedly. Please contact support with your email.",
               variant: "destructive"
             });
           } else if (result && typeof result === 'object' && 'success' in result) {
@@ -117,8 +149,8 @@ const Auth = () => {
             } else {
               console.error('Promo code assignment failed:', assignmentResult.error);
               toast({
-                title: "Invalid Promo Code",
-                description: assignmentResult.error || "Unable to validate promo code. Please check the code and try again.",
+                title: "Assignment Error",
+                description: assignmentResult.error || "Account created but admin assignment failed. Please contact support.",
                 variant: "destructive"
               });
             }

@@ -936,6 +936,10 @@ export type Database = {
         Args: { _new_admin_id: string; _user_id: string }
         Returns: boolean
       }
+      validate_promo_code_for_signup: {
+        Args: { _promo_code: string }
+        Returns: Json
+      }
     }
     Enums: {
       app_role: "super_admin" | "admin" | "user"
