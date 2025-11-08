@@ -119,12 +119,11 @@ const Index = () => {
                 Best Trading Platform 2024
               </div>
               <h1 className="text-4xl lg:text-6xl font-bold mb-6 leading-tight text-foreground">
-                Trade Crypto. Trade Stocks.
-                <span className="text-accent"> Trade Anything.</span>
+                Trade Smarter, Not Harder
+                <span className="block text-accent mt-2">Professional Trading Made Simple</span>
               </h1>
-              <p className="text-xl text-muted-foreground mb-8 max-w-xl">
-                Access 10,000+ instruments across forex, stocks, commodities, and crypto. 
-                Join 500,000+ traders worldwide.
+              <p className="text-xl text-foreground/80 mb-8 max-w-xl leading-relaxed">
+                Access global markets with institutional-grade tools. Trade 10,000+ instruments including forex, stocks, commodities, and cryptocurrencies on a single platform trusted by 500,000+ traders worldwide.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 mb-12">
                 <Button size="lg" variant="trading" onClick={() => navigate("/auth")}>
@@ -149,7 +148,7 @@ const Index = () => {
       </section>
 
       {/* Features */}
-      <section className="py-20 bg-background">
+      <section className="py-20 bg-section-alt">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className="text-3xl lg:text-5xl font-bold mb-4 text-foreground">
@@ -262,7 +261,7 @@ const Index = () => {
       </section>
 
       {/* How It Works Section */}
-      <section className="py-20 bg-background">
+      <section className="py-20 bg-section-alt">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className="text-3xl lg:text-5xl font-bold mb-4 text-foreground">Start Trading in 3 Steps</h2>

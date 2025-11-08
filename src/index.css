@@ -7,27 +7,27 @@
 
 @layer base {
   :root {
-    /* Core Backgrounds - Enhanced with blue tints for depth */
-    --background: 222 13% 7%;           /* #0B0E11 - Very dark background */
-    --foreground: 210 17% 93%;          /* #EAECEF - Light text */
+    /* Core Backgrounds - Unified dark theme */
+    --background: 222 13% 9%;           /* #13161B - Unified dark background */
+    --foreground: 210 17% 98%;          /* #F5F7FA - Brighter text */
 
-    --card: 220 20% 16%;                /* #252B35 - Blue-tinted card background */
-    --card-foreground: 210 17% 93%;
-    --card-border: 220 20% 25%;         /* #3A424E - Visible card borders */
+    --card: 222 15% 12%;                /* #1A1D23 - Slightly lighter unified card */
+    --card-foreground: 210 17% 98%;
+    --card-border: 225 15% 22%;         /* #313844 - Subtle blue-tinted borders */
 
-    --popover: 218 17% 18%;
-    --popover-foreground: 210 17% 93%;
+    --popover: 222 15% 12%;
+    --popover-foreground: 210 17% 98%;
 
     /* Primary - Binance Blue */
     --primary: 225 100% 61%;            /* #3861FB - Blue accent */
     --primary-foreground: 0 0% 100%;
 
-    /* Secondary - Dark gray */
-    --secondary: 218 13% 18%;           /* #1E2329 - Secondary dark */
-    --secondary-foreground: 210 17% 93%;
+    /* Secondary - Unified with background */
+    --secondary: 222 13% 10%;           /* #16191E - Slightly lighter than background */
+    --secondary-foreground: 210 17% 98%;
 
-    --muted: 218 13% 18%;
-    --muted-foreground: 215 14% 58%;    /* #848E9C - Muted gray */
+    --muted: 222 13% 10%;
+    --muted-foreground: 215 14% 65%;    /* #909AB0 - Lighter muted for better readability */
 
     /* Accent - Binance Gold */
     --accent: 45 98% 50%;               /* #F0B90B - Gold */
@@ -36,8 +36,8 @@
     --destructive: 349 89% 63%;         /* #F6465D - Red */
     --destructive-foreground: 0 0% 100%;
 
-    --border: 218 17% 18%;              /* #2B3139 - Subtle border */
-    --input: 218 17% 18%;
+    --border: 225 15% 20%;              /* #2C323D - Unified subtle border */
+    --input: 222 15% 12%;
     --ring: 225 100% 61%;
 
     --radius: 0.5rem;
@@ -52,24 +52,24 @@
   }
 
   .dark {
-    --background: 222 13% 7%;
-    --foreground: 210 17% 93%;
+    --background: 222 13% 9%;
+    --foreground: 210 17% 98%;
 
-    --card: 220 20% 16%;
-    --card-foreground: 210 17% 93%;
-    --card-border: 220 20% 25%;
+    --card: 222 15% 12%;
+    --card-foreground: 210 17% 98%;
+    --card-border: 225 15% 22%;
 
-    --popover: 218 17% 18%;
-    --popover-foreground: 210 17% 93%;
+    --popover: 222 15% 12%;
+    --popover-foreground: 210 17% 98%;
 
     --primary: 225 100% 61%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 218 13% 18%;
-    --secondary-foreground: 210 17% 93%;
+    --secondary: 222 13% 10%;
+    --secondary-foreground: 210 17% 98%;
 
-    --muted: 218 13% 18%;
-    --muted-foreground: 215 14% 58%;
+    --muted: 222 13% 10%;
+    --muted-foreground: 215 14% 65%;
 
     --accent: 45 98% 50%;
     --accent-foreground: 222 13% 7%;
@@ -77,8 +77,8 @@
     --destructive: 349 89% 63%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 218 17% 18%;
-    --input: 218 17% 18%;
+    --border: 225 15% 20%;
+    --input: 222 15% 12%;
     --ring: 225 100% 61%;
 
     --trading-primary: 225 100% 61%;
@@ -119,13 +119,13 @@
     100% { transform: translateX(-50%); }
   }
 
-  /* Enhanced Background Utilities */
+  /* Enhanced Background Utilities - Unified */
   .bg-trading-dark {
-    background: linear-gradient(180deg, hsl(222 13% 7%) 0%, hsl(222 13% 10%) 50%, hsl(218 17% 13%) 100%);
+    background: linear-gradient(180deg, hsl(222 13% 9%) 0%, hsl(222 13% 11%) 100%);
   }
 
   .bg-section-alt {
-    background: linear-gradient(180deg, hsl(218 17% 13%) 0%, hsl(220 18% 15%) 100%);
+    background: hsl(222 13% 10%);
   }
 
   .bg-subtle-grid {
