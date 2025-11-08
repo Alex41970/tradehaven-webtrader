@@ -53,19 +53,19 @@
 
   /* Dashboard-specific theme - Vibrant gold accents */
   .dashboard-theme {
-    --card: 222 18% 11%;                /* Rich dark blue cards like original */
-    --card-secondary: 222 15% 13%;
-    --card-accent: 225 20% 14%;
-    --card-border: 225 20% 22%;         /* Subtle blue-tinted borders */
+    --card: 222 18% 8%;                 /* Much darker blue cards */
+    --card-secondary: 222 15% 9%;
+    --card-accent: 225 20% 10%;
+    --card-border: 225 20% 18%;         /* Darker borders to match */
     
-    --border: 225 20% 22%;              /* Blue-tinted borders for dashboard */
+    --border: 225 20% 18%;              /* Darker borders for dashboard */
     --accent: 45 98% 50%;               /* Keep vibrant gold */
     --primary: 45 98% 50%;              /* Override primary to gold for dashboard */
     --primary-foreground: 222 13% 7%;   /* Dark text on gold */
     
     /* Enhanced gradients for dashboard cards */
-    --card-gradient-start: 222 18% 11%;
-    --card-gradient-end: 222 15% 10%;
+    --card-gradient-start: 222 18% 8%;
+    --card-gradient-end: 222 15% 7%;
   }
 
   .dark {
