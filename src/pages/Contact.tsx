@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, Mail, Phone, MapPin, Clock, MessageSquare } from "lucide-react";
+import { ArrowLeft, Mail, Clock, MessageSquare } from "lucide-react";
 
 const Contact = () => {
   return (
@@ -61,20 +61,6 @@ const Contact = () => {
               </p>
               <p className="text-sm text-muted-foreground">
                 Response within 24 hours
-              </p>
-            </Card>
-
-            <Card className="p-6 hover:shadow-lg transition-all">
-              <Phone className="w-12 h-12 text-trading-success mb-4" />
-              <h3 className="text-xl font-bold mb-2">Phone Support</h3>
-              <p className="text-muted-foreground mb-2">
-                +1 (888) 123-4567 (US)
-              </p>
-              <p className="text-muted-foreground mb-2">
-                +44 20 1234 5678 (UK)
-              </p>
-              <p className="text-sm text-muted-foreground">
-                24/7 Availability
               </p>
             </Card>
 
@@ -136,46 +122,6 @@ const Contact = () => {
                 </p>
               </form>
             </Card>
-          </div>
-        </div>
-
-        {/* Office Locations */}
-        <div className="mb-16">
-          <h2 className="text-3xl font-bold text-center mb-12">Our Global Offices</h2>
-          <div className="grid md:grid-cols-3 gap-8">
-            {[
-              {
-                city: "London",
-                address: "123 Financial District, Canary Wharf, London E14 5AB, UK",
-                phone: "+44 20 1234 5678",
-                hours: "Mon-Fri: 9:00 AM - 6:00 PM GMT"
-              },
-              {
-                city: "New York",
-                address: "456 Wall Street, New York, NY 10005, USA",
-                phone: "+1 (212) 123-4567",
-                hours: "Mon-Fri: 9:00 AM - 6:00 PM EST"
-              },
-              {
-                city: "Singapore",
-                address: "789 Raffles Place, Singapore 048622",
-                phone: "+65 1234 5678",
-                hours: "Mon-Fri: 9:00 AM - 6:00 PM SGT"
-              }
-            ].map((office, index) => (
-              <Card key={index} className="p-6 hover:shadow-xl transition-all">
-                <MapPin className="w-12 h-12 text-primary mb-4" />
-                <h3 className="text-xl font-bold mb-4">{office.city}</h3>
-                <div className="space-y-3 text-sm">
-                  <p className="text-muted-foreground">{office.address}</p>
-                  <p className="font-semibold">{office.phone}</p>
-                  <p className="text-muted-foreground flex items-center gap-2">
-                    <Clock className="w-4 h-4" />
-                    {office.hours}
-                  </p>
-                </div>
-              </Card>
-            ))}
           </div>
         </div>
 
