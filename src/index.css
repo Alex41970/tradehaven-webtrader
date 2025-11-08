@@ -215,23 +215,65 @@ All colors MUST be HSL.
     background-image: radial-gradient(circle, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
   }
 
-  .bg-trading-pattern {
-    background-image: 
-      linear-gradient(135deg, hsl(220 15% 8%) 0%, hsl(220 18% 9%) 100%),
-      radial-gradient(circle at 20% 80%, hsl(199 89% 48% / 0.02) 0%, transparent 60%),
-      radial-gradient(circle at 80% 20%, hsl(217 91% 60% / 0.02) 0%, transparent 60%),
-      radial-gradient(circle, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
-    background-size: 100% 100%, 1200px 1200px, 1000px 1000px, 60px 60px;
-    background-position: 0 0, 0 0, 100% 100%, 0 0;
-    animation: gradient-shift 30s ease infinite;
+  .bg-chart-depth {
+    background-color: hsl(220 15% 6%);
+    background-image:
+      /* Horizontal price grid lines */
+      repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 49px,
+        hsl(199 89% 48% / 0.08) 49px,
+        hsl(199 89% 48% / 0.08) 50px
+      ),
+      /* Vertical time grid lines */
+      repeating-linear-gradient(
+        90deg,
+        transparent,
+        transparent 79px,
+        hsl(217 91% 60% / 0.06) 79px,
+        hsl(217 91% 60% / 0.06) 80px
+      ),
+      /* Depth chart gradients on sides */
+      linear-gradient(
+        90deg,
+        hsl(142 76% 36% / 0.04) 0%,
+        transparent 15%,
+        transparent 85%,
+        hsl(0 84% 60% / 0.04) 100%
+      ),
+      /* Subtle candlestick pattern */
+      repeating-linear-gradient(
+        90deg,
+        transparent,
+        transparent 15px,
+        hsl(142 76% 36% / 0.02) 15px,
+        hsl(142 76% 36% / 0.02) 16px,
+        transparent 16px,
+        transparent 20px,
+        hsl(0 84% 60% / 0.02) 20px,
+        hsl(0 84% 60% / 0.02) 21px,
+        transparent 21px,
+        transparent 40px
+      );
+    background-size: 100% 50px, 80px 100%, 100% 100%, 40px 100%;
+    background-position: 0 0, 0 0, 0 0, 0 0;
   }
 
-  .bg-hero-premium {
-    background: 
-      radial-gradient(circle at 30% 20%, hsl(199 89% 48% / 0.05) 0%, transparent 40%),
-      radial-gradient(circle at 70% 80%, hsl(217 91% 60% / 0.06) 0%, transparent 50%),
-      linear-gradient(135deg, hsl(220 20% 8%) 0%, hsl(220 25% 6%) 100%);
-    position: relative;
+  .bg-fixed-parallax {
+    background-attachment: fixed;
+    background-size: cover;
+    background-position: center center;
+    background-repeat: no-repeat;
+  }
+
+  .content-overlay {
+    background: linear-gradient(
+      to bottom,
+      hsl(220 15% 6% / 0.85) 0%,
+      hsl(220 15% 6% / 0.75) 50%,
+      hsl(220 15% 6% / 0.85) 100%
+    );
   }
 
   .animate-float {

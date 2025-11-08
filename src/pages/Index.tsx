@@ -79,7 +79,7 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-trading-pattern">
+    <div className="min-h-screen bg-chart-depth bg-fixed-parallax">
       {/* Market Ticker */}
       <div className="bg-gradient-to-r from-card/50 via-card/60 to-card/50 backdrop-blur-md border-b border-trading-accent/20 shadow-lg shadow-trading-accent/5">
         <MarketTicker />
@@ -113,26 +113,10 @@ const Index = () => {
       </header>
 
       {/* Hero Section */}
-      <section className="relative py-20 lg:py-32 overflow-hidden bg-hero-premium">
-        {/* Floating Particles */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          {[...Array(12)].map((_, i) => (
-            <div
-              key={i}
-              className="absolute rounded-full bg-gradient-to-br from-trading-accent/20 to-trading-primary/20 blur-xl"
-              style={{
-                width: `${Math.random() * 200 + 100}px`,
-                height: `${Math.random() * 200 + 100}px`,
-                left: `${Math.random() * 100}%`,
-                top: `${Math.random() * 100}%`,
-                animation: `particle-float-hero ${Math.random() * 20 + 15}s ease-in-out infinite`,
-                animationDelay: `${Math.random() * 5}s`,
-              }}
-            />
-          ))}
-        </div>
-        <div className="absolute inset-0 bg-gradient-to-br from-trading-accent/5 via-transparent to-trading-primary/5"></div>
-        <div className="absolute inset-0 bg-gradient-to-t from-background/50 via-transparent to-transparent"></div>
+      <section className="relative py-20 lg:py-32 overflow-hidden">
+        {/* Dark overlay for text contrast */}
+        <div className="absolute inset-0 content-overlay"></div>
+        <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-transparent to-transparent"></div>
         <div className="container mx-auto px-4 relative">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div className="text-left">
@@ -188,7 +172,7 @@ const Index = () => {
           </div>
           
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16">
-            <div className="group p-8 bg-gradient-to-br from-card/70 via-card/50 to-card/30 backdrop-blur-md rounded-xl border border-border/50 hover:border-trading-accent/50 transition-all duration-300 hover:shadow-2xl hover:shadow-trading-accent/20 hover:scale-105 hover-shine">
+            <div className="group p-8 bg-card/80 backdrop-blur-md rounded-xl border border-border/50 hover:border-trading-accent/50 transition-all duration-300 hover:shadow-2xl hover:shadow-trading-accent/20 hover:scale-105 hover-shine">
               <div className="h-14 w-14 bg-gradient-to-br from-trading-success/20 to-trading-success/10 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
                 <Shield className="h-7 w-7 text-trading-success" />
               </div>
@@ -199,7 +183,7 @@ const Index = () => {
               <div className="text-sm text-trading-success font-medium">Funds up to £85,000 protected</div>
             </div>
 
-            <div className="group p-8 bg-gradient-to-br from-card/70 via-card/50 to-card/30 backdrop-blur-md rounded-xl border border-border/50 hover:border-trading-accent/50 transition-all duration-300 hover:shadow-2xl hover:shadow-trading-accent/20 hover:scale-105 hover-shine">
+            <div className="group p-8 bg-card/80 backdrop-blur-md rounded-xl border border-border/50 hover:border-trading-accent/50 transition-all duration-300 hover:shadow-2xl hover:shadow-trading-accent/20 hover:scale-105 hover-shine">
               <div className="h-14 w-14 bg-gradient-to-br from-trading-accent/20 to-trading-accent/10 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
                 <Zap className="h-7 w-7 text-trading-accent" />
               </div>
@@ -210,7 +194,7 @@ const Index = () => {
               <div className="text-sm text-trading-accent font-medium">Average execution: 0.03 seconds</div>
             </div>
 
-            <div className="group p-8 bg-gradient-to-br from-card/70 via-card/50 to-card/30 backdrop-blur-md rounded-xl border border-border/50 hover:border-trading-accent/50 transition-all duration-300 hover:shadow-2xl hover:shadow-trading-accent/20 hover:scale-105 hover-shine">
+            <div className="group p-8 bg-card/80 backdrop-blur-md rounded-xl border border-border/50 hover:border-trading-accent/50 transition-all duration-300 hover:shadow-2xl hover:shadow-trading-accent/20 hover:scale-105 hover-shine">
               <div className="h-14 w-14 bg-gradient-to-br from-trading-primary/20 to-trading-primary/10 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
                 <BarChart3 className="h-7 w-7 text-trading-primary" />
               </div>
@@ -221,7 +205,7 @@ const Index = () => {
               <div className="text-sm text-trading-primary font-medium">100+ technical indicators</div>
             </div>
 
-            <div className="group p-8 bg-gradient-to-br from-card/70 via-card/50 to-card/30 backdrop-blur-md rounded-xl border border-border/50 hover:border-trading-accent/50 transition-all duration-300 hover:shadow-2xl hover:shadow-trading-accent/20 hover:scale-105 hover-shine">
+            <div className="group p-8 bg-card/80 backdrop-blur-md rounded-xl border border-border/50 hover:border-trading-accent/50 transition-all duration-300 hover:shadow-2xl hover:shadow-trading-accent/20 hover:scale-105 hover-shine">
               <div className="h-14 w-14 bg-gradient-to-br from-trading-success/20 to-trading-success/10 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
                 <Globe className="h-7 w-7 text-trading-success" />
               </div>
@@ -232,7 +216,7 @@ const Index = () => {
               <div className="text-sm text-trading-success font-medium">10,000+ instruments available</div>
             </div>
 
-            <div className="group p-8 bg-gradient-to-br from-card/70 via-card/50 to-card/30 backdrop-blur-md rounded-xl border border-border/50 hover:border-trading-accent/50 transition-all duration-300 hover:shadow-2xl hover:shadow-trading-accent/20 hover:scale-105 hover-shine">
+            <div className="group p-8 bg-card/80 backdrop-blur-md rounded-xl border border-border/50 hover:border-trading-accent/50 transition-all duration-300 hover:shadow-2xl hover:shadow-trading-accent/20 hover:scale-105 hover-shine">
               <div className="h-14 w-14 bg-gradient-to-br from-trading-accent/20 to-trading-accent/10 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
                 <Users className="h-7 w-7 text-trading-accent" />
               </div>
@@ -243,7 +227,7 @@ const Index = () => {
               <div className="text-sm text-trading-accent font-medium">Available in 25 languages</div>
             </div>
 
-            <div className="group p-8 bg-gradient-to-br from-card/70 via-card/50 to-card/30 backdrop-blur-md rounded-xl border border-border/50 hover:border-trading-accent/50 transition-all duration-300 hover:shadow-2xl hover:shadow-trading-accent/20 hover:scale-105 hover-shine">
+            <div className="group p-8 bg-card/80 backdrop-blur-md rounded-xl border border-border/50 hover:border-trading-accent/50 transition-all duration-300 hover:shadow-2xl hover:shadow-trading-accent/20 hover:scale-105 hover-shine">
               <div className="h-14 w-14 bg-gradient-to-br from-trading-primary/20 to-trading-primary/10 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
                 <Award className="h-7 w-7 text-trading-primary" />
               </div>
