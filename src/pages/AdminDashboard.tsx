@@ -695,7 +695,15 @@ const AdminDashboard = () => {
       filtered = filtered.filter(req => req.status === requestsStatusFilter);
     }
     
-    return filtered;
+    // Sort: pending first, then by date (newest first)
+    return filtered.sort((a, b) => {
+      // First, sort by status (pending comes before approved/rejected)
+      if (a.status === 'pending' && b.status !== 'pending') return -1;
+      if (a.status !== 'pending' && b.status === 'pending') return 1;
+      
+      // Then, sort by created_at (newest first)
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    });
   }, [depositRequests, requestsSearchQuery, requestsStatusFilter]);
 
   const filteredWithdrawalRequests = useMemo(() => {
@@ -714,7 +722,15 @@ const AdminDashboard = () => {
       filtered = filtered.filter(req => req.status === requestsStatusFilter);
     }
     
-    return filtered;
+    // Sort: pending first, then by date (newest first)
+    return filtered.sort((a, b) => {
+      // First, sort by status (pending comes before approved/rejected)
+      if (a.status === 'pending' && b.status !== 'pending') return -1;
+      if (a.status !== 'pending' && b.status === 'pending') return 1;
+      
+      // Then, sort by created_at (newest first)
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    });
   }, [withdrawalRequests, requestsSearchQuery, requestsStatusFilter]);
 
   // Trade summary stats - filtered by selected user if any
