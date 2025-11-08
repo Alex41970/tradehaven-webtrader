@@ -4,9 +4,67 @@ import { TrendingUp, ArrowRight, Rocket, Award, BookOpen, Shield, Brain, Trendin
 import { Footer } from "@/components/Footer";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
+import { useState } from "react";
+import { z } from "zod";
+
+const demoRequestSchema = z.object({
+  email: z.string().trim().email({ message: "Please enter a valid email address" }).max(255, { message: "Email must be less than 255 characters" }),
+  name: z.string().trim().nonempty({ message: "Name cannot be empty" }).max(100, { message: "Name must be less than 100 characters" }),
+});
 
 const Education = () => {
   const navigate = useNavigate();
+  const [isDemoModalOpen, setIsDemoModalOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [email, setEmail] = useState("");
+  const [name, setName] = useState("");
+  const [errors, setErrors] = useState<{ email?: string; name?: string }>({});
+  const { toast } = useToast();
+
+  const handleDemoRequest = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrors({});
+    
+    const result = demoRequestSchema.safeParse({ email, name });
+    
+    if (!result.success) {
+      const fieldErrors: { email?: string; name?: string } = {};
+      result.error.errors.forEach((err) => {
+        if (err.path[0]) {
+          fieldErrors[err.path[0] as 'email' | 'name'] = err.message;
+        }
+      });
+      setErrors(fieldErrors);
+      return;
+    }
+    
+    setIsSubmitting(true);
+    
+    try {
+      await new Promise(resolve => setTimeout(resolve, 800));
+      
+      toast({
+        title: "Demo Account Request Submitted!",
+        description: `We'll send demo account details to ${email} shortly.`,
+      });
+      
+      setEmail("");
+      setName("");
+      setIsDemoModalOpen(false);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to submit request. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-trading-pattern">
@@ -745,17 +803,75 @@ const Education = () => {
           <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
             Try our platform with $100,000 virtual money. All real market conditions, zero risk.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button size="lg" variant="trading" onClick={() => navigate("/auth")}>
-              Get Free Demo Account
-              <ArrowRight className="ml-2 h-5 w-5" />
-            </Button>
-            <Button size="lg" variant="trading-outline">
-              Browse More Resources
-            </Button>
-          </div>
+          <Button size="lg" variant="trading" onClick={() => setIsDemoModalOpen(true)}>
+            Get Free Demo Account
+            <ArrowRight className="ml-2 h-5 w-5" />
+          </Button>
         </div>
       </section>
+
+      {/* Demo Account Request Modal */}
+      <Dialog open={isDemoModalOpen} onOpenChange={setIsDemoModalOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Request Free Demo Account</DialogTitle>
+            <DialogDescription>
+              Enter your details to receive demo account access with $100,000 virtual money
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleDemoRequest} className="space-y-4 mt-4">
+            <div className="space-y-2">
+              <Label htmlFor="demo-name">Full Name</Label>
+              <Input
+                id="demo-name"
+                type="text"
+                placeholder="John Doe"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                disabled={isSubmitting}
+                className={errors.name ? "border-red-500" : ""}
+              />
+              {errors.name && (
+                <p className="text-sm text-red-500">{errors.name}</p>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="demo-email">Email Address</Label>
+              <Input
+                id="demo-email"
+                type="email"
+                placeholder="you@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                disabled={isSubmitting}
+                className={errors.email ? "border-red-500" : ""}
+              />
+              {errors.email && (
+                <p className="text-sm text-red-500">{errors.email}</p>
+              )}
+            </div>
+            <div className="flex gap-3 mt-6">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsDemoModalOpen(false)}
+                disabled={isSubmitting}
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                variant="trading"
+                disabled={isSubmitting}
+                className="flex-1"
+              >
+                {isSubmitting ? "Submitting..." : "Request Demo Account"}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       <Footer />
     </div>
