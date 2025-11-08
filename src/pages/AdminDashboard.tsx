@@ -9,15 +9,17 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { BotLicenseManagement } from "@/components/BotLicenseManagement";
 import { UserPaymentSettings } from "@/components/UserPaymentSettings";
+import { UserSearchSelect } from "@/components/admin/UserSearchSelect";
+import { ModifyBalanceDialog } from "@/components/admin/ModifyBalanceDialog";
+import { CreateTradeDialog } from "@/components/admin/CreateTradeDialog";
 import { useAssets } from "@/hooks/useAssets";
 import { useRealTimePrices } from "@/hooks/useRealTimePrices";
 import { calculateRealTimePnL } from "@/utils/pnlCalculator";
-import { Users, DollarSign, TrendingUp, Settings, LogOut, Bot, Loader2, Search, Filter, Activity, BarChart3 } from "lucide-react";
+import { Users, DollarSign, TrendingUp, Settings, LogOut, Search, Filter, Activity, BarChart3, Plus, CreditCard } from "lucide-react";
 import { Navigate } from "react-router-dom";
 
 interface UserProfile {
@@ -73,28 +75,19 @@ const AdminDashboard = () => {
   const [selectedTradeForEdit, setSelectedTradeForEdit] = useState<UserTrade | null>(null);
   const [selectedTradeForClose, setSelectedTradeForClose] = useState<UserTrade | null>(null);
   const [closingTrade, setClosingTrade] = useState(false);
-  const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
-
-  // Form states
-  const [selectedUserId, setSelectedUserId] = useState("");
-  const [balanceAmount, setBalanceAmount] = useState("");
-  const [balanceOperation, setBalanceOperation] = useState<"add" | "deduct">("add");
-  const [selectedTradeId, setSelectedTradeId] = useState("");
-  const [newOpenPrice, setNewOpenPrice] = useState("");
   
-  // Trade creation states
-  const [showCreateTrade, setShowCreateTrade] = useState(false);
-  const [selectedAsset, setSelectedAsset] = useState("");
-  const [tradeType, setTradeType] = useState<"BUY" | "SELL">("BUY");
-  const [tradeAmount, setTradeAmount] = useState("");
-  const [tradeLeverage, setTradeLeverage] = useState(1);
-  const [tradePrice, setTradePrice] = useState("");
-  const [creatingTrade, setCreatingTrade] = useState(false);
+  // Dialog states
+  const [modifyBalanceDialogOpen, setModifyBalanceDialogOpen] = useState(false);
+  const [createTradeDialogOpen, setCreateTradeDialogOpen] = useState(false);
+  const [selectedUserForAction, setSelectedUserForAction] = useState<UserProfile | null>(null);
   
-  // All Trades filtering states
+  // Search and filter states
+  const [userSearchQuery, setUserSearchQuery] = useState("");
   const [tradesFilter, setTradesFilter] = useState<"all" | "active" | "closed">("all");
   const [tradesUserFilter, setTradesUserFilter] = useState<string>("all");
   const [tradesSymbolFilter, setTradesSymbolFilter] = useState<string>("");
+  const [requestsSearchQuery, setRequestsSearchQuery] = useState("");
+  const [requestsStatusFilter, setRequestsStatusFilter] = useState<string>("all");
   
   // Hooks for assets and prices
   const { assets, loading: assetsLoading } = useAssets();
@@ -289,15 +282,15 @@ const AdminDashboard = () => {
   }, [user, roleLoading, role, fetchAdminData]);
 
 
-  const handleModifyBalance = async () => {
-    if (!user || !selectedUserId || !balanceAmount) return;
+  const handleModifyBalance = async (userId: string, amount: number, operation: "add" | "deduct") => {
+    if (!user) return;
 
     try {
       const { data, error } = await supabase.rpc('admin_modify_user_balance', {
         _admin_id: user.id,
-        _user_id: selectedUserId,
-        _amount: parseFloat(balanceAmount),
-        _operation: balanceOperation
+        _user_id: userId,
+        _amount: amount,
+        _operation: operation
       });
 
       if (error) throw error;
@@ -305,11 +298,9 @@ const AdminDashboard = () => {
       if (data) {
         toast({
           title: "Success",
-          description: `Balance ${balanceOperation === 'add' ? 'added' : 'deducted'} successfully`
+          description: `Balance ${operation === 'add' ? 'added' : 'deducted'} successfully`
         });
         fetchAdminData();
-        setSelectedUserId("");
-        setBalanceAmount("");
       } else {
         toast({
           title: "Error",
@@ -439,38 +430,25 @@ const AdminDashboard = () => {
     }
   };
 
-  const handleCreateTrade = async () => {
-    if (!selectedUser || !selectedAsset || !tradeAmount || !tradePrice) {
-      toast({
-        title: "Error",
-        description: "Please fill in all required fields",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setCreatingTrade(true);
-    
+  const handleCreateTrade = async (params: {
+    userId: string;
+    assetId: string;
+    symbol: string;
+    tradeType: "BUY" | "SELL";
+    amount: number;
+    leverage: number;
+    price: number;
+  }) => {
     try {
-      const asset = assets.find(a => a.id === selectedAsset);
-      if (!asset) {
-        toast({
-          title: "Error",
-          description: "Selected asset not found",
-          variant: "destructive",
-        });
-        return;
-      }
-
       const { data, error } = await supabase.rpc('admin_create_trade', {
         _admin_id: user?.id,
-        _user_id: selectedUser.user_id,
-        _asset_id: selectedAsset,
-        _symbol: asset.symbol,
-        _trade_type: tradeType,
-        _amount: parseFloat(tradeAmount),
-        _leverage: tradeLeverage,
-        _open_price: parseFloat(tradePrice)
+        _user_id: params.userId,
+        _asset_id: params.assetId,
+        _symbol: params.symbol,
+        _trade_type: params.tradeType,
+        _amount: params.amount,
+        _leverage: params.leverage,
+        _open_price: params.price
       });
 
       if (error) {
@@ -497,13 +475,6 @@ const AdminDashboard = () => {
         description: "Trade created successfully",
       });
 
-      // Reset form
-      setShowCreateTrade(false);
-      setSelectedAsset("");
-      setTradeAmount("");
-      setTradePrice("");
-      setTradeLeverage(1);
-      
       // Refresh data
       fetchAdminData();
     } catch (error) {
@@ -513,8 +484,6 @@ const AdminDashboard = () => {
         description: "Failed to create trade",
         variant: "destructive",
       });
-    } finally {
-      setCreatingTrade(false);
     }
   };
 
@@ -559,16 +528,6 @@ const AdminDashboard = () => {
     }
   };
 
-  // Update trade price when asset changes
-  useEffect(() => {
-    if (selectedAsset && assets.length > 0) {
-      const asset = assets.find(a => a.id === selectedAsset);
-      if (asset) {
-        const priceUpdate = getPriceForAsset(asset.symbol);
-        setTradePrice((priceUpdate?.price || asset.price).toString());
-      }
-    }
-  }, [selectedAsset, assets, getPriceForAsset]);
 
   const handleSignOut = async () => {
     if (signingOut) return;
@@ -621,11 +580,23 @@ const AdminDashboard = () => {
     };
   }, [getPriceForAsset]);
 
-  // Filter trades for selected user
-  const selectedUserTrades = useMemo(() => {
-    if (!selectedUser) return [];
-    return trades.filter(trade => trade.user_id === selectedUser.user_id);
-  }, [trades, selectedUser]);
+  // Filter users by search query
+  const filteredUsers = useMemo(() => {
+    if (!userSearchQuery) return users;
+    
+    const query = userSearchQuery.toLowerCase();
+    return users.filter(user => {
+      const name = `${user.first_name || ''} ${user.surname || ''}`.toLowerCase();
+      const email = user.email?.toLowerCase() || '';
+      const phone = user.phone_number?.toLowerCase() || '';
+      const promo = user.promo_code_used?.toLowerCase() || '';
+      
+      return name.includes(query) || 
+             email.includes(query) || 
+             phone.includes(query) ||
+             promo.includes(query);
+    });
+  }, [users, userSearchQuery]);
 
   // Filter all trades based on current filters
   const filteredTrades = useMemo(() => {
@@ -652,6 +623,45 @@ const AdminDashboard = () => {
     
     return filtered.sort((a, b) => new Date(b.opened_at).getTime() - new Date(a.opened_at).getTime());
   }, [trades, tradesFilter, tradesUserFilter, tradesSymbolFilter]);
+
+  // Filter financial requests
+  const filteredDepositRequests = useMemo(() => {
+    let filtered = depositRequests;
+    
+    if (requestsSearchQuery) {
+      const query = requestsSearchQuery.toLowerCase();
+      filtered = filtered.filter(req => {
+        const name = `${req.user_profiles?.first_name || ''} ${req.user_profiles?.surname || ''}`.toLowerCase();
+        const email = req.user_profiles?.email?.toLowerCase() || '';
+        return name.includes(query) || email.includes(query);
+      });
+    }
+    
+    if (requestsStatusFilter !== "all") {
+      filtered = filtered.filter(req => req.status === requestsStatusFilter);
+    }
+    
+    return filtered;
+  }, [depositRequests, requestsSearchQuery, requestsStatusFilter]);
+
+  const filteredWithdrawalRequests = useMemo(() => {
+    let filtered = withdrawalRequests;
+    
+    if (requestsSearchQuery) {
+      const query = requestsSearchQuery.toLowerCase();
+      filtered = filtered.filter(req => {
+        const name = `${req.user_profiles?.first_name || ''} ${req.user_profiles?.surname || ''}`.toLowerCase();
+        const email = req.user_profiles?.email?.toLowerCase() || '';
+        return name.includes(query) || email.includes(query);
+      });
+    }
+    
+    if (requestsStatusFilter !== "all") {
+      filtered = filtered.filter(req => req.status === requestsStatusFilter);
+    }
+    
+    return filtered;
+  }, [withdrawalRequests, requestsSearchQuery, requestsStatusFilter]);
 
   // Trade summary stats
   const tradeStats = useMemo(() => {
@@ -756,39 +766,63 @@ const AdminDashboard = () => {
 
         <Tabs defaultValue="users" className="space-y-4">
           <TabsList>
-            <TabsTrigger value="users">Users</TabsTrigger>
-            <TabsTrigger value="all-trades">All Trades</TabsTrigger>
-            <TabsTrigger value="trade-management">Trade Management</TabsTrigger>
-            <TabsTrigger value="deposits">Deposits & Withdrawals</TabsTrigger>
-            <TabsTrigger value="bot-licenses">Bot Licenses</TabsTrigger>
-            <TabsTrigger value="payment-settings">User Payment Settings</TabsTrigger>
+            <TabsTrigger value="users">Users & Accounts</TabsTrigger>
+            <TabsTrigger value="trades">Trades</TabsTrigger>
+            <TabsTrigger value="financial-requests">Financial Requests</TabsTrigger>
+            <TabsTrigger value="bot-licenses">Bot Management</TabsTrigger>
+            <TabsTrigger value="payment-settings">Payment Settings</TabsTrigger>
           </TabsList>
 
           <TabsContent value="users" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle>Your Users</CardTitle>
-                <CardDescription>Manage users assigned to your admin account</CardDescription>
+                <CardTitle>Users & Accounts</CardTitle>
+                <CardDescription>Manage users and their account details with quick actions</CardDescription>
               </CardHeader>
               <CardContent>
+                <div className="mb-4">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Search by name, email, phone, or promo code..."
+                      value={userSearchQuery}
+                      onChange={(e) => setUserSearchQuery(e.target.value)}
+                      className="pl-10"
+                    />
+                  </div>
+                  {userSearchQuery && (
+                    <p className="text-xs text-muted-foreground mt-2">
+                      Showing {filteredUsers.length} of {users.length} users
+                    </p>
+                  )}
+                </div>
+
                 {loading ? (
-                  <div>Loading...</div>
+                  <div className="text-center py-8">Loading...</div>
                 ) : (
-                    <Table>
-                      <TableHeader>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Name</TableHead>
+                        <TableHead>Email</TableHead>
+                        <TableHead>Phone</TableHead>
+                        <TableHead>Balance</TableHead>
+                        <TableHead>Equity</TableHead>
+                        <TableHead>Available Margin</TableHead>
+                        <TableHead>Promo Code</TableHead>
+                        <TableHead>Joined</TableHead>
+                        <TableHead>Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredUsers.length === 0 ? (
                         <TableRow>
-                          <TableHead>Name</TableHead>
-                          <TableHead>Email</TableHead>
-                          <TableHead>Phone</TableHead>
-                          <TableHead>Balance</TableHead>
-                          <TableHead>Equity</TableHead>
-                          <TableHead>Available Margin</TableHead>
-                          <TableHead>Promo Code</TableHead>
-                          <TableHead>Joined</TableHead>
+                          <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
+                            No users found
+                          </TableCell>
                         </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {users.map((user) => (
+                      ) : (
+                        filteredUsers.map((user) => (
                           <TableRow key={user.user_id}>
                             <TableCell>
                               {user.first_name && user.surname 
@@ -797,7 +831,7 @@ const AdminDashboard = () => {
                             </TableCell>
                             <TableCell>{user.email}</TableCell>
                             <TableCell>{user.phone_number || 'Not provided'}</TableCell>
-                            <TableCell>${user.balance?.toFixed(2) || '0.00'}</TableCell>
+                            <TableCell className="font-medium">${user.balance?.toFixed(2) || '0.00'}</TableCell>
                             <TableCell>${user.equity?.toFixed(2) || '0.00'}</TableCell>
                             <TableCell>${user.available_margin?.toFixed(2) || '0.00'}</TableCell>
                             <TableCell>
@@ -806,16 +840,56 @@ const AdminDashboard = () => {
                             <TableCell>
                               {new Date(user.created_at).toLocaleDateString()}
                             </TableCell>
+                            <TableCell>
+                              <div className="flex gap-2">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => {
+                                    setSelectedUserForAction(user);
+                                    setModifyBalanceDialogOpen(true);
+                                  }}
+                                >
+                                  <DollarSign className="h-4 w-4 mr-1" />
+                                  Balance
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => {
+                                    setTradesUserFilter(user.user_id);
+                                    // Switch to trades tab
+                                    const tradesTab = document.querySelector('[value="trades"]') as HTMLElement;
+                                    tradesTab?.click();
+                                  }}
+                                >
+                                  <TrendingUp className="h-4 w-4 mr-1" />
+                                  Trades
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="default"
+                                  onClick={() => {
+                                    setSelectedUserForAction(user);
+                                    setCreateTradeDialogOpen(true);
+                                  }}
+                                >
+                                  <Plus className="h-4 w-4 mr-1" />
+                                  Trade
+                                </Button>
+                              </div>
+                            </TableCell>
                           </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
                 )}
               </CardContent>
             </Card>
           </TabsContent>
 
-          <TabsContent value="all-trades" className="space-y-6">
+          <TabsContent value="trades" className="space-y-6">
             {/* Trade Status Cards */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
               <Card>
@@ -866,8 +940,19 @@ const AdminDashboard = () => {
             {/* Filters */}
             <Card>
               <CardHeader>
-                <CardTitle>Trade Filters</CardTitle>
-                <CardDescription>Filter and search all trades across users</CardDescription>
+                <div className="flex justify-between items-center">
+                  <div>
+                    <CardTitle>Trades Management</CardTitle>
+                    <CardDescription>Filter and manage all trades across users</CardDescription>
+                  </div>
+                  <Button onClick={() => {
+                    setSelectedUserForAction(null);
+                    setCreateTradeDialogOpen(true);
+                  }}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Create New Trade
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -1054,325 +1139,63 @@ const AdminDashboard = () => {
             </Card>
           </TabsContent>
 
-          <TabsContent value="trade-management" className="space-y-4">
-            {/* User Selection */}
+          <TabsContent value="financial-requests" className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Select User</CardTitle>
-                <CardDescription>Choose a user to manage their trades and account</CardDescription>
+                <CardTitle>Search & Filter</CardTitle>
+                <CardDescription>Filter financial requests by user or status</CardDescription>
               </CardHeader>
               <CardContent>
-                <Select value={selectedUser?.user_id || ""} onValueChange={(userId) => {
-                  const user = users.find(u => u.user_id === userId);
-                  setSelectedUser(user || null);
-                }}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Choose a user to manage" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {users.map((user) => (
-                      <SelectItem key={user.user_id} value={user.user_id}>
-                        {user.first_name && user.surname 
-                          ? `${user.first_name} ${user.surname} (${user.email})` 
-                          : user.email} - ${user.balance?.toFixed(2) || '0.00'}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="col-span-2">
+                    <Label className="text-sm font-medium">Search by User</Label>
+                    <div className="relative">
+                      <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        placeholder="Search by name or email..."
+                        value={requestsSearchQuery}
+                        onChange={(e) => setRequestsSearchQuery(e.target.value)}
+                        className="pl-10"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <Label className="text-sm font-medium">Status</Label>
+                    <Select value={requestsStatusFilter} onValueChange={setRequestsStatusFilter}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Status</SelectItem>
+                        <SelectItem value="pending">Pending</SelectItem>
+                        <SelectItem value="approved">Approved</SelectItem>
+                        <SelectItem value="rejected">Rejected</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
               </CardContent>
             </Card>
 
-            {selectedUser && (
-              <>
-                {/* User Details */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle>User Account Details</CardTitle>
-                    <CardDescription>{selectedUser.email}</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                      <div>
-                        <Label className="text-sm font-medium">Balance</Label>
-                        <p className="text-2xl font-bold">${selectedUser.balance?.toFixed(2) || '0.00'}</p>
-                      </div>
-                      <div>
-                        <Label className="text-sm font-medium">Equity</Label>
-                        <p className="text-2xl font-bold">${selectedUser.equity?.toFixed(2) || '0.00'}</p>
-                      </div>
-                      <div>
-                        <Label className="text-sm font-medium">Available Margin</Label>
-                        <p className="text-2xl font-bold">${selectedUser.available_margin?.toFixed(2) || '0.00'}</p>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          Used: ${selectedUser.used_margin?.toFixed(2) || '0.00'}
-                        </p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Account Management Actions */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Account Management</CardTitle>
-                    <CardDescription>Modify user account balance and create trades</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-6">
-                      {/* Balance Management */}
-                      <div>
-                        <h4 className="font-medium mb-3">Balance Management</h4>
-                        <div className="flex gap-4 items-end">
-                          <div className="flex-1">
-                            <Label htmlFor="operation">Operation</Label>
-                            <Select value={balanceOperation} onValueChange={(value: "add" | "deduct") => setBalanceOperation(value)}>
-                              <SelectTrigger>
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="add">Add Funds</SelectItem>
-                                <SelectItem value="deduct">Deduct Funds</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <div className="flex-1">
-                            <Label htmlFor="amount">Amount</Label>
-                            <Input
-                              id="amount"
-                              type="number"
-                              placeholder="0.00"
-                              value={balanceAmount}
-                              onChange={(e) => setBalanceAmount(e.target.value)}
-                            />
-                          </div>
-                          <Button onClick={() => {
-                            if (selectedUser && balanceAmount) {
-                              setSelectedUserId(selectedUser.user_id);
-                              handleModifyBalance();
-                            }
-                          }}>
-                            {balanceOperation === 'add' ? 'Add' : 'Deduct'} Funds
-                          </Button>
-                        </div>
-                      </div>
-
-                      {/* Trade Creation */}
-                      <div className="pt-4 border-t">
-                        <div className="flex justify-between items-center mb-3">
-                          <h4 className="font-medium">Create New Trade</h4>
-                          <Button 
-                            onClick={() => setShowCreateTrade(!showCreateTrade)}
-                            variant="outline"
-                            size="sm"
-                          >
-                            {showCreateTrade ? "Cancel" : "New Trade"}
-                          </Button>
-                        </div>
-                        
-                        {showCreateTrade && (
-                          <div className="space-y-3 p-4 border rounded-lg bg-muted/50">
-                            <div className="grid grid-cols-2 gap-3">
-                              <div>
-                                <Label className="text-sm font-medium">Asset</Label>
-                                <Select value={selectedAsset} onValueChange={setSelectedAsset} disabled={assetsLoading}>
-                                  <SelectTrigger>
-                                    <SelectValue placeholder="Select Asset" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    {assets.map((asset) => (
-                                      <SelectItem key={asset.id} value={asset.id}>
-                                        {asset.symbol} - {asset.name}
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                              </div>
-                              
-                              <div>
-                                <Label className="text-sm font-medium">Trade Type</Label>
-                                <Select value={tradeType} onValueChange={(value: "BUY" | "SELL") => setTradeType(value)}>
-                                  <SelectTrigger>
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="BUY">BUY</SelectItem>
-                                    <SelectItem value="SELL">SELL</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                              </div>
-                            </div>
-                            
-                            <div className="grid grid-cols-3 gap-3">
-                              <div>
-                                <Label className="text-sm font-medium">Amount</Label>
-                                <Input
-                                  type="number"
-                                  step="0.01"
-                                  value={tradeAmount}
-                                  onChange={(e) => setTradeAmount(e.target.value)}
-                                  placeholder="0.00"
-                                />
-                              </div>
-                              
-                              <div>
-                                <Label className="text-sm font-medium">Leverage</Label>
-                                <Input
-                                  type="number"
-                                  min="1"
-                                  max="100"
-                                  value={tradeLeverage}
-                                  onChange={(e) => setTradeLeverage(parseInt(e.target.value) || 1)}
-                                />
-                              </div>
-                              
-                              <div>
-                                <Label className="text-sm font-medium">
-                                  Entry Price
-                                  {isConnected && <span className="text-xs text-green-600 ml-1">(Live)</span>}
-                                </Label>
-                                <Input
-                                  type="number"
-                                  step="0.00001"
-                                  value={tradePrice}
-                                  onChange={(e) => setTradePrice(e.target.value)}
-                                  placeholder="0.00000"
-                                />
-                              </div>
-                            </div>
-                            
-                            <Button 
-                              onClick={handleCreateTrade}
-                              disabled={creatingTrade || !selectedAsset || !tradeAmount || !tradePrice}
-                              className="w-full"
-                            >
-                              {creatingTrade ? (
-                                <>
-                                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                  Creating Trade...
-                                </>
-                              ) : (
-                                "Create Trade"
-                              )}
-                            </Button>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* User Trades */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle>User Trades</CardTitle>
-                    <CardDescription>
-                      Trading activity for {selectedUser.email} ({selectedUserTrades.length} trades)
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    {selectedUserTrades.length === 0 ? (
-                      <div className="text-center text-muted-foreground py-6">
-                        No trades found for this user
-                      </div>
-                    ) : (
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Symbol</TableHead>
-                            <TableHead>Type</TableHead>
-                            <TableHead>Amount</TableHead>
-                            <TableHead>Open Price</TableHead>
-                            <TableHead>Current Price</TableHead>
-                            <TableHead>P&L</TableHead>
-                            <TableHead>Status</TableHead>
-                            <TableHead>Opened</TableHead>
-                            <TableHead>Actions</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {selectedUserTrades.map((trade) => {
-                            const { currentPrice, displayPnL, isRealTime, hasRealTimePrice } = getTradeDisplayData(trade);
-                            
-                            return (
-                              <TableRow key={trade.id}>
-                                <TableCell>{trade.symbol}</TableCell>
-                                <TableCell>
-                                  <Badge variant={trade.trade_type === 'BUY' ? 'default' : 'secondary'}>
-                                    {trade.trade_type}
-                                  </Badge>
-                                </TableCell>
-                                <TableCell>{trade.amount}</TableCell>
-                                <TableCell>${trade.open_price?.toFixed(4)}</TableCell>
-                                <TableCell>
-                                  <div className="flex items-center gap-1">
-                                    ${currentPrice?.toFixed(4) || 'N/A'}
-                                    {hasRealTimePrice && isConnected && (
-                                      <span className="text-xs text-green-600">●</span>
-                                    )}
-                                  </div>
-                                </TableCell>
-                                <TableCell className={displayPnL >= 0 ? 'text-green-600' : 'text-red-600'}>
-                                  <div className="flex items-center gap-1">
-                                    ${displayPnL.toFixed(2)}
-                                    {isRealTime && isConnected && (
-                                      <span className="text-xs text-green-600">●</span>
-                                    )}
-                                  </div>
-                                </TableCell>
-                                <TableCell>
-                                  <Badge variant={trade.status === 'open' ? 'default' : 'outline'}>
-                                    {trade.status}
-                                  </Badge>
-                                </TableCell>
-                                <TableCell>
-                                  {new Date(trade.opened_at).toLocaleDateString()}
-                                </TableCell>
-                                <TableCell>
-                                  <div className="flex gap-2">
-                                    <Button
-                                      size="sm"
-                                      variant="outline"
-                                      onClick={() => setSelectedTradeForEdit(trade)}
-                                    >
-                                      Edit Price
-                                    </Button>
-                                    {trade.status === 'open' && (
-                                      <Button
-                                        size="sm"
-                                        variant="destructive"
-                                        onClick={() => setSelectedTradeForClose(trade)}
-                                      >
-                                        Close
-                                      </Button>
-                                    )}
-                                  </div>
-                                </TableCell>
-                              </TableRow>
-                            );
-                          })}
-                        </TableBody>
-                      </Table>
-                    )}
-                  </CardContent>
-                </Card>
-              </>
-            )}
-          </TabsContent>
-
-
-          <TabsContent value="deposits" className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <Card>
                 <CardHeader>
                   <CardTitle>Deposit Requests</CardTitle>
-                  <CardDescription>Review and process deposit requests</CardDescription>
+                  <CardDescription>
+                    Showing {filteredDepositRequests.length} of {depositRequests.length} requests
+                  </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {depositRequests.length === 0 ? (
-                      <p className="text-muted-foreground text-center py-4">No deposit requests</p>
+                    {filteredDepositRequests.length === 0 ? (
+                      <p className="text-muted-foreground text-center py-4">
+                        {requestsSearchQuery || requestsStatusFilter !== "all" 
+                          ? "No requests match your filters"
+                          : "No deposit requests"}
+                      </p>
                     ) : (
-                      depositRequests.map((request) => (
+                      filteredDepositRequests.map((request) => (
                         <div key={request.id} className="border rounded-lg p-4 space-y-3">
                           <div className="flex justify-between items-start">
                             <div>
@@ -1421,14 +1244,20 @@ const AdminDashboard = () => {
               <Card>
                 <CardHeader>
                   <CardTitle>Withdrawal Requests</CardTitle>
-                  <CardDescription>Review and process withdrawal requests</CardDescription>
+                  <CardDescription>
+                    Showing {filteredWithdrawalRequests.length} of {withdrawalRequests.length} requests
+                  </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {withdrawalRequests.length === 0 ? (
-                      <p className="text-muted-foreground text-center py-4">No withdrawal requests</p>
+                    {filteredWithdrawalRequests.length === 0 ? (
+                      <p className="text-muted-foreground text-center py-4">
+                        {requestsSearchQuery || requestsStatusFilter !== "all"
+                          ? "No requests match your filters"
+                          : "No withdrawal requests"}
+                      </p>
                     ) : (
-                      withdrawalRequests.map((request) => (
+                      filteredWithdrawalRequests.map((request) => (
                         <div key={request.id} className="border rounded-lg p-4 space-y-3">
                           <div className="flex justify-between items-start">
                             <div>
@@ -1502,6 +1331,24 @@ const AdminDashboard = () => {
 
         </Tabs>
       </div>
+
+      {/* Dialogs */}
+      <ModifyBalanceDialog
+        open={modifyBalanceDialogOpen}
+        onOpenChange={setModifyBalanceDialogOpen}
+        user={selectedUserForAction}
+        onModifyBalance={handleModifyBalance}
+      />
+
+      <CreateTradeDialog
+        open={createTradeDialogOpen}
+        onOpenChange={setCreateTradeDialogOpen}
+        user={selectedUserForAction}
+        assets={assets}
+        onCreateTrade={handleCreateTrade}
+        getPriceForAsset={getPriceForAsset}
+        isConnected={isConnected}
+      />
 
       {/* Edit Trade Price Dialog */}
       {selectedTradeForEdit && (
