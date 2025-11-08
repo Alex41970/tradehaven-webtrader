@@ -104,8 +104,8 @@ const Index = () => {
       </header>
 
       {/* Hero Section */}
-      <section className="relative py-16 lg:py-24 bg-subtle-grid overflow-y-hidden">
-        <div className="container mx-auto px-6 md:px-4">
+      <section className="relative py-16 lg:py-24 bg-subtle-grid">
+        <div className="container mx-auto px-4">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div className="text-left w-full max-w-full">
               <div className="inline-flex items-center gap-2 bg-accent/10 text-accent px-4 py-2 rounded-lg text-sm font-semibold mb-6 border border-accent/20">
@@ -124,8 +124,8 @@ const Index = () => {
               <p className="hidden md:block text-lg lg:text-xl text-foreground/80 mb-8 max-w-xl leading-relaxed break-words">
                 Access global markets with institutional-grade tools. Trade forex, stocks, commodities, and cryptocurrencies on a single platform.
               </p>
-              <div className="flex flex-col sm:flex-row gap-3 mb-8 md:mb-12">
-                <Button size="lg" variant="trading" onClick={() => navigate("/auth")}>
+              <div className="flex flex-col sm:flex-row gap-3 mb-8 md:mb-12 w-full max-w-full">
+                <Button size="lg" variant="trading" onClick={() => navigate("/auth")} className="w-full sm:w-auto whitespace-nowrap">
                   Start Trading Now
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
@@ -133,13 +133,12 @@ const Index = () => {
                   size="lg" 
                   variant="trading-outline" 
                   onClick={() => setIsDemoModalOpen(true)}
+                  className="w-full sm:w-auto whitespace-nowrap"
                 >
                   Try Demo Account
                 </Button>
               </div>
-              <div className="overflow-x-visible -mx-6 md:mx-0">
-                <TradingStats />
-              </div>
+              <TradingStats />
             </div>
             <div className="hidden lg:block">
               <HeroChart />
