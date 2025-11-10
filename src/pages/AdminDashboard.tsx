@@ -21,7 +21,7 @@ import { ViewWithdrawalDetailsDialog } from "@/components/admin/ViewWithdrawalDe
 import { useAssets } from "@/hooks/useAssets";
 import { useRealTimePrices } from "@/hooks/useRealTimePrices";
 import { calculateRealTimePnL } from "@/utils/pnlCalculator";
-import { Users, DollarSign, Settings, LogOut, Search, Filter, Activity, BarChart3, Plus, CreditCard, Eye } from "lucide-react";
+import { Users, DollarSign, Settings, LogOut, Search, Filter, Activity, Plus, CreditCard, Eye, TrendingUp } from "lucide-react";
 import { Navigate } from "react-router-dom";
 import { Logo } from "@/components/Logo";
 
@@ -55,15 +55,6 @@ interface UserTrade {
   user_email?: string; // Optional user email for display
 }
 
-interface PromoCode {
-  id: string;
-  code: string;
-  is_active: boolean;
-  max_uses: number | null;
-  current_uses: number;
-  created_at: string;
-  expires_at: string | null;
-}
 
 const AdminDashboard = () => {
   const { user, signOut } = useAuth();
@@ -779,14 +770,6 @@ const AdminDashboard = () => {
             <Badge variant="secondary" className="text-lg px-4 py-2">
               {role === 'super_admin' ? 'Super Admin' : 'Admin'}
             </Badge>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={() => window.location.href = '/admin/promo-analytics'}
-            >
-              <BarChart3 className="h-4 w-4 mr-2" />
-              Promo Analytics
-            </Button>
             <Button variant="outline" size="sm" onClick={handleSignOut} disabled={signingOut}>
               <LogOut className="h-4 w-4 mr-2" />
               {signingOut ? "Signing Out..." : "Sign Out"}
@@ -1011,7 +994,7 @@ const AdminDashboard = () => {
                   <CardTitle className="text-sm font-medium">
                     {selectedTradeUser ? "User's Closed Trades" : "All Closed Trades"}
                   </CardTitle>
-                  <BarChart3 className="h-4 w-4 text-muted-foreground" />
+                  <TrendingUp className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">{tradeStats.closedTrades}</div>
