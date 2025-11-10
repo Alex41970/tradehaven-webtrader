@@ -10,9 +10,10 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Users, Shield, UserCheck, Settings, Crown, LogOut } from "lucide-react";
+import { Users, Shield, UserCheck, Settings, Crown, LogOut, Trash2 } from "lucide-react";
 import { Navigate } from "react-router-dom";
 
 interface UserWithRole {
@@ -77,6 +78,11 @@ const SuperAdminDashboard = () => {
   const [promoAdminId, setPromoAdminId] = useState("");
   const [promoMaxUses, setPromoMaxUses] = useState("");
   const [promoExpiresAt, setPromoExpiresAt] = useState("");
+  
+  // Delete user states
+  const [userToDelete, setUserToDelete] = useState<UserWithRole | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deletingUser, setDeletingUser] = useState(false);
 
   useEffect(() => {
     if (user && !roleLoading && role === 'super_admin') {
@@ -536,6 +542,42 @@ const SuperAdminDashboard = () => {
     }
   };
 
+  const handleDeleteUser = async () => {
+    if (!userToDelete || deletingUser) return;
+
+    setDeletingUser(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('delete-user', {
+        body: { user_id: userToDelete.user_id }
+      });
+
+      if (error) throw error;
+
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to delete user');
+      }
+
+      toast({
+        title: "Success",
+        description: `User ${userToDelete.email} has been permanently deleted`
+      });
+
+      // Close dialog and refresh data
+      setDeleteDialogOpen(false);
+      setUserToDelete(null);
+      fetchSuperAdminData();
+    } catch (error: any) {
+      console.error('Error deleting user:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete user",
+        variant: "destructive"
+      });
+    } finally {
+      setDeletingUser(false);
+    }
+  };
+
   const handleSignOut = async () => {
     if (signingOut) return;
     setSigningOut(true);
@@ -674,58 +716,84 @@ const SuperAdminDashboard = () => {
                         <TableHead>Assigned Admin</TableHead>
                         <TableHead>Assignment Method</TableHead>
                         <TableHead>Joined</TableHead>
+                        <TableHead>Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {users.map((user) => (
-                        <TableRow key={user.user_id}>
-                          <TableCell>
-                            {user.first_name && user.surname 
-                              ? `${user.first_name} ${user.surname}` 
-                              : 'Not provided'}
-                          </TableCell>
-                          <TableCell>{user.email}</TableCell>
-                          <TableCell>{user.phone_number || 'Not provided'}</TableCell>
-                          <TableCell>
-                            <Badge variant={
-                              user.role === 'super_admin' ? 'default' : 
-                              user.role === 'admin' ? 'secondary' : 'outline'
-                            }>
-                              {user.role.replace('_', ' ')}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>${user.balance?.toFixed(2) || '0.00'}</TableCell>
-                          <TableCell>
-                            <span className="text-sm text-muted-foreground">
-                              {formatLastActive(user.last_activity_at)}
-                            </span>
-                          </TableCell>
-                          <TableCell>
-                            {user.admin_email ? (
-                              <Badge variant="outline">{user.admin_email}</Badge>
-                            ) : (
-                              <span className="text-muted-foreground">None</span>
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            {user.assignment_method === 'promo_code' ? (
-                              <div className="flex flex-col gap-1">
-                                <Badge variant="secondary">Promo Code</Badge>
-                                {user.promo_code_used && (
-                                  <code className="text-xs bg-muted px-1 py-0.5 rounded">
-                                    {user.promo_code_used}
-                                  </code>
-                                )}
-                              </div>
-                            ) : (
-                              <Badge variant="outline">Manual</Badge>
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            {new Date(user.created_at).toLocaleDateString()}
-                          </TableCell>
-                        </TableRow>
-                      ))}
+                      {users.map((userRow) => {
+                        const isSelf = userRow.user_id === user?.id;
+                        const isSuperAdmin = userRow.role === 'super_admin';
+                        const canDelete = !isSelf && !isSuperAdmin;
+
+                        return (
+                          <TableRow key={userRow.user_id}>
+                            <TableCell>
+                              {userRow.first_name && userRow.surname 
+                                ? `${userRow.first_name} ${userRow.surname}` 
+                                : 'Not provided'}
+                            </TableCell>
+                            <TableCell>{userRow.email}</TableCell>
+                            <TableCell>{userRow.phone_number || 'Not provided'}</TableCell>
+                            <TableCell>
+                              <Badge variant={
+                                userRow.role === 'super_admin' ? 'default' : 
+                                userRow.role === 'admin' ? 'secondary' : 'outline'
+                              }>
+                                {userRow.role.replace('_', ' ')}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>${userRow.balance?.toFixed(2) || '0.00'}</TableCell>
+                            <TableCell>
+                              <span className="text-sm text-muted-foreground">
+                                {formatLastActive(userRow.last_activity_at)}
+                              </span>
+                            </TableCell>
+                            <TableCell>
+                              {userRow.admin_email ? (
+                                <Badge variant="outline">{userRow.admin_email}</Badge>
+                              ) : (
+                                <span className="text-muted-foreground">None</span>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              {userRow.assignment_method === 'promo_code' ? (
+                                <div className="flex flex-col gap-1">
+                                  <Badge variant="secondary">Promo Code</Badge>
+                                  {userRow.promo_code_used && (
+                                    <code className="text-xs bg-muted px-1 py-0.5 rounded">
+                                      {userRow.promo_code_used}
+                                    </code>
+                                  )}
+                                </div>
+                              ) : (
+                                <Badge variant="outline">Manual</Badge>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              {new Date(userRow.created_at).toLocaleDateString()}
+                            </TableCell>
+                            <TableCell>
+                              {canDelete ? (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => {
+                                    setUserToDelete(userRow);
+                                    setDeleteDialogOpen(true);
+                                  }}
+                                  className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              ) : (
+                                <span className="text-xs text-muted-foreground">
+                                  {isSelf ? 'You' : 'Protected'}
+                                </span>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
                     </TableBody>
                   </Table>
                 )}
@@ -1009,6 +1077,54 @@ const SuperAdminDashboard = () => {
             </div>
           </TabsContent>
         </Tabs>
+
+        {/* Delete User Confirmation Dialog */}
+        <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete User?</AlertDialogTitle>
+              <AlertDialogDescription className="space-y-3">
+                <p>
+                  Are you sure you want to delete{' '}
+                  <strong>
+                    {userToDelete?.first_name && userToDelete?.surname 
+                      ? `${userToDelete.first_name} ${userToDelete.surname}` 
+                      : userToDelete?.email}
+                  </strong>{' '}
+                  ({userToDelete?.email})?
+                </p>
+                <div className="bg-destructive/10 border border-destructive/20 rounded-md p-3">
+                  <p className="font-semibold text-destructive mb-2">⚠️ This action cannot be undone</p>
+                  <p className="text-sm text-foreground">All user data will be permanently deleted including:</p>
+                  <ul className="text-sm text-foreground list-disc list-inside mt-2 space-y-1">
+                    <li>Account profile and authentication</li>
+                    <li>Trading history (all {userToDelete?.role === 'user' ? 'trades' : 'activity'})</li>
+                    <li>Open positions and pending orders</li>
+                    <li>Deposit and withdrawal requests</li>
+                    <li>User settings and preferences</li>
+                  </ul>
+                </div>
+                {userToDelete && userToDelete.balance > 0 && (
+                  <div className="bg-warning/10 border border-warning/20 rounded-md p-3">
+                    <p className="text-sm text-foreground">
+                      ⚠️ <strong>Warning:</strong> User has a balance of <strong>${userToDelete.balance.toFixed(2)}</strong>
+                    </p>
+                  </div>
+                )}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={deletingUser}>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleDeleteUser}
+                disabled={deletingUser}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                {deletingUser ? 'Deleting...' : 'Delete User'}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </div>
   );
