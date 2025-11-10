@@ -29,7 +29,6 @@ interface UserWithRole {
   assignment_method?: string;  
   promo_code_used?: string | null;
   created_at: string;
-  last_login_at?: string;
   last_activity_at?: string;
 }
 
@@ -672,7 +671,6 @@ const SuperAdminDashboard = () => {
                         <TableHead>Role</TableHead>
                         <TableHead>Balance</TableHead>
                         <TableHead>Last Active</TableHead>
-                        <TableHead>Last Login</TableHead>
                         <TableHead>Assigned Admin</TableHead>
                         <TableHead>Assignment Method</TableHead>
                         <TableHead>Joined</TableHead>
@@ -700,13 +698,6 @@ const SuperAdminDashboard = () => {
                           <TableCell>
                             <span className="text-sm text-muted-foreground">
                               {formatLastActive(user.last_activity_at)}
-                            </span>
-                          </TableCell>
-                          <TableCell>
-                            <span className="text-sm">
-                              {user.last_login_at 
-                                ? new Date(user.last_login_at).toLocaleString()
-                                : 'Never'}
                             </span>
                           </TableCell>
                           <TableCell>

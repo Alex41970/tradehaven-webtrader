@@ -37,7 +37,6 @@ interface UserProfile {
   used_margin: number;
   promo_code_used: string;
   created_at: string;
-  last_login_at?: string;
   last_activity_at?: string;
 }
 
@@ -880,7 +879,6 @@ const AdminDashboard = () => {
                         <TableHead>Equity</TableHead>
                         <TableHead>Available Margin</TableHead>
                         <TableHead>Last Active</TableHead>
-                        <TableHead>Last Login</TableHead>
                         <TableHead>Promo Code</TableHead>
                         <TableHead>Joined</TableHead>
                         <TableHead>Actions</TableHead>
@@ -909,13 +907,6 @@ const AdminDashboard = () => {
                             <TableCell>
                               <span className="text-sm text-muted-foreground">
                                 {formatLastActive(user.last_activity_at)}
-                              </span>
-                            </TableCell>
-                            <TableCell>
-                              <span className="text-sm">
-                                {user.last_login_at 
-                                  ? new Date(user.last_login_at).toLocaleString()
-                                  : 'Never'}
                               </span>
                             </TableCell>
                             <TableCell>
