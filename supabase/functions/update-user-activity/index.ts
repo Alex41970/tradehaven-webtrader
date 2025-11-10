@@ -20,14 +20,16 @@ Deno.serve(async (req) => {
       );
     }
 
+    const jwt = authHeader.replace('Bearer ', '').trim();
+
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      { global: { headers: { Authorization: authHeader } } }
+      { global: { headers: { Authorization: `Bearer ${jwt}` } } }
     );
 
-    // Get authenticated user
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    // Get authenticated user using token to avoid session requirement
+    const { data: { user }, error: authError } = await supabase.auth.getUser(jwt);
     if (authError || !user) {
       console.error('Authentication error:', authError);
       return new Response(
