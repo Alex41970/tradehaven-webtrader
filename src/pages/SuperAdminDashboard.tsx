@@ -29,6 +29,8 @@ interface UserWithRole {
   assignment_method?: string;  
   promo_code_used?: string | null;
   created_at: string;
+  last_login_at?: string;
+  last_activity_at?: string;
 }
 
 interface AdminUser {
@@ -303,6 +305,24 @@ const SuperAdminDashboard = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Helper function to format last activity time
+  const formatLastActive = (lastActivityAt: string | null | undefined) => {
+    if (!lastActivityAt) return 'Never';
+    
+    const lastActivity = new Date(lastActivityAt);
+    const now = new Date();
+    const diffMinutes = Math.floor((now.getTime() - lastActivity.getTime()) / 60000);
+    
+    if (diffMinutes < 1) return 'Just now';
+    if (diffMinutes < 60) return `${diffMinutes}m ago`;
+    if (diffMinutes < 1440) { // 24 hours
+      const hours = Math.floor(diffMinutes / 60);
+      return `${hours}h ago`;
+    }
+    const days = Math.floor(diffMinutes / 1440);
+    return `${days}d ago`;
   };
 
   const handleCreateAdmin = async () => {
@@ -651,6 +671,8 @@ const SuperAdminDashboard = () => {
                         <TableHead>Phone</TableHead>
                         <TableHead>Role</TableHead>
                         <TableHead>Balance</TableHead>
+                        <TableHead>Last Active</TableHead>
+                        <TableHead>Last Login</TableHead>
                         <TableHead>Assigned Admin</TableHead>
                         <TableHead>Assignment Method</TableHead>
                         <TableHead>Joined</TableHead>
@@ -675,6 +697,18 @@ const SuperAdminDashboard = () => {
                             </Badge>
                           </TableCell>
                           <TableCell>${user.balance?.toFixed(2) || '0.00'}</TableCell>
+                          <TableCell>
+                            <span className="text-sm text-muted-foreground">
+                              {formatLastActive(user.last_activity_at)}
+                            </span>
+                          </TableCell>
+                          <TableCell>
+                            <span className="text-sm">
+                              {user.last_login_at 
+                                ? new Date(user.last_login_at).toLocaleString()
+                                : 'Never'}
+                            </span>
+                          </TableCell>
                           <TableCell>
                             {user.admin_email ? (
                               <Badge variant="outline">{user.admin_email}</Badge>

@@ -10,6 +10,7 @@ import RoleBasedRoute from "@/components/RoleBasedRoute";
 
 import { ActivityProvider } from "@/contexts/ActivityContext";
 import { useActivityAwareConnectionManager } from "@/hooks/useActivityAwareConnectionManager";
+import { useActivityTracker } from "@/hooks/useActivityTracker";
 import { ThemeProvider } from "next-themes";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
@@ -39,6 +40,7 @@ const queryClient = new QueryClient();
 // Connection manager component that must be inside ActivityProvider
 const ConnectionManager = () => {
   useActivityAwareConnectionManager();
+  useActivityTracker(); // Track user activity
   return null;
 };
 

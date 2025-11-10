@@ -37,6 +37,8 @@ interface UserProfile {
   used_margin: number;
   promo_code_used: string;
   created_at: string;
+  last_login_at?: string;
+  last_activity_at?: string;
 }
 
 interface UserTrade {
@@ -293,6 +295,24 @@ const AdminDashboard = () => {
       console.log('AdminDashboard: Conditions not met - user:', !!user, 'roleLoading:', roleLoading, 'role:', role);
     }
   }, [user, roleLoading, role, fetchAdminData]);
+
+  // Helper function to format last activity time
+  const formatLastActive = (lastActivityAt: string | null | undefined) => {
+    if (!lastActivityAt) return 'Never';
+    
+    const lastActivity = new Date(lastActivityAt);
+    const now = new Date();
+    const diffMinutes = Math.floor((now.getTime() - lastActivity.getTime()) / 60000);
+    
+    if (diffMinutes < 1) return 'Just now';
+    if (diffMinutes < 60) return `${diffMinutes}m ago`;
+    if (diffMinutes < 1440) { // 24 hours
+      const hours = Math.floor(diffMinutes / 60);
+      return `${hours}h ago`;
+    }
+    const days = Math.floor(diffMinutes / 1440);
+    return `${days}d ago`;
+  };
 
 
   const handleModifyBalance = async (userId: string, amount: number, operation: "add" | "deduct", reason?: string) => {
@@ -859,6 +879,8 @@ const AdminDashboard = () => {
                         <TableHead>Balance</TableHead>
                         <TableHead>Equity</TableHead>
                         <TableHead>Available Margin</TableHead>
+                        <TableHead>Last Active</TableHead>
+                        <TableHead>Last Login</TableHead>
                         <TableHead>Promo Code</TableHead>
                         <TableHead>Joined</TableHead>
                         <TableHead>Actions</TableHead>
@@ -884,6 +906,18 @@ const AdminDashboard = () => {
                             <TableCell className="font-medium">${user.balance?.toFixed(2) || '0.00'}</TableCell>
                             <TableCell>${user.equity?.toFixed(2) || '0.00'}</TableCell>
                             <TableCell>${user.available_margin?.toFixed(2) || '0.00'}</TableCell>
+                            <TableCell>
+                              <span className="text-sm text-muted-foreground">
+                                {formatLastActive(user.last_activity_at)}
+                              </span>
+                            </TableCell>
+                            <TableCell>
+                              <span className="text-sm">
+                                {user.last_login_at 
+                                  ? new Date(user.last_login_at).toLocaleString()
+                                  : 'Never'}
+                              </span>
+                            </TableCell>
                             <TableCell>
                               <Badge variant="outline">{user.promo_code_used || 'None'}</Badge>
                             </TableCell>

@@ -719,6 +719,8 @@ export type Database = {
           equity: number
           first_name: string | null
           id: string
+          last_activity_at: string | null
+          last_login_at: string | null
           phone_number: string | null
           promo_code_used: string | null
           surname: string | null
@@ -737,6 +739,8 @@ export type Database = {
           equity?: number
           first_name?: string | null
           id?: string
+          last_activity_at?: string | null
+          last_login_at?: string | null
           phone_number?: string | null
           promo_code_used?: string | null
           surname?: string | null
@@ -755,6 +759,8 @@ export type Database = {
           equity?: number
           first_name?: string | null
           id?: string
+          last_activity_at?: string | null
+          last_login_at?: string | null
           phone_number?: string | null
           promo_code_used?: string | null
           surname?: string | null

@@ -183,7 +183,7 @@ const Auth = () => {
     e.preventDefault();
     setLoading(true);
 
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password
     });
@@ -194,6 +194,12 @@ const Auth = () => {
         description: error.message,
         variant: "destructive"
       });
+    } else if (data.user) {
+      // Update last login timestamp
+      await supabase
+        .from('user_profiles')
+        .update({ last_login_at: new Date().toISOString() })
+        .eq('user_id', data.user.id);
     }
     setLoading(false);
   };
