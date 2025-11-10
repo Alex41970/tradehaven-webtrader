@@ -10,16 +10,7 @@ export const useActivityTracker = () => {
 
     const updateActivity = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session) return;
-
-        await fetch(`https://stdfkfutgkmnaajixguz.supabase.co/functions/v1/update-user-activity`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`,
-            'Content-Type': 'application/json',
-          },
-        });
+        await supabase.functions.invoke('update-user-activity');
       } catch (error) {
         console.error('Failed to update activity:', error);
       }
