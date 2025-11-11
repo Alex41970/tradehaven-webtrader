@@ -108,12 +108,25 @@ const Auth = () => {
     // Promo code is VALID - proceed with account creation
     console.log('Promo code validated successfully, proceeding with signup...');
 
+    // Persist promo code to localStorage for fallback assignment
+    localStorage.setItem('signup_promo_code', promoCode.trim());
+
     try {
+      // Add promo code to redirect URL for extra redundancy
+      const promoParam = `?promo=${encodeURIComponent(promoCode.trim())}`;
+      const redirectUrl = `${window.location.origin}/dashboard${promoParam}`;
+      
+      console.log('🚀 SignUp payload:', {
+        email,
+        promo_code: promoCode.trim(),
+        redirectUrl,
+      });
+
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/dashboard`,
+          emailRedirectTo: redirectUrl,
           data: {
             first_name: firstName,
             surname: surname,
