@@ -11,6 +11,7 @@ import RoleBasedRoute from "@/components/RoleBasedRoute";
 import { ActivityProvider } from "@/contexts/ActivityContext";
 import { useActivityAwareConnectionManager } from "@/hooks/useActivityAwareConnectionManager";
 import { useActivityTracker } from "@/hooks/useActivityTracker";
+import { usePromoCodeFallback } from "@/hooks/usePromoCodeFallback";
 import { ThemeProvider } from "next-themes";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
@@ -41,6 +42,7 @@ const queryClient = new QueryClient();
 const ConnectionManager = () => {
   useActivityAwareConnectionManager();
   useActivityTracker(); // Track user activity
+  usePromoCodeFallback(); // Handle promo code fallback assignment
   return null;
 };
 
