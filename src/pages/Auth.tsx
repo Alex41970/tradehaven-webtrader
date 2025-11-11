@@ -117,53 +117,13 @@ const Auth = () => {
           data: {
             first_name: firstName,
             surname: surname,
-            phone_number: phoneNumber
+            phone_number: phoneNumber,
+            promo_code: promoCode.trim()
           }
         }
       });
 
       if (error) throw error;
-
-      // Assign user to admin via promo code
-      if (data.user) {
-        // Add a small delay to ensure user profile is created
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        try {
-          const { data: result, error: promoError } = await supabase.rpc('assign_user_to_admin_via_promo', {
-            _user_id: data.user.id,
-            _promo_code: promoCode.trim()
-          });
-          
-          if (promoError) {
-            console.error('Promo code assignment error:', promoError);
-            toast({
-              title: "Assignment Error", 
-              description: "Account created but admin assignment failed unexpectedly. Please contact support with your email.",
-              variant: "destructive"
-            });
-          } else if (result && typeof result === 'object' && 'success' in result) {
-            const assignmentResult = result as { success: boolean; error?: string; admin_id?: string };
-            if (assignmentResult.success) {
-              console.log('Successfully assigned user to admin:', assignmentResult.admin_id);
-            } else {
-              console.error('Promo code assignment failed:', assignmentResult.error);
-              toast({
-                title: "Assignment Error",
-                description: assignmentResult.error || "Account created but admin assignment failed. Please contact support.",
-                variant: "destructive"
-              });
-            }
-          }
-        } catch (promoAssignmentError) {
-          console.error('Error during promo code assignment:', promoAssignmentError);
-          toast({
-            title: "Warning",
-            description: "Account created but promo code assignment failed. Please contact support.",
-            variant: "default"
-          });
-        }
-      }
 
       toast({
         title: "Success",
