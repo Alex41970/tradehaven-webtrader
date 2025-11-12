@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
-import { Shield, Zap, Users, ArrowRight, BarChart3, Globe, Award, CheckCircle, Star, Quote } from "lucide-react";
+import { Shield, Zap, Users, ArrowRight, BarChart3, Globe, Award, CheckCircle, Star, Quote, Lock, ExternalLink } from "lucide-react";
 import { MarketTicker } from "@/components/MarketTicker";
 import { HeroChart } from "@/components/HeroChart";
 import { TradingStats } from "@/components/TradingStats";
@@ -88,6 +88,20 @@ const Index = () => {
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <Logo size="md" className="lg:hidden hover:scale-105 transition-transform" />
           <Logo size="lg" className="hidden lg:block hover:scale-105 transition-transform" />
+          
+          {/* FCA Badge - Desktop only */}
+          <a 
+            href="https://register.fca.org.uk/s/firm?id=001b000000NMcCMAA1"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hidden lg:flex items-center gap-2 px-3 py-1.5 bg-card/50 rounded-lg border border-border/50 hover:border-trading-success/50 transition-colors"
+          >
+            <Shield className="h-4 w-4 text-trading-success" />
+            <span className="text-xs font-medium text-muted-foreground">FCA Regulated</span>
+            <span className="text-xs text-muted-foreground">|</span>
+            <span className="text-xs font-medium">600410</span>
+          </a>
+
           <div className="flex items-center gap-4">
             <Button variant="ghost" className="hidden md:flex" onClick={() => navigate("/markets")}>
               Markets
@@ -138,6 +152,56 @@ const Index = () => {
                   Try Demo Account
                 </Button>
               </div>
+
+              {/* Trust Badges */}
+              <div className="flex flex-wrap items-center justify-center lg:justify-start gap-3 mb-6">
+                {/* FCA Badge */}
+                <a 
+                  href="https://register.fca.org.uk/s/firm?id=001b000000NMcCMAA1"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 px-3 py-2 bg-card/80 rounded-lg border border-border hover:border-trading-success/50 transition-all"
+                >
+                  <Shield className="h-5 w-5 text-trading-success" />
+                  <div className="text-left">
+                    <div className="text-xs text-muted-foreground">FCA Regulated</div>
+                    <div className="text-xs font-semibold">Ref: 600410</div>
+                  </div>
+                </a>
+
+                {/* Fund Protection Badge */}
+                <div className="inline-flex items-center gap-2 px-3 py-2 bg-card/80 rounded-lg border border-border">
+                  <Shield className="h-5 w-5 text-primary" />
+                  <div className="text-left">
+                    <div className="text-xs text-muted-foreground">Funds Protected</div>
+                    <div className="text-xs font-semibold">Up to £85,000</div>
+                  </div>
+                </div>
+
+                {/* SSL Security Badge */}
+                <div className="inline-flex items-center gap-2 px-3 py-2 bg-card/80 rounded-lg border border-border">
+                  <Lock className="h-5 w-5 text-accent" />
+                  <div className="text-left">
+                    <div className="text-xs text-muted-foreground">SSL Encrypted</div>
+                    <div className="text-xs font-semibold">256-bit Security</div>
+                  </div>
+                </div>
+
+                {/* Trustpilot Badge */}
+                <a
+                  href="https://www.trustpilot.com/review/lexingtoncapitalholdings.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 px-3 py-2 bg-card/80 rounded-lg border border-border hover:border-primary/50 transition-all"
+                >
+                  <Star className="h-5 w-5 text-accent fill-accent" />
+                  <div className="text-left">
+                    <div className="text-xs text-muted-foreground">Trustpilot</div>
+                    <div className="text-xs font-semibold">Reviews</div>
+                  </div>
+                </a>
+              </div>
+
               <TradingStats />
             </div>
             <div className="hidden lg:block">
@@ -169,6 +233,18 @@ const Index = () => {
                 FCA licensed with segregated funds and 256-bit SSL encryption protecting your investments
               </p>
               <div className="text-sm text-trading-success font-medium">Funds up to £85,000 protected</div>
+              <div className="mt-4 pt-4 border-t border-border/50">
+                <a 
+                  href="https://register.fca.org.uk/s/firm?id=001b000000NMcCMAA1"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 text-xs text-primary hover:underline"
+                >
+                  <Shield className="h-3 w-3" />
+                  Verify FCA License #600410
+                  <ExternalLink className="h-3 w-3" />
+                </a>
+              </div>
             </div>
 
             <div className="p-6 bg-gradient-to-br from-accent/5 to-transparent rounded-lg border-2 border-border/50 hover:border-accent/50 transition-all duration-300">
