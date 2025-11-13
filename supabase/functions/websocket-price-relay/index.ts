@@ -71,7 +71,7 @@ async function startPolling() {
   await broadcastConnectionMode();
   
   await pollPrices();
-  pollingInterval = setInterval(pollPrices, 15000);
+  pollingInterval = setInterval(pollPrices, 3000);
 }
 
 const corsHeaders = {
