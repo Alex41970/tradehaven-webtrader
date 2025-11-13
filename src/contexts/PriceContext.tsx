@@ -8,6 +8,7 @@ interface PriceUpdate {
   change_24h: number;
   timestamp: number;
   source?: string;
+  mode?: 'websocket' | 'polling' | 'offline';
 }
 
 interface PriceContextType {
@@ -16,6 +17,7 @@ interface PriceContextType {
   lastUpdate: Date | null;
   connectionStatus: 'connecting' | 'connected' | 'disconnected' | 'paused';
   isUserActive: boolean;
+  connectionMode: 'websocket' | 'polling' | 'offline';
 }
 
 const PriceContext = createContext<PriceContextType | undefined>(undefined);
@@ -42,6 +44,7 @@ export const PriceProvider: React.FC<PriceProviderProps> = ({ children }) => {
     lastUpdate,
     connectionStatus,
     isUserActive,
+    connectionMode,
   } = useSmartPriceSubscription();
 
   const value: PriceContextType = {
@@ -50,6 +53,7 @@ export const PriceProvider: React.FC<PriceProviderProps> = ({ children }) => {
     lastUpdate,
     connectionStatus,
     isUserActive,
+    connectionMode,
   };
 
   return (
