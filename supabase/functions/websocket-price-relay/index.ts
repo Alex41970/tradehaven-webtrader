@@ -41,12 +41,11 @@ const YAHOO_SYMBOLS: Record<string, string> = {
 };
 
 let realtimeChannel: any = null;
-let binanceWsConnections: WebSocket[] = [];
+let binanceWsConnections: Map<string, WebSocket> = new Map();
 let yahooPollingInterval: number | null = null;
 let connectionMode: 'websocket' | 'polling' | 'offline' = 'offline';
 let reconnectAttempts = 0;
 const MAX_RECONNECT_ATTEMPTS = 5;
-const SYMBOLS_PER_BATCH = 10; // Split into batches of 10 symbols each
 
 async function broadcastPriceUpdate(symbol: string, price: number, source: string) {
   if (!realtimeChannel) {
@@ -78,39 +77,28 @@ async function broadcastConnectionMode() {
   });
 }
 
-// Binance WebSocket Handler - Multiple batched connections
+// Binance WebSocket Handler - Individual connections per symbol
 function connectBinanceWebSocket() {
-  // Close any existing connections
-  binanceWsConnections.forEach(ws => {
-    if (ws.readyState === WebSocket.OPEN) {
-      ws.close();
-    }
-  });
-  binanceWsConnections = [];
-
-  // Split symbols into batches
-  const symbolEntries = Object.entries(BINANCE_SYMBOLS);
-  const batches: Array<[string, string][]> = [];
+  console.log(`🔌 Connecting to Binance WebSocket for ${Object.keys(BINANCE_SYMBOLS).length} symbols...`);
   
-  for (let i = 0; i < symbolEntries.length; i += SYMBOLS_PER_BATCH) {
-    batches.push(symbolEntries.slice(i, i + SYMBOLS_PER_BATCH));
-  }
+  // Close existing connections
+  binanceWsConnections.forEach(ws => ws.close());
+  binanceWsConnections.clear();
 
-  console.log(`🔌 Connecting to Binance WebSocket (${batches.length} batches, ${symbolEntries.length} total symbols)...`);
+  let connectedCount = 0;
+  const totalSymbols = Object.keys(BINANCE_SYMBOLS).length;
 
-  // Create a WebSocket connection for each batch
-  batches.forEach((batch, batchIndex) => {
-    const streams = batch.map(([_, binanceSymbol]) => `${binanceSymbol}@ticker`).join('/');
-    const wsUrl = `wss://stream.binance.com:9443/stream?streams=${streams}`;
-    
+  // Connect to each symbol individually
+  for (const [internalSymbol, binanceSymbol] of Object.entries(BINANCE_SYMBOLS)) {
+    const wsUrl = `wss://stream.binance.com:9443/ws/${binanceSymbol}@ticker`;
     const ws = new WebSocket(wsUrl);
-    binanceWsConnections.push(ws);
+    
+    binanceWsConnections.set(internalSymbol, ws);
 
     ws.onopen = () => {
-      console.log(`✅ Binance batch ${batchIndex + 1}/${batches.length} connected (${batch.length} symbols)`);
-      
-      // Only update connection mode when first batch connects
-      if (batchIndex === 0) {
+      connectedCount++;
+      if (connectedCount === 1) {
+        console.log(`✅ Binance WebSocket connected (${totalSymbols} streams)`);
         connectionMode = 'websocket';
         reconnectAttempts = 0;
         broadcastConnectionMode();
@@ -119,53 +107,37 @@ function connectBinanceWebSocket() {
 
     ws.onmessage = async (event) => {
       try {
-        const message = JSON.parse(event.data);
-        const data = message.data || message;
-        
+        const data = JSON.parse(event.data);
         if (data.e === '24hrTicker') {
-          const binanceSymbol = data.s?.toLowerCase();
-          
-          const internalSymbol = batch.find(
-            ([_, bSymbol]) => bSymbol === binanceSymbol
-          )?.[0];
-
-          if (internalSymbol) {
-            const price = parseFloat(data.c);
-            
-            if (!isNaN(price)) {
-              await broadcastPriceUpdate(internalSymbol, price, 'binance');
-            }
+          const price = parseFloat(data.c);
+          if (!isNaN(price)) {
+            await broadcastPriceUpdate(internalSymbol, price, 'binance');
           }
         }
       } catch (error) {
-        console.error(`❌ Error parsing Binance batch ${batchIndex + 1} message:`, error);
+        console.error(`❌ Error parsing ${internalSymbol}:`, error);
       }
     };
 
-    ws.onerror = (error) => {
-      console.error(`❌ Binance batch ${batchIndex + 1} WebSocket error:`, error);
+    ws.onerror = () => {
+      binanceWsConnections.delete(internalSymbol);
     };
 
     ws.onclose = () => {
-      console.log(`🔴 Binance batch ${batchIndex + 1} WebSocket closed`);
+      binanceWsConnections.delete(internalSymbol);
       
-      // Only attempt reconnection if all connections are closed
-      const allClosed = binanceWsConnections.every(
-        ws => ws.readyState === WebSocket.CLOSED || ws.readyState === WebSocket.CLOSING
-      );
-      
-      if (allClosed && reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
+      if (binanceWsConnections.size === 0 && reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
         reconnectAttempts++;
         const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), 30000);
-        console.log(`🔄 Reconnecting all Binance batches in ${delay}ms (attempt ${reconnectAttempts})`);
+        console.log(`🔄 Reconnecting Binance in ${delay}ms (attempt ${reconnectAttempts})`);
         setTimeout(connectBinanceWebSocket, delay);
-      } else if (allClosed) {
-        console.error('❌ Max Binance reconnection attempts reached');
+      } else if (binanceWsConnections.size === 0) {
+        console.error('❌ Max reconnection attempts reached');
         connectionMode = 'polling';
         broadcastConnectionMode();
       }
     };
-  });
+  }
 }
 
 // Yahoo Finance Polling Handler
@@ -264,18 +236,19 @@ Deno.serve(async (req) => {
   }
   
   // Initialize on first request
-  if (binanceWsConnections.length === 0 && !yahooPollingInterval) {
+  if (binanceWsConnections.size === 0 && !yahooPollingInterval) {
     initializePriceSources();
   }
   
-  const connectedBatches = binanceWsConnections.filter(ws => ws.readyState === WebSocket.OPEN).length;
+  const connectedSymbols = Array.from(binanceWsConnections.values())
+    .filter(ws => ws.readyState === WebSocket.OPEN).length;
   
   return new Response(
     JSON.stringify({ 
       status: 'running', 
       mode: connectionMode,
-      binance_connected: connectedBatches > 0,
-      binance_batches: `${connectedBatches}/${binanceWsConnections.length}`,
+      binance_connected: connectedSymbols > 0,
+      binance_symbols_connected: `${connectedSymbols}/${Object.keys(BINANCE_SYMBOLS).length}`,
       yahoo_polling: yahooPollingInterval !== null,
       crypto_symbols: Object.keys(BINANCE_SYMBOLS).length,
       yahoo_symbols: Object.keys(YAHOO_SYMBOLS).length,
