@@ -1,85 +1,103 @@
-# Price Data Architecture
+# Price Architecture - Twelve Data Implementation (Planned)
 
 ## Overview
-The application uses TWO separate systems to fetch and distribute price data.
+This document outlines the **planned** real-time price delivery system using **Twelve Data WebSocket API**.
+
+> ⚠️ **STATUS**: Awaiting Twelve Data API key from user
+> 
+> Current state: Old AllTick implementation has been removed. System shows stale prices until new implementation is deployed.
 
 ---
 
-## 1. REST API System (Fallback)
+## Architecture Design
 
-### Backend: `update-prices` Edge Function
-- **Trigger**: Cron job every 3 minutes (scheduled in DB)
-- **Data Sources**:
-  - **CoinGecko API**: 10 crypto symbols (BTC, ETH, XRP, ADA, DOT, BNB, LINK, LTC, MATIC, SOL)
-  - **ExchangeRate API**: 10 forex pairs (EURUSD, GBPUSD, AUDUSD, NZDUSD, USDCAD, USDCHF, USDJPY, EURGBP, EURJPY, GBPJPY)
-  - **Simulated**: Commodities, indices, stocks (±1-2% random variation)
-- **Process**:
-  1. Fetches prices from external APIs
-  2. Updates `assets` table in database
-  3. Updates P&L for all open trades
-  4. Recalculates equity for users with open trades
-- **Status**: ✅ WORKING
+### Components
 
----
+1. **Twelve Data WebSocket Connection** (Edge Function)
+   - Single persistent WebSocket to Twelve Data
+   - Subscribes to all 100 symbols (crypto, forex, stocks, indices, commodities)
+   - Receives updates every 1-3 seconds
 
-## 2. WebSocket System (Primary)
+2. **Supabase Realtime Broadcast**
+   - Relays price updates from edge function to active users
+   - Uses presence tracking to detect online users
+   - Automatically pauses when no users are online
 
-### Backend: `websocket-price-updates` Edge Function
-- **Connection**: AllTick WebSocket API
-- **URL Format**: `wss://quote.alltick.io/quote-b-ws-api?token={ALLTICK_API_KEY}`
-- **Authentication**: Token in URL parameter (per AllTick docs)
-- **Commands**:
-  - `cmd_id 22002`: Subscribe to symbols (sent immediately after connection)
-  - `cmd_id 22000`: Heartbeat/ping (sent every 10 seconds, required by AllTick)
-- **Data Flow**:
-  1. Edge function connects to AllTick
-  2. Subscribes to ALL 97 symbols in single subscription
-  3. Receives real-time tick updates
-  4. Broadcasts to all connected frontend clients
-  5. Updates database for persistence
-- **Status**: ❌ WAS BROKEN (auth issues) - NOW FIXED
+3. **Activity-Aware Frontend**
+   - Auto-subscribes when user is active
+   - Auto-unsubscribes after 3 minutes of inactivity
+   - Tracks mouse, keyboard, touch events
 
-### Frontend: Data Distribution
-1. **AllTickRestService.ts**
-   - Connects to `websocket-price-updates` edge function
-   - Receives price broadcasts
-   - Distributes to subscribers
-
-2. **PriceContext.tsx**
-   - Maintains centralized price Map
-   - Provides prices to all components
-   - Shows connection status
-
-3. **Components**
-   - Trading panels, portfolio, charts all read from PriceContext
-   - Real-time updates flow automatically
+4. **Database Sync**
+   - Batch writes every 10 seconds
+   - Stores latest prices in `assets` table
+   - Serves as fallback for inactive users
 
 ---
 
-## Why Two Systems?
+## Data Flow
 
-1. **WebSocket (Primary)**: Real-time updates (sub-second latency)
-2. **REST API (Fallback)**: Ensures data freshness even if WebSocket fails
-
----
-
-## Critical Fix Applied
-
-**Problem**: WebSocket was using wrong authentication method
-- ❌ Tried auth-after-connect with cmd_id 22000 (this is for heartbeat!)
-- ❌ Used `?t=` parameter (should be `?token=`)
-
-**Solution**: 
-- ✅ Token in URL: `?token={ALLTICK_API_KEY}`
-- ✅ cmd_id 22002: Subscribe to symbols after connection
-- ✅ cmd_id 22000: Heartbeat every 10 seconds (required by AllTick)
-
-**Result**: WebSocket should now connect successfully and stream real-time data for all 97 AllTick-supported symbols.
+```
+Twelve Data WS → Edge Function → Supabase Realtime → Active Users
+                      ↓
+                 Database (every 10s)
+```
 
 ---
 
-## Monitoring
+## Implementation Plan
 
-Check WebSocket status:
-- Edge Function Logs: https://supabase.com/dashboard/project/stdfkfutgkmnaajixguz/functions/websocket-price-updates/logs
-- Frontend Console: Look for "✅ Connected to AllTick real-time WebSocket feed"
+### Phase 1: Edge Function (30 min)
+- Create `websocket-price-relay` edge function
+- Connect to Twelve Data WebSocket
+- Implement presence tracking
+- Set up Realtime broadcasting
+
+### Phase 2: Frontend Integration (45 min)
+- Create `useSmartPriceSubscription` hook
+- Update `PriceContext` to use new subscription
+- Add activity tracking
+- Implement auto-pause logic
+
+### Phase 3: Database Sync (15 min)
+- Add batch write logic
+- Update `assets` table schema (✅ DONE)
+- Enable Realtime on `assets` table
+
+### Phase 4: Testing & Validation (30 min)
+- Test with multiple concurrent users
+- Verify latency meets <3s requirement
+- Validate auto-pause behavior
+- Check resource usage
+
+---
+
+## Expected Performance
+
+- **Latency**: 1-3 seconds (real-time)
+- **Concurrent Users**: 10+ easily supported
+- **Cost**: ~$206/month ($199 Twelve Data + ~$7 Supabase)
+- **Uptime**: 99.9% (Twelve Data SLA)
+
+---
+
+## Asset Coverage (100 symbols)
+
+- ✅ Crypto (38): BTC, ETH, XRP, SOL, ADA, etc.
+- ✅ Forex (30): EURUSD, GBPUSD, USDJPY, etc.
+- ✅ Stocks (20): AAPL, GOOGL, MSFT, TSLA, etc.
+- ✅ Indices (5): SPX500, NAS100, US30, etc.
+- ✅ Commodities (4): XAUUSD, XAGUSD, WTIUSD, BCOUSD
+
+---
+
+## Next Steps
+
+1. **User provides Twelve Data API key**
+2. **Deploy implementation** (2-3 hours)
+3. **Test and validate**
+4. **Monitor performance**
+
+---
+
+**Last Updated**: Cleanup phase completed - awaiting API key

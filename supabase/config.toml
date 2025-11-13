@@ -45,17 +45,11 @@ ip_version = "ipv4"
 [functions.websocket-trading-updates]
 verify_jwt = false
 
-[functions.fix-user-margins]
+[functions.order-monitor]
 verify_jwt = false
 
-[functions.update-prices]
+[functions.update-user-activity]
 verify_jwt = false
 
-[functions.alltick-diagnostics]
-verify_jwt = false
-
-[functions.test-alltick-auth]
-verify_jwt = false
-
-[functions.websocket-price-updates]
+[functions.delete-user]
 verify_jwt = false
