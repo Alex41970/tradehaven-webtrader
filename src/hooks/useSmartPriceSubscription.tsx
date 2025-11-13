@@ -8,6 +8,7 @@ interface PriceUpdate {
   change_24h: number;
   timestamp: number;
   source?: string;
+  mode?: 'websocket' | 'polling' | 'offline';
 }
 
 interface SmartPriceSubscriptionResult {
@@ -16,6 +17,7 @@ interface SmartPriceSubscriptionResult {
   lastUpdate: Date | null;
   connectionStatus: 'connecting' | 'connected' | 'disconnected' | 'paused';
   isUserActive: boolean;
+  connectionMode: 'websocket' | 'polling' | 'offline';
 }
 
 /**
@@ -29,6 +31,7 @@ export const useSmartPriceSubscription = (): SmartPriceSubscriptionResult => {
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
   const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'disconnected' | 'paused'>('disconnected');
   const [isUserActive, setIsUserActive] = useState(true);
+  const [connectionMode, setConnectionMode] = useState<'websocket' | 'polling' | 'offline'>('offline');
 
   const channelRef = useRef<any>(null);
   const presenceChannelRef = useRef<any>(null);
@@ -236,7 +239,7 @@ export const useSmartPriceSubscription = (): SmartPriceSubscriptionResult => {
 
     channel
       .on('broadcast', { event: 'price' }, (payload: any) => {
-        const { symbol, price, change_24h, timestamp, source } = payload.payload;
+        const { symbol, price, change_24h, timestamp, source, mode } = payload.payload;
         
         if (symbol && price) {
           setPrices((prev) => {
@@ -247,11 +250,25 @@ export const useSmartPriceSubscription = (): SmartPriceSubscriptionResult => {
               change_24h: change_24h || 0,
               timestamp: timestamp || Date.now(),
               source: source || 'twelve_data',
+              mode: mode || 'websocket',
             });
             return newPrices;
           });
           
           setLastUpdate(new Date());
+          
+          // Update connection mode from price update
+          if (mode) {
+            setConnectionMode(mode);
+          }
+        }
+      })
+      .on('broadcast', { event: 'connection_mode' }, (payload: any) => {
+        // Handle connection mode updates
+        const { mode } = payload.payload;
+        if (mode) {
+          logger.debug(`📡 Connection mode updated: ${mode}`);
+          setConnectionMode(mode);
         }
       })
       .subscribe(async (status: string) => {
@@ -315,5 +332,6 @@ export const useSmartPriceSubscription = (): SmartPriceSubscriptionResult => {
     lastUpdate,
     connectionStatus,
     isUserActive,
+    connectionMode,
   };
 };
