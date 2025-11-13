@@ -23,7 +23,6 @@ import { useNavigate } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { toast } from "@/hooks/use-toast";
 import { PulsingPriceIndicator } from "./PulsingPriceIndicator";
-import { PriceConnectionStatus } from "./PriceConnectionStatus";
 import { useEventDrivenUpdates } from "@/hooks/useEventDrivenUpdates";
 import { WebTraderSkeleton } from "./WebTraderSkeleton";
 import { useRealtimeAccountMetrics } from "@/hooks/useRealtimeAccountMetrics";
@@ -388,12 +387,9 @@ export const WebTrader = () => {
             <div className="lg:col-span-1">
               <Card className="bg-card/80 backdrop-blur border-border/50">
                 <CardHeader className="pb-2 px-4 pt-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <CardTitle className="text-lg">Market Watch</CardTitle>
-                      <CardDescription className="text-sm">Live market data</CardDescription>
-                    </div>
-                    <PriceConnectionStatus />
+                  <div>
+                    <CardTitle className="text-lg">Market Watch</CardTitle>
+                    <CardDescription className="text-sm">Live market data</CardDescription>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-3 px-4 pb-4">
