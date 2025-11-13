@@ -15,7 +15,7 @@ export const PriceDebugPanel = () => {
     switch (connectionStatus) {
       case 'connected': return 'bg-green-500';
       case 'connecting': return 'bg-yellow-500';
-      case 'error': return 'bg-red-500';
+      case 'paused': return 'bg-orange-500';
       default: return 'bg-gray-500';
     }
   };
@@ -24,7 +24,7 @@ export const PriceDebugPanel = () => {
     switch (connectionStatus) {
       case 'connected': return <Wifi className="h-4 w-4" />;
       case 'connecting': return <Loader2 className="h-4 w-4 animate-spin" />;
-      case 'error': return <AlertTriangle className="h-4 w-4" />;
+      case 'paused': return <AlertTriangle className="h-4 w-4" />;
       default: return <WifiOff className="h-4 w-4" />;
     }
   };

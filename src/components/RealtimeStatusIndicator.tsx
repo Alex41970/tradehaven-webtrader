@@ -3,36 +3,25 @@ import { Badge } from '@/components/ui/badge';
 import { Wifi, WifiOff, Pause, Clock, Zap } from 'lucide-react';
 import { useRealTimeTrading } from '@/hooks/useRealTimeTrading';
 import { usePrices } from '@/contexts/PriceContext';
-import { useActivity } from '@/contexts/ActivityContext';
 
 const RealtimeStatusIndicator: React.FC = () => {
   const { isConnected: tradingConnected } = useRealTimeTrading();
-  const { isConnected, isPaused, connectionStatus } = usePrices();
-  const { isUserActive, minutesSinceLastActivity, forceActive } = useActivity();
+  const { isConnected, isUserActive, connectionStatus } = usePrices();
   
   // Determine overall status
   const isAnyConnected = tradingConnected || isConnected;
-  const isPausedState = isPaused || !isUserActive;
   const connectionCount = (tradingConnected ? 1 : 0) + (isConnected ? 1 : 0);
 
-  // Handle click to resume activity
-  const handleClick = () => {
-    if (isPausedState) {
-      forceActive();
-    }
-  };
-
   // Determine display state
-  if (isPausedState) {
+  if (connectionStatus === 'paused' || !isUserActive) {
     return (
       <Badge 
         variant="outline" 
-        className="flex items-center gap-1 text-xs cursor-pointer hover:bg-muted/50 transition-colors"
-        onClick={handleClick}
-        title="Click to resume real-time updates"
+        className="flex items-center gap-1 text-xs"
+        title="Subscriptions paused due to inactivity"
       >
         <Pause className="h-3 w-3" />
-        Paused ({minutesSinceLastActivity}m)
+        Paused
       </Badge>
     );
   }

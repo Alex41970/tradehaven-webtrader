@@ -45,6 +45,9 @@ ip_version = "ipv4"
 [functions.websocket-trading-updates]
 verify_jwt = false
 
+[functions.websocket-price-relay]
+verify_jwt = false
+
 [functions.order-monitor]
 verify_jwt = false
 

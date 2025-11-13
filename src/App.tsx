@@ -12,6 +12,7 @@ import { ActivityProvider } from "@/contexts/ActivityContext";
 import { useActivityAwareConnectionManager } from "@/hooks/useActivityAwareConnectionManager";
 import { useActivityTracker } from "@/hooks/useActivityTracker";
 import { usePromoCodeFallback } from "@/hooks/usePromoCodeFallback";
+import { usePriceRelayStarter } from "@/hooks/usePriceRelayStarter";
 import { ThemeProvider } from "next-themes";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
@@ -46,7 +47,11 @@ const ConnectionManager = () => {
   return null;
 };
 
-const App = () => (
+const App = () => {
+  // Start the Twelve Data price relay on app load
+  usePriceRelayStarter();
+  
+  return (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
       <AuthProvider>
@@ -117,6 +122,7 @@ const App = () => (
     </AuthProvider>
     </ThemeProvider>
   </QueryClientProvider>
-);
+  );
+};
 
 export default App;

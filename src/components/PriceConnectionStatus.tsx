@@ -19,11 +19,11 @@ export const PriceConnectionStatus: React.FC = () => {
       );
     }
 
-    if (connectionStatus === 'error') {
+    if (connectionStatus === 'paused') {
       return (
         <AlertTriangle 
-          className="h-4 w-4 text-red-500" 
-          aria-label="Connection error"
+          className="h-4 w-4 text-yellow-500" 
+          aria-label="Paused"
         />
       );
     }
@@ -51,11 +51,11 @@ export const PriceConnectionStatus: React.FC = () => {
     );
   }
 
-  if (connectionStatus === 'error') {
+  if (connectionStatus === 'paused') {
     return (
-      <Badge variant="outline" className="flex items-center gap-1 text-xs border-red-500/50 text-red-600">
+      <Badge variant="outline" className="flex items-center gap-1 text-xs border-yellow-500/50 text-yellow-600">
         <AlertTriangle className="h-3 w-3" />
-        Offline
+        Paused
       </Badge>
     );
   }

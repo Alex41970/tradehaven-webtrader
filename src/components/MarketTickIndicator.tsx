@@ -4,19 +4,19 @@ import { useRealTimePrices } from '@/hooks/useRealTimePrices';
 import { useActivity } from '@/contexts/ActivityContext';
 
 export const MarketTickIndicator = () => {
-  const { lastUpdate, isConnected, isPaused } = useRealTimePrices();
-  const { isUserActive } = useActivity();
+  const { lastUpdate, isConnected, isUserActive } = useRealTimePrices();
+  const { isUserActive: isActivityActive } = useActivity();
   const [isFlashing, setIsFlashing] = useState(false);
 
   useEffect(() => {
-    if (lastUpdate && isConnected && !isPaused && isUserActive) {
+    if (lastUpdate && isConnected && isUserActive && isActivityActive) {
       setIsFlashing(true);
       const timer = setTimeout(() => setIsFlashing(false), 300);
       return () => clearTimeout(timer);
     }
-  }, [lastUpdate, isConnected, isPaused, isUserActive]);
+  }, [lastUpdate, isConnected, isUserActive, isActivityActive]);
 
-  if (!isConnected || isPaused || !isUserActive) return null;
+  if (!isConnected || !isUserActive || !isActivityActive) return null;
 
   return (
     <div className="flex items-center gap-1 px-2 py-1">
