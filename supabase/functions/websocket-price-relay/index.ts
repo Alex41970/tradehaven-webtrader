@@ -455,20 +455,32 @@ relay.start().catch((error) => {
   console.error('❌ Failed to start relay:', error);
 });
 
+// CORS headers for all responses
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
 // Keep edge function alive with simple HTTP server
-Deno.serve(() => {
+Deno.serve((req) => {
+  // Handle CORS preflight
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
   return new Response(
     JSON.stringify({ 
       status: 'running',
       mode: USE_FREE_TIER ? 'FREE_TIER' : 'PRO_TIER',
       symbols: USE_FREE_TIER ? 12 : 100,
-      message: 'Twelve Data WebSocket Relay is active'
+      message: 'Twelve Data WebSocket Relay is active',
+      timestamp: new Date().toISOString()
     }), 
     {
       status: 200,
       headers: { 
         'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*'
+        ...corsHeaders
       }
     }
   );

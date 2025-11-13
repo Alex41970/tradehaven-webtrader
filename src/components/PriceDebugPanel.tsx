@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Wifi, WifiOff, Loader2, AlertTriangle, TestTube2, Zap } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { PriceAgeIndicator } from './PriceAgeIndicator';
 
 // FREE TIER test symbols
 const FREE_TIER_SYMBOLS = [
@@ -38,8 +39,28 @@ export const PriceDebugPanel = () => {
   const runDiagnostics = async () => {
     setIsRunningDiagnostics(true);
     try {
-      // TODO: Implement Twelve Data diagnostics
-      setDiagnosticResults({ message: 'Twelve Data diagnostics - coming soon' });
+      // Wake the relay
+      const { data: relayData, error: relayError } = await supabase.functions.invoke('websocket-price-relay', {
+        body: { action: 'ping' }
+      });
+
+      // Check presence
+      const presenceChannel = supabase.channel('price-relay-presence');
+      await presenceChannel.subscribe();
+      const presenceState = presenceChannel.presenceState();
+      const activeClients = Object.keys(presenceState).length;
+      await supabase.removeChannel(presenceChannel);
+
+      // Calculate price freshness
+      const ageMs = lastUpdate ? Date.now() - lastUpdate.getTime() : null;
+      const ageSec = ageMs ? Math.floor(ageMs / 1000) : null;
+
+      setDiagnosticResults({
+        relay: relayError ? { error: relayError.message } : relayData,
+        presenceClients: activeClients,
+        priceAge: ageSec ? `${ageSec}s ago` : 'No updates yet',
+        isFresh: ageSec ? ageSec < 15 : false
+      });
     } catch (error) {
       console.error('Diagnostics failed:', error);
       setDiagnosticResults({ error: error instanceof Error ? error.message : String(error) });
@@ -72,6 +93,7 @@ export const PriceDebugPanel = () => {
         <div>Live Prices: {livePriceCount}/12 symbols</div>
         <div>Total Prices Loaded: {prices.size}</div>
         <div>Last Update: {lastUpdate ? lastUpdate.toLocaleTimeString() : 'Never'}</div>
+        {lastUpdate && <PriceAgeIndicator priceTimestamp={lastUpdate} />}
         <div>Connection Status: {connectionStatus}</div>
         <div>Source: {isConnected ? 'Twelve Data WebSocket' : 'Pending'}</div>
         
@@ -96,20 +118,23 @@ export const PriceDebugPanel = () => {
         </Button>
 
         {diagnosticResults && (
-          <div className="mt-2 p-2 bg-muted rounded text-xs">
+          <div className="mt-2 p-2 bg-muted rounded text-xs space-y-1">
             {diagnosticResults.error ? (
               <div className="text-red-500">Error: {diagnosticResults.error}</div>
             ) : (
               <div>
-                <div className="font-medium mb-1">
-                  Tests: {diagnosticResults.summary?.successful || 0}/{diagnosticResults.summary?.total || 0} passed
+                <div className="font-medium mb-1">Relay Diagnostics</div>
+                {diagnosticResults.relay && (
+                  <div className="text-green-600">
+                    ✓ Relay: {diagnosticResults.relay.status} ({diagnosticResults.relay.mode}, {diagnosticResults.relay.symbols} symbols)
+                  </div>
+                )}
+                <div className={diagnosticResults.isFresh ? 'text-green-600' : 'text-orange-600'}>
+                  {diagnosticResults.isFresh ? '✓' : '⚠'} Price Age: {diagnosticResults.priceAge}
                 </div>
-                {diagnosticResults.results?.filter((r: any) => r.success).slice(0, 3).map((result: any, i: number) => (
-                  <div key={i} className="text-green-600">✓ {result.test}</div>
-                ))}
-                {diagnosticResults.results?.filter((r: any) => !r.success).slice(0, 2).map((result: any, i: number) => (
-                  <div key={i} className="text-red-500">✗ {result.test}</div>
-                ))}
+                <div className="text-blue-600">
+                  👥 Active Clients: {diagnosticResults.presenceClients}
+                </div>
               </div>
             )}
           </div>

@@ -33,7 +33,13 @@ export const useSmartPriceSubscription = (): SmartPriceSubscriptionResult => {
   const channelRef = useRef<any>(null);
   const presenceChannelRef = useRef<any>(null);
   const inactivityTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const watchdogTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const lastWakeAttemptRef = useRef<number>(0);
+  
   const activityTimeoutMs = 3 * 60 * 1000; // 3 minutes
+  const staleThresholdMs = 15000; // 15 seconds
+  const checkIntervalMs = 10000; // 10 seconds
+  const wakeCooldownMs = 30000; // 30 seconds
 
   // Track user activity
   const handleUserActivity = useCallback(() => {
@@ -92,6 +98,68 @@ export const useSmartPriceSubscription = (): SmartPriceSubscriptionResult => {
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, [isUserActive]);
+
+  // Boot relay on mount + watchdog for stale prices
+  useEffect(() => {
+    if (!isUserActive || document.hidden) {
+      // Clear watchdog when inactive
+      if (watchdogTimerRef.current) {
+        clearInterval(watchdogTimerRef.current);
+        watchdogTimerRef.current = null;
+      }
+      return;
+    }
+
+    // Immediately wake the relay on first mount
+    const wakeRelay = async () => {
+      const now = Date.now();
+      if (now - lastWakeAttemptRef.current < wakeCooldownMs) {
+        logger.debug('⏸️ Wake cooldown active, skipping relay ping');
+        return;
+      }
+
+      lastWakeAttemptRef.current = now;
+      logger.debug('🔔 Waking websocket-price-relay...');
+      
+      try {
+        const { data, error } = await supabase.functions.invoke('websocket-price-relay', {
+          body: { action: 'ping' }
+        });
+        
+        if (error) {
+          logger.error('❌ Failed to wake relay:', error);
+        } else {
+          logger.debug('✅ Relay woken:', data);
+        }
+      } catch (err) {
+        logger.error('❌ Exception waking relay:', err);
+      }
+    };
+
+    // Wake relay immediately
+    wakeRelay();
+
+    // Start watchdog to detect stale prices
+    watchdogTimerRef.current = setInterval(() => {
+      if (!isUserActive || document.hidden) return;
+
+      const now = Date.now();
+      const lastUpdateTime = lastUpdate?.getTime() || 0;
+      const ageMs = now - lastUpdateTime;
+
+      if (!lastUpdate || ageMs > staleThresholdMs) {
+        logger.debug(`⚠️ Stale price detected (age: ${Math.floor(ageMs / 1000)}s), attempting wake...`);
+        wakeRelay();
+      }
+    }, checkIntervalMs);
+
+    return () => {
+      if (watchdogTimerRef.current) {
+        clearInterval(watchdogTimerRef.current);
+        watchdogTimerRef.current = null;
+      }
+    };
+  }, [isUserActive, lastUpdate]);
 
   // Manage presence tracking on the relay's presence channel
   useEffect(() => {
