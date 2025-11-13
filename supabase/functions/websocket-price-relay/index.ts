@@ -5,20 +5,21 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-// Symbol mappings: Internal symbol -> API symbol
-const BINANCE_SYMBOLS: Record<string, string> = {
-  'BTCUSD': 'btcusdt', 'ETHUSD': 'ethusdt', 'BNBUSD': 'bnbusdt', 'XRPUSD': 'xrpusdt',
-  'ADAUSD': 'adausdt', 'SOLUSD': 'solusdt', 'DOGEUSD': 'dogeusdt', 'DOTUSD': 'dotusdt',
-  'MATICUSD': 'maticusdt', 'LTCUSD': 'ltcusdt', 'LINKUSD': 'linkusdt', 'UNIUSD': 'uniusdt',
-  'AAVEUSD': 'aaveusdt', 'ALGOUSD': 'algousdt', 'APTUSD': 'aptusdt', 'ARBUSD': 'arbusdt',
-  'ARUSD': 'arusdt', 'ATOMUSD': 'atomusdt', 'AVAXUSD': 'avaxusdt', 'AXSUSD': 'axsusdt',
-  'COMPUSD': 'compusdt', 'CROUSD': 'crousdt', 'CRVUSD': 'crvusdt', 'ENJUSD': 'enjusdt',
-  'FTMUSD': 'ftmusdt', 'GALAUSD': 'galausdt', 'GRTUSD': 'grtusdt', 'ICPUSD': 'icpusdt',
-  'IMXUSD': 'imxusdt', 'INJUSD': 'injusdt', 'LDOUSD': 'ldousdt', 'MANAUSD': 'manausdt',
-  'NEARUSD': 'nearusdt', 'OPUSD': 'opusdt', 'PEPEUSD': 'pepeusdt', 'RNDRUSD': 'rndrusdt',
-  'SANDUSD': 'sandusdt', 'SHIBUSD': 'shibusdt', 'STXUSD': 'stxusdt', 'SUIUSD': 'suiusdt',
-  'TIAUSD': 'tiausdt', 'TONUSD': 'tonusdt', 'TRXUSD': 'trxusdt', 'UMAUSD': 'umausdt',
-  'VETUSD': 'vetusdt', 'WLDUSD': 'wldusdt', 'XLMUSD': 'xlmusdt', 'XTZUSD': 'xtzusdt'
+// Symbol mappings: Internal symbol -> CoinGecko ID
+const COINGECKO_SYMBOLS: Record<string, string> = {
+  'BTCUSD': 'bitcoin', 'ETHUSD': 'ethereum', 'BNBUSD': 'binancecoin', 'XRPUSD': 'ripple',
+  'ADAUSD': 'cardano', 'SOLUSD': 'solana', 'DOGEUSD': 'dogecoin', 'DOTUSD': 'polkadot',
+  'MATICUSD': 'matic-network', 'LTCUSD': 'litecoin', 'LINKUSD': 'chainlink', 'UNIUSD': 'uniswap',
+  'AAVEUSD': 'aave', 'ALGOUSD': 'algorand', 'APTUSD': 'aptos', 'ARBUSD': 'arbitrum',
+  'ARUSD': 'arweave', 'ATOMUSD': 'cosmos', 'AVAXUSD': 'avalanche-2', 'AXSUSD': 'axie-infinity',
+  'COMPUSD': 'compound-governance-token', 'CROUSD': 'crypto-com-chain', 'CRVUSD': 'curve-dao-token', 'ENJUSD': 'enjincoin',
+  'FTMUSD': 'fantom', 'GALAUSD': 'gala', 'GRTUSD': 'the-graph', 'ICPUSD': 'internet-computer',
+  'IMXUSD': 'immutable-x', 'INJUSD': 'injective-protocol', 'LDOUSD': 'lido-dao', 'MANAUSD': 'decentraland',
+  'NEARUSD': 'near', 'OPUSD': 'optimism', 'PEPEUSD': 'pepe', 'RNDRUSD': 'render-token',
+  'SANDUSD': 'the-sandbox', 'SHIBUSD': 'shiba-inu', 'STXUSD': 'blockstack', 'SUIUSD': 'sui',
+  'TIAUSD': 'celestia', 'TONUSD': 'the-open-network', 'TRXUSD': 'tron', 'UMAUSD': 'uma',
+  'VETUSD': 'vechain', 'WLDUSD': 'worldcoin-wld', 'XLMUSD': 'stellar', 'XTZUSD': 'tezos',
+  'FILUSD': 'filecoin'
 };
 
 const YAHOO_SYMBOLS: Record<string, string> = {
@@ -41,7 +42,7 @@ const YAHOO_SYMBOLS: Record<string, string> = {
 };
 
 let realtimeChannel: any = null;
-let binancePollingInterval: number | null = null;
+let coingeckoPollingInterval: number | null = null;
 let yahooPollingInterval: number | null = null;
 let connectionMode: 'websocket' | 'polling' | 'offline' = 'polling';
 
@@ -75,52 +76,61 @@ async function broadcastConnectionMode() {
   });
 }
 
-// Binance REST API Polling
-async function fetchBinancePrices() {
+// CoinGecko REST API Polling
+async function fetchCoinGeckoPrices() {
   try {
-    const response = await fetch('https://api.binance.com/api/v3/ticker/24hr');
+    // Get all coin IDs
+    const coinIds = Object.values(COINGECKO_SYMBOLS).join(',');
+    
+    // Fetch prices with 24h change
+    const response = await fetch(
+      `https://api.coingecko.com/api/v3/simple/price?ids=${coinIds}&vs_currencies=usd&include_24hr_change=true`
+    );
+    
     if (!response.ok) {
-      console.error(`Binance API error: ${response.status}`);
+      console.error(`CoinGecko API error: ${response.status}`);
       return;
     }
     
     const data = await response.json();
-    const binanceSymbolsReversed = Object.fromEntries(
-      Object.entries(BINANCE_SYMBOLS).map(([k, v]) => [v.toUpperCase(), k])
+    
+    // Reverse mapping: CoinGecko ID -> Internal symbol
+    const coinGeckoReversed = Object.fromEntries(
+      Object.entries(COINGECKO_SYMBOLS).map(([k, v]) => [v, k])
     );
     
     let updatedCount = 0;
-    for (const ticker of data) {
-      const internalSymbol = binanceSymbolsReversed[ticker.symbol];
-      if (internalSymbol) {
-        const price = parseFloat(ticker.lastPrice);
-        const change = parseFloat(ticker.priceChangePercent);
-        await broadcastPriceUpdate(internalSymbol, price, 'binance');
+    for (const [coinId, priceData] of Object.entries(data)) {
+      const internalSymbol = coinGeckoReversed[coinId];
+      if (internalSymbol && priceData && typeof priceData === 'object') {
+        const price = priceData.usd;
+        const change = priceData.usd_24h_change || 0;
+        await broadcastPriceUpdate(internalSymbol, price, 'coingecko');
         updatedCount++;
       }
     }
     
-    console.log(`📊 Updated ${updatedCount} Binance prices`);
+    console.log(`📊 Updated ${updatedCount} CoinGecko crypto prices`);
   } catch (error) {
-    console.error('❌ Binance fetch error:', error);
+    console.error('❌ CoinGecko fetch error:', error);
   }
 }
 
-async function pollBinance() {
-  console.log('📊 Polling Binance...');
-  await fetchBinancePrices();
+async function pollCoinGecko() {
+  console.log('📊 Polling CoinGecko...');
+  await fetchCoinGeckoPrices();
 }
 
-function startBinancePolling() {
-  console.log('🔄 Starting Binance polling (every 2 seconds)...');
-  pollBinance();
-  binancePollingInterval = setInterval(pollBinance, 2000);
+function startCoinGeckoPolling() {
+  console.log('🔄 Starting CoinGecko polling (every 30 seconds to respect rate limits)...');
+  pollCoinGecko();
+  coingeckoPollingInterval = setInterval(pollCoinGecko, 30000); // 30 seconds
 }
 
-function stopBinancePolling() {
-  if (binancePollingInterval) {
-    clearInterval(binancePollingInterval);
-    binancePollingInterval = null;
+function stopCoinGeckoPolling() {
+  if (coingeckoPollingInterval) {
+    clearInterval(coingeckoPollingInterval);
+    coingeckoPollingInterval = null;
   }
 }
 
@@ -201,7 +211,7 @@ function stopYahooPolling() {
 // Initialize all price sources
 function initializePriceSources() {
   console.log('🚀 Initializing multi-source price feed...');
-  startBinancePolling();
+  startCoinGeckoPolling();
   startYahooPolling();
 }
 
@@ -216,7 +226,7 @@ Deno.serve(async (req) => {
   }
   
   // Initialize on first request
-  if (!binancePollingInterval && !yahooPollingInterval) {
+  if (!coingeckoPollingInterval && !yahooPollingInterval) {
     initializePriceSources();
   }
   
@@ -224,11 +234,11 @@ Deno.serve(async (req) => {
     JSON.stringify({ 
       status: 'running', 
       mode: connectionMode,
-      binance_polling: binancePollingInterval !== null,
+      coingecko_polling: coingeckoPollingInterval !== null,
       yahoo_polling: yahooPollingInterval !== null,
-      binance_symbols: Object.keys(BINANCE_SYMBOLS).length,
+      crypto_symbols: Object.keys(COINGECKO_SYMBOLS).length,
       yahoo_symbols: Object.keys(YAHOO_SYMBOLS).length,
-      total_symbols: Object.keys(BINANCE_SYMBOLS).length + Object.keys(YAHOO_SYMBOLS).length,
+      total_symbols: Object.keys(COINGECKO_SYMBOLS).length + Object.keys(YAHOO_SYMBOLS).length,
       timestamp: Date.now()
     }), 
     { headers: { 'Content-Type': 'application/json', ...corsHeaders }}
