@@ -1,6 +1,6 @@
 import React from 'react';
 import { Badge } from '@/components/ui/badge';
-import { Wifi, WifiOff, Pause, Clock, Zap } from 'lucide-react';
+import { Wifi, WifiOff, Pause, Clock, Zap, TestTube } from 'lucide-react';
 import { useRealTimeTrading } from '@/hooks/useRealTimeTrading';
 import { usePrices } from '@/contexts/PriceContext';
 
@@ -39,27 +39,38 @@ const RealtimeStatusIndicator: React.FC = () => {
   }
 
   return (
-    <Badge 
-      variant={isAnyConnected ? "default" : "secondary"} 
-      className="flex items-center gap-1 text-xs"
-    >
-      {isConnected ? (
-        <>
-          <Zap className="h-3 w-3" />
-          Live ({connectionCount})
-        </>
-      ) : tradingConnected ? (
-        <>
-          <Wifi className="h-3 w-3" />
-          Trading ({connectionCount})
-        </>
-      ) : (
-        <>
-          <WifiOff className="h-3 w-3" />
-          Offline
-        </>
+    <div className="flex items-center gap-2">
+      <Badge 
+        variant={isAnyConnected ? "default" : "secondary"} 
+        className="flex items-center gap-1 text-xs"
+      >
+        {isConnected ? (
+          <>
+            <Zap className="h-3 w-3" />
+            Live ({connectionCount})
+          </>
+        ) : tradingConnected ? (
+          <>
+            <Wifi className="h-3 w-3" />
+            Trading ({connectionCount})
+          </>
+        ) : (
+          <>
+            <WifiOff className="h-3 w-3" />
+            Offline
+          </>
+        )}
+      </Badge>
+      {isConnected && (
+        <Badge 
+          variant="outline" 
+          className="flex items-center gap-1 text-xs border-orange-500 text-orange-500"
+        >
+          <TestTube className="h-3 w-3" />
+          Testing (12)
+        </Badge>
       )}
-    </Badge>
+    </div>
   );
 };
 
