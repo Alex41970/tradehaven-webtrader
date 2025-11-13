@@ -37,8 +37,8 @@ const YAHOO_SYMBOLS: Record<string, string> = {
   'US30': '^DJI', 'US100': '^IXIC', 'US500': '^GSPC', 'UK100': '^FTSE',
   'GER40': '^GDAXI', 'FRA40': '^FCHI', 'JPN225': '^N225', 'AUS200': '^AXJO',
   // Commodities
-  'XAUUSD': 'GC=F', 'XAGUSD': 'SI=F', 'WTIUSD': 'CL=F', 'BRENTUSD': 'BZ=F',
-  'NGAS': 'NG=F', 'COPPER': 'HG=F'
+  'XAUUSD': 'GC=F', 'XAGUSD': 'SI=F', 'USOIL': 'CL=F', 'UKOIL': 'BZ=F',
+  'NATGAS': 'NG=F', 'XPTUSD': 'PL=F', 'COPPER': 'HG=F'
 };
 
 let realtimeChannel: any = null;
