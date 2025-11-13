@@ -23,7 +23,7 @@ export const useOptimizedPriceUpdates = () => {
   const batchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastProcessedRef = useRef<Record<string, number>>({});
 
-  // IMMEDIATE processing for WebSocket updates - no batching delay
+  // IMMEDIATE processing for Twelve Data WebSocket updates
   const processBatch = useCallback(() => {
     if (batchRef.current.length === 0) return;
 
@@ -35,15 +35,13 @@ export const useOptimizedPriceUpdates = () => {
       let actualUpdates = 0;
 
       updates.forEach(update => {
-        // Process ALL price updates immediately from WebSocket
+        // Process all price updates instantly from Twelve Data
         newPrices.set(update.symbol, update);
         lastProcessedRef.current[update.symbol] = update.price;
         actualUpdates++;
-        console.log(`⚡ INSTANT UPDATE: ${update.symbol} = $${update.price} - NO DELAY`);
       });
 
       if (actualUpdates > 0) {
-        console.log(`🔥 INSTANT PROCESSED ${actualUpdates} ticks - ZERO BATCHING`);
         setLastUpdate(new Date());
       }
 
