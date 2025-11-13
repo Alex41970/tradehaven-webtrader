@@ -3,8 +3,14 @@ import { usePrices } from '@/contexts/PriceContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Wifi, WifiOff, Loader2, AlertTriangle, TestTube2 } from 'lucide-react';
+import { Wifi, WifiOff, Loader2, AlertTriangle, TestTube2, Zap } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+
+// FREE TIER test symbols
+const FREE_TIER_SYMBOLS = [
+  'BTCUSD', 'ETHUSD', 'BNBUSD', 'XRPUSD', 'SOLUSD', 'DOGEUSD',
+  'EURUSD', 'GBPUSD', 'USDJPY', 'AAPL', 'TSLA', 'NVDA'
+];
 
 export const PriceDebugPanel = () => {
   const { prices, isConnected, lastUpdate, connectionStatus } = usePrices();
@@ -42,6 +48,9 @@ export const PriceDebugPanel = () => {
     }
   };
 
+  const liveSymbols = FREE_TIER_SYMBOLS.filter(symbol => prices.has(symbol));
+  const livePriceCount = liveSymbols.length;
+
   return (
     <Card className="mb-4">
       <CardHeader>
@@ -51,14 +60,29 @@ export const PriceDebugPanel = () => {
             {getStatusIcon()}
             {connectionStatus}
           </Badge>
+          <Badge variant="secondary" className="flex items-center gap-1">
+            <Zap className="h-3 w-3" />
+            FREE TIER
+          </Badge>
         </CardTitle>
       </CardHeader>
       <CardContent className="text-xs space-y-2">
         <div>Connected: {isConnected ? '✅' : '❌'}</div>
-        <div>Prices in Map: {prices.size}</div>
+        <div>Mode: <span className="font-semibold text-orange-500">Testing (12 Assets)</span></div>
+        <div>Live Prices: {livePriceCount}/12 symbols</div>
+        <div>Total Prices Loaded: {prices.size}</div>
         <div>Last Update: {lastUpdate ? lastUpdate.toLocaleTimeString() : 'Never'}</div>
         <div>Connection Status: {connectionStatus}</div>
-        <div>Source: {isConnected ? 'Twelve Data' : 'Pending'}</div>
+        <div>Source: {isConnected ? 'Twelve Data WebSocket' : 'Pending'}</div>
+        
+        {livePriceCount > 0 && (
+          <div className="mt-2 p-2 bg-green-50 dark:bg-green-950 rounded">
+            <div className="font-semibold text-green-700 dark:text-green-300">✓ Live Updates Active</div>
+            <div className="text-green-600 dark:text-green-400 text-xs mt-1">
+              {liveSymbols.slice(0, 6).join(', ')}
+            </div>
+          </div>
+        )}
         
         <Button
           onClick={runDiagnostics}

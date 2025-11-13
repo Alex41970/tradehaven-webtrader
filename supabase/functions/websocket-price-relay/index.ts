@@ -4,6 +4,9 @@ const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const TWELVE_DATA_API_KEY = Deno.env.get('TWELVE_DATA_API_KEY')!;
 
+// FREE TIER MODE: Set to true for testing (12 symbols), false for Pro plan (100 symbols)
+const USE_FREE_TIER = Deno.env.get('TWELVE_DATA_FREE_TIER') !== 'false';
+
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
 // Twelve Data symbol mapping for all 100 assets
@@ -116,6 +119,22 @@ const SYMBOL_MAPPING: Record<string, string> = {
   'BCOUSD': 'BRENT/USD',
 };
 
+// FREE TIER: Only 12 symbols for testing
+const FREE_TIER_SYMBOLS = [
+  'BTC/USD',    // Crypto leader
+  'ETH/USD',    // Crypto #2
+  'BNB/USD',    // Top exchange coin
+  'XRP/USD',    // Popular altcoin
+  'SOL/USD',    // Fast blockchain
+  'DOGE/USD',   // Meme coin
+  'EUR/USD',    // Most traded forex
+  'GBP/USD',    // Major forex
+  'USD/JPY',    // Major forex
+  'AAPL',       // Tech giant
+  'TSLA',       // Popular stock
+  'NVDA',       // AI/GPU leader
+];
+
 interface PriceUpdate {
   symbol: string;
   price: number;
@@ -136,7 +155,7 @@ class TwelveDataWebSocketRelay {
   private heartbeatInterval: number | null = null;
 
   async start() {
-    console.log('🚀 Starting Twelve Data WebSocket Relay...');
+    console.log(`🚀 Starting Twelve Data WebSocket Relay - ${USE_FREE_TIER ? '[FREE TIER - 12 SYMBOLS]' : '[PRO TIER - 100 SYMBOLS]'}`);
     
     // Set up Supabase Realtime presence tracking
     await this.setupPresenceTracking();
@@ -255,23 +274,22 @@ class TwelveDataWebSocketRelay {
 
   private subscribeToAllSymbols() {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
-      console.error('❌ Cannot subscribe - WebSocket not open');
+      console.error('❌ Cannot subscribe: WebSocket not open');
       return;
     }
 
-    const symbols = Object.values(SYMBOL_MAPPING);
-    
-    console.log(`📡 Subscribing to ${symbols.length} symbols...`);
+    // Use FREE_TIER_SYMBOLS (12) or all SYMBOL_MAPPING symbols (100)
+    const symbols = USE_FREE_TIER ? FREE_TIER_SYMBOLS : Object.values(SYMBOL_MAPPING);
     
     const subscribeMessage = {
       action: 'subscribe',
       params: {
-        symbols: symbols.join(',')
+        symbols: symbols.join(','),
       }
     };
 
+    console.log(`📡 ${USE_FREE_TIER ? '[FREE TIER]' : '[PRO TIER]'} Subscribing to ${symbols.length} symbols: ${symbols.slice(0, 5).join(', ')}...`);
     this.ws.send(JSON.stringify(subscribeMessage));
-    console.log('✅ Subscription request sent');
   }
 
   private handleTwelveDataMessage(data: string) {
@@ -425,49 +443,33 @@ class TwelveDataWebSocketRelay {
   }
 }
 
-// Global relay instance
-let relay: TwelveDataWebSocketRelay | null = null;
+// ============================================
+// AUTO-START RELAY ON DEPLOYMENT
+// ============================================
+console.log('🔄 Edge Function booting...');
 
-// HTTP handler for edge function
-Deno.serve(async (req) => {
-  const url = new URL(req.url);
-  
-  if (url.pathname === '/start' && req.method === 'POST') {
-    if (!relay) {
-      relay = new TwelveDataWebSocketRelay();
-      await relay.start();
-      return new Response(JSON.stringify({ status: 'started' }), {
-        headers: { 'Content-Type': 'application/json' },
-      });
+const relay = new TwelveDataWebSocketRelay();
+
+// Start relay immediately (no HTTP trigger needed)
+relay.start().catch((error) => {
+  console.error('❌ Failed to start relay:', error);
+});
+
+// Keep edge function alive with simple HTTP server
+Deno.serve(() => {
+  return new Response(
+    JSON.stringify({ 
+      status: 'running',
+      mode: USE_FREE_TIER ? 'FREE_TIER' : 'PRO_TIER',
+      symbols: USE_FREE_TIER ? 12 : 100,
+      message: 'Twelve Data WebSocket Relay is active'
+    }), 
+    {
+      status: 200,
+      headers: { 
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'
+      }
     }
-    return new Response(JSON.stringify({ status: 'already_running' }), {
-      headers: { 'Content-Type': 'application/json' },
-    });
-  }
-  
-  if (url.pathname === '/stop' && req.method === 'POST') {
-    if (relay) {
-      await relay.stop();
-      relay = null;
-      return new Response(JSON.stringify({ status: 'stopped' }), {
-        headers: { 'Content-Type': 'application/json' },
-      });
-    }
-    return new Response(JSON.stringify({ status: 'not_running' }), {
-      headers: { 'Content-Type': 'application/json' },
-    });
-  }
-  
-  if (url.pathname === '/status') {
-    return new Response(JSON.stringify({ 
-      running: relay !== null,
-      timestamp: new Date().toISOString()
-    }), {
-      headers: { 'Content-Type': 'application/json' },
-    });
-  }
-  
-  return new Response('Twelve Data WebSocket Relay - Endpoints: /start, /stop, /status', {
-    headers: { 'Content-Type': 'text/plain' },
-  });
+  );
 });
