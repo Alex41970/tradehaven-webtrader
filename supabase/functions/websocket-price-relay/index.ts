@@ -84,29 +84,27 @@ function connectBinanceWebSocket() {
     return;
   }
 
+  // Build combined streams URL (more reliable than subscribe message)
+  const streams = Object.values(BINANCE_SYMBOLS).map(s => `${s}@ticker`).join('/');
+  const wsUrl = `wss://stream.binance.com:9443/stream?streams=${streams}`;
+  
   console.log('🔌 Connecting to Binance WebSocket...');
-  binanceWs = new WebSocket('wss://stream.binance.com:9443/ws');
+  binanceWs = new WebSocket(wsUrl);
 
   binanceWs.onopen = () => {
     console.log('✅ Binance WebSocket connected');
     connectionMode = 'websocket';
     reconnectAttempts = 0;
     broadcastConnectionMode();
-
-    // Subscribe to all crypto symbols via miniTicker
-    const streams = Object.values(BINANCE_SYMBOLS).map(s => `${s}@ticker`);
-    const subscribeMessage = {
-      method: 'SUBSCRIBE',
-      params: streams,
-      id: 1
-    };
-    binanceWs?.send(JSON.stringify(subscribeMessage));
-    console.log(`📡 Subscribed to ${streams.length} Binance crypto streams`);
+    console.log(`📡 Subscribed to ${Object.keys(BINANCE_SYMBOLS).length} Binance crypto streams`);
   };
 
   binanceWs.onmessage = async (event) => {
     try {
-      const data = JSON.parse(event.data);
+      const message = JSON.parse(event.data);
+      
+      // Combined streams wrap data in a 'data' property
+      const data = message.data || message;
       
       // Handle 24hr ticker updates
       if (data.e === '24hrTicker') {
