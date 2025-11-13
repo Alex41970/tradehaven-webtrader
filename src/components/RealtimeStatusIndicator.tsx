@@ -22,7 +22,7 @@ const RealtimeStatusIndicator: React.FC = () => {
     }
   };
 
-  // Determine display state - show AllTick status
+  // Determine display state
   if (isPausedState) {
     return (
       <Badge 

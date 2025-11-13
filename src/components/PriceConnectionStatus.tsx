@@ -14,7 +14,7 @@ export const PriceConnectionStatus: React.FC = () => {
       return (
         <Loader2 
           className="h-4 w-4 text-yellow-500 animate-spin" 
-          aria-label="Connecting to AllTick"
+          aria-label="Connecting to price service"
         />
       );
     }

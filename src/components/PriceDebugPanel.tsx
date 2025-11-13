@@ -29,12 +29,11 @@ export const PriceDebugPanel = () => {
     }
   };
 
-  const runAllTickDiagnostics = async () => {
+  const runDiagnostics = async () => {
     setIsRunningDiagnostics(true);
     try {
-      const { data, error } = await supabase.functions.invoke('alltick-diagnostics');
-      if (error) throw error;
-      setDiagnosticResults(data);
+      // TODO: Implement Twelve Data diagnostics
+      setDiagnosticResults({ message: 'Twelve Data diagnostics - coming soon' });
     } catch (error) {
       console.error('Diagnostics failed:', error);
       setDiagnosticResults({ error: error instanceof Error ? error.message : String(error) });
@@ -59,17 +58,17 @@ export const PriceDebugPanel = () => {
         <div>Prices in Map: {prices.size}</div>
         <div>Last Update: {lastUpdate ? lastUpdate.toLocaleTimeString() : 'Never'}</div>
         <div>Connection Status: {connectionStatus}</div>
-        <div>Source: {isConnected ? 'AllTick-RT' : 'Yahoo (Fallback)'}</div>
+        <div>Source: {isConnected ? 'Twelve Data' : 'Pending'}</div>
         
         <Button
-          onClick={runAllTickDiagnostics}
+          onClick={runDiagnostics}
           disabled={isRunningDiagnostics}
           size="sm"
           variant="outline"
           className="w-full mt-2"
         >
           <TestTube2 className="h-3 w-3 mr-2" />
-          {isRunningDiagnostics ? 'Testing...' : 'Test AllTick Config'}
+          {isRunningDiagnostics ? 'Testing...' : 'Test Price Connection'}
         </Button>
 
         {diagnosticResults && (

@@ -1,5 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
-import { AllTickRestService } from '@/services/AllTickRestService';
+import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useOptimizedPriceUpdates } from '@/hooks/useOptimizedPriceUpdates';
 import { logger } from '@/utils/logger';
 
@@ -48,57 +47,20 @@ export const PriceProvider: React.FC<PriceProviderProps> = ({ children }) => {
     processBatch 
   } = useOptimizedPriceUpdates();
 
-  const allTickServiceRef = useRef<AllTickRestService | null>(null);
-
-  // Initialize price polling service
+  // Price service will be implemented with Twelve Data WebSocket
   useEffect(() => {
-    logger.debug('🔥 PRICE PROVIDER USE EFFECT FIRED - STARTING PRICE POLLING');
+    logger.debug('🔥 PRICE PROVIDER - Awaiting Twelve Data implementation');
     
-    const initPriceService = async () => {
-      logger.debug('🚀 PriceProvider: Initializing multi-source price service...');
-      
-      try {
-        allTickServiceRef.current = new AllTickRestService();
-        
-        const unsubscribe = allTickServiceRef.current.subscribeToPrices((priceUpdate) => {
-          logger.debug(`⚡ PRICE RECEIVED: ${priceUpdate.symbol} = $${priceUpdate.price} (${priceUpdate.change_24h}%) - Source: ${priceUpdate.source}`);
-          addPriceUpdate(priceUpdate);
-          logger.debug(`📊 Price added to Map, current Map size: ${prices.size}`);
-          
-          setLastUpdate(new Date(priceUpdate.timestamp));
-          setIsConnected(true);
-          setConnectionStatus('connected');
-        });
-        
-        logger.debug('🔌 Starting price polling...');
-        const connected = await allTickServiceRef.current.connect();
-        
-        if (connected) {
-          logger.debug('✅ Price service started successfully');
-          logger.debug(`📊 Monitoring ${allTickServiceRef.current.getSymbolCount()} symbols`);
-          setConnectionStatus('connected');
-        } else {
-          logger.error('❌ Price service failed to start');
-          setIsConnected(false);
-          setConnectionStatus('error');
-        }
-        
-        return unsubscribe;
-      } catch (error) {
-        logger.error('❌ Price service initialization error:', error);
-        setConnectionStatus('error');
-      }
-    };
-
-    initPriceService();
-
+    // TODO: Initialize Twelve Data WebSocket connection
+    // Will be implemented after API key is provided
+    
+    setConnectionStatus('disconnected');
+    setIsConnected(false);
+    
     return () => {
-      if (allTickServiceRef.current) {
-        logger.debug('🔌 PriceProvider: Disconnecting price service...');
-        allTickServiceRef.current.disconnect();
-      }
+      logger.debug('🔌 PriceProvider: Cleanup (no active connections)');
     };
-  }, [addPriceUpdate]);
+  }, []);
 
   // Handle page visibility for performance
   useEffect(() => {
