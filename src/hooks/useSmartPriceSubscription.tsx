@@ -31,6 +31,7 @@ export const useSmartPriceSubscription = (): SmartPriceSubscriptionResult => {
   const [isUserActive, setIsUserActive] = useState(true);
 
   const channelRef = useRef<any>(null);
+  const presenceChannelRef = useRef<any>(null);
   const inactivityTimerRef = useRef<NodeJS.Timeout | null>(null);
   const activityTimeoutMs = 3 * 60 * 1000; // 3 minutes
 
@@ -92,7 +93,56 @@ export const useSmartPriceSubscription = (): SmartPriceSubscriptionResult => {
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, [isUserActive]);
 
-  // Manage Supabase Realtime subscription
+  // Manage presence tracking on the relay's presence channel
+  useEffect(() => {
+    if (!isUserActive || document.hidden) {
+      // Untrack presence when inactive or hidden
+      if (presenceChannelRef.current) {
+        logger.debug('👋 Leaving price-relay-presence channel (inactive/hidden)');
+        supabase.removeChannel(presenceChannelRef.current);
+        presenceChannelRef.current = null;
+      }
+      return;
+    }
+
+    // Join presence channel when active and visible
+    logger.debug('👋 Joining price-relay-presence channel...');
+    
+    const presenceChannel = supabase.channel('price-relay-presence', {
+      config: {
+        presence: { key: crypto.randomUUID() },
+      },
+    });
+
+    presenceChannel
+      .on('presence', { event: 'sync' }, () => {
+        const state = presenceChannel.presenceState();
+        const userCount = Object.keys(state).length;
+        logger.debug(`👥 Active clients in presence channel: ${userCount}`);
+      })
+      .subscribe(async (status: string) => {
+        if (status === 'SUBSCRIBED') {
+          // Track presence to signal the relay we're active
+          await presenceChannel.track({
+            online_at: new Date().toISOString(),
+            user_id: (await supabase.auth.getUser()).data.user?.id || 'anonymous',
+          });
+          logger.debug('✅ Presence tracked on price-relay-presence');
+        }
+      });
+
+    presenceChannelRef.current = presenceChannel;
+
+    return () => {
+      if (presenceChannelRef.current) {
+        logger.debug('🔌 Cleaning up presence channel');
+        supabase.removeChannel(presenceChannelRef.current);
+        presenceChannelRef.current = null;
+      }
+    };
+  }, [isUserActive]);
+
+  // Manage Supabase Realtime subscription for price updates
   useEffect(() => {
     if (!isUserActive || document.hidden) {
       // Unsubscribe when inactive or hidden
@@ -113,7 +163,6 @@ export const useSmartPriceSubscription = (): SmartPriceSubscriptionResult => {
     const channel = supabase.channel('price-updates', {
       config: {
         broadcast: { self: false },
-        presence: { key: crypto.randomUUID() },
       },
     });
 
@@ -137,11 +186,6 @@ export const useSmartPriceSubscription = (): SmartPriceSubscriptionResult => {
           setLastUpdate(new Date());
         }
       })
-      .on('presence', { event: 'sync' }, () => {
-        const state = channel.presenceState();
-        const userCount = Object.keys(state).length;
-        logger.debug(`👥 Active users in price channel: ${userCount}`);
-      })
       .subscribe(async (status: string) => {
         logger.debug(`📡 Price subscription status: ${status}`);
         
@@ -149,12 +193,6 @@ export const useSmartPriceSubscription = (): SmartPriceSubscriptionResult => {
           setIsConnected(true);
           setConnectionStatus('connected');
           logger.debug('✅ Successfully subscribed to price updates');
-          
-          // Track presence
-          await channel.track({
-            online_at: new Date().toISOString(),
-            user_id: (await supabase.auth.getUser()).data.user?.id || 'anonymous',
-          });
         } else if (status === 'CHANNEL_ERROR') {
           setIsConnected(false);
           setConnectionStatus('disconnected');
