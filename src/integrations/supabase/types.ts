@@ -114,8 +114,8 @@ export type Database = {
       }
       assets: {
         Row: {
-          alltick_code: string | null
-          alltick_supported: boolean | null
+          api_source: string | null
+          api_symbol: string | null
           base_currency: string | null
           category: string
           change_24h: number
@@ -123,10 +123,12 @@ export type Database = {
           created_at: string
           id: string
           is_active: boolean
+          last_ws_update: string | null
           max_leverage: number
           min_trade_size: number
           name: string
           price: number
+          price_source: string | null
           price_updated_at: string | null
           quote_currency: string | null
           spread: number
@@ -134,8 +136,8 @@ export type Database = {
           updated_at: string
         }
         Insert: {
-          alltick_code?: string | null
-          alltick_supported?: boolean | null
+          api_source?: string | null
+          api_symbol?: string | null
           base_currency?: string | null
           category: string
           change_24h?: number
@@ -143,10 +145,12 @@ export type Database = {
           created_at?: string
           id?: string
           is_active?: boolean
+          last_ws_update?: string | null
           max_leverage?: number
           min_trade_size?: number
           name: string
           price: number
+          price_source?: string | null
           price_updated_at?: string | null
           quote_currency?: string | null
           spread?: number
@@ -154,8 +158,8 @@ export type Database = {
           updated_at?: string
         }
         Update: {
-          alltick_code?: string | null
-          alltick_supported?: boolean | null
+          api_source?: string | null
+          api_symbol?: string | null
           base_currency?: string | null
           category?: string
           change_24h?: number
@@ -163,10 +167,12 @@ export type Database = {
           created_at?: string
           id?: string
           is_active?: boolean
+          last_ws_update?: string | null
           max_leverage?: number
           min_trade_size?: number
           name?: string
           price?: number
+          price_source?: string | null
           price_updated_at?: string | null
           quote_currency?: string | null
           spread?: number

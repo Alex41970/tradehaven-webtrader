@@ -46,7 +46,11 @@ let coingeckoPollingInterval: number | null = null;
 let yahooPollingInterval: number | null = null;
 let connectionMode: 'websocket' | 'polling' | 'offline' = 'polling';
 
-async function broadcastPriceUpdate(symbol: string, price: number, source: string) {
+// Database update batching
+let pendingUpdates: Array<{symbol: string, price: number, change: number}> = [];
+let dbUpdateInterval: number | null = null;
+
+async function broadcastPriceUpdate(symbol: string, price: number, change24h: number, source: string) {
   if (!realtimeChannel) {
     realtimeChannel = supabase.channel('price-updates');
     await realtimeChannel.subscribe();
@@ -57,11 +61,15 @@ async function broadcastPriceUpdate(symbol: string, price: number, source: strin
     payload: { 
       symbol, 
       price, 
+      change_24h: change24h,
       timestamp: Date.now(), 
       source,
       mode: connectionMode 
     }
   });
+  
+  // Queue for database persistence
+  pendingUpdates.push({ symbol, price, change: change24h });
 }
 
 async function broadcastConnectionMode() {
@@ -105,7 +113,7 @@ async function fetchCoinGeckoPrices() {
       if (internalSymbol && priceData && typeof priceData === 'object') {
         const price = priceData.usd;
         const change = priceData.usd_24h_change || 0;
-        await broadcastPriceUpdate(internalSymbol, price, 'coingecko');
+        await broadcastPriceUpdate(internalSymbol, price, change, 'coingecko');
         updatedCount++;
       }
     }
@@ -174,7 +182,7 @@ async function pollYahooFinance() {
       batch.map(async ([internalSymbol, yahooSymbol]) => {
         const result = await fetchYahooPrice(yahooSymbol);
         if (result) {
-          await broadcastPriceUpdate(internalSymbol, result.price, 'yahoo');
+          await broadcastPriceUpdate(internalSymbol, result.price, result.change, 'yahoo');
         }
       })
     );
@@ -208,11 +216,43 @@ function stopYahooPolling() {
   }
 }
 
+// Persist prices to database in batches
+async function flushPricesToDatabase() {
+  if (pendingUpdates.length === 0) return;
+  
+  const updates = [...pendingUpdates];
+  pendingUpdates = [];
+  
+  try {
+    // Batch update assets table
+    for (const update of updates) {
+      await supabase
+        .from('assets')
+        .update({ 
+          price: update.price, 
+          change_24h: update.change, 
+          price_updated_at: new Date().toISOString() 
+        })
+        .eq('symbol', update.symbol);
+    }
+    
+    console.log(`📦 Persisted ${updates.length} prices to database`);
+  } catch (error) {
+    console.error('❌ Database persistence error:', error);
+  }
+}
+
 // Initialize all price sources
 function initializePriceSources() {
   console.log('🚀 Initializing multi-source price feed...');
   startCoinGeckoPolling();
   startYahooPolling();
+  
+  // Start database persistence interval (every 30 seconds)
+  if (!dbUpdateInterval) {
+    dbUpdateInterval = setInterval(flushPricesToDatabase, 30000);
+    console.log('💾 Database persistence enabled (every 30 seconds)');
+  }
 }
 
 const corsHeaders = {
