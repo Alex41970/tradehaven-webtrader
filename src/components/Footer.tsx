@@ -112,8 +112,7 @@ export const Footer = () => {
                 © {new Date().getFullYear()} Lexington Capital Investing. All rights reserved.
               </p>
               <p className="text-xs">
-                Lexington Capital Investing operates under strict regulatory compliance. 
-                Trading involves risk of loss.
+                Lexington Capital Investing operates under strict regulatory compliance.
               </p>
             </div>
             <div className="flex items-center gap-4 text-muted-foreground">

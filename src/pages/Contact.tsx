@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, Mail, Clock, MessageSquare } from "lucide-react";
+import { ArrowLeft, Mail, Clock, MessageSquare, Phone, MapPin } from "lucide-react";
 
 const Contact = () => {
   return (
@@ -57,10 +57,32 @@ const Contact = () => {
               <Mail className="w-12 h-12 text-accent mb-4" />
               <h3 className="text-xl font-bold mb-2">Email Support</h3>
               <p className="text-muted-foreground mb-2">
-                support@lexingtoncapital.com
+                support@lexingtoncapitalinvesting.com
               </p>
               <p className="text-sm text-muted-foreground">
                 Response within 24 hours
+              </p>
+            </Card>
+
+            <Card className="p-6 hover:shadow-lg transition-all">
+              <Phone className="w-12 h-12 text-primary mb-4" />
+              <h3 className="text-xl font-bold mb-2">Phone Support</h3>
+              <div className="text-muted-foreground space-y-1">
+                <p>+1 (343) 304-0557</p>
+                <p>+44 20 8040 4627</p>
+              </div>
+              <p className="text-sm text-muted-foreground mt-2">
+                Available 24/7
+              </p>
+            </Card>
+
+            <Card className="p-6 hover:shadow-lg transition-all">
+              <MapPin className="w-12 h-12 text-accent mb-4" />
+              <h3 className="text-xl font-bold mb-2">Our Office</h3>
+              <p className="text-muted-foreground">
+                585 Bicycle Path, 11776<br />
+                Port Jefferson Station<br />
+                United States
               </p>
             </Card>
 
