@@ -137,8 +137,8 @@ const CookiePolicy = () => {
               <Card className="p-6 mt-4 bg-card/50">
                 <p className="text-foreground/90">
                   <strong>Email:</strong> privacy@lexingtoncapital.com<br />
-                  <strong>Address:</strong> 123 Financial District, Canary Wharf, London E14 5AB, UK<br />
-                  <strong>Phone:</strong> +44 20 1234 5678
+                  <strong>Address:</strong> 585 Bicycle Path, 11776, Port Jefferson Station, United States<br />
+                  <strong>Phone:</strong> +1 (631) 555-0100
                 </p>
               </Card>
             </section>

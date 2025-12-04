@@ -198,16 +198,16 @@ const PrivacyPolicy = () => {
             <div className="mt-4 p-4 bg-muted/30 rounded-lg space-y-2">
               <p className="text-muted-foreground"><strong>Data Protection Officer</strong></p>
               <p className="text-muted-foreground">Email: privacy@lexingtoncapital.com</p>
-              <p className="text-muted-foreground">Phone: +44 20 1234 5678</p>
-              <p className="text-muted-foreground">Address: 123 Financial District, London, EC2N 1HQ, United Kingdom</p>
+              <p className="text-muted-foreground">Phone: +1 (631) 555-0100</p>
+              <p className="text-muted-foreground">Address: 585 Bicycle Path, 11776, Port Jefferson Station, United States</p>
             </div>
           </section>
 
           <section className="border-t border-border pt-6">
             <p className="text-sm text-muted-foreground">
               <strong>Regulatory Information:</strong> Lexington Capital Investing is authorized and regulated by the Financial 
-              Conduct Authority (FCA) under registration number FRN 123456. We are committed to maintaining the highest standards 
-              of data protection and privacy in accordance with UK GDPR and the Data Protection Act 2018.
+              Conduct Authority (FCA) under registration number FRN 600410. We are committed to maintaining the highest standards 
+              of data protection and privacy in accordance with applicable data protection laws.
             </p>
           </section>
         </div>

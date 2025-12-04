@@ -74,61 +74,15 @@ const Regulatory = () => {
                   </div>
                 </div>
                 <div className="md:w-3/4">
-                  <h3 className="text-2xl font-bold mb-2">United Kingdom - FCA</h3>
-                  <p className="text-muted-foreground mb-4">Financial Conduct Authority</p>
+                  <h3 className="text-2xl font-bold mb-2">United States - Headquarters</h3>
+                  <p className="text-muted-foreground mb-4">Primary Business Location</p>
                   <div className="space-y-2 text-sm">
-                    <p><strong>Entity:</strong> Lexington Capital UK Limited</p>
+                    <p><strong>Entity:</strong> Lexington Capital Holdings LLC</p>
                     <p><strong>Registration:</strong> Authorized and regulated by the FCA</p>
-                    <p><strong>License Number:</strong> FCA 987654</p>
-                    <p><strong>Address:</strong> 123 Financial District, Canary Wharf, London E14 5AB, UK</p>
+                    <p><strong>FCA Reference:</strong> 600410</p>
+                    <p><strong>Address:</strong> 585 Bicycle Path, 11776, Port Jefferson Station, United States</p>
                     <p className="text-foreground/90 mt-4">
-                      The FCA is the primary regulator for financial services firms in the UK, ensuring consumer protection and market integrity.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </Card>
-
-            <Card className="p-8 hover:shadow-lg transition-all border-primary/20">
-              <div className="flex flex-col md:flex-row gap-6">
-                <div className="md:w-1/4">
-                  <div className="bg-accent/20 rounded-lg p-6 h-full flex items-center justify-center">
-                    <Shield className="w-16 h-16 text-accent" />
-                  </div>
-                </div>
-                <div className="md:w-3/4">
-                  <h3 className="text-2xl font-bold mb-2">Cyprus - CySEC</h3>
-                  <p className="text-muted-foreground mb-4">Cyprus Securities and Exchange Commission</p>
-                  <div className="space-y-2 text-sm">
-                    <p><strong>Entity:</strong> Lexington Capital (CY) Limited</p>
-                    <p><strong>Registration:</strong> Licensed and regulated by CySEC</p>
-                    <p><strong>License Number:</strong> CySEC 123/45</p>
-                    <p><strong>Address:</strong> 456 Limassol Avenue, Limassol 3030, Cyprus</p>
-                    <p className="text-foreground/90 mt-4">
-                      CySEC regulation provides EU-wide regulatory coverage through MiFID II passporting rights.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </Card>
-
-            <Card className="p-8 hover:shadow-lg transition-all border-primary/20">
-              <div className="flex flex-col md:flex-row gap-6">
-                <div className="md:w-1/4">
-                  <div className="bg-trading-success/20 rounded-lg p-6 h-full flex items-center justify-center">
-                    <Shield className="w-16 h-16 text-trading-success" />
-                  </div>
-                </div>
-                <div className="md:w-3/4">
-                  <h3 className="text-2xl font-bold mb-2">Australia - ASIC</h3>
-                  <p className="text-muted-foreground mb-4">Australian Securities and Investments Commission</p>
-                  <div className="space-y-2 text-sm">
-                    <p><strong>Entity:</strong> Lexington Capital Australia Pty Ltd</p>
-                    <p><strong>Registration:</strong> Authorized and regulated by ASIC</p>
-                    <p><strong>AFSL Number:</strong> 456789</p>
-                    <p><strong>Address:</strong> 789 Collins Street, Melbourne VIC 3000, Australia</p>
-                    <p className="text-foreground/90 mt-4">
-                      ASIC ensures financial markets operate fairly, transparently, and efficiently for Australian investors.
+                      Lexington Capital Holdings operates from our headquarters in Port Jefferson Station, providing professional trading services to clients worldwide.
                     </p>
                   </div>
                 </div>
@@ -244,7 +198,6 @@ const Regulatory = () => {
           <div className="grid md:grid-cols-2 gap-6">
             {[
               { title: "Terms of Business", desc: "Our complete terms and conditions" },
-              { title: "Risk Disclosure", desc: "Important risk warnings and disclosures" },
               { title: "Privacy Policy", desc: "How we handle your personal data" },
               { title: "Conflicts of Interest Policy", desc: "How we manage conflicts" },
               { title: "Order Execution Policy", desc: "Our approach to executing client orders" },
@@ -276,11 +229,6 @@ const Regulatory = () => {
             <Link to="/contact">
               <Button size="lg" className="text-lg px-8">
                 Contact Compliance Team
-              </Button>
-            </Link>
-            <Link to="/risk-disclosure">
-              <Button size="lg" variant="outline" className="text-lg px-8">
-                Read Risk Disclosure
               </Button>
             </Link>
           </div>

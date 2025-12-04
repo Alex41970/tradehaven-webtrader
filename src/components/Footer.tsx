@@ -99,7 +99,6 @@ export const Footer = () => {
                 </Link>
               </li>
               <li><Link to="/cookies" className="hover:text-foreground transition-colors">Cookie Policy</Link></li>
-              <li><Link to="/risk-disclosure" className="hover:text-foreground transition-colors">Risk Disclosure</Link></li>
               <li><Link to="/regulatory" className="hover:text-foreground transition-colors">Regulatory</Link></li>
             </ul>
           </div>
@@ -122,15 +121,6 @@ export const Footer = () => {
               <PaymentIcon name="mastercard" label="Mastercard" />
               <PaymentIcon name="paypal" label="PayPal" />
             </div>
-          </div>
-          
-          <div className="mt-6 p-4 bg-muted/30 rounded-lg">
-            <p className="text-xs text-muted-foreground text-center">
-              <strong>Risk Warning:</strong> Trading leveraged products such as Forex and CFDs may not be suitable for all investors 
-              as they carry a high degree of risk to your capital. 76% of retail investor accounts lose money when trading CFDs. 
-              Please ensure you fully understand the risks involved and seek independent advice if necessary. 
-              Past performance is not indicative of future results.
-            </p>
           </div>
 
           {/* Regulatory Disclaimer & Reviews */}
