@@ -198,7 +198,7 @@ const PrivacyPolicy = () => {
             <div className="mt-4 p-4 bg-muted/30 rounded-lg space-y-2">
               <p className="text-muted-foreground"><strong>Data Protection Officer</strong></p>
               <p className="text-muted-foreground">Email: privacy@lexingtoncapital.com</p>
-              <p className="text-muted-foreground">Phone: +1 (631) 555-0100</p>
+              <p className="text-muted-foreground">Phone: +1 (343) 304-0557 | +44 20 8040 4627</p>
               <p className="text-muted-foreground">Address: 585 Bicycle Path, 11776, Port Jefferson Station, United States</p>
             </div>
           </section>
