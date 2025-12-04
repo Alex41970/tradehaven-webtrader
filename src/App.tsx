@@ -27,7 +27,6 @@ import Press from "./pages/Press";
 import Contact from "./pages/Contact";
 import Support from "./pages/Support";
 import CookiePolicy from "./pages/CookiePolicy";
-import RiskDisclosure from "./pages/RiskDisclosure";
 import Regulatory from "./pages/Regulatory";
 import Markets from "./pages/Markets";
 import Education from "./pages/Education";
@@ -69,7 +68,6 @@ const App = () => {
           <Route path="/contact" element={<Contact />} />
           <Route path="/support" element={<Support />} />
           <Route path="/cookies" element={<CookiePolicy />} />
-          <Route path="/risk-disclosure" element={<RiskDisclosure />} />
           <Route path="/regulatory" element={<Regulatory />} />
           <Route path="/markets" element={<Markets />} />
           <Route path="/education" element={<Education />} />
