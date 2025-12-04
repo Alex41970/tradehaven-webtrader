@@ -136,7 +136,7 @@ const CookiePolicy = () => {
               </p>
               <Card className="p-6 mt-4 bg-card/50">
                 <p className="text-foreground/90">
-                  <strong>Email:</strong> privacy@lexingtoncapital.com<br />
+                  <strong>Email:</strong> privacy@lexingtoncapitalinvesting.com<br />
                   <strong>Address:</strong> 585 Bicycle Path, 11776, Port Jefferson Station, United States<br />
                   <strong>Phone:</strong> +1 (343) 304-0557 | +44 20 8040 4627
                 </p>

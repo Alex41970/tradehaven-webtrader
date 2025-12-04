@@ -144,7 +144,7 @@ const PrivacyPolicy = () => {
               <li><strong>Right to Withdraw Consent:</strong> Withdraw consent at any time</li>
             </ul>
             <p className="text-muted-foreground leading-relaxed mt-3">
-              To exercise any of these rights, please contact our Data Protection Officer at privacy@lexingtoncapital.com
+              To exercise any of these rights, please contact our Data Protection Officer at privacy@lexingtoncapitalinvesting.com
             </p>
           </section>
 
@@ -197,7 +197,7 @@ const PrivacyPolicy = () => {
             </p>
             <div className="mt-4 p-4 bg-muted/30 rounded-lg space-y-2">
               <p className="text-muted-foreground"><strong>Data Protection Officer</strong></p>
-              <p className="text-muted-foreground">Email: privacy@lexingtoncapital.com</p>
+              <p className="text-muted-foreground">Email: privacy@lexingtoncapitalinvesting.com</p>
               <p className="text-muted-foreground">Phone: +1 (343) 304-0557 | +44 20 8040 4627</p>
               <p className="text-muted-foreground">Address: 585 Bicycle Path, 11776, Port Jefferson Station, United States</p>
             </div>
