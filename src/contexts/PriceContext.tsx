@@ -1,6 +1,7 @@
-import React, { createContext, useContext } from 'react';
+import React, { createContext, useContext, useEffect } from 'react';
 import { useSmartPriceSubscription } from '@/hooks/useSmartPriceSubscription';
-import { logger } from '@/utils/logger';
+import { useOptimizedPriceUpdates } from '@/hooks/useOptimizedPriceUpdates';
+import { supabase } from '@/integrations/supabase/client';
 
 interface PriceUpdate {
   symbol: string;
@@ -35,18 +36,44 @@ interface PriceProviderProps {
 }
 
 export const PriceProvider: React.FC<PriceProviderProps> = ({ children }) => {
-  // Use the smart price subscription hook
+  // Get real prices from server (every ~10 min)
   const {
-    prices,
+    prices: serverPrices,
     isConnected,
-    lastUpdate,
     connectionStatus,
     isUserActive,
     connectionMode,
   } = useSmartPriceSubscription();
 
+  // Client-side mock price simulation (moves every 2 seconds)
+  const { prices: mockPrices, lastUpdate, addPriceUpdates } = useOptimizedPriceUpdates();
+
+  // Fetch initial prices from database on mount
+  useEffect(() => {
+    const fetchInitialPrices = async () => {
+      const { data } = await supabase.from('assets').select('symbol, price, change_24h');
+      if (data && data.length > 0) {
+        const updates = data.map(asset => ({
+          symbol: asset.symbol,
+          price: asset.price || 0,
+          change_24h: asset.change_24h || 0,
+          timestamp: Date.now(),
+        }));
+        addPriceUpdates(updates);
+      }
+    };
+    fetchInitialPrices();
+  }, [addPriceUpdates]);
+
+  // When real prices arrive from server, feed them into mock generator
+  useEffect(() => {
+    if (serverPrices.size > 0) {
+      addPriceUpdates(Array.from(serverPrices.values()));
+    }
+  }, [serverPrices, addPriceUpdates]);
+
   const value: PriceContextType = {
-    prices,
+    prices: mockPrices, // USE MOCK PRICES THAT MOVE EVERY 2 SECONDS
     isConnected,
     lastUpdate,
     connectionStatus,
