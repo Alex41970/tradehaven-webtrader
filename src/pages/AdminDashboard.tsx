@@ -734,14 +734,26 @@ const AdminDashboard = () => {
       return sum + displayPnL;
     }, 0);
     
-    const totalClosedPnL = closedTrades.reduce((sum, trade) => {
-      return sum + (trade.pnl || 0);
-    }, 0);
+    // Calculate Gross Profit (sum of all winning closed trades)
+    const grossProfit = closedTrades
+      .filter(t => (t.pnl || 0) > 0)
+      .reduce((sum, trade) => sum + (trade.pnl || 0), 0);
+    
+    // Calculate Gross Loss (sum of all losing closed trades - will be negative)
+    const grossLoss = closedTrades
+      .filter(t => (t.pnl || 0) < 0)
+      .reduce((sum, trade) => sum + (trade.pnl || 0), 0);
+    
+    // Net P&L from closed trades
+    const netClosedPnL = grossProfit + grossLoss;
     
     return {
       activeTrades: activeTrades.length,
       closedTrades: closedTrades.length,
-      totalPnL: totalActivePnL + totalClosedPnL,
+      grossProfit,
+      grossLoss,
+      netClosedPnL,
+      totalPnL: totalActivePnL + netClosedPnL,
       activeTradesPnL: totalActivePnL
     };
   }, [trades, selectedTradeUser, getTradeDisplayData]);
@@ -975,7 +987,7 @@ const AdminDashboard = () => {
             {selectedTradeUser ? (
               <>
                 {/* Trade Status Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                       <CardTitle className="text-sm font-medium">User's Active Trades</CardTitle>
@@ -984,8 +996,8 @@ const AdminDashboard = () => {
                     <CardContent>
                       <div className="text-2xl font-bold text-green-600">{tradeStats.activeTrades}</div>
                       <p className="text-xs text-muted-foreground">
-                        P&L: <span className={tradeStats.activeTradesPnL >= 0 ? 'text-green-600' : 'text-red-600'}>
-                          ${tradeStats.activeTradesPnL.toFixed(2)}
+                        Unrealized P&L: <span className={tradeStats.activeTradesPnL >= 0 ? 'text-green-600' : 'text-red-600'}>
+                          ${tradeStats.activeTradesPnL.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </span>
                       </p>
                     </CardContent>
@@ -1001,22 +1013,55 @@ const AdminDashboard = () => {
                   </Card>
                   <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                      <CardTitle className="text-sm font-medium">Total P&L</CardTitle>
+                      <CardTitle className="text-sm font-medium">Total P&L (Active + Closed)</CardTitle>
                       <DollarSign className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
                       <div className={`text-2xl font-bold ${tradeStats.totalPnL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                        ${tradeStats.totalPnL.toFixed(2)}
+                        {tradeStats.totalPnL >= 0 ? '+' : ''}${tradeStats.totalPnL.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </div>
                     </CardContent>
                   </Card>
-                  <Card>
+                </div>
+
+                {/* P&L Breakdown Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <Card className="border-green-500/30">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                      <CardTitle className="text-sm font-medium">Filtered Trades</CardTitle>
-                      <Filter className="h-4 w-4 text-muted-foreground" />
+                      <CardTitle className="text-sm font-medium text-green-600">Gross Profit</CardTitle>
+                      <TrendingUp className="h-4 w-4 text-green-600" />
                     </CardHeader>
                     <CardContent>
-                      <div className="text-2xl font-bold">{filteredTrades.length}</div>
+                      <div className="text-2xl font-bold text-green-600">
+                        +${tradeStats.grossProfit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </div>
+                      <p className="text-xs text-muted-foreground">Sum of all winning trades</p>
+                    </CardContent>
+                  </Card>
+                  <Card className="border-red-500/30">
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium text-red-600">Gross Loss</CardTitle>
+                      <TrendingUp className="h-4 w-4 text-red-600 rotate-180" />
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold text-red-600">
+                        ${tradeStats.grossLoss.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </div>
+                      <p className="text-xs text-muted-foreground">Sum of all losing trades</p>
+                    </CardContent>
+                  </Card>
+                  <Card className={tradeStats.netClosedPnL >= 0 ? 'border-green-500/30' : 'border-red-500/30'}>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium">Net Closed P&L</CardTitle>
+                      <DollarSign className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                      <div className={`text-2xl font-bold ${tradeStats.netClosedPnL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {tradeStats.netClosedPnL >= 0 ? '+' : ''}${tradeStats.netClosedPnL.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Profit + Loss = Net
+                      </p>
                     </CardContent>
                   </Card>
                 </div>
