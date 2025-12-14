@@ -101,11 +101,10 @@ export const useTrades = () => {
     try {
       // Try WebSocket first if connected
       if (isConnected) {
-        console.log('Opening trade via WebSocket:', { assetId, symbol, tradeType, amount, leverage, openPrice, marginUsed, stopLoss, takeProfit });
+        // Opening trade via WebSocket
         await realtimeOpenTrade(assetId, symbol, tradeType, amount, leverage, openPrice, marginUsed, stopLoss, takeProfit);
       } else {
         // Fallback to direct database insertion
-        console.log('Opening trade via database (WebSocket not connected)');
         const { data, error } = await supabase
           .from('trades')
           .insert({
@@ -144,11 +143,10 @@ export const useTrades = () => {
     try {
       // Try WebSocket first if connected
       if (isConnected) {
-        console.log('Closing trade via WebSocket:', tradeId, 'at price:', closePrice);
+        // Closing trade via WebSocket
         await realtimeCloseTrade(tradeId, closePrice);
     } else {
       // Fallback to RPC (WebSocket not connected)
-      console.log('Closing trade via RPC fallback:', tradeId, 'at price:', closePrice);
       
       const { data: result, error } = await supabase
         .rpc('close_trade_with_pnl', {
@@ -163,7 +161,7 @@ export const useTrades = () => {
         throw new Error(rpcResult.error);
       }
 
-      console.log('Trade closed via RPC fallback. P&L:', rpcResult?.pnl, 'New balance:', rpcResult?.new_balance);
+      // Trade closed via RPC fallback
       
       // Refresh database data
       await fetchTrades();
@@ -177,9 +175,6 @@ export const useTrades = () => {
   };
 
   // Real-time P&L updates are now handled by the WebSocket system
-  const updateTradePnL = async (tradeId: string, currentPrice: number) => {
-    console.log('updateTradePnL called - now handled by real-time WebSocket system');
-  };
 
   // Derived data is now provided by useRealTimeTrading
 

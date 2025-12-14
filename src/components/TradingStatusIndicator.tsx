@@ -8,11 +8,6 @@ const TradingStatusIndicator: React.FC = () => {
   const [hasError, setHasError] = useState(false);
 
   useEffect(() => {
-    const checkConnection = () => {
-      const connected = tradingWebSocket.isConnected();
-      setIsConnected(connected);
-    };
-
     const handleConnectionSuccess = () => {
       setIsConnected(true);
       setHasError(false);
@@ -23,22 +18,24 @@ const TradingStatusIndicator: React.FC = () => {
       setHasError(true);
     };
 
-    // Set up event listeners
+    const handleDisconnect = () => {
+      setIsConnected(false);
+    };
+
+    // Set up event listeners (event-based, no polling)
     tradingWebSocket.on('auth_success', handleConnectionSuccess);
     tradingWebSocket.on('auth_error', handleConnectionError);
     tradingWebSocket.on('error', handleConnectionError);
+    tradingWebSocket.on('disconnect', handleDisconnect);
 
-    // Check connection status immediately
-    checkConnection();
-
-    // Set up interval to check connection status
-    const interval = setInterval(checkConnection, 2000);
+    // Check connection status once on mount
+    setIsConnected(tradingWebSocket.isConnected());
 
     return () => {
-      clearInterval(interval);
       tradingWebSocket.off('auth_success', handleConnectionSuccess);
       tradingWebSocket.off('auth_error', handleConnectionError);
       tradingWebSocket.off('error', handleConnectionError);
+      tradingWebSocket.off('disconnect', handleDisconnect);
     };
   }, []);
 
