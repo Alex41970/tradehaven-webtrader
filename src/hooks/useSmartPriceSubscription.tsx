@@ -117,7 +117,6 @@ export const useSmartPriceSubscription = (): SmartPriceSubscriptionResult => {
     const wakeRelay = async () => {
       const now = Date.now();
       if (now - lastWakeAttemptRef.current < wakeCooldownMs) {
-        logger.debug('⏸️ Wake cooldown active, skipping relay ping');
         return;
       }
 

@@ -35,8 +35,6 @@ interface PriceProviderProps {
 }
 
 export const PriceProvider: React.FC<PriceProviderProps> = ({ children }) => {
-  logger.debug('🔥 PRICE PROVIDER - Using Twelve Data WebSocket via Realtime');
-  
   // Use the smart price subscription hook
   const {
     prices,

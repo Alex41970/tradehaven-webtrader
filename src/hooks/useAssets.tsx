@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import { getActivityAwareSubscriptionManager } from "@/services/ActivityAwareSubscriptionManager";
 
 export interface Asset {
   id: string;
@@ -26,32 +25,12 @@ export const useAssets = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    console.log('🎯 useAssets hook initializing...');
+    // Simple fetch on mount - prices come via PriceContext, no need for real-time subscription
     fetchAssets();
-    
-    // Set up activity-aware real-time subscription for price updates
-    const subscriptionManager = getActivityAwareSubscriptionManager(supabase);
-    const subscriptionId = subscriptionManager.subscribe({
-      channel: 'assets-updates',
-      event: 'UPDATE',
-      schema: 'public',
-      table: 'assets',
-      callback: (payload) => {
-        console.log('🔄 Asset update received:', payload.new);
-        setAssets(prev => prev.map(asset => 
-          asset.id === payload.new.id ? payload.new as Asset : asset
-        ));
-      }
-    });
-
-    return () => {
-      subscriptionManager.unsubscribe(subscriptionId);
-    };
   }, []);
 
   const fetchAssets = async () => {
     try {
-      console.log('📊 Starting to fetch assets from database...');
       const { data, error } = await supabase
         .from('assets')
         .select('*')
@@ -59,7 +38,6 @@ export const useAssets = () => {
         .order('symbol', { ascending: true });
 
       if (error) {
-        console.error('❌ Error fetching assets:', error);
         toast({
           title: "Error",
           description: "Failed to fetch trading assets",
@@ -68,10 +46,9 @@ export const useAssets = () => {
         return;
       }
 
-      console.log(`✅ Successfully fetched ${data?.length || 0} assets from database`);
       setAssets(data as Asset[] || []);
     } catch (error) {
-      console.error('❌ Unexpected error fetching assets:', error);
+      // Silent fail - assets will be empty
     } finally {
       setLoading(false);
     }
@@ -88,13 +65,11 @@ export const useAssets = () => {
         .eq('id', assetId);
 
       if (error) {
-        console.error('Error updating asset price:', error);
         return false;
       }
 
       return true;
     } catch (error) {
-      console.error('Error:', error);
       return false;
     }
   };
