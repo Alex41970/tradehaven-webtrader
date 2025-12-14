@@ -241,6 +241,27 @@ export const useSmartPriceSubscription = (): SmartPriceSubscriptionResult => {
     };
   }, [isUserActive]);
 
+  // Keep edge function alive with periodic pings
+  useEffect(() => {
+    if (!isUserActive || document.hidden) return;
+
+    const keepAlive = async () => {
+      try {
+        await supabase.functions.invoke('websocket-price-relay');
+      } catch {
+        // Silent fail - next ping will retry
+      }
+    };
+
+    // Initial ping
+    keepAlive();
+
+    // Keep alive every 45 seconds (before 60s timeout)
+    const interval = setInterval(keepAlive, 45000);
+
+    return () => clearInterval(interval);
+  }, [isUserActive]);
+
   return {
     prices,
     isConnected,

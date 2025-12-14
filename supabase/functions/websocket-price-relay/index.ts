@@ -167,7 +167,7 @@ async function broadcastPriceUpdate(symbol: string, price: number, change24h: nu
         'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`
       },
       body: JSON.stringify({
-        channel: 'realtime:price-updates',
+        channel: 'price-updates',
         event: 'price',
         payload
       })
@@ -191,7 +191,7 @@ async function broadcastConnectionMode() {
         'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`
       },
       body: JSON.stringify({
-        channel: 'realtime:price-updates',
+        channel: 'price-updates',
         event: 'connection_mode',
         payload: { mode: connectionMode, timestamp: Date.now() }
       })
