@@ -112,8 +112,7 @@ export const useBotStatus = () => {
         },
         loading: false,
       });
-    } catch (error) {
-      console.error('Error fetching bot status:', error);
+    } catch {
       setBotStatus(prev => ({ ...prev, loading: false, isConnected: false }));
     }
   };
@@ -145,8 +144,7 @@ export const useBotStatus = () => {
 
       await fetchBotStatus();
       return true;
-    } catch (error) {
-      console.error('Error activating license:', error);
+    } catch {
       toast({
         title: "Activation Error",
         description: "Failed to activate license. Please try again.",
@@ -171,8 +169,7 @@ export const useBotStatus = () => {
         title: "Bot Paused",
         description: "Trading bot has been paused.",
       });
-    } catch (error) {
-      console.error('Error pausing bot:', error);
+    } catch {
       toast({
         title: "Error",
         description: "Failed to pause bot.",
@@ -196,8 +193,7 @@ export const useBotStatus = () => {
         title: "Bot Resumed",
         description: "Trading bot has been resumed.",
       });
-    } catch (error) {
-      console.error('Error resuming bot:', error);
+    } catch {
       toast({
         title: "Error",
         description: "Failed to resume bot.",
@@ -240,8 +236,7 @@ export const useBotStatus = () => {
         title: "Bot Disconnected",
         description: "Trading bot has been disconnected.",
       });
-    } catch (error) {
-      console.error('Error disconnecting bot:', error);
+    } catch {
       toast({
         title: "Error",
         description: "Failed to disconnect bot.",
@@ -276,8 +271,7 @@ export const useBotStatus = () => {
         title: "Settings Saved",
         description: "Bot settings have been updated successfully.",
       });
-    } catch (error) {
-      console.error('Error updating bot settings:', error);
+    } catch {
       toast({
         title: "Error",
         description: "Failed to save bot settings.",

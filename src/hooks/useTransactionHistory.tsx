@@ -76,7 +76,6 @@ export const useTransactionHistory = () => {
         .order('created_at', { ascending: false });
 
       if (depositsError) {
-        console.error('Error fetching deposits:', depositsError);
         toast({
           title: "Error",
           description: "Failed to fetch deposit history",
@@ -94,7 +93,6 @@ export const useTransactionHistory = () => {
         .order('created_at', { ascending: false });
 
       if (withdrawalsError) {
-        console.error('Error fetching withdrawals:', withdrawalsError);
         toast({
           title: "Error",
           description: "Failed to fetch withdrawal history",
@@ -103,8 +101,8 @@ export const useTransactionHistory = () => {
       } else {
         setWithdrawals(withdrawalsData as WithdrawalRequest[] || []);
       }
-    } catch (error) {
-      console.error('Error fetching transactions:', error);
+    } catch {
+      // Silent fail
     } finally {
       setLoading(false);
     }
@@ -122,7 +120,6 @@ export const useTransactionHistory = () => {
       table: 'deposit_requests',
       filter: `user_id=eq.${user.id}`,
       callback: (payload) => {
-        console.log('Deposit request update:', payload);
         if (payload.eventType === 'INSERT') {
           setDeposits(prev => [payload.new as DepositRequest, ...prev]);
         } else if (payload.eventType === 'UPDATE') {
@@ -140,7 +137,6 @@ export const useTransactionHistory = () => {
       table: 'withdrawal_requests',
       filter: `user_id=eq.${user.id}`,
       callback: (payload) => {
-        console.log('Withdrawal request update:', payload);
         if (payload.eventType === 'INSERT') {
           setWithdrawals(prev => [payload.new as WithdrawalRequest, ...prev]);
         } else if (payload.eventType === 'UPDATE') {
