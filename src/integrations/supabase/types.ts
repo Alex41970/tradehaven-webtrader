@@ -83,6 +83,48 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_trading_settings: {
+        Row: {
+          admin_id: string
+          created_at: string | null
+          id: string
+          market_close_time: string | null
+          market_closed: boolean
+          market_open_time: string | null
+          price_intensity: string
+          trading_days: string[] | null
+          trading_hours_enabled: boolean | null
+          trading_timezone: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          admin_id: string
+          created_at?: string | null
+          id?: string
+          market_close_time?: string | null
+          market_closed?: boolean
+          market_open_time?: string | null
+          price_intensity?: string
+          trading_days?: string[] | null
+          trading_hours_enabled?: boolean | null
+          trading_timezone?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          admin_id?: string
+          created_at?: string | null
+          id?: string
+          market_close_time?: string | null
+          market_closed?: boolean
+          market_open_time?: string | null
+          price_intensity?: string
+          trading_days?: string[] | null
+          trading_hours_enabled?: boolean | null
+          trading_timezone?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       admin_user_relationships: {
         Row: {
           admin_id: string

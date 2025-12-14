@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { BotLicenseManagement } from "@/components/BotLicenseManagement";
+import { AdminTradingSettings } from "@/components/AdminTradingSettings";
 import { ManagePaymentSettingsDialog } from "@/components/admin/ManagePaymentSettingsDialog";
 import { UserSearchSelect } from "@/components/admin/UserSearchSelect";
 import { ModifyBalanceDialog } from "@/components/admin/ModifyBalanceDialog";
@@ -786,6 +787,7 @@ const AdminDashboard = () => {
             <TabsTrigger value="trades">Trades</TabsTrigger>
             <TabsTrigger value="financial-requests">Financial Requests</TabsTrigger>
             <TabsTrigger value="bot-licenses">Bot Management</TabsTrigger>
+            <TabsTrigger value="trading-settings">Trading Controls</TabsTrigger>
           </TabsList>
 
           <TabsContent value="users" className="space-y-4">
@@ -1399,6 +1401,10 @@ const AdminDashboard = () => {
 
           <TabsContent value="bot-licenses" className="space-y-4">
             <BotLicenseManagement />
+          </TabsContent>
+
+          <TabsContent value="trading-settings" className="space-y-4">
+            <AdminTradingSettings />
           </TabsContent>
 
         </Tabs>
