@@ -83,7 +83,6 @@ const Auth = () => {
     );
 
     if (validationError) {
-      console.error('Promo code validation error:', validationError);
       toast({
         title: "Validation Error",
         description: "Unable to validate promo code. Please try again.",
