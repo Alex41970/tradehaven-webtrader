@@ -71,7 +71,6 @@ export const ManagePaymentSettingsDialog: React.FC<ManagePaymentSettingsDialogPr
         .maybeSingle();
 
       if (error) {
-        console.error('Error fetching user payment settings:', error);
         return;
       }
 
@@ -102,8 +101,7 @@ export const ManagePaymentSettingsDialog: React.FC<ManagePaymentSettingsDialogPr
           iban: ''
         });
       }
-    } catch (error) {
-      console.error('Error fetching payment settings:', error);
+    } catch {
       toast.error('Failed to load payment settings');
     } finally {
       setIsLoading(false);

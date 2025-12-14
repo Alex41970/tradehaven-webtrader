@@ -46,7 +46,6 @@ const REAL_PRICE_INTERVAL = 600000;     // 10 minutes
 const HEARTBEAT_INTERVAL = 2000;        // 2 seconds
 const DB_PERSIST_INTERVAL = 600000;     // 10 minutes
 const HEARTBEAT_LOG_INTERVAL = 30000;   // Log heartbeat every 30 seconds only
-const COORDINATOR_TTL = 30000;          // 30 seconds - coordinator lock TTL
 const INSTANCE_ID = crypto.randomUUID().slice(0, 8);
 
 let realtimeChannel: any = null;
@@ -64,7 +63,6 @@ let lastDbFlush: number = 0;
 // User presence tracking
 let activeUserCount = 0;
 let isPollingActive = false;
-let isCoordinator = false;
 let wasWokenDirectly = false; // Track if this instance was woken by a direct command
 
 // Heartbeat simulation state
@@ -137,84 +135,11 @@ async function broadcastConnectionMode() {
   });
 }
 
-// ==================== DATABASE-BACKED COORDINATOR LOCK ====================
-async function tryAcquireCoordinatorLock(): Promise<boolean> {
-  // Only instances that were woken directly can become coordinator
-  // This prevents multiple instances from all trying to coordinate
-  if (!wasWokenDirectly) {
-    return false;
-  }
-  
-  try {
-    // Use a simple upsert approach with instance_id and timestamp
-    // The coordinator with the freshest timestamp wins
-    const now = new Date().toISOString();
-    
-    // Check if there's an active coordinator
-    const { data: existingLock } = await supabase
-      .from('price_history')
-      .select('id, created_at')
-      .eq('symbol', '__COORDINATOR_LOCK__')
-      .single();
-    
-    if (existingLock) {
-      const lockAge = Date.now() - new Date(existingLock.created_at).getTime();
-      
-      // If lock is fresh (within TTL), check if it's us
-      if (lockAge < COORDINATOR_TTL) {
-        // Try to renew if we're already coordinator
-        if (isCoordinator) {
-          await supabase
-            .from('price_history')
-            .update({ created_at: now, price: 1 })
-            .eq('id', existingLock.id);
-          return true;
-        }
-        return false; // Another instance has the lock
-      }
-    }
-    
-    // Lock expired or doesn't exist - try to claim it
-    await supabase
-      .from('price_history')
-      .upsert({
-        symbol: '__COORDINATOR_LOCK__',
-        price: 1,
-        change_24h: 0,
-        snapshot_date: now.split('T')[0],
-        created_at: now
-      }, { 
-        onConflict: 'symbol,snapshot_date',
-        ignoreDuplicates: false
-      });
-    
-    isCoordinator = true;
-    return true;
-  } catch {
-    // If lock acquisition fails, don't become coordinator
-    return false;
-  }
-}
-
-async function releaseCoordinatorLock() {
-  if (!isCoordinator) return;
-  
-  try {
-    await supabase
-      .from('price_history')
-      .delete()
-      .eq('symbol', '__COORDINATOR_LOCK__');
-  } catch {
-    // Ignore errors on release
-  }
-  isCoordinator = false;
-}
-
-// ==================== HEARTBEAT (Coordinator Only) ====================
+// ==================== HEARTBEAT (Only for directly woken instances) ====================
 async function broadcastHeartbeatPrices() {
-  // Only coordinator broadcasts heartbeats
-  const hasLock = await tryAcquireCoordinatorLock();
-  if (!hasLock) {
+  // Only instances that were woken directly can broadcast heartbeats
+  // This prevents multiple instances from all broadcasting
+  if (!wasWokenDirectly) {
     return;
   }
   
@@ -235,7 +160,7 @@ async function broadcastHeartbeatPrices() {
   // Only log every 30 seconds to reduce log spam
   const now = Date.now();
   if (now - lastHeartbeatLog >= HEARTBEAT_LOG_INTERVAL) {
-    console.log(`💓 [${INSTANCE_ID}] Heartbeat: ${symbols.length} prices (coordinator)`);
+    console.log(`💓 [${INSTANCE_ID}] Heartbeat: ${symbols.length} prices${wasWokenDirectly ? ' (coordinator)' : ''}`);
     lastHeartbeatLog = now;
   }
 }
@@ -250,7 +175,6 @@ function stopHeartbeat() {
     clearInterval(heartbeatInterval);
     heartbeatInterval = null;
   }
-  releaseCoordinatorLock();
 }
 
 // ==================== REAL PRICE FETCHING ====================
@@ -283,7 +207,7 @@ async function fetchCoinGeckoPrices() {
     }
     
     console.log(`📊 [${INSTANCE_ID}] CoinGecko: ${updatedCount} prices`);
-  } catch (error) {
+  } catch {
     // Silent fail - will retry next interval
   }
 }
@@ -499,7 +423,7 @@ Deno.serve(async (req) => {
       instance: INSTANCE_ID,
       mode: connectionMode,
       activeUsers: activeUserCount,
-      isCoordinator,
+      isCoordinator: wasWokenDirectly,
       priceCount: realPrices.size
     }),
     { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

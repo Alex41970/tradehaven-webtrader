@@ -13,8 +13,8 @@ export const PriceConnectionStatus: React.FC = () => {
     try {
       const { supabase } = await import('@/integrations/supabase/client');
       await supabase.functions.invoke('websocket-price-relay');
-    } catch (error) {
-      console.error('Failed to retry:', error);
+    } catch {
+      // Silent fail
     }
   };
 

@@ -1,4 +1,3 @@
-type ActivityEventType = 'active' | 'inactive';
 type ActivityCallback = (isActive: boolean, lastActivity: Date) => void;
 
 export class UserActivityManager {
@@ -27,27 +26,18 @@ export class UserActivityManager {
     if (typeof window === 'undefined') return;
 
     const events = [
-      // Mouse events
       { element: document, event: 'mousemove' },
       { element: document, event: 'mousedown' },
       { element: document, event: 'mouseup' },
       { element: document, event: 'click' },
       { element: document, event: 'wheel' },
-      
-      // Touch events (mobile)
       { element: document, event: 'touchstart' },
       { element: document, event: 'touchmove' },
       { element: document, event: 'touchend' },
-      
-      // Keyboard events
       { element: document, event: 'keydown' },
       { element: document, event: 'keyup' },
-      
-      // Window focus events
       { element: window, event: 'focus' },
       { element: document, event: 'visibilitychange' },
-      
-      // Page navigation
       { element: window, event: 'beforeunload' },
       { element: window, event: 'load' },
     ];
@@ -58,7 +48,6 @@ export class UserActivityManager {
       this.eventListeners.push({ element, event, handler });
     });
 
-    // Handle route changes (for SPAs)
     if (window.history && window.history.pushState) {
       const originalPushState = window.history.pushState;
       window.history.pushState = (...args) => {
@@ -66,15 +55,12 @@ export class UserActivityManager {
         return originalPushState.apply(window.history, args);
       };
     }
-
-    console.log('🔔 UserActivityManager: Listening for user interactions');
   }
 
   private setupPageUnloadDetection() {
     if (typeof window === 'undefined') return;
 
     const handlePageUnload = () => {
-      console.log('📄 Page unloading - triggering immediate disconnect');
       this.triggerCompleteDisconnect();
     };
 
@@ -96,20 +82,12 @@ export class UserActivityManager {
     this.lastActivity = new Date();
     this.resetInactivityTimer();
 
-    // If coming back from complete disconnection, the activity-aware connection manager will handle reconnection
-    if (wasDisconnected) {
-      console.log('🔄 User returned from complete disconnection - smart reconnection will handle this');
-    }
-
-    // Only notify if state changed from inactive to active
     if (!wasActive) {
-      console.log('👤 User became ACTIVE at', this.lastActivity.toLocaleTimeString());
       this.notifyCallbacks();
     }
   };
 
   private resetInactivityTimer() {
-    // Clear existing timers
     if (this.inactivityTimer) {
       clearTimeout(this.inactivityTimer);
     }
@@ -117,18 +95,15 @@ export class UserActivityManager {
       clearTimeout(this.disconnectTimer);
     }
 
-    // Set inactivity timer (5 minutes)
     this.inactivityTimer = setTimeout(() => {
       const wasActive = this.isActive;
       this.isActive = false;
       
       if (wasActive) {
-        console.log('😴 User became INACTIVE after 5 minutes of no activity');
         this.notifyCallbacks();
       }
     }, this.INACTIVITY_TIMEOUT);
 
-    // Set disconnect timer (30 minutes)
     this.disconnectTimer = setTimeout(() => {
       if (!this.isActive) {
         this.triggerCompleteDisconnect();
@@ -142,12 +117,8 @@ export class UserActivityManager {
     this.isCompletelyDisconnected = true;
     this.isActive = false;
     
-    console.log('🔌 Triggering COMPLETE DISCONNECT after 30 minutes of inactivity');
-    
-    // Notify all callbacks about disconnection
     this.notifyCallbacks();
     
-    // Clear all timers
     if (this.inactivityTimer) {
       clearTimeout(this.inactivityTimer);
       this.inactivityTimer = null;
@@ -162,20 +133,16 @@ export class UserActivityManager {
     this.callbacks.forEach(callback => {
       try {
         callback(this.isActive, this.lastActivity);
-      } catch (error) {
-        console.error('Error in activity callback:', error);
+      } catch {
+        // Silent fail
       }
     });
   }
 
-  // Public API
   public subscribe(callback: ActivityCallback): () => void {
     this.callbacks.push(callback);
-    
-    // Immediately call with current state
     callback(this.isActive, this.lastActivity);
     
-    // Return unsubscribe function
     return () => {
       const index = this.callbacks.indexOf(callback);
       if (index > -1) {
@@ -214,10 +181,7 @@ export class UserActivityManager {
     
     this.eventListeners = [];
     this.callbacks = [];
-    
-    console.log('🔕 UserActivityManager: Cleaned up all listeners');
   }
 }
 
-// Singleton instance
 export const userActivityManager = new UserActivityManager();

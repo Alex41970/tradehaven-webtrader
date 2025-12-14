@@ -17,20 +17,15 @@ export const useMarginManager = () => {
   const recalculateMargins = useCallback(async (userId?: string): Promise<boolean> => {
     const targetUserId = userId || user?.id;
     if (!targetUserId) {
-      console.error('No user ID provided for margin recalculation');
       return false;
     }
 
     try {
-      console.log('Manually recalculating margins for user:', targetUserId);
-      
-      // Call the database function directly
       const { error } = await supabase.rpc('auto_recalculate_user_margins', {
         _user_id: targetUserId
       });
 
       if (error) {
-        console.error('Error recalculating margins:', error);
         toast({
           title: "Error",
           description: "Failed to recalculate margins",
@@ -39,10 +34,8 @@ export const useMarginManager = () => {
         return false;
       }
 
-      console.log('Margins recalculated successfully');
       return true;
-    } catch (error) {
-      console.error('Unexpected error during margin recalculation:', error);
+    } catch {
       toast({
         title: "Error",
         description: "Failed to recalculate margins",
@@ -62,7 +55,6 @@ export const useMarginManager = () => {
     }
 
     try {
-      // Get user profile
       const { data: profile, error: profileError } = await supabase
         .from('user_profiles')
         .select('balance, used_margin, available_margin')
@@ -73,7 +65,6 @@ export const useMarginManager = () => {
         return { consistent: false };
       }
 
-      // Get open trades
       const { data: openTrades, error: tradesError } = await supabase
         .from('trades')
         .select('margin_used')
@@ -101,8 +92,7 @@ export const useMarginManager = () => {
           balance: profile.balance
         }
       };
-    } catch (error) {
-      console.error('Error checking margin consistency:', error);
+    } catch {
       return { consistent: false };
     }
   }, [user?.id]);

@@ -45,7 +45,6 @@ export const DepositModal: React.FC<DepositModalProps> = ({ open, onOpenChange }
     if (!user) return;
 
     try {
-      // Fetch user's specific payment settings
       const { data, error } = await supabase
         .from('user_payment_settings')
         .select('*')
@@ -54,7 +53,6 @@ export const DepositModal: React.FC<DepositModalProps> = ({ open, onOpenChange }
         .maybeSingle();
 
       if (error) {
-        console.error('Error fetching user payment settings:', error);
         return;
       }
 
@@ -71,11 +69,10 @@ export const DepositModal: React.FC<DepositModalProps> = ({ open, onOpenChange }
           }) || {}
         });
       } else {
-        console.log('No payment settings configured for this user');
         setPaymentSettings(null);
       }
-    } catch (error) {
-      console.error('Error fetching payment settings:', error);
+    } catch {
+      // Silent fail
     }
   };
 
@@ -103,8 +100,7 @@ export const DepositModal: React.FC<DepositModalProps> = ({ open, onOpenChange }
       setStep(1);
       setAmount('');
       setDepositType('crypto');
-    } catch (error) {
-      console.error('Error submitting deposit request:', error);
+    } catch {
       toast.error('Failed to submit deposit request');
     } finally {
       setIsLoading(false);

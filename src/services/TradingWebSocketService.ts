@@ -46,10 +46,10 @@ export class TradingWebSocketService {
   private isReconnecting = false;
   private lastTokenRefresh = 0;
   private circuitBreakerThreshold = 10;
-  private circuitBreakerResetTime = 5 * 60 * 1000; // 5 minutes
+  private circuitBreakerResetTime = 5 * 60 * 1000;
   private lastCircuitBreakerReset = 0;
   private isUserActive = true;
-  private connecting = false; // Prevent race conditions
+  private connecting = false;
   
   private readonly wsUrl = `wss://stdfkfutgkmnaajixguz.functions.supabase.co/functions/v1/websocket-trading-updates`;
 
@@ -60,25 +60,21 @@ export class TradingWebSocketService {
   }
 
   private setupEventHandlers() {
-    this.on('auth_success', (message) => {
+    this.on('auth_success', () => {
       this.isAuthenticated = true;
       this.reconnectAttempts = 0;
       this.connectionState.quality = 'excellent';
       this.startKeepAlive();
-      
-      // Subscribe to user-specific channels after authentication
       this.subscribe(['profile_updates', 'trade_updates', 'margin_updates']);
     });
 
-    this.on('auth_error', (message) => {
-      console.error('WebSocket authentication failed:', message.message);
+    this.on('auth_error', () => {
       this.isAuthenticated = false;
       this.connectionState.quality = 'offline';
       this.stopKeepAlive();
     });
 
-    this.on('error', (message) => {
-      console.error('WebSocket error:', message.message);
+    this.on('error', () => {
       this.connectionState.quality = 'poor';
     });
 
@@ -89,7 +85,6 @@ export class TradingWebSocketService {
       this.connectionState.latency = now - pingTime;
       this.connectionState.missedPings = 0;
       
-      // Update connection quality based on latency
       if (this.connectionState.latency < 100) {
         this.connectionState.quality = 'excellent';
       } else if (this.connectionState.latency < 300) {
@@ -105,7 +100,7 @@ export class TradingWebSocketService {
       this.networkChangeHandler = () => {
         if (navigator.onLine) {
           if (!this.isConnected() && !this.isReconnecting) {
-            this.reconnectAttempts = 0; // Reset attempts on network recovery
+            this.reconnectAttempts = 0;
             this.connect();
           }
         } else {
@@ -127,9 +122,8 @@ export class TradingWebSocketService {
             this.connect();
           }
         } else {
-          // Keep connection but reduce ping frequency significantly when hidden
           this.stopKeepAlive();
-          this.startKeepAlive(300000); // Ping every 5 minutes when hidden
+          this.startKeepAlive(300000);
         }
       };
       
@@ -145,7 +139,6 @@ export class TradingWebSocketService {
         const pingTime = Date.now();
         this.ping(pingTime);
         
-        // Set timeout for pong response
         this.pingTimeout = setTimeout(() => {
           this.connectionState.missedPings++;
           
@@ -154,7 +147,7 @@ export class TradingWebSocketService {
             this.disconnect();
             this.handleReconnect();
           }
-        }, 10000); // 10 second timeout for pong
+        }, 10000);
       }
     }, interval);
   }
@@ -172,21 +165,10 @@ export class TradingWebSocketService {
   }
 
   async connect() {
-    // Add connection lock check FIRST
-    if (this.connecting) {
-      return;
-    }
+    if (this.connecting) return;
+    if (this.isReconnecting) return;
+    if (!this.isUserActive) return;
 
-    if (this.isReconnecting) {
-      return;
-    }
-
-    // Don't connect if user is inactive
-    if (!this.isUserActive) {
-      return;
-    }
-
-    // Check circuit breaker
     if (this.shouldCircuitBreakerActivate()) {
       const delay = this.circuitBreakerResetTime - (Date.now() - this.lastCircuitBreakerReset);
       setTimeout(() => this.connect(), Math.max(delay, 60000));
@@ -194,14 +176,13 @@ export class TradingWebSocketService {
     }
 
     try {
-      this.connecting = true; // Set lock
+      this.connecting = true;
       
       if (this.ws && (this.ws.readyState === WebSocket.CONNECTING || this.ws.readyState === WebSocket.OPEN)) {
         this.connecting = false;
         return;
       }
 
-      // Check if we're online
       if (typeof navigator !== 'undefined' && !navigator.onLine) {
         this.connecting = false;
         return;
@@ -210,7 +191,6 @@ export class TradingWebSocketService {
       this.isReconnecting = true;
       this.ws = new WebSocket(this.wsUrl);
 
-      // Connection timeout
       const connectionTimeout = setTimeout(() => {
         if (this.ws && this.ws.readyState === WebSocket.CONNECTING) {
           this.ws.close();
@@ -220,7 +200,7 @@ export class TradingWebSocketService {
       this.ws.onopen = async () => {
         clearTimeout(connectionTimeout);
         this.isReconnecting = false;
-        this.connecting = false; // Release lock on success
+        this.connecting = false;
         await this.authenticate();
       };
 
@@ -228,8 +208,8 @@ export class TradingWebSocketService {
         try {
           const message: TradingWebSocketMessage = JSON.parse(event.data);
           this.handleMessage(message);
-        } catch (error) {
-          console.error('Error parsing WebSocket message:', error);
+        } catch {
+          // Silent fail
         }
       };
 
@@ -237,29 +217,26 @@ export class TradingWebSocketService {
         clearTimeout(connectionTimeout);
         this.isAuthenticated = false;
         this.isReconnecting = false;
-        this.connecting = false; // Release lock on close
+        this.connecting = false;
         this.connectionState.quality = 'offline';
         this.stopKeepAlive();
         
-        // Don't reconnect if it was a manual close (code 1000)
         if (event.code !== 1000) {
           this.handleReconnect();
         }
       };
 
-      this.ws.onerror = (error) => {
+      this.ws.onerror = () => {
         clearTimeout(connectionTimeout);
-        console.error('Trading WebSocket error:', error);
         this.isAuthenticated = false;
         this.isReconnecting = false;
-        this.connecting = false; // Release lock on error
+        this.connecting = false;
         this.connectionState.quality = 'offline';
       };
 
-    } catch (error) {
-      console.error('Failed to connect to trading WebSocket:', error);
+    } catch {
       this.isReconnecting = false;
-      this.connecting = false; // Always release lock in finally
+      this.connecting = false;
       this.handleReconnect();
     }
   }
@@ -281,9 +258,8 @@ export class TradingWebSocketService {
 
   private async authenticate() {
     try {
-      // Check if token needs refresh
       const now = Date.now();
-      if (now - this.lastTokenRefresh > 55 * 60 * 1000) { // Refresh every 55 minutes
+      if (now - this.lastTokenRefresh > 55 * 60 * 1000) {
         await supabase.auth.refreshSession();
         this.lastTokenRefresh = now;
       }
@@ -291,7 +267,6 @@ export class TradingWebSocketService {
       const { data: { session } } = await supabase.auth.getSession();
       
       if (!session?.access_token) {
-        console.error('No authentication token available');
         return;
       }
 
@@ -300,9 +275,7 @@ export class TradingWebSocketService {
         token: session.access_token
       });
 
-    } catch (error) {
-      console.error('Authentication failed:', error);
-      // Retry authentication after delay
+    } catch {
       setTimeout(() => this.authenticate(), 5000);
     }
   }
@@ -312,29 +285,19 @@ export class TradingWebSocketService {
     handlers.forEach(handler => {
       try {
         handler(message);
-      } catch (error) {
-        console.error('Error in WebSocket event handler:', error);
+      } catch {
+        // Silent fail
       }
     });
   }
 
   private handleReconnect() {
-    if (this.isReconnecting) {
-      return;
-    }
+    if (this.isReconnecting) return;
+    if (typeof navigator !== 'undefined' && !navigator.onLine) return;
+    if (!this.isUserActive) return;
 
-    if (typeof navigator !== 'undefined' && !navigator.onLine) {
-      return;
-    }
-
-    // Don't reconnect if user is inactive
-    if (!this.isUserActive) {
-      return;
-    }
-
-    // Calculate delay with jittered exponential backoff
     const baseDelay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 30000);
-    const jitter = Math.random() * 1000; // Add up to 1 second jitter
+    const jitter = Math.random() * 1000;
     const delay = baseDelay + jitter;
 
     this.reconnectAttempts++;
@@ -345,9 +308,7 @@ export class TradingWebSocketService {
   }
 
   private subscribe(channels: string[]) {
-    if (!this.isAuthenticated) {
-      return;
-    }
+    if (!this.isAuthenticated) return;
 
     channels.forEach(channel => this.subscriptions.add(channel));
 
@@ -363,7 +324,6 @@ export class TradingWebSocketService {
     }
   }
 
-  // Public API methods
   on(event: string, callback: TradingWebSocketEventCallback) {
     if (!this.eventHandlers.has(event)) {
       this.eventHandlers.set(event, []);
@@ -385,9 +345,9 @@ export class TradingWebSocketService {
     return new Promise((resolve, reject) => {
       const timeout = setTimeout(() => {
         reject(new Error('Trade open timeout'));
-      }, 15000); // Increased timeout
+      }, 15000);
 
-      const handleResponse = (message: TradingWebSocketMessage) => {
+      const handleResponse = () => {
         clearTimeout(timeout);
         this.off('trade_opened', handleResponse);
         this.off('trade_error', handleError);
@@ -416,9 +376,9 @@ export class TradingWebSocketService {
     return new Promise((resolve, reject) => {
       const timeout = setTimeout(() => {
         reject(new Error('Trade close timeout'));
-      }, 15000); // Increased timeout
+      }, 15000);
 
-      const handleResponse = (message: TradingWebSocketMessage) => {
+      const handleResponse = () => {
         clearTimeout(timeout);
         this.off('trade_closed', handleResponse);
         this.off('trade_error', handleError);
@@ -459,7 +419,7 @@ export class TradingWebSocketService {
     this.stopKeepAlive();
 
     if (this.ws) {
-      this.ws.close(1000, 'Manual disconnect'); // Normal closure
+      this.ws.close(1000, 'Manual disconnect');
       this.ws = null;
     }
 
@@ -477,7 +437,6 @@ export class TradingWebSocketService {
     return { ...this.connectionState };
   }
 
-  // Activity management methods
   setUserActivity(isActive: boolean) {
     const wasActive = this.isUserActive;
     this.isUserActive = isActive;
@@ -486,29 +445,28 @@ export class TradingWebSocketService {
       if (!this.isConnected()) {
         this.connect();
       } else {
-        // Resume normal keep-alive frequency
         this.startKeepAlive(60000);
       }
     } else if (!isActive && wasActive) {
-      // Reduce keep-alive frequency but maintain connection for essential auth
-      this.startKeepAlive(300000); // Ping every 5 minutes when inactive
+      this.startKeepAlive(300000);
     }
   }
 
-  // Cleanup method for component unmount
   cleanup() {
     this.disconnect();
+    
+    if (this.visibilityChangeHandler && typeof document !== 'undefined') {
+      document.removeEventListener('visibilitychange', this.visibilityChangeHandler);
+    }
     
     if (this.networkChangeHandler && typeof window !== 'undefined') {
       window.removeEventListener('online', this.networkChangeHandler);
       window.removeEventListener('offline', this.networkChangeHandler);
     }
-    
-    if (this.visibilityChangeHandler && typeof document !== 'undefined') {
-      document.removeEventListener('visibilitychange', this.visibilityChangeHandler);
-    }
+
+    this.eventHandlers.clear();
+    this.subscriptions.clear();
   }
 }
 
-// Singleton instance
-export const tradingWebSocket = new TradingWebSocketService();
+export const tradingWebSocketService = new TradingWebSocketService();

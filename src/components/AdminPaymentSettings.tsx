@@ -3,8 +3,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Separator } from '@/components/ui/separator';
 import { Plus, Minus, Save } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -62,7 +60,6 @@ export const AdminPaymentSettings: React.FC = () => {
       }
 
       if (data) {
-        // Load crypto wallets
         const wallets = data.crypto_wallets || {};
         if (Object.keys(wallets).length > 0) {
           setCryptoWallets(
@@ -73,21 +70,19 @@ export const AdminPaymentSettings: React.FC = () => {
           );
         }
 
-        // Load bank details
         if (data.bank_wire_details && typeof data.bank_wire_details === 'object') {
-          const bankDetails = data.bank_wire_details as Record<string, string>;
+          const bankData = data.bank_wire_details as Record<string, string>;
           setBankDetails({
-            bank_name: bankDetails.bank_name || '',
-            account_holder: bankDetails.account_holder || '',
-            account_number: bankDetails.account_number || '',
-            routing_number: bankDetails.routing_number || '',
-            swift_code: bankDetails.swift_code || '',
-            iban: bankDetails.iban || ''
+            bank_name: bankData.bank_name || '',
+            account_holder: bankData.account_holder || '',
+            account_number: bankData.account_number || '',
+            routing_number: bankData.routing_number || '',
+            swift_code: bankData.swift_code || '',
+            iban: bankData.iban || ''
           });
         }
       }
-    } catch (error) {
-      console.error('Error fetching payment settings:', error);
+    } catch {
       toast.error('Failed to load payment settings');
     } finally {
       setIsLoading(false);
@@ -117,7 +112,6 @@ export const AdminPaymentSettings: React.FC = () => {
 
     setIsSaving(true);
     try {
-      // Convert crypto wallets to object format
       const cryptoWalletsObj = cryptoWallets.reduce((acc, wallet) => {
         if (wallet.currency && wallet.address) {
           acc[wallet.currency.toUpperCase()] = wallet.address;
@@ -125,7 +119,6 @@ export const AdminPaymentSettings: React.FC = () => {
         return acc;
       }, {} as Record<string, string>);
 
-      // Filter out empty bank details
       const filteredBankDetails = Object.entries(bankDetails).reduce((acc, [key, value]) => {
         if (value.trim()) {
           acc[key] = value.trim();
@@ -147,8 +140,7 @@ export const AdminPaymentSettings: React.FC = () => {
       if (error) throw error;
 
       toast.success('Payment settings saved successfully');
-    } catch (error) {
-      console.error('Error saving payment settings:', error);
+    } catch {
       toast.error('Failed to save payment settings');
     } finally {
       setIsSaving(false);
