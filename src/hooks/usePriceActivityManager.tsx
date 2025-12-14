@@ -10,8 +10,6 @@ export const usePriceActivityManager = () => {
   const { isUserActive, isCompletelyDisconnected } = useActivity();
   const { isConnected, connectionStatus } = usePrices();
 
-  console.log('📊 Price Activity Manager: Using smart connection management (no more page reloads)');
-
   return {
     isUserActive,
     isCompletelyDisconnected,

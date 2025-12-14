@@ -115,7 +115,6 @@ export const useRealtimePnL = (trades: Trade[], assets: Asset[] = [], excludeTra
           newPnL[trade.id] = Math.round(realTimePnL * 100) / 100;
         } else {
           // Last resort: Fall back to stored P&L if no price available
-          console.warn(`⚠️ No price available for ${trade.symbol}, using stored PnL`);
           newPnL[trade.id] = trade.pnl;
         }
       }

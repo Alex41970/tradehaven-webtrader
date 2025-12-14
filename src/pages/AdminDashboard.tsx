@@ -100,13 +100,10 @@ const AdminDashboard = () => {
 
   const fetchAdminData = useCallback(async () => {
     if (!user) {
-      console.log('❌ AdminDashboard: No user found - skipping data fetch');
       setError('Please log in to access admin dashboard');
       setLoading(false);
       return;
     }
-
-    console.log('🔍 AdminDashboard: Starting fetchAdminData for user:', user.id, 'email:', user.email);
     
     try {
       setLoading(true);
@@ -114,20 +111,12 @@ const AdminDashboard = () => {
 
       // Verify auth session is active
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      console.log('🔐 AdminDashboard: Session check - valid:', !!session, 'error:', sessionError);
       
       if (!session || sessionError) {
-        console.error('❌ AdminDashboard: Session invalid:', sessionError);
         setError('Authentication session expired. Please sign out and sign back in.');
         setLoading(false);
         return;
       }
-
-      // Role check is already done in useEffect before calling this function
-      console.log('✅ AdminDashboard: Role verified, proceeding with data fetch...');
-
-      console.log('✅ AdminDashboard: User authenticated as admin, fetching data...');
-      console.log('AdminDashboard: Fetching users for admin:', user.id);
       
       // First get user IDs from admin_user_relationships
       const { data: relationshipsData, error: relationshipsError } = await supabase
@@ -136,7 +125,6 @@ const AdminDashboard = () => {
         .eq('admin_id', user.id);
 
       if (relationshipsError) {
-        console.error('AdminDashboard: Error fetching user relationships:', relationshipsError);
         toast({
           title: "Error",
           description: `Failed to fetch user relationships: ${relationshipsError.message}`,
@@ -147,7 +135,6 @@ const AdminDashboard = () => {
 
       // Get user IDs and fetch their profiles
       const assignedUserIds = relationshipsData?.map(rel => rel.user_id) || [];
-      console.log('AdminDashboard: Found assigned user IDs:', assignedUserIds);
 
       let usersData = [];
       if (assignedUserIds.length > 0) {
@@ -157,7 +144,6 @@ const AdminDashboard = () => {
           .in('user_id', assignedUserIds);
 
         if (usersError) {
-          console.error('AdminDashboard: Error fetching users:', usersError);
           toast({
             title: "Error",
             description: `Failed to fetch user data: ${usersError.message}`,
@@ -169,21 +155,17 @@ const AdminDashboard = () => {
         usersData = profiles || [];
       }
 
-      console.log('AdminDashboard: Found users:', usersData?.length || 0);
-
       // Fetch trades for these users
       const userIds = usersData?.map(u => u.user_id) || [];
       let tradesData = [];
       
       if (userIds.length > 0) {
-        console.log('AdminDashboard: Fetching trades for user IDs:', userIds);
         const { data: trades, error: tradesError } = await supabase
           .from('trades')
           .select('*')
           .in('user_id', userIds);
 
         if (tradesError) {
-          console.error('AdminDashboard: Error fetching trades:', tradesError);
           throw tradesError;
         }
         
@@ -192,13 +174,11 @@ const AdminDashboard = () => {
           ...trade,
           user_email: usersData?.find(u => u.user_id === trade.user_id)?.email || 'Unknown'
         }));
-        console.log('AdminDashboard: Found trades:', tradesData.length);
       }
 
       // Fetch deposit requests for these users with user profile information
       let depositRequestsData = [];
       if (userIds.length > 0) {
-        console.log('AdminDashboard: Fetching deposit requests for user IDs:', userIds);
         const { data: deposits, error: depositsError } = await supabase
           .from('deposit_requests')
           .select(`
@@ -208,18 +188,15 @@ const AdminDashboard = () => {
           .in('user_id', userIds);
 
         if (depositsError) {
-          console.error('AdminDashboard: Error fetching deposit requests:', depositsError);
           throw depositsError;
         }
         
         depositRequestsData = deposits || [];
-        console.log('AdminDashboard: Found deposit requests:', depositRequestsData.length);
       }
 
       // Fetch withdrawal requests for these users with user profile information
       let withdrawalRequestsData = [];
       if (userIds.length > 0) {
-        console.log('AdminDashboard: Fetching withdrawal requests for user IDs:', userIds);
         const { data: withdrawals, error: withdrawalsError } = await supabase
           .from('withdrawal_requests')
           .select(`
@@ -229,12 +206,10 @@ const AdminDashboard = () => {
           .in('user_id', userIds);
 
         if (withdrawalsError) {
-          console.error('AdminDashboard: Error fetching withdrawal requests:', withdrawalsError);
           throw withdrawalsError;
         }
         
         withdrawalRequestsData = withdrawals || [];
-        console.log('AdminDashboard: Found withdrawal requests:', withdrawalRequestsData.length);
       }
 
       // Update state with fetched data
@@ -242,17 +217,7 @@ const AdminDashboard = () => {
       setTrades(tradesData || []);
       setDepositRequests(depositRequestsData || []);
       setWithdrawalRequests(withdrawalRequestsData || []);
-      
-      console.log('AdminDashboard: Successfully updated state with data');
     } catch (error: any) {
-      console.error('AdminDashboard: Error in fetchAdminData:', error);
-      console.error('AdminDashboard: Error details:', {
-        message: error?.message,
-        code: error?.code,
-        details: error?.details,
-        hint: error?.hint
-      });
-      
       let errorMessage = "Failed to load admin data";
       if (error?.message) {
         errorMessage = `${errorMessage}: ${error.message}`;
@@ -271,18 +236,12 @@ const AdminDashboard = () => {
       });
     } finally {
       setLoading(false);
-      console.log('AdminDashboard: fetchAdminData completed');
     }
   }, [user, toast]);
 
   useEffect(() => {
-    console.log('AdminDashboard: useEffect triggered - user:', !!user, 'roleLoading:', roleLoading, 'role:', role);
-    
     if (user && !roleLoading && (role === 'admin' || role === 'super_admin')) {
-      console.log('AdminDashboard: Conditions met, calling fetchAdminData');
       fetchAdminData();
-    } else {
-      console.log('AdminDashboard: Conditions not met - user:', !!user, 'roleLoading:', roleLoading, 'role:', role);
     }
   }, [user, roleLoading, role, fetchAdminData]);
 
@@ -336,7 +295,6 @@ const AdminDashboard = () => {
       });
       fetchAdminData();
     } catch (error) {
-      console.error('Error modifying balance:', error);
       toast({
         title: "Error",
         description: "Failed to modify balance",
@@ -360,7 +318,6 @@ const AdminDashboard = () => {
         .select();
 
       if (error) {
-        console.error('Error updating trade:', error);
         toast({
           title: "Error",
           description: error.message || "Failed to update trade price",
@@ -396,7 +353,6 @@ const AdminDashboard = () => {
       fetchAdminData();
 
     } catch (error) {
-      console.error('Error:', error);
       toast({
         title: "Error",
         description: "An unexpected error occurred",
@@ -417,7 +373,6 @@ const AdminDashboard = () => {
       });
 
       if (error) {
-        console.error('Error closing trade:', error);
         toast({
           title: "Error",
           description: error.message || "Failed to close trade",
@@ -446,7 +401,6 @@ const AdminDashboard = () => {
       fetchAdminData();
       setSelectedTradeForClose(null);
     } catch (error) {
-      console.error('Error:', error);
       toast({
         title: "Error",
         description: "Failed to close trade",
@@ -479,7 +433,6 @@ const AdminDashboard = () => {
       });
 
       if (error) {
-        console.error('Error creating trade:', error);
         toast({
           title: "Error",
           description: "Failed to create trade",
@@ -505,7 +458,6 @@ const AdminDashboard = () => {
       // Refresh data
       fetchAdminData();
     } catch (error) {
-      console.error('Error:', error);
       toast({
         title: "Error",
         description: "Failed to create trade",
@@ -546,7 +498,6 @@ const AdminDashboard = () => {
         }
       }
     } catch (error) {
-      console.error(`Error processing ${type} request:`, error);
       toast({
         title: "Error",
         description: `Failed to process ${type} request`,

@@ -164,7 +164,6 @@ export const WebTrader = () => {
         
         // Trigger immediate profile refresh for fast UI feedback
         handleTradeAction('open', { symbol: selectedAsset.symbol, tradeType });
-        console.log('Trade executed successfully, triggering immediate profile refresh');
       }
     } catch (error) {
       console.error('Trade execution error:', error);
@@ -223,7 +222,6 @@ export const WebTrader = () => {
           });
           // Trigger immediate profile refresh for fast UI feedback
           handleTradeAction('open', { symbol: selectedAsset.symbol, tradeType: orderData.tradeType });
-          console.log('Market order executed successfully, triggering immediate profile refresh');
         }
       } else {
         // Create pending order
@@ -265,7 +263,6 @@ export const WebTrader = () => {
       await closeTrade(tradeId, closePrice);
       // Trigger immediate profile refresh for fast UI feedback
       handleTradeAction('close', { tradeId });
-      console.log('Trade closed successfully, triggering immediate profile refresh');
     } catch (error) {
       console.error('Error closing trade:', error);
     } finally {
