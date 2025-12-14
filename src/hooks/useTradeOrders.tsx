@@ -39,7 +39,6 @@ export const useTradeOrders = () => {
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.error('Error fetching trade orders:', error);
         toast({
           title: "Error",
           description: "Failed to fetch trade orders",
@@ -49,8 +48,8 @@ export const useTradeOrders = () => {
       }
 
       setOrders(data as TradeOrder[] || []);
-    } catch (error) {
-      console.error('Error:', error);
+    } catch {
+      // Silent fail
     } finally {
       setLoading(false);
     }
@@ -108,7 +107,6 @@ export const useTradeOrders = () => {
         .single();
 
       if (error) {
-        console.error('Error creating order:', error);
         toast({
           title: "Error",
           description: "Failed to create order",
@@ -123,8 +121,7 @@ export const useTradeOrders = () => {
       });
 
       return data as TradeOrder;
-    } catch (error) {
-      console.error('Error:', error);
+    } catch {
       return null;
     }
   };
@@ -138,7 +135,6 @@ export const useTradeOrders = () => {
         .eq('user_id', user?.id);
 
       if (error) {
-        console.error('Error cancelling order:', error);
         toast({
           title: "Error",
           description: "Failed to cancel order",
@@ -153,8 +149,7 @@ export const useTradeOrders = () => {
       });
 
       return true;
-    } catch (error) {
-      console.error('Error:', error);
+    } catch {
       return false;
     }
   };

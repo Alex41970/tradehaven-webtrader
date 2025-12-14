@@ -62,7 +62,6 @@ export const PriceDebugPanel = () => {
         isFresh: ageSec ? ageSec < 15 : false
       });
     } catch (error) {
-      console.error('Diagnostics failed:', error);
       setDiagnosticResults({ error: error instanceof Error ? error.message : String(error) });
     } finally {
       setIsRunningDiagnostics(false);

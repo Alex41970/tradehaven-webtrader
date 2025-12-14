@@ -35,8 +35,7 @@ export const Portfolio = () => {
     }
     try {
       return getUpdatedAssets(assets);
-    } catch (error) {
-      console.error('Error getting updated assets:', error);
+    } catch {
       return assets;
     }
   }, [assets, getUpdatedAssets]);
@@ -69,7 +68,6 @@ export const Portfolio = () => {
   const handleCloseTrade = useCallback(async (tradeId: string, symbol: string) => {
     // Prevent multiple close attempts
     if (closingTrades.has(tradeId)) {
-      console.log('Trade already being closed:', tradeId);
       return;
     }
 
@@ -81,7 +79,6 @@ export const Portfolio = () => {
     try {
       const asset = updatedAssets.find(a => a.symbol === symbol);
       if (!asset) {
-        console.error(`Asset not found for symbol: ${symbol}`);
         toast({
           title: "Error",
           description: "Asset not found for current price",
@@ -91,7 +88,6 @@ export const Portfolio = () => {
       }
 
       if (!asset.price || isNaN(asset.price)) {
-        console.error(`Invalid price for asset ${symbol}:`, asset.price);
         toast({
           title: "Error",
           description: "Invalid asset price",
@@ -100,11 +96,9 @@ export const Portfolio = () => {
         return;
       }
 
-      console.log('Closing trade in Portfolio:', tradeId, 'at price:', asset.price);
       const success = await closeTrade(tradeId, asset.price);
       
       if (success) {
-        console.log('Trade closed successfully from Portfolio');
         // Trigger immediate profile refresh for fast UI feedback
         handleTradeAction('close', { tradeId, symbol });
         // Trade will be removed from openTrades automatically via real-time updates
@@ -117,8 +111,7 @@ export const Portfolio = () => {
           variant: "destructive",
         });
       }
-    } catch (error) {
-      console.error('Error closing trade:', error);
+    } catch {
       // Re-include trade in PnL if closing failed
       includeTradeInPnL(tradeId);
       toast({

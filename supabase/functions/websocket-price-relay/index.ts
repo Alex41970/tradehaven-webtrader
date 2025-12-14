@@ -42,12 +42,12 @@ const YAHOO_SYMBOLS: Record<string, string> = {
 };
 
 // ==================== COST OPTIMIZATION ====================
-// Real prices fetched every 10 minutes, simulated heartbeat every 2 seconds
 const REAL_PRICE_INTERVAL = 600000;     // 10 minutes
 const HEARTBEAT_INTERVAL = 2000;        // 2 seconds
 const DB_PERSIST_INTERVAL = 600000;     // 10 minutes
 const HEARTBEAT_LOG_INTERVAL = 30000;   // Log heartbeat every 30 seconds only
-const INSTANCE_ID = crypto.randomUUID().slice(0, 8); // Unique ID for this instance
+const COORDINATOR_TTL = 30000;          // 30 seconds - coordinator lock TTL
+const INSTANCE_ID = crypto.randomUUID().slice(0, 8);
 
 let realtimeChannel: any = null;
 let presenceChannel: any = null;
@@ -64,14 +64,14 @@ let lastDbFlush: number = 0;
 // User presence tracking
 let activeUserCount = 0;
 let isPollingActive = false;
-let isCoordinator = false; // Only the coordinator runs heartbeat
+let isCoordinator = false;
+let wasWokenDirectly = false; // Track if this instance was woken by a direct command
 
 // Heartbeat simulation state
 const realPrices: Map<string, { price: number; change_24h: number; lastRealUpdate: number }> = new Map();
 const simulatedPrices: Map<string, number> = new Map();
 let lastHeartbeatLog = 0;
 
-// Volatility levels by asset type
 function getVolatilityForSymbol(symbol: string): number {
   if (COINGECKO_SYMBOLS[symbol]) return 0.001;
   
@@ -137,31 +137,84 @@ async function broadcastConnectionMode() {
   });
 }
 
-// ==================== COORDINATOR LOCK ====================
-// Use a simple in-memory timestamp approach - the first instance to respond becomes coordinator
-let lastCoordinatorCheck = 0;
-const COORDINATOR_TTL = 5000; // 5 seconds - coordinator must renew
-
-async function tryBecomeCoordinator(): Promise<boolean> {
-  // Simple approach: check if we recently claimed coordinator status
-  const now = Date.now();
-  
-  // If we're already coordinator and within TTL, stay coordinator
-  if (isCoordinator && (now - lastCoordinatorCheck) < COORDINATOR_TTL) {
-    return true;
+// ==================== DATABASE-BACKED COORDINATOR LOCK ====================
+async function tryAcquireCoordinatorLock(): Promise<boolean> {
+  // Only instances that were woken directly can become coordinator
+  // This prevents multiple instances from all trying to coordinate
+  if (!wasWokenDirectly) {
+    return false;
   }
   
-  // Otherwise, claim coordinator status (first instance to claim wins for this cycle)
-  isCoordinator = true;
-  lastCoordinatorCheck = now;
-  return true;
+  try {
+    // Use a simple upsert approach with instance_id and timestamp
+    // The coordinator with the freshest timestamp wins
+    const now = new Date().toISOString();
+    
+    // Check if there's an active coordinator
+    const { data: existingLock } = await supabase
+      .from('price_history')
+      .select('id, created_at')
+      .eq('symbol', '__COORDINATOR_LOCK__')
+      .single();
+    
+    if (existingLock) {
+      const lockAge = Date.now() - new Date(existingLock.created_at).getTime();
+      
+      // If lock is fresh (within TTL), check if it's us
+      if (lockAge < COORDINATOR_TTL) {
+        // Try to renew if we're already coordinator
+        if (isCoordinator) {
+          await supabase
+            .from('price_history')
+            .update({ created_at: now, price: 1 })
+            .eq('id', existingLock.id);
+          return true;
+        }
+        return false; // Another instance has the lock
+      }
+    }
+    
+    // Lock expired or doesn't exist - try to claim it
+    await supabase
+      .from('price_history')
+      .upsert({
+        symbol: '__COORDINATOR_LOCK__',
+        price: 1,
+        change_24h: 0,
+        snapshot_date: now.split('T')[0],
+        created_at: now
+      }, { 
+        onConflict: 'symbol,snapshot_date',
+        ignoreDuplicates: false
+      });
+    
+    isCoordinator = true;
+    return true;
+  } catch {
+    // If lock acquisition fails, don't become coordinator
+    return false;
+  }
+}
+
+async function releaseCoordinatorLock() {
+  if (!isCoordinator) return;
+  
+  try {
+    await supabase
+      .from('price_history')
+      .delete()
+      .eq('symbol', '__COORDINATOR_LOCK__');
+  } catch {
+    // Ignore errors on release
+  }
+  isCoordinator = false;
 }
 
 // ==================== HEARTBEAT (Coordinator Only) ====================
 async function broadcastHeartbeatPrices() {
   // Only coordinator broadcasts heartbeats
-  const isCurrentlyCoordinator = await tryBecomeCoordinator();
-  if (!isCurrentlyCoordinator) {
+  const hasLock = await tryAcquireCoordinatorLock();
+  if (!hasLock) {
     return;
   }
   
@@ -182,15 +235,13 @@ async function broadcastHeartbeatPrices() {
   // Only log every 30 seconds to reduce log spam
   const now = Date.now();
   if (now - lastHeartbeatLog >= HEARTBEAT_LOG_INTERVAL) {
-    console.log(`💓 [${INSTANCE_ID}] Heartbeat: ${symbols.length} prices`);
+    console.log(`💓 [${INSTANCE_ID}] Heartbeat: ${symbols.length} prices (coordinator)`);
     lastHeartbeatLog = now;
   }
 }
 
 function startHeartbeat() {
   if (heartbeatInterval) return;
-  
-  console.log(`💓 [${INSTANCE_ID}] Starting heartbeat...`);
   heartbeatInterval = setInterval(broadcastHeartbeatPrices, HEARTBEAT_INTERVAL);
 }
 
@@ -198,8 +249,8 @@ function stopHeartbeat() {
   if (heartbeatInterval) {
     clearInterval(heartbeatInterval);
     heartbeatInterval = null;
-    isCoordinator = false;
   }
+  releaseCoordinatorLock();
 }
 
 // ==================== REAL PRICE FETCHING ====================
@@ -221,8 +272,8 @@ async function fetchCoinGeckoPrices() {
     for (const [coinId, priceData] of Object.entries(data)) {
       const internalSymbol = coinGeckoReversed[coinId];
       if (internalSymbol && priceData && typeof priceData === 'object') {
-        const price = priceData.usd;
-        const change = priceData.usd_24h_change || 0;
+        const price = (priceData as any).usd;
+        const change = (priceData as any).usd_24h_change || 0;
         
         realPrices.set(internalSymbol, { price, change_24h: change, lastRealUpdate: Date.now() });
         simulatedPrices.set(internalSymbol, price);
@@ -233,7 +284,7 @@ async function fetchCoinGeckoPrices() {
     
     console.log(`📊 [${INSTANCE_ID}] CoinGecko: ${updatedCount} prices`);
   } catch (error) {
-    console.error('CoinGecko error:', error);
+    // Silent fail - will retry next interval
   }
 }
 
@@ -323,7 +374,7 @@ async function flushPricesToDatabase() {
   if (pendingUpdates.size === 0) return;
   
   const now = Date.now();
-  if (now - lastDbFlush < 60000) return; // Min 1 minute between flushes
+  if (now - lastDbFlush < 60000) return;
   lastDbFlush = now;
   
   const updates = Array.from(pendingUpdates.entries()).map(([symbol, data]) => ({
@@ -339,8 +390,8 @@ async function flushPricesToDatabase() {
         .eq('symbol', update.symbol);
     }
     console.log(`💾 [${INSTANCE_ID}] Persisted ${updates.length} prices`);
-  } catch (error) {
-    console.error('DB error:', error);
+  } catch {
+    // Silent fail
   }
 }
 
@@ -379,7 +430,7 @@ function stopAllPolling() {
   console.log(`🔴 [${INSTANCE_ID}] Stopping - no users (SAVING COSTS)`);
   isPollingActive = false;
   connectionMode = 'offline';
-  isCoordinator = false;
+  wasWokenDirectly = false;
   
   stopHeartbeat();
   stopCoinGeckoPolling();
@@ -394,8 +445,6 @@ function stopAllPolling() {
 async function setupPresenceTracking() {
   if (presenceChannel) return;
   
-  console.log(`👥 [${INSTANCE_ID}] Setting up presence...`);
-  
   presenceChannel = supabase.channel('price-relay-presence');
   
   presenceChannel
@@ -403,7 +452,6 @@ async function setupPresenceTracking() {
       const state = presenceChannel.presenceState();
       const newCount = Object.keys(state).length;
       
-      // Only log on actual changes
       if (newCount !== activeUserCount) {
         console.log(`👥 [${INSTANCE_ID}] Users: ${activeUserCount} → ${newCount}`);
         
@@ -438,8 +486,10 @@ Deno.serve(async (req) => {
     // No body
   }
   
+  // Mark this instance as directly woken - only direct wakes can become coordinator
   if ((body.action === 'wake' || body.action === 'ping') && !isPollingActive) {
-    console.log(`⚡ [${INSTANCE_ID}] Wake command`);
+    wasWokenDirectly = true;
+    console.log(`⚡ [${INSTANCE_ID}] Wake command (will become coordinator)`);
     startAllPolling();
   }
   
