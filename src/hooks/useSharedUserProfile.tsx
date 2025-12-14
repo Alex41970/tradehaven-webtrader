@@ -25,9 +25,10 @@ let isInitialLoad = true;
 let subscribers = new Set<() => void>();
 let fetchPromise: Promise<UserProfile | null> | null = null;
 
-const CACHE_DURATION = 5000; // 5 second cache
-const ACTIVE_POLL_INTERVAL = 5000; // 5 seconds when trades active
-const IDLE_POLL_INTERVAL = 30000; // 30 seconds when idle
+// Cost-optimized polling intervals
+const CACHE_DURATION = 30000; // 30 second cache (was 5s)
+const ACTIVE_POLL_INTERVAL = 30000; // 30 seconds when trades active (was 5s) - 83% cost reduction
+const IDLE_POLL_INTERVAL = 60000; // 60 seconds when idle (was 30s) - 50% cost reduction
 
 export const useSharedUserProfile = (hasActiveTrades = false) => {
   const { user } = useAuth();

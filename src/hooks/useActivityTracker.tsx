@@ -19,8 +19,8 @@ export const useActivityTracker = () => {
     // Update immediately on mount
     updateActivity();
 
-    // Update every 2 minutes while user is on the page
-    const interval = setInterval(updateActivity, 120000); // 2 minutes
+    // Update every 5 minutes while user is on the page (cost optimization)
+    const interval = setInterval(updateActivity, 300000); // 5 minutes
 
     return () => clearInterval(interval);
   }, [user]);
