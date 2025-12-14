@@ -54,13 +54,15 @@ let yahooPollingInterval: number | null = null;
 let heartbeatInterval: number | null = null;
 let connectionMode: 'websocket' | 'polling' | 'offline' = 'offline';
 
-// Database update batching - only real prices
-let pendingUpdates: Array<{symbol: string, price: number, change: number}> = [];
+// Database update batching - only real prices, use Map to dedupe
+let pendingUpdates: Map<string, {price: number, change: number}> = new Map();
 let dbUpdateInterval: number | null = null;
+let lastDbFlush: number = 0;
 
 // User presence tracking for cost optimization
 let activeUserCount = 0;
 let isPollingActive = false;
+let lastHeartbeat: number = 0;
 
 // ==================== HEARTBEAT SIMULATION ====================
 // Store real prices and current simulated prices
@@ -119,15 +121,15 @@ async function broadcastPriceUpdate(symbol: string, price: number, change24h: nu
       symbol, 
       price, 
       change_24h: change24h,
-      timestamp: Date.now(), 
+      timestamp: Date.now(),
       source,
       mode: connectionMode 
     }
   });
   
-  // Only queue REAL prices for database persistence (not simulated)
+  // Only queue REAL prices for database persistence (not simulated) - dedupe by symbol
   if (source !== 'simulated') {
-    pendingUpdates.push({ symbol, price, change: change24h });
+    pendingUpdates.set(symbol, { price, change: change24h });
   }
 }
 
@@ -145,6 +147,14 @@ async function broadcastConnectionMode() {
 
 // ==================== HEARTBEAT BROADCASTING ====================
 async function broadcastHeartbeatPrices() {
+  // Guard against duplicate heartbeat calls
+  const now = Date.now();
+  if (now - lastHeartbeat < 1500) {
+    console.log('⚠️ Heartbeat skipped - too soon since last');
+    return;
+  }
+  lastHeartbeat = now;
+  
   const symbols = [...realPrices.keys()];
   
   for (const symbol of symbols) {
@@ -338,10 +348,23 @@ function stopYahooPolling() {
 
 // Persist prices to database in batches
 async function flushPricesToDatabase() {
-  if (pendingUpdates.length === 0) return;
+  if (pendingUpdates.size === 0) return;
   
-  const updates = [...pendingUpdates];
-  pendingUpdates = [];
+  // Guard against too frequent flushes
+  const now = Date.now();
+  if (now - lastDbFlush < 60000) { // Minimum 1 minute between flushes
+    console.log('⚠️ DB flush skipped - too soon since last flush');
+    return;
+  }
+  lastDbFlush = now;
+  
+  // Convert Map to array for processing
+  const updates = Array.from(pendingUpdates.entries()).map(([symbol, data]) => ({
+    symbol,
+    price: data.price,
+    change: data.change
+  }));
+  pendingUpdates.clear();
   
   try {
     for (const update of updates) {
