@@ -41,14 +41,25 @@ const YAHOO_SYMBOLS: Record<string, string> = {
   'NATGAS': 'NG=F', 'XPTUSD': 'PL=F', 'COPPER': 'HG=F'
 };
 
+// ==================== COST OPTIMIZATION ====================
+// Polling intervals optimized for cost savings
+const YAHOO_POLL_INTERVAL = 15000;      // 15 seconds (was 3s) - 80% cost reduction
+const COINGECKO_POLL_INTERVAL = 60000;  // 60 seconds (was 30s) - 50% cost reduction
+const DB_PERSIST_INTERVAL = 120000;     // 2 minutes (was 30s) - 75% cost reduction
+
 let realtimeChannel: any = null;
+let presenceChannel: any = null;
 let coingeckoPollingInterval: number | null = null;
 let yahooPollingInterval: number | null = null;
-let connectionMode: 'websocket' | 'polling' | 'offline' = 'polling';
+let connectionMode: 'websocket' | 'polling' | 'offline' = 'offline';
 
 // Database update batching
 let pendingUpdates: Array<{symbol: string, price: number, change: number}> = [];
 let dbUpdateInterval: number | null = null;
+
+// User presence tracking for cost optimization
+let activeUserCount = 0;
+let isPollingActive = false;
 
 async function broadcastPriceUpdate(symbol: string, price: number, change24h: number, source: string) {
   if (!realtimeChannel) {
@@ -130,15 +141,18 @@ async function pollCoinGecko() {
 }
 
 function startCoinGeckoPolling() {
-  console.log('🔄 Starting CoinGecko polling (every 30 seconds to respect rate limits)...');
+  if (coingeckoPollingInterval) return;
+  
+  console.log(`🔄 Starting CoinGecko polling (every ${COINGECKO_POLL_INTERVAL / 1000} seconds)...`);
   pollCoinGecko();
-  coingeckoPollingInterval = setInterval(pollCoinGecko, 30000); // 30 seconds
+  coingeckoPollingInterval = setInterval(pollCoinGecko, COINGECKO_POLL_INTERVAL);
 }
 
 function stopCoinGeckoPolling() {
   if (coingeckoPollingInterval) {
     clearInterval(coingeckoPollingInterval);
     coingeckoPollingInterval = null;
+    console.log('⏹️ Stopped CoinGecko polling');
   }
 }
 
@@ -197,15 +211,15 @@ async function pollYahooFinance() {
 function startYahooPolling() {
   if (yahooPollingInterval) return;
   
-  console.log('🔄 Starting Yahoo Finance polling (every 3 seconds)...');
+  console.log(`🔄 Starting Yahoo Finance polling (every ${YAHOO_POLL_INTERVAL / 1000} seconds)...`);
   connectionMode = 'polling';
   broadcastConnectionMode();
   
   // Initial fetch
   pollYahooFinance();
   
-  // Poll every 3 seconds
-  yahooPollingInterval = setInterval(pollYahooFinance, 3000);
+  // Poll at optimized interval
+  yahooPollingInterval = setInterval(pollYahooFinance, YAHOO_POLL_INTERVAL);
 }
 
 function stopYahooPolling() {
@@ -242,17 +256,85 @@ async function flushPricesToDatabase() {
   }
 }
 
-// Initialize all price sources
-function initializePriceSources() {
-  console.log('🚀 Initializing multi-source price feed...');
+function startDatabasePersistence() {
+  if (dbUpdateInterval) return;
+  
+  dbUpdateInterval = setInterval(flushPricesToDatabase, DB_PERSIST_INTERVAL);
+  console.log(`💾 Database persistence enabled (every ${DB_PERSIST_INTERVAL / 1000} seconds)`);
+}
+
+function stopDatabasePersistence() {
+  if (dbUpdateInterval) {
+    // Flush any remaining updates before stopping
+    flushPricesToDatabase();
+    clearInterval(dbUpdateInterval);
+    dbUpdateInterval = null;
+    console.log('⏹️ Stopped database persistence');
+  }
+}
+
+// ==================== PRESENCE-BASED COST CONTROL ====================
+// Start polling only when users are online, stop when all leave
+
+function startAllPolling() {
+  if (isPollingActive) return;
+  
+  console.log('🟢 Starting price feeds - users detected online');
+  isPollingActive = true;
+  connectionMode = 'polling';
+  
   startCoinGeckoPolling();
   startYahooPolling();
+  startDatabasePersistence();
+}
+
+function stopAllPolling() {
+  if (!isPollingActive) return;
   
-  // Start database persistence interval (every 30 seconds)
-  if (!dbUpdateInterval) {
-    dbUpdateInterval = setInterval(flushPricesToDatabase, 30000);
-    console.log('💾 Database persistence enabled (every 30 seconds)');
-  }
+  console.log('🔴 Stopping price feeds - no users online (SAVING COSTS!)');
+  isPollingActive = false;
+  connectionMode = 'offline';
+  
+  stopCoinGeckoPolling();
+  stopYahooPolling();
+  stopDatabasePersistence();
+  
+  broadcastConnectionMode();
+}
+
+async function setupPresenceTracking() {
+  if (presenceChannel) return;
+  
+  console.log('👥 Setting up user presence tracking...');
+  
+  presenceChannel = supabase.channel('price-relay-presence');
+  
+  presenceChannel
+    .on('presence', { event: 'sync' }, () => {
+      const state = presenceChannel.presenceState();
+      const newCount = Object.keys(state).length;
+      
+      console.log(`👥 Presence sync: ${newCount} active users (was ${activeUserCount})`);
+      
+      if (newCount > 0 && activeUserCount === 0) {
+        // Users came online - start polling
+        startAllPolling();
+      } else if (newCount === 0 && activeUserCount > 0) {
+        // All users left - stop polling to save costs
+        stopAllPolling();
+      }
+      
+      activeUserCount = newCount;
+    })
+    .on('presence', { event: 'join' }, ({ key, newPresences }) => {
+      console.log(`👤 User joined: ${key}, total presences: ${newPresences.length}`);
+    })
+    .on('presence', { event: 'leave' }, ({ key, leftPresences }) => {
+      console.log(`👤 User left: ${key}`);
+    })
+    .subscribe((status) => {
+      console.log(`📡 Presence channel status: ${status}`);
+    });
 }
 
 const corsHeaders = {
@@ -265,20 +347,41 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
   
-  // Initialize on first request
-  if (!coingeckoPollingInterval && !yahooPollingInterval) {
-    initializePriceSources();
+  // Setup presence tracking on first request
+  await setupPresenceTracking();
+  
+  // Parse request body to check for wake command
+  let body = {};
+  try {
+    body = await req.json();
+  } catch {
+    // No body or invalid JSON, that's fine
+  }
+  
+  // If a user is waking the relay, start polling immediately
+  // (presence sync may take a moment)
+  if (body.action === 'wake' && !isPollingActive) {
+    console.log('⚡ Wake command received - starting polling immediately');
+    startAllPolling();
   }
   
   return new Response(
     JSON.stringify({ 
-      status: 'running', 
+      status: isPollingActive ? 'running' : 'idle',
       mode: connectionMode,
+      active_users: activeUserCount,
       coingecko_polling: coingeckoPollingInterval !== null,
       yahoo_polling: yahooPollingInterval !== null,
+      db_persistence: dbUpdateInterval !== null,
       crypto_symbols: Object.keys(COINGECKO_SYMBOLS).length,
       yahoo_symbols: Object.keys(YAHOO_SYMBOLS).length,
       total_symbols: Object.keys(COINGECKO_SYMBOLS).length + Object.keys(YAHOO_SYMBOLS).length,
+      cost_optimizations: {
+        yahoo_poll_interval_seconds: YAHOO_POLL_INTERVAL / 1000,
+        coingecko_poll_interval_seconds: COINGECKO_POLL_INTERVAL / 1000,
+        db_persist_interval_seconds: DB_PERSIST_INTERVAL / 1000,
+        presence_based_polling: true
+      },
       timestamp: Date.now()
     }), 
     { headers: { 'Content-Type': 'application/json', ...corsHeaders }}
