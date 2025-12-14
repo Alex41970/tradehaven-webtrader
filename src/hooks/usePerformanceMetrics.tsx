@@ -264,14 +264,10 @@ export const useProfessionalMetrics = (trades: Trade[], balance: number) => {
     };
   }, [trades, balance, selectedPeriod]);
 
-  // Force recalculation every 500ms for real-time updates
+  // Update lastUpdated when metrics change (no polling needed)
   useEffect(() => {
-    const interval = setInterval(() => {
-      setLastUpdated(new Date());
-    }, 500);
-
-    return () => clearInterval(interval);
-  }, []);
+    setLastUpdated(new Date());
+  }, [metrics]);
 
   return {
     metrics,

@@ -114,9 +114,8 @@ export const useSharedUserProfile = (hasActiveTrades = false) => {
     // Initial fetch
     fetchProfile();
 
-    // Set up polling
+    // Set up polling (silent in production)
     pollIntervalRef.current = setInterval(() => {
-      console.log(`🔄 Polling user profile (interval: ${pollInterval}ms, active trades: ${hasActiveTrades})`);
       fetchProfile(true);
     }, pollInterval);
 

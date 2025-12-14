@@ -40,9 +40,9 @@ export const useSmartPriceSubscription = (): SmartPriceSubscriptionResult => {
   const lastWakeAttemptRef = useRef<number>(0);
   
   const activityTimeoutMs = 3 * 60 * 1000; // 3 minutes
-  const staleThresholdMs = 15000; // 15 seconds
-  const checkIntervalMs = 10000; // 10 seconds
-  const wakeCooldownMs = 30000; // 30 seconds
+  const staleThresholdMs = 30000; // 30 seconds (increased from 15s - heartbeat runs every 2s)
+  const checkIntervalMs = 30000; // 30 seconds (increased from 10s - reduces overhead)
+  const wakeCooldownMs = 60000; // 60 seconds (increased from 30s)
 
   // Track user activity
   const handleUserActivity = useCallback(() => {
