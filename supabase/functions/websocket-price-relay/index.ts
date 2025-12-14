@@ -41,25 +41,71 @@ const YAHOO_SYMBOLS: Record<string, string> = {
   'NATGAS': 'NG=F', 'XPTUSD': 'PL=F', 'COPPER': 'HG=F'
 };
 
-// ==================== COST OPTIMIZATION ====================
-// Polling intervals optimized for cost savings
-const YAHOO_POLL_INTERVAL = 15000;      // 15 seconds (was 3s) - 80% cost reduction
-const COINGECKO_POLL_INTERVAL = 60000;  // 60 seconds (was 30s) - 50% cost reduction
-const DB_PERSIST_INTERVAL = 120000;     // 2 minutes (was 30s) - 75% cost reduction
+// ==================== MASSIVE COST OPTIMIZATION ====================
+// Real prices fetched every 10 minutes, simulated heartbeat every 2 seconds
+const REAL_PRICE_INTERVAL = 600000;     // 10 minutes - fetch real prices from APIs
+const HEARTBEAT_INTERVAL = 2000;        // 2 seconds - simulated price movements
+const DB_PERSIST_INTERVAL = 600000;     // 10 minutes - only persist real prices
 
 let realtimeChannel: any = null;
 let presenceChannel: any = null;
 let coingeckoPollingInterval: number | null = null;
 let yahooPollingInterval: number | null = null;
+let heartbeatInterval: number | null = null;
 let connectionMode: 'websocket' | 'polling' | 'offline' = 'offline';
 
-// Database update batching
+// Database update batching - only real prices
 let pendingUpdates: Array<{symbol: string, price: number, change: number}> = [];
 let dbUpdateInterval: number | null = null;
 
 // User presence tracking for cost optimization
 let activeUserCount = 0;
 let isPollingActive = false;
+
+// ==================== HEARTBEAT SIMULATION ====================
+// Store real prices and current simulated prices
+const realPrices: Map<string, { price: number; change_24h: number; lastRealUpdate: number }> = new Map();
+const simulatedPrices: Map<string, number> = new Map();
+
+// Volatility levels by asset type (per tick movement as percentage)
+function getVolatilityForSymbol(symbol: string): number {
+  // Crypto - higher volatility (0.1% per tick)
+  if (COINGECKO_SYMBOLS[symbol]) return 0.001;
+  
+  // Forex - very low volatility (0.01% per tick)
+  const forexSymbols = ['EURUSD', 'GBPUSD', 'USDJPY', 'USDCHF', 'AUDUSD', 'USDCAD', 'NZDUSD', 
+                        'EURGBP', 'EURJPY', 'GBPJPY', 'EURCHF', 'AUDJPY', 'EURAUD', 
+                        'USDMXN', 'USDZAR', 'USDHKD', 'USDSGD', 'USDNOK', 'USDSEK', 'USDDKK'];
+  if (forexSymbols.includes(symbol)) return 0.0001;
+  
+  // Commodities - medium-low volatility (0.03% per tick)
+  const commodities = ['XAUUSD', 'XAGUSD', 'USOIL', 'UKOIL', 'NATGAS', 'XPTUSD', 'COPPER'];
+  if (commodities.includes(symbol)) return 0.0003;
+  
+  // Indices - low volatility (0.02% per tick)
+  const indices = ['US30', 'US100', 'US500', 'UK100', 'GER40', 'FRA40', 'JPN225', 'AUS200'];
+  if (indices.includes(symbol)) return 0.0002;
+  
+  // Stocks - medium volatility (0.05% per tick)
+  return 0.0005;
+}
+
+// Generate a simulated price movement (random walk)
+function generateHeartbeatPrice(symbol: string, basePrice: number): number {
+  const volatility = getVolatilityForSymbol(symbol);
+  
+  // Random walk: price can move up or down slightly
+  const direction = Math.random() > 0.5 ? 1 : -1;
+  const magnitude = Math.random() * volatility;
+  const newPrice = basePrice * (1 + direction * magnitude);
+  
+  // Determine decimal precision based on price magnitude
+  if (newPrice < 0.01) return Number(newPrice.toPrecision(4));
+  if (newPrice < 1) return Number(newPrice.toPrecision(5));
+  if (newPrice < 100) return Number(newPrice.toFixed(4));
+  if (newPrice < 10000) return Number(newPrice.toFixed(2));
+  return Number(newPrice.toFixed(2));
+}
 
 async function broadcastPriceUpdate(symbol: string, price: number, change24h: number, source: string) {
   if (!realtimeChannel) {
@@ -79,8 +125,10 @@ async function broadcastPriceUpdate(symbol: string, price: number, change24h: nu
     }
   });
   
-  // Queue for database persistence
-  pendingUpdates.push({ symbol, price, change: change24h });
+  // Only queue REAL prices for database persistence (not simulated)
+  if (source !== 'simulated') {
+    pendingUpdates.push({ symbol, price, change: change24h });
+  }
 }
 
 async function broadcastConnectionMode() {
@@ -95,13 +143,51 @@ async function broadcastConnectionMode() {
   });
 }
 
+// ==================== HEARTBEAT BROADCASTING ====================
+async function broadcastHeartbeatPrices() {
+  const symbols = [...realPrices.keys()];
+  
+  for (const symbol of symbols) {
+    const realData = realPrices.get(symbol);
+    if (!realData) continue;
+    
+    // Get current simulated price or use real price as base
+    const currentSimulated = simulatedPrices.get(symbol) || realData.price;
+    
+    // Generate new simulated price based on last simulated (creates random walk effect)
+    const newPrice = generateHeartbeatPrice(symbol, currentSimulated);
+    simulatedPrices.set(symbol, newPrice);
+    
+    // Broadcast the simulated price
+    await broadcastPriceUpdate(symbol, newPrice, realData.change_24h, 'simulated');
+  }
+  
+  if (symbols.length > 0) {
+    console.log(`💓 Heartbeat: Updated ${symbols.length} simulated prices`);
+  }
+}
+
+function startHeartbeat() {
+  if (heartbeatInterval) return;
+  
+  console.log(`💓 Starting heartbeat simulation (every ${HEARTBEAT_INTERVAL / 1000} seconds)...`);
+  heartbeatInterval = setInterval(broadcastHeartbeatPrices, HEARTBEAT_INTERVAL);
+}
+
+function stopHeartbeat() {
+  if (heartbeatInterval) {
+    clearInterval(heartbeatInterval);
+    heartbeatInterval = null;
+    console.log('⏹️ Stopped heartbeat simulation');
+  }
+}
+
+// ==================== REAL PRICE FETCHING ====================
 // CoinGecko REST API Polling
 async function fetchCoinGeckoPrices() {
   try {
-    // Get all coin IDs
     const coinIds = Object.values(COINGECKO_SYMBOLS).join(',');
     
-    // Fetch prices with 24h change
     const response = await fetch(
       `https://api.coingecko.com/api/v3/simple/price?ids=${coinIds}&vs_currencies=usd&include_24hr_change=true`
     );
@@ -113,7 +199,6 @@ async function fetchCoinGeckoPrices() {
     
     const data = await response.json();
     
-    // Reverse mapping: CoinGecko ID -> Internal symbol
     const coinGeckoReversed = Object.fromEntries(
       Object.entries(COINGECKO_SYMBOLS).map(([k, v]) => [v, k])
     );
@@ -124,28 +209,40 @@ async function fetchCoinGeckoPrices() {
       if (internalSymbol && priceData && typeof priceData === 'object') {
         const price = priceData.usd;
         const change = priceData.usd_24h_change || 0;
+        
+        // Store real price
+        realPrices.set(internalSymbol, { 
+          price, 
+          change_24h: change, 
+          lastRealUpdate: Date.now() 
+        });
+        
+        // Reset simulated price to real price
+        simulatedPrices.set(internalSymbol, price);
+        
+        // Broadcast real price
         await broadcastPriceUpdate(internalSymbol, price, change, 'coingecko');
         updatedCount++;
       }
     }
     
-    console.log(`📊 Updated ${updatedCount} CoinGecko crypto prices`);
+    console.log(`📊 REAL prices: Updated ${updatedCount} CoinGecko crypto prices`);
   } catch (error) {
     console.error('❌ CoinGecko fetch error:', error);
   }
 }
 
 async function pollCoinGecko() {
-  console.log('📊 Polling CoinGecko...');
+  console.log('📊 Fetching REAL CoinGecko prices...');
   await fetchCoinGeckoPrices();
 }
 
 function startCoinGeckoPolling() {
   if (coingeckoPollingInterval) return;
   
-  console.log(`🔄 Starting CoinGecko polling (every ${COINGECKO_POLL_INTERVAL / 1000} seconds)...`);
+  console.log(`🔄 Starting CoinGecko polling (every ${REAL_PRICE_INTERVAL / 60000} minutes)...`);
   pollCoinGecko();
-  coingeckoPollingInterval = setInterval(pollCoinGecko, COINGECKO_POLL_INTERVAL);
+  coingeckoPollingInterval = setInterval(pollCoinGecko, REAL_PRICE_INTERVAL);
 }
 
 function stopCoinGeckoPolling() {
@@ -184,10 +281,10 @@ async function fetchYahooPrice(symbol: string): Promise<{ price: number; change:
 }
 
 async function pollYahooFinance() {
-  console.log('📊 Polling Yahoo Finance...');
+  console.log('📊 Fetching REAL Yahoo Finance prices...');
   
   const symbols = Object.entries(YAHOO_SYMBOLS);
-  const batchSize = 10; // Process in batches to avoid overwhelming the API
+  const batchSize = 10;
   
   for (let i = 0; i < symbols.length; i += batchSize) {
     const batch = symbols.slice(i, i + batchSize);
@@ -196,30 +293,39 @@ async function pollYahooFinance() {
       batch.map(async ([internalSymbol, yahooSymbol]) => {
         const result = await fetchYahooPrice(yahooSymbol);
         if (result) {
+          // Store real price
+          realPrices.set(internalSymbol, {
+            price: result.price,
+            change_24h: result.change,
+            lastRealUpdate: Date.now()
+          });
+          
+          // Reset simulated price to real price
+          simulatedPrices.set(internalSymbol, result.price);
+          
+          // Broadcast real price
           await broadcastPriceUpdate(internalSymbol, result.price, result.change, 'yahoo');
         }
       })
     );
     
-    // Small delay between batches
     if (i + batchSize < symbols.length) {
       await new Promise(resolve => setTimeout(resolve, 500));
     }
   }
+  
+  console.log(`📊 REAL prices: Updated Yahoo Finance (${symbols.length} symbols)`);
 }
 
 function startYahooPolling() {
   if (yahooPollingInterval) return;
   
-  console.log(`🔄 Starting Yahoo Finance polling (every ${YAHOO_POLL_INTERVAL / 1000} seconds)...`);
+  console.log(`🔄 Starting Yahoo Finance polling (every ${REAL_PRICE_INTERVAL / 60000} minutes)...`);
   connectionMode = 'polling';
   broadcastConnectionMode();
   
-  // Initial fetch
   pollYahooFinance();
-  
-  // Poll at optimized interval
-  yahooPollingInterval = setInterval(pollYahooFinance, YAHOO_POLL_INTERVAL);
+  yahooPollingInterval = setInterval(pollYahooFinance, REAL_PRICE_INTERVAL);
 }
 
 function stopYahooPolling() {
@@ -238,7 +344,6 @@ async function flushPricesToDatabase() {
   pendingUpdates = [];
   
   try {
-    // Batch update assets table
     for (const update of updates) {
       await supabase
         .from('assets')
@@ -250,7 +355,7 @@ async function flushPricesToDatabase() {
         .eq('symbol', update.symbol);
     }
     
-    console.log(`📦 Persisted ${updates.length} prices to database`);
+    console.log(`📦 Persisted ${updates.length} REAL prices to database`);
   } catch (error) {
     console.error('❌ Database persistence error:', error);
   }
@@ -260,12 +365,11 @@ function startDatabasePersistence() {
   if (dbUpdateInterval) return;
   
   dbUpdateInterval = setInterval(flushPricesToDatabase, DB_PERSIST_INTERVAL);
-  console.log(`💾 Database persistence enabled (every ${DB_PERSIST_INTERVAL / 1000} seconds)`);
+  console.log(`💾 Database persistence enabled (every ${DB_PERSIST_INTERVAL / 60000} minutes)`);
 }
 
 function stopDatabasePersistence() {
   if (dbUpdateInterval) {
-    // Flush any remaining updates before stopping
     flushPricesToDatabase();
     clearInterval(dbUpdateInterval);
     dbUpdateInterval = null;
@@ -274,30 +378,40 @@ function stopDatabasePersistence() {
 }
 
 // ==================== PRESENCE-BASED COST CONTROL ====================
-// Start polling only when users are online, stop when all leave
-
 function startAllPolling() {
   if (isPollingActive) return;
   
-  console.log('🟢 Starting price feeds - users detected online');
+  console.log('🟢 Starting price feeds with heartbeat simulation - users detected online');
   isPollingActive = true;
   connectionMode = 'polling';
   
+  // Fetch real prices immediately, then every 10 minutes
   startCoinGeckoPolling();
   startYahooPolling();
+  
+  // Start heartbeat simulation after a short delay to ensure we have real prices
+  setTimeout(() => {
+    startHeartbeat();
+  }, 3000);
+  
   startDatabasePersistence();
 }
 
 function stopAllPolling() {
   if (!isPollingActive) return;
   
-  console.log('🔴 Stopping price feeds - no users online (SAVING COSTS!)');
+  console.log('🔴 Stopping all price feeds - no users online (SAVING COSTS!)');
   isPollingActive = false;
   connectionMode = 'offline';
   
+  stopHeartbeat();
   stopCoinGeckoPolling();
   stopYahooPolling();
   stopDatabasePersistence();
+  
+  // Clear price caches
+  realPrices.clear();
+  simulatedPrices.clear();
   
   broadcastConnectionMode();
 }
@@ -317,10 +431,8 @@ async function setupPresenceTracking() {
       console.log(`👥 Presence sync: ${newCount} active users (was ${activeUserCount})`);
       
       if (newCount > 0 && activeUserCount === 0) {
-        // Users came online - start polling
         startAllPolling();
       } else if (newCount === 0 && activeUserCount > 0) {
-        // All users left - stop polling to save costs
         stopAllPolling();
       }
       
@@ -347,19 +459,15 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
   
-  // Setup presence tracking on first request
   await setupPresenceTracking();
   
-  // Parse request body to check for wake command
   let body = {};
   try {
     body = await req.json();
   } catch {
-    // No body or invalid JSON, that's fine
+    // No body or invalid JSON
   }
   
-  // If a user is waking the relay, start polling immediately
-  // (presence sync may take a moment)
   if (body.action === 'wake' && !isPollingActive) {
     console.log('⚡ Wake command received - starting polling immediately');
     startAllPolling();
@@ -370,17 +478,21 @@ Deno.serve(async (req) => {
       status: isPollingActive ? 'running' : 'idle',
       mode: connectionMode,
       active_users: activeUserCount,
+      heartbeat_active: heartbeatInterval !== null,
       coingecko_polling: coingeckoPollingInterval !== null,
       yahoo_polling: yahooPollingInterval !== null,
       db_persistence: dbUpdateInterval !== null,
+      real_prices_cached: realPrices.size,
+      simulated_prices_cached: simulatedPrices.size,
       crypto_symbols: Object.keys(COINGECKO_SYMBOLS).length,
       yahoo_symbols: Object.keys(YAHOO_SYMBOLS).length,
       total_symbols: Object.keys(COINGECKO_SYMBOLS).length + Object.keys(YAHOO_SYMBOLS).length,
       cost_optimizations: {
-        yahoo_poll_interval_seconds: YAHOO_POLL_INTERVAL / 1000,
-        coingecko_poll_interval_seconds: COINGECKO_POLL_INTERVAL / 1000,
-        db_persist_interval_seconds: DB_PERSIST_INTERVAL / 1000,
-        presence_based_polling: true
+        real_price_interval_minutes: REAL_PRICE_INTERVAL / 60000,
+        heartbeat_interval_seconds: HEARTBEAT_INTERVAL / 1000,
+        db_persist_interval_minutes: DB_PERSIST_INTERVAL / 60000,
+        presence_based_polling: true,
+        simulated_heartbeat: true
       },
       timestamp: Date.now()
     }), 
