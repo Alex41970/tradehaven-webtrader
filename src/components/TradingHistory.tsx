@@ -20,19 +20,35 @@ export const TradingHistory = () => {
 
   const totalTrades = closedTrades.length;
   const winningTrades = closedTrades.filter(trade => (trade.pnl || 0) > 0).length;
+  const losingTrades = closedTrades.filter(trade => (trade.pnl || 0) < 0).length;
   const winRate = totalTrades > 0 ? ((winningTrades / totalTrades) * 100).toFixed(1) : '0.0';
-  const totalPnL = closedTrades.reduce((sum, trade) => sum + (trade.pnl || 0), 0);
+  
+  // Calculate Gross Profit (sum of all winning trades)
+  const grossProfit = closedTrades
+    .filter(trade => (trade.pnl || 0) > 0)
+    .reduce((sum, trade) => sum + (trade.pnl || 0), 0);
+  
+  // Calculate Gross Loss (sum of all losing trades - will be negative)
+  const grossLoss = closedTrades
+    .filter(trade => (trade.pnl || 0) < 0)
+    .reduce((sum, trade) => sum + (trade.pnl || 0), 0);
+  
+  // Net P&L = Gross Profit + Gross Loss (grossLoss is already negative)
+  const netPnL = grossProfit + grossLoss;
 
   return (
     <div className="space-y-6">
       {/* Trading Stats */}
-      <div className="grid md:grid-cols-4 gap-4">
+      <div className="grid md:grid-cols-3 gap-4">
         <Card>
           <CardHeader>
             <CardTitle className="text-lg">Total Trades</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{totalTrades}</div>
+            <p className="text-xs text-muted-foreground mt-1">
+              {winningTrades} wins / {losingTrades} losses
+            </p>
           </CardContent>
         </Card>
         <Card>
@@ -40,7 +56,7 @@ export const TradingHistory = () => {
             <CardTitle className="text-lg">Win Rate</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">{winRate}%</div>
+            <div className="text-2xl font-bold text-trading-success">{winRate}%</div>
           </CardContent>
         </Card>
         <Card>
@@ -48,17 +64,47 @@ export const TradingHistory = () => {
             <CardTitle className="text-lg">Winning Trades</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">{winningTrades}</div>
+            <div className="text-2xl font-bold text-trading-success">{winningTrades}</div>
           </CardContent>
         </Card>
-        <Card>
+      </div>
+
+      {/* P&L Breakdown */}
+      <div className="grid md:grid-cols-3 gap-4">
+        <Card className="border-trading-success/30">
           <CardHeader>
-            <CardTitle className="text-lg">Total P&L</CardTitle>
+            <CardTitle className="text-lg text-trading-success">Gross Profit</CardTitle>
+            <CardDescription>Sum of all winning trades</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className={`text-2xl font-bold ${totalPnL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-              {totalPnL >= 0 ? '+' : ''}${totalPnL.toFixed(2)}
+            <div className="text-2xl font-bold text-trading-success">
+              +${grossProfit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
+          </CardContent>
+        </Card>
+        <Card className="border-trading-danger/30">
+          <CardHeader>
+            <CardTitle className="text-lg text-trading-danger">Gross Loss</CardTitle>
+            <CardDescription>Sum of all losing trades</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-trading-danger">
+              ${grossLoss.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </div>
+          </CardContent>
+        </Card>
+        <Card className={netPnL >= 0 ? 'border-trading-success/30' : 'border-trading-danger/30'}>
+          <CardHeader>
+            <CardTitle className="text-lg">Net P&L</CardTitle>
+            <CardDescription>Profit + Loss combined</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className={`text-2xl font-bold ${netPnL >= 0 ? 'text-trading-success' : 'text-trading-danger'}`}>
+              {netPnL >= 0 ? '+' : ''}${netPnL.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              {grossProfit > 0 ? `+$${grossProfit.toLocaleString()}` : '$0'} {grossLoss < 0 ? `- $${Math.abs(grossLoss).toLocaleString()}` : '- $0'}
+            </p>
           </CardContent>
         </Card>
       </div>
