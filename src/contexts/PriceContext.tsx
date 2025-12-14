@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect } from 'react';
 import { useSmartPriceSubscription } from '@/hooks/useSmartPriceSubscription';
 import { useOptimizedPriceUpdates } from '@/hooks/useOptimizedPriceUpdates';
+import { useTradingSettings, PriceIntensity } from '@/hooks/useTradingSettings';
 import { supabase } from '@/integrations/supabase/client';
 
 interface PriceUpdate {
@@ -19,6 +20,10 @@ interface PriceContextType {
   connectionStatus: 'connecting' | 'connected' | 'disconnected' | 'paused';
   isUserActive: boolean;
   connectionMode: 'websocket' | 'polling' | 'offline';
+  // Trading settings from admin
+  isMarketClosed: boolean;
+  canTrade: boolean;
+  priceIntensity: PriceIntensity;
 }
 
 const PriceContext = createContext<PriceContextType | undefined>(undefined);
@@ -36,6 +41,9 @@ interface PriceProviderProps {
 }
 
 export const PriceProvider: React.FC<PriceProviderProps> = ({ children }) => {
+  // Get trading settings from user's admin
+  const { priceIntensity, isMarketClosed, canTrade } = useTradingSettings();
+
   // Get real prices from server (every ~10 min)
   const {
     prices: serverPrices,
@@ -45,8 +53,11 @@ export const PriceProvider: React.FC<PriceProviderProps> = ({ children }) => {
     connectionMode,
   } = useSmartPriceSubscription();
 
-  // Client-side mock price simulation (moves every 2 seconds)
-  const { prices: mockPrices, lastUpdate, addPriceUpdates } = useOptimizedPriceUpdates();
+  // Client-side mock price simulation with admin-controlled intensity
+  const { prices: mockPrices, lastUpdate, addPriceUpdates } = useOptimizedPriceUpdates({
+    intensity: priceIntensity,
+    isMarketClosed,
+  });
 
   // Fetch initial prices from database on mount
   useEffect(() => {
@@ -73,12 +84,16 @@ export const PriceProvider: React.FC<PriceProviderProps> = ({ children }) => {
   }, [serverPrices, addPriceUpdates]);
 
   const value: PriceContextType = {
-    prices: mockPrices, // USE MOCK PRICES THAT MOVE EVERY 2 SECONDS
+    prices: mockPrices,
     isConnected,
     lastUpdate,
     connectionStatus,
     isUserActive,
     connectionMode,
+    // Expose trading settings
+    isMarketClosed,
+    canTrade,
+    priceIntensity,
   };
 
   return (

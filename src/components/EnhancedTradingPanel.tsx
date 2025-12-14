@@ -7,8 +7,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { ChevronDown, ChevronUp, Calculator, Target, Shield, Clock } from 'lucide-react';
+import { ChevronDown, ChevronUp, Calculator, Target, Shield, Clock, AlertTriangle } from 'lucide-react';
 import { Asset } from '@/hooks/useAssets';
+import { usePrices } from '@/contexts/PriceContext';
 
 interface EnhancedTradingPanelProps {
   selectedAsset: Asset;
@@ -38,6 +39,9 @@ export const EnhancedTradingPanel: React.FC<EnhancedTradingPanelProps> = ({
   userProfile,
   isExecuting,
 }) => {
+  // Get market closed status from PriceContext
+  const { isMarketClosed, canTrade } = usePrices();
+
   const [orderType, setOrderType] = useState<'market' | 'limit' | 'stop'>('market');
   const [triggerPrice, setTriggerPrice] = useState<number>(selectedAsset.price);
   const [useStopLoss, setUseStopLoss] = useState(false);
@@ -114,6 +118,16 @@ export const EnhancedTradingPanel: React.FC<EnhancedTradingPanelProps> = ({
   return (
     <Card className="bg-card/50 backdrop-blur-sm border-trading-secondary/20">
       <CardContent className="space-y-4">
+        {/* Market Closed Warning */}
+        {isMarketClosed && (
+          <div className="flex items-center gap-2 p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
+            <AlertTriangle className="h-5 w-5 text-destructive" />
+            <div>
+              <p className="text-sm font-medium text-destructive">Market Closed</p>
+              <p className="text-xs text-muted-foreground">Trading is currently unavailable</p>
+            </div>
+          </div>
+        )}
         {/* Order Type Selection */}
         <div className="space-y-2">
           <Label className="text-sm font-medium">Order Type</Label>
@@ -343,14 +357,14 @@ export const EnhancedTradingPanel: React.FC<EnhancedTradingPanelProps> = ({
         <div className="grid grid-cols-2 gap-3 pt-2">
           <Button
             onClick={() => handleTrade('BUY')}
-            disabled={isExecuting || calculations.availableAfterTrade < 0}
+            disabled={isExecuting || calculations.availableAfterTrade < 0 || !canTrade}
             className="bg-trading-success hover:bg-trading-success/90 text-white font-medium h-12"
           >
             {orderType === 'market' ? 'BUY' : `BUY ${orderType.toUpperCase()}`}
           </Button>
           <Button
             onClick={() => handleTrade('SELL')}
-            disabled={isExecuting || calculations.availableAfterTrade < 0}
+            disabled={isExecuting || calculations.availableAfterTrade < 0 || !canTrade}
             className="bg-trading-danger hover:bg-trading-danger/90 text-white font-medium h-12"
           >
             {orderType === 'market' ? 'SELL' : `SELL ${orderType.toUpperCase()}`}
