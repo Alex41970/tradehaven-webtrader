@@ -129,7 +129,7 @@ export class TradingWebSocketService {
         } else {
           // Keep connection but reduce ping frequency significantly when hidden
           this.stopKeepAlive();
-          this.startKeepAlive(120000); // Ping every 2 minutes when hidden
+          this.startKeepAlive(300000); // Ping every 5 minutes when hidden
         }
       };
       
@@ -174,7 +174,6 @@ export class TradingWebSocketService {
   async connect() {
     // Add connection lock check FIRST
     if (this.connecting) {
-      console.log('Connection already in progress, skipping');
       return;
     }
 

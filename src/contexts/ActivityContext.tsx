@@ -39,8 +39,7 @@ export const ActivityProvider = ({ children }: ActivityProviderProps) => {
       const minutesSince = Math.floor((Date.now() - lastActivityTime.getTime()) / (1000 * 60));
       setMinutesSinceLastActivity(minutesSince);
 
-      const status = state.isCompletelyDisconnected ? 'DISCONNECTED' : (isActive ? 'ACTIVE' : 'INACTIVE');
-      console.log(`🎯 Activity state changed: ${status} (${minutesSince}m ago)`);
+      // Removed console.log for cost optimization
     });
 
     // Update minutes counter every minute

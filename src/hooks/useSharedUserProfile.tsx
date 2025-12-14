@@ -141,35 +141,8 @@ export const useSharedUserProfile = (hasActiveTrades = false) => {
     };
   }, []);
 
-  // Realtime updates for user profile
-  useEffect(() => {
-    if (!user) return;
-
-    const channel = supabase
-      .channel('user-profile-updates')
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'user_profiles',
-          filter: `user_id=eq.${user.id}`,
-        },
-        (payload) => {
-          const newProfile = payload.new as UserProfile;
-          sharedProfile = newProfile;
-          sharedLastFetch = Date.now();
-          sharedLoading = false;
-          isInitialLoad = false;
-          notifySubscribers();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [user, notifySubscribers]);
+  // Removed realtime subscription - polling is sufficient and reduces costs
+  // Prices already update via PriceContext, profile updates via polling every 30-60s
 
   const forceRefresh = useCallback(async () => {
     return await fetchProfile(true);

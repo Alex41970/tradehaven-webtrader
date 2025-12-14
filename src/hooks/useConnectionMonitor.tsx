@@ -28,17 +28,14 @@ export const useConnectionMonitor = () => {
     };
 
     const handleOnline = () => {
-      console.log('Network: Online');
       updateNetworkState();
     };
 
     const handleOffline = () => {
-      console.log('Network: Offline');
       updateNetworkState();
     };
 
     const handleConnectionChange = () => {
-      console.log('Network: Connection changed');
       updateNetworkState();
     };
 
