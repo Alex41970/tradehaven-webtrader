@@ -214,6 +214,30 @@ export type Database = {
         }
         Relationships: []
       }
+      coordinator_lock: {
+        Row: {
+          expires_at: string
+          heartbeat_at: string
+          id: string
+          instance_id: string
+          locked_at: string
+        }
+        Insert: {
+          expires_at?: string
+          heartbeat_at?: string
+          id?: string
+          instance_id: string
+          locked_at?: string
+        }
+        Update: {
+          expires_at?: string
+          heartbeat_at?: string
+          id?: string
+          instance_id?: string
+          locked_at?: string
+        }
+        Relationships: []
+      }
       deposit_requests: {
         Row: {
           admin_notes: string | null
@@ -976,10 +1000,22 @@ export type Database = {
         Returns: Json
       }
       recalculate_user_margins: { Args: { _user_id: string }; Returns: Json }
+      release_coordinator_lock: {
+        Args: { p_instance_id: string }
+        Returns: boolean
+      }
+      renew_coordinator_lock: {
+        Args: { p_instance_id: string }
+        Returns: boolean
+      }
       run_system_health_check: { Args: never; Returns: Json }
       sync_admin_user_relationships: { Args: never; Returns: undefined }
       transfer_user_to_admin: {
         Args: { _new_admin_id: string; _user_id: string }
+        Returns: boolean
+      }
+      try_acquire_coordinator_lock: {
+        Args: { p_instance_id: string }
         Returns: boolean
       }
       validate_promo_code_for_signup: {

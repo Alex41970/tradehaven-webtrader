@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Wifi, WifiOff, AlertCircle } from 'lucide-react';
-import { tradingWebSocket } from '@/services/TradingWebSocketService';
+import { tradingWebSocketService } from '@/services/TradingWebSocketService';
 
 const TradingStatusIndicator: React.FC = () => {
   const [isConnected, setIsConnected] = useState(false);
@@ -23,19 +23,19 @@ const TradingStatusIndicator: React.FC = () => {
     };
 
     // Set up event listeners (event-based, no polling)
-    tradingWebSocket.on('auth_success', handleConnectionSuccess);
-    tradingWebSocket.on('auth_error', handleConnectionError);
-    tradingWebSocket.on('error', handleConnectionError);
-    tradingWebSocket.on('disconnect', handleDisconnect);
+    tradingWebSocketService.on('auth_success', handleConnectionSuccess);
+    tradingWebSocketService.on('auth_error', handleConnectionError);
+    tradingWebSocketService.on('error', handleConnectionError);
+    tradingWebSocketService.on('disconnect', handleDisconnect);
 
     // Check connection status once on mount
-    setIsConnected(tradingWebSocket.isConnected());
+    setIsConnected(tradingWebSocketService.isConnected());
 
     return () => {
-      tradingWebSocket.off('auth_success', handleConnectionSuccess);
-      tradingWebSocket.off('auth_error', handleConnectionError);
-      tradingWebSocket.off('error', handleConnectionError);
-      tradingWebSocket.off('disconnect', handleDisconnect);
+      tradingWebSocketService.off('auth_success', handleConnectionSuccess);
+      tradingWebSocketService.off('auth_error', handleConnectionError);
+      tradingWebSocketService.off('error', handleConnectionError);
+      tradingWebSocketService.off('disconnect', handleDisconnect);
     };
   }, []);
 

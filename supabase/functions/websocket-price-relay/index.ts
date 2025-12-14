@@ -41,34 +41,82 @@ const YAHOO_SYMBOLS: Record<string, string> = {
   'NATGAS': 'NG=F', 'XPTUSD': 'PL=F', 'COPPER': 'HG=F'
 };
 
-// ==================== COST OPTIMIZATION ====================
+// ==================== CONFIGURATION ====================
 const REAL_PRICE_INTERVAL = 600000;     // 10 minutes
 const HEARTBEAT_INTERVAL = 2000;        // 2 seconds
 const DB_PERSIST_INTERVAL = 600000;     // 10 minutes
-const HEARTBEAT_LOG_INTERVAL = 30000;   // Log heartbeat every 30 seconds only
+const LOCK_RENEWAL_INTERVAL = 15000;    // 15 seconds
 const INSTANCE_ID = crypto.randomUUID().slice(0, 8);
 
-let realtimeChannel: any = null;
+// ==================== STATE ====================
 let presenceChannel: any = null;
 let coingeckoPollingInterval: number | null = null;
 let yahooPollingInterval: number | null = null;
 let heartbeatInterval: number | null = null;
+let lockRenewalInterval: number | null = null;
+let dbUpdateInterval: number | null = null;
 let connectionMode: 'websocket' | 'polling' | 'offline' = 'offline';
 
-// Database update batching
 let pendingUpdates: Map<string, {price: number, change: number}> = new Map();
-let dbUpdateInterval: number | null = null;
-let lastDbFlush: number = 0;
-
-// User presence tracking
+let lastDbFlush = 0;
 let activeUserCount = 0;
-let isPollingActive = false;
+let isCoordinator = false;
 
-// Heartbeat simulation state
 const realPrices: Map<string, { price: number; change_24h: number; lastRealUpdate: number }> = new Map();
 const simulatedPrices: Map<string, number> = new Map();
-let lastHeartbeatLog = 0;
 
+// ==================== COORDINATOR LOCK ====================
+async function tryBecomeCoordinator(): Promise<boolean> {
+  try {
+    const { data, error } = await supabase.rpc('try_acquire_coordinator_lock', {
+      p_instance_id: INSTANCE_ID
+    });
+    
+    if (error) {
+      console.log(`⚠️ [${INSTANCE_ID}] Lock acquisition error: ${error.message}`);
+      return false;
+    }
+    
+    return data === true;
+  } catch (e) {
+    console.log(`⚠️ [${INSTANCE_ID}] Lock acquisition failed`);
+    return false;
+  }
+}
+
+async function renewLock(): Promise<boolean> {
+  try {
+    const { data, error } = await supabase.rpc('renew_coordinator_lock', {
+      p_instance_id: INSTANCE_ID
+    });
+    
+    if (error || !data) {
+      console.log(`⚠️ [${INSTANCE_ID}] Lost coordinator lock - stopping`);
+      await stopAllPolling();
+      isCoordinator = false;
+      return false;
+    }
+    
+    return true;
+  } catch {
+    console.log(`⚠️ [${INSTANCE_ID}] Lock renewal failed - stopping`);
+    await stopAllPolling();
+    isCoordinator = false;
+    return false;
+  }
+}
+
+async function releaseLock(): Promise<void> {
+  try {
+    await supabase.rpc('release_coordinator_lock', {
+      p_instance_id: INSTANCE_ID
+    });
+  } catch {
+    // Silent fail - lock will expire anyway
+  }
+}
+
+// ==================== VOLATILITY ====================
 function getVolatilityForSymbol(symbol: string): number {
   if (COINGECKO_SYMBOLS[symbol]) return 0.001;
   
@@ -99,23 +147,34 @@ function generateHeartbeatPrice(symbol: string, basePrice: number): number {
   return Number(newPrice.toFixed(2));
 }
 
+// ==================== BROADCASTING (HTTP API) ====================
 async function broadcastPriceUpdate(symbol: string, price: number, change24h: number, source: string) {
-  if (!realtimeChannel) {
-    realtimeChannel = supabase.channel('price-updates');
-    await realtimeChannel.subscribe();
+  const payload = { 
+    symbol, 
+    price, 
+    change_24h: change24h,
+    timestamp: Date.now(),
+    source,
+    mode: connectionMode 
+  };
+
+  try {
+    await fetch(`${SUPABASE_URL}/realtime/v1/api/broadcast`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': SUPABASE_SERVICE_ROLE_KEY,
+        'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`
+      },
+      body: JSON.stringify({
+        channel: 'realtime:price-updates',
+        event: 'price',
+        payload
+      })
+    });
+  } catch {
+    // Silent fail - next broadcast will succeed
   }
-  await realtimeChannel.send({
-    type: 'broadcast',
-    event: 'price',
-    payload: { 
-      symbol, 
-      price, 
-      change_24h: change24h,
-      timestamp: Date.now(),
-      source,
-      mode: connectionMode 
-    }
-  });
   
   if (source !== 'simulated') {
     pendingUpdates.set(symbol, { price, change: change24h });
@@ -123,23 +182,28 @@ async function broadcastPriceUpdate(symbol: string, price: number, change24h: nu
 }
 
 async function broadcastConnectionMode() {
-  if (!realtimeChannel) {
-    realtimeChannel = supabase.channel('price-updates');
-    await realtimeChannel.subscribe();
+  try {
+    await fetch(`${SUPABASE_URL}/realtime/v1/api/broadcast`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': SUPABASE_SERVICE_ROLE_KEY,
+        'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`
+      },
+      body: JSON.stringify({
+        channel: 'realtime:price-updates',
+        event: 'connection_mode',
+        payload: { mode: connectionMode, timestamp: Date.now() }
+      })
+    });
+  } catch {
+    // Silent fail
   }
-  await realtimeChannel.send({
-    type: 'broadcast',
-    event: 'connection_mode',
-    payload: { mode: connectionMode, timestamp: Date.now() }
-  });
 }
 
 // ==================== HEARTBEAT ====================
 async function broadcastHeartbeatPrices() {
-  // Only broadcast if we're actively polling (presence-based)
-  if (!isPollingActive || activeUserCount === 0) {
-    return;
-  }
+  if (!isCoordinator || activeUserCount === 0) return;
   
   const symbols = [...realPrices.keys()];
   if (symbols.length === 0) return;
@@ -153,13 +217,6 @@ async function broadcastHeartbeatPrices() {
     simulatedPrices.set(symbol, newPrice);
     
     await broadcastPriceUpdate(symbol, newPrice, realData.change_24h, 'simulated');
-  }
-  
-  // Only log every 30 seconds to reduce log spam
-  const now = Date.now();
-  if (now - lastHeartbeatLog >= HEARTBEAT_LOG_INTERVAL) {
-    console.log(`💓 [${INSTANCE_ID}] Heartbeat: ${symbols.length} prices`);
-    lastHeartbeatLog = now;
   }
 }
 
@@ -177,6 +234,8 @@ function stopHeartbeat() {
 
 // ==================== REAL PRICE FETCHING ====================
 async function fetchCoinGeckoPrices() {
+  if (!isCoordinator) return;
+  
   try {
     const coinIds = Object.values(COINGECKO_SYMBOLS).join(',');
     const response = await fetch(
@@ -246,6 +305,8 @@ async function fetchYahooPrice(symbol: string): Promise<{ price: number; change:
 }
 
 async function pollYahooFinance() {
+  if (!isCoordinator) return;
+  
   const symbols = Object.entries(YAHOO_SYMBOLS);
   const batchSize = 10;
   
@@ -292,8 +353,9 @@ function stopYahooPolling() {
   }
 }
 
+// ==================== DATABASE PERSISTENCE ====================
 async function flushPricesToDatabase() {
-  if (pendingUpdates.size === 0) return;
+  if (!isCoordinator || pendingUpdates.size === 0) return;
   
   const now = Date.now();
   if (now - lastDbFlush < 60000) return;
@@ -330,27 +392,47 @@ function stopDatabasePersistence() {
   }
 }
 
-// ==================== PRESENCE-BASED CONTROL ====================
-function startAllPolling() {
-  if (isPollingActive) return;
+// ==================== COORDINATOR LIFECYCLE ====================
+async function startAllPolling() {
+  if (isCoordinator) return;
   
-  console.log(`🟢 [${INSTANCE_ID}] Starting price feeds`);
-  isPollingActive = true;
+  // Try to become coordinator using database lock
+  const acquired = await tryBecomeCoordinator();
+  
+  if (!acquired) {
+    console.log(`🔇 [${INSTANCE_ID}] Not coordinator - another instance is active`);
+    return;
+  }
+  
+  console.log(`👑 [${INSTANCE_ID}] Became coordinator - starting price feeds`);
+  isCoordinator = true;
   connectionMode = 'polling';
   
+  // Start lock renewal
+  lockRenewalInterval = setInterval(renewLock, LOCK_RENEWAL_INTERVAL);
+  
+  // Start all polling
   startCoinGeckoPolling();
   startYahooPolling();
-  
-  // Start heartbeat after prices are loaded
   setTimeout(startHeartbeat, 3000);
   startDatabasePersistence();
 }
 
-function stopAllPolling() {
-  if (!isPollingActive) return;
+async function stopAllPolling() {
+  if (!isCoordinator) return;
   
-  console.log(`🔴 [${INSTANCE_ID}] Stopping - no users (SAVING COSTS)`);
-  isPollingActive = false;
+  console.log(`🔴 [${INSTANCE_ID}] Stopping coordinator - no users`);
+  
+  // Stop lock renewal
+  if (lockRenewalInterval) {
+    clearInterval(lockRenewalInterval);
+    lockRenewalInterval = null;
+  }
+  
+  // Release the lock
+  await releaseLock();
+  
+  isCoordinator = false;
   connectionMode = 'offline';
   
   stopHeartbeat();
@@ -363,23 +445,27 @@ function stopAllPolling() {
   broadcastConnectionMode();
 }
 
+// ==================== PRESENCE TRACKING ====================
 async function setupPresenceTracking() {
   if (presenceChannel) return;
   
   presenceChannel = supabase.channel('price-relay-presence');
   
   presenceChannel
-    .on('presence', { event: 'sync' }, () => {
+    .on('presence', { event: 'sync' }, async () => {
       const state = presenceChannel.presenceState();
       const newCount = Object.keys(state).length;
       
       if (newCount !== activeUserCount) {
         console.log(`👥 [${INSTANCE_ID}] Users: ${activeUserCount} → ${newCount}`);
         
+        // User count: 0 → N (users came online)
         if (newCount > 0 && activeUserCount === 0) {
-          startAllPolling();
-        } else if (newCount === 0 && activeUserCount > 0) {
-          stopAllPolling();
+          await startAllPolling();
+        } 
+        // User count: N → 0 (all users left)
+        else if (newCount === 0 && activeUserCount > 0) {
+          await stopAllPolling();
         }
         
         activeUserCount = newCount;
@@ -388,6 +474,7 @@ async function setupPresenceTracking() {
     .subscribe();
 }
 
+// ==================== HTTP HANDLER ====================
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -400,15 +487,13 @@ Deno.serve(async (req) => {
   
   await setupPresenceTracking();
   
-  // Status endpoint - no longer triggers polling directly
-  // Polling is now purely presence-based via the sync handler
   return new Response(
     JSON.stringify({ 
       status: 'ok',
       instance: INSTANCE_ID,
       mode: connectionMode,
       activeUsers: activeUserCount,
-      isPolling: isPollingActive,
+      isCoordinator,
       priceCount: realPrices.size
     }),
     { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

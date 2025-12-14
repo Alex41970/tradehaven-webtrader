@@ -90,7 +90,6 @@ export default function PromoCodeAnalytics() {
       });
 
     } catch (error: any) {
-      console.error('Error fetching analytics:', error);
       toast({
         title: "Error",
         description: error.message || "Failed to load analytics data",
