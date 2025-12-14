@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { tradingWebSocket, TradingWebSocketMessage } from '@/services/TradingWebSocketService';
+import { tradingWebSocketService, TradingWebSocketMessage } from '@/services/TradingWebSocketService';
 import { useAuth } from './useAuth';
 import { useConnectionMonitor } from './useConnectionMonitor';
 import { useActivity } from '@/contexts/ActivityContext';
@@ -57,7 +57,7 @@ export const useRealTimeTrading = () => {
 
   // Sync activity state with trading WebSocket service
   useEffect(() => {
-    tradingWebSocket.setUserActivity(isUserActive);
+    tradingWebSocketService.setUserActivity(isUserActive);
   }, [isUserActive]);
   
   // Setup WebSocket event handlers
@@ -202,7 +202,7 @@ export const useRealTimeTrading = () => {
     };
 
     const handleConnectionQualityUpdate = () => {
-      const state = tradingWebSocket.getConnectionState();
+      const state = tradingWebSocketService.getConnectionState();
       setConnectionQuality(state.quality);
       
       if (state.quality === 'poor' && state.latency > 1000) {
@@ -215,16 +215,16 @@ export const useRealTimeTrading = () => {
     };
 
     // Register event handlers
-    tradingWebSocket.on('auth_success', handleAuthSuccess);
-    tradingWebSocket.on('auth_error', handleAuthError);
-    tradingWebSocket.on('margin_update', handleMarginUpdate);
-    tradingWebSocket.on('trade_opened', handleTradeOpened);
-    tradingWebSocket.on('trade_closed', handleTradeClosed);
-    tradingWebSocket.on('trade_error', handleTradeError);
-    tradingWebSocket.on('pong', handleConnectionQualityUpdate);
+    tradingWebSocketService.on('auth_success', handleAuthSuccess);
+    tradingWebSocketService.on('auth_error', handleAuthError);
+    tradingWebSocketService.on('margin_update', handleMarginUpdate);
+    tradingWebSocketService.on('trade_opened', handleTradeOpened);
+    tradingWebSocketService.on('trade_closed', handleTradeClosed);
+    tradingWebSocketService.on('trade_error', handleTradeError);
+    tradingWebSocketService.on('pong', handleConnectionQualityUpdate);
 
     // Connect to WebSocket
-    tradingWebSocket.connect();
+    tradingWebSocketService.connect();
 
     // Periodic connection quality check
     const qualityCheckInterval = setInterval(() => {
@@ -234,13 +234,13 @@ export const useRealTimeTrading = () => {
     // Cleanup on unmount
     return () => {
       clearInterval(qualityCheckInterval);
-      tradingWebSocket.off('auth_success', handleAuthSuccess);
-      tradingWebSocket.off('auth_error', handleAuthError);
-      tradingWebSocket.off('margin_update', handleMarginUpdate);
-      tradingWebSocket.off('trade_opened', handleTradeOpened);
-      tradingWebSocket.off('trade_closed', handleTradeClosed);
-      tradingWebSocket.off('trade_error', handleTradeError);
-      tradingWebSocket.off('pong', handleConnectionQualityUpdate);
+      tradingWebSocketService.off('auth_success', handleAuthSuccess);
+      tradingWebSocketService.off('auth_error', handleAuthError);
+      tradingWebSocketService.off('margin_update', handleMarginUpdate);
+      tradingWebSocketService.off('trade_opened', handleTradeOpened);
+      tradingWebSocketService.off('trade_closed', handleTradeClosed);
+      tradingWebSocketService.off('trade_error', handleTradeError);
+      tradingWebSocketService.off('pong', handleConnectionQualityUpdate);
     };
   }, [user]);
 
@@ -256,12 +256,12 @@ export const useRealTimeTrading = () => {
     stopLoss?: number,
     takeProfit?: number
   ) => {
-    if (!tradingWebSocket.isConnected()) {
+    if (!tradingWebSocketService.isConnected()) {
       throw new Error('Not connected to real-time trading');
     }
 
     try {
-      await tradingWebSocket.openTrade({
+      await tradingWebSocketService.openTrade({
         assetId,
         symbol,
         tradeType,
@@ -281,12 +281,12 @@ export const useRealTimeTrading = () => {
   }, []);
 
   const closeTrade = useCallback(async (tradeId: string, closePrice: number) => {
-    if (!tradingWebSocket.isConnected()) {
+    if (!tradingWebSocketService.isConnected()) {
       throw new Error('Not connected to real-time trading');
     }
 
     try {
-      await tradingWebSocket.closeTrade(tradeId, closePrice);
+      await tradingWebSocketService.closeTrade(tradeId, closePrice);
       return true;
     } catch (error) {
       console.error('Failed to close trade:', error);
