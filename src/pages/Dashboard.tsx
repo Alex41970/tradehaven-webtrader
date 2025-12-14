@@ -120,17 +120,6 @@ const Dashboard = () => {
     setSelectedTransaction(null);
   };
 
-  // Debug profile changes - add key to force re-render when profile updates
-  useEffect(() => {
-    if (profile) {
-      console.log('🔄 Dashboard profile updated:', {
-        balance: profile.balance,
-        used_margin: profile.used_margin,
-        available_margin: profile.available_margin,
-        timestamp: new Date().toISOString()
-      });
-    }
-  }, [profile?.balance, profile?.used_margin, profile?.available_margin]);
 
   // Create updated assets with real-time prices
   const updatedAssets = useMemo(() => {

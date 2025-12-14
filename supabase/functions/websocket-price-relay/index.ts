@@ -63,7 +63,6 @@ let lastDbFlush: number = 0;
 // User presence tracking
 let activeUserCount = 0;
 let isPollingActive = false;
-let wasWokenDirectly = false; // Track if this instance was woken by a direct command
 
 // Heartbeat simulation state
 const realPrices: Map<string, { price: number; change_24h: number; lastRealUpdate: number }> = new Map();
@@ -135,11 +134,10 @@ async function broadcastConnectionMode() {
   });
 }
 
-// ==================== HEARTBEAT (Only for directly woken instances) ====================
+// ==================== HEARTBEAT ====================
 async function broadcastHeartbeatPrices() {
-  // Only instances that were woken directly can broadcast heartbeats
-  // This prevents multiple instances from all broadcasting
-  if (!wasWokenDirectly) {
+  // Only broadcast if we're actively polling (presence-based)
+  if (!isPollingActive || activeUserCount === 0) {
     return;
   }
   
@@ -160,7 +158,7 @@ async function broadcastHeartbeatPrices() {
   // Only log every 30 seconds to reduce log spam
   const now = Date.now();
   if (now - lastHeartbeatLog >= HEARTBEAT_LOG_INTERVAL) {
-    console.log(`💓 [${INSTANCE_ID}] Heartbeat: ${symbols.length} prices${wasWokenDirectly ? ' (coordinator)' : ''}`);
+    console.log(`💓 [${INSTANCE_ID}] Heartbeat: ${symbols.length} prices`);
     lastHeartbeatLog = now;
   }
 }
@@ -354,7 +352,6 @@ function stopAllPolling() {
   console.log(`🔴 [${INSTANCE_ID}] Stopping - no users (SAVING COSTS)`);
   isPollingActive = false;
   connectionMode = 'offline';
-  wasWokenDirectly = false;
   
   stopHeartbeat();
   stopCoinGeckoPolling();
@@ -403,27 +400,15 @@ Deno.serve(async (req) => {
   
   await setupPresenceTracking();
   
-  let body: any = {};
-  try {
-    body = await req.json();
-  } catch {
-    // No body
-  }
-  
-  // Mark this instance as directly woken - only direct wakes can become coordinator
-  if ((body.action === 'wake' || body.action === 'ping') && !isPollingActive) {
-    wasWokenDirectly = true;
-    console.log(`⚡ [${INSTANCE_ID}] Wake command (will become coordinator)`);
-    startAllPolling();
-  }
-  
+  // Status endpoint - no longer triggers polling directly
+  // Polling is now purely presence-based via the sync handler
   return new Response(
     JSON.stringify({ 
       status: 'ok',
       instance: INSTANCE_ID,
       mode: connectionMode,
       activeUsers: activeUserCount,
-      isCoordinator: wasWokenDirectly,
+      isPolling: isPollingActive,
       priceCount: realPrices.size
     }),
     { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

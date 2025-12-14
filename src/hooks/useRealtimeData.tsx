@@ -78,41 +78,15 @@ export const useRealtimeData = () => {
  */
 export const useSystemHealth = () => {
   const runHealthCheck = useCallback(async () => {
-    try {
-      console.log('🏥 Running system health check...');
-      
-      const { data, error } = await supabase.rpc('run_system_health_check');
-      
-      if (error) {
-        console.error('Health check error:', error);
-        throw error;
-      }
-      
-      console.log('🏥 Health check results:', data);
-      return data;
-    } catch (error) {
-      console.error('Failed to run health check:', error);
-      throw error;
-    }
+    const { data, error } = await supabase.rpc('run_system_health_check');
+    if (error) throw error;
+    return data;
   }, []);
 
   const autoFixIssues = useCallback(async () => {
-    try {
-      console.log('🔧 Running auto-fix...');
-      
-      const { data, error } = await supabase.rpc('auto_fix_detected_issues');
-      
-      if (error) {
-        console.error('Auto-fix error:', error);
-        throw error;
-      }
-      
-      console.log('🔧 Auto-fix results:', data);
-      return data;
-    } catch (error) {
-      console.error('Failed to run auto-fix:', error);
-      throw error;
-    }
+    const { data, error } = await supabase.rpc('auto_fix_detected_issues');
+    if (error) throw error;
+    return data;
   }, []);
 
   return {

@@ -40,9 +40,9 @@ export const useSmartPriceSubscription = (): SmartPriceSubscriptionResult => {
   const lastWakeAttemptRef = useRef<number>(0);
   
   const activityTimeoutMs = 3 * 60 * 1000; // 3 minutes
-  const staleThresholdMs = 30000; // 30 seconds (increased from 15s - heartbeat runs every 2s)
-  const checkIntervalMs = 30000; // 30 seconds (increased from 10s - reduces overhead)
-  const wakeCooldownMs = 60000; // 60 seconds (increased from 30s)
+  const staleThresholdMs = 60000; // 60 seconds (presence-based activation, no aggressive wake needed)
+  const checkIntervalMs = 120000; // 2 minutes (reduced frequency - presence handles activation)
+  const wakeCooldownMs = 300000; // 5 minutes (greatly reduced - rely on presence)
 
   // Track user activity
   const handleUserActivity = useCallback(() => {
@@ -102,10 +102,9 @@ export const useSmartPriceSubscription = (): SmartPriceSubscriptionResult => {
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, [isUserActive]);
 
-  // Boot relay on mount + watchdog for stale prices
+  // Watchdog for stale prices - presence-based, minimal wake calls
   useEffect(() => {
     if (!isUserActive || document.hidden) {
-      // Clear watchdog when inactive
       if (watchdogTimerRef.current) {
         clearInterval(watchdogTimerRef.current);
         watchdogTimerRef.current = null;
@@ -113,47 +112,31 @@ export const useSmartPriceSubscription = (): SmartPriceSubscriptionResult => {
       return;
     }
 
-    // Immediately wake the relay on first mount
-    const wakeRelay = async () => {
-      const now = Date.now();
-      if (now - lastWakeAttemptRef.current < wakeCooldownMs) {
-        return;
-      }
-
-      lastWakeAttemptRef.current = now;
-      logger.debug('🔔 Waking websocket-price-relay...');
-      
-      try {
-        const { data, error } = await supabase.functions.invoke('websocket-price-relay', {
-          body: { action: 'ping' }
-        });
-        
-        if (error) {
-          logger.error('❌ Failed to wake relay:', error);
-        } else {
-          logger.debug('✅ Relay woken:', data);
-        }
-      } catch (err) {
-        logger.error('❌ Exception waking relay:', err);
-      }
-    };
-
-    // Wake relay immediately
-    wakeRelay();
-
-    // Start watchdog to detect stale prices
-    watchdogTimerRef.current = setInterval(() => {
+    // Only wake if prices are severely stale (5+ minutes)
+    // Presence channel subscription handles normal activation
+    const checkStalePrices = async () => {
       if (!isUserActive || document.hidden) return;
 
       const now = Date.now();
       const lastUpdateTime = lastUpdate?.getTime() || 0;
       const ageMs = now - lastUpdateTime;
 
-      if (!lastUpdate || ageMs > staleThresholdMs) {
-        logger.debug(`⚠️ Stale price detected (age: ${Math.floor(ageMs / 1000)}s), attempting wake...`);
-        wakeRelay();
+      // Only wake if severely stale AND cooldown passed
+      if (ageMs > staleThresholdMs && now - lastWakeAttemptRef.current >= wakeCooldownMs) {
+        lastWakeAttemptRef.current = now;
+        logger.debug(`⚠️ Stale prices (${Math.floor(ageMs / 1000)}s), pinging relay...`);
+        
+        try {
+          await supabase.functions.invoke('websocket-price-relay', {
+            body: { action: 'status' }
+          });
+        } catch {
+          // Silent fail - presence will handle activation
+        }
       }
-    }, checkIntervalMs);
+    };
+
+    watchdogTimerRef.current = setInterval(checkStalePrices, checkIntervalMs);
 
     return () => {
       if (watchdogTimerRef.current) {
