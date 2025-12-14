@@ -46,6 +46,7 @@ const YAHOO_SYMBOLS: Record<string, string> = {
 const REAL_PRICE_INTERVAL = 600000;     // 10 minutes
 const HEARTBEAT_INTERVAL = 2000;        // 2 seconds
 const DB_PERSIST_INTERVAL = 600000;     // 10 minutes
+const HEARTBEAT_LOG_INTERVAL = 30000;   // Log heartbeat every 30 seconds only
 const INSTANCE_ID = crypto.randomUUID().slice(0, 8); // Unique ID for this instance
 
 let realtimeChannel: any = null;
@@ -68,6 +69,7 @@ let isCoordinator = false; // Only the coordinator runs heartbeat
 // Heartbeat simulation state
 const realPrices: Map<string, { price: number; change_24h: number; lastRealUpdate: number }> = new Map();
 const simulatedPrices: Map<string, number> = new Map();
+let lastHeartbeatLog = 0;
 
 // Volatility levels by asset type
 function getVolatilityForSymbol(symbol: string): number {
@@ -177,7 +179,12 @@ async function broadcastHeartbeatPrices() {
     await broadcastPriceUpdate(symbol, newPrice, realData.change_24h, 'simulated');
   }
   
-  console.log(`💓 [${INSTANCE_ID}] Heartbeat: ${symbols.length} prices`);
+  // Only log every 30 seconds to reduce log spam
+  const now = Date.now();
+  if (now - lastHeartbeatLog >= HEARTBEAT_LOG_INTERVAL) {
+    console.log(`💓 [${INSTANCE_ID}] Heartbeat: ${symbols.length} prices`);
+    lastHeartbeatLog = now;
+  }
 }
 
 function startHeartbeat() {
