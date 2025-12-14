@@ -17,7 +17,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         setSession(session);
@@ -26,7 +25,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
     );
 
-    // THEN check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
@@ -37,13 +35,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   const cleanupAuthState = () => {
-    // Remove all Supabase auth keys from localStorage
     Object.keys(localStorage).forEach((key) => {
       if (key.startsWith('supabase.auth.') || key.includes('sb-')) {
         localStorage.removeItem(key);
       }
     });
-    // Remove from sessionStorage if in use
     Object.keys(sessionStorage || {}).forEach((key) => {
       if (key.startsWith('supabase.auth.') || key.includes('sb-')) {
         sessionStorage.removeItem(key);
@@ -53,10 +49,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const signOut = async () => {
     try {
-      // Clean up auth state first
       cleanupAuthState();
       
-      // Attempt global sign out with retry logic
       let attempts = 0;
       const maxAttempts = 3;
       
@@ -64,22 +58,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         try {
           await supabase.auth.signOut({ scope: 'global' });
           break;
-        } catch (error) {
+        } catch {
           attempts++;
-          if (attempts === maxAttempts) {
-            console.warn('Sign out failed after multiple attempts:', error);
-          } else {
-            // Wait a bit before retrying
+          if (attempts < maxAttempts) {
             await new Promise(resolve => setTimeout(resolve, 500));
           }
         }
       }
       
-      // Force page reload for clean state
       window.location.href = '/auth';
-    } catch (error) {
-      console.error('Sign out error:', error);
-      // Even if sign out fails, clean up and redirect
+    } catch {
       cleanupAuthState();
       window.location.href = '/auth';
     }

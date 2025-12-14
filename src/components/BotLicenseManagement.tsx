@@ -38,9 +38,7 @@ export const BotLicenseManagement: React.FC = () => {
     try {
       setLoading(true);
       
-      // Ensure user is authenticated before fetching
       if (!user?.id) {
-        console.error('No authenticated user found');
         toast({
           title: "Error",
           description: "Authentication required",
@@ -49,9 +47,6 @@ export const BotLicenseManagement: React.FC = () => {
         return;
       }
       
-      console.log('Fetching bot licenses for admin:', user.id);
-      
-      // Get licenses created by this admin only
       const { data: licenseData, error: licenseError } = await supabase
         .from('bot_licenses')
         .select('*')
@@ -59,25 +54,17 @@ export const BotLicenseManagement: React.FC = () => {
         .order('created_at', { ascending: false });
 
       if (licenseError) {
-        console.error('Error fetching licenses:', licenseError);
         throw licenseError;
       }
 
-      console.log('Found licenses for admin:', licenseData?.length || 0);
-
-      // Then get user emails for licenses that are in use
       const licensesWithEmails = await Promise.all(
         (licenseData || []).map(async (license) => {
           if (license.used_by_user_id) {
-            const { data: userProfile, error: profileError } = await supabase
+            const { data: userProfile } = await supabase
               .from('user_profiles')
               .select('email')
               .eq('user_id', license.used_by_user_id)
               .single();
-            
-            if (profileError) {
-              console.warn('Could not fetch user profile for license:', license.id, profileError);
-            }
             
             return {
               ...license,
@@ -89,8 +76,7 @@ export const BotLicenseManagement: React.FC = () => {
       );
 
       setLicenses(licensesWithEmails);
-    } catch (error) {
-      console.error('Error fetching licenses:', error);
+    } catch {
       toast({
         title: "Error",
         description: "Failed to load licenses. You may not have permission to view this data.",
@@ -120,8 +106,7 @@ export const BotLicenseManagement: React.FC = () => {
       setCreateModalOpen(false);
       setExpiryDate("");
       await fetchLicenses();
-    } catch (error) {
-      console.error('Error generating license:', error);
+    } catch {
       toast({
         title: "Error",
         description: "Failed to generate license",
@@ -133,7 +118,6 @@ export const BotLicenseManagement: React.FC = () => {
   const toggleLicense = async (licenseId: string, isActive: boolean) => {
     try {
       if (isActive) {
-        // If deactivating, use the enhanced function that disconnects users
         const { data, error } = await supabase.rpc('deactivate_and_disconnect_license', {
           _admin_id: user?.id,
           _license_id: licenseId,
@@ -147,7 +131,6 @@ export const BotLicenseManagement: React.FC = () => {
           description: result.message || "License deactivated successfully",
         });
       } else {
-        // Simple activation
         const { error } = await supabase
           .from('bot_licenses')
           .update({ is_active: true })
@@ -162,8 +145,7 @@ export const BotLicenseManagement: React.FC = () => {
       }
 
       await fetchLicenses();
-    } catch (error) {
-      console.error('Error toggling license:', error);
+    } catch {
       toast({
         title: "Error",
         description: "Failed to update license",
@@ -182,7 +164,6 @@ export const BotLicenseManagement: React.FC = () => {
 
   const deleteLicense = async (license: License) => {
     try {
-      // Allow deletion only of deactivated licenses, or active licenses not in use
       if (license.is_active && license.used_by_user_id) {
         toast({
           title: "Cannot Delete Active License",
@@ -205,8 +186,7 @@ export const BotLicenseManagement: React.FC = () => {
       });
 
       await fetchLicenses();
-    } catch (error) {
-      console.error('Error deleting license:', error);
+    } catch {
       toast({
         title: "Error",
         description: "Failed to delete license",

@@ -1,9 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "./useAuth";
 import { useRealTimeTrading } from './useRealTimeTrading';
-
 import { supabase } from "@/integrations/supabase/client";
-import { calculateRealTimePnL } from '@/utils/pnlCalculator';
 
 export interface Trade {
   id: string;
@@ -38,10 +36,7 @@ export const useTrades = () => {
     openTrade: realtimeOpenTrade,
     closeTrade: realtimeCloseTrade
   } = useRealTimeTrading();
-  
-  
 
-  // Fallback database query
   const fetchTrades = useCallback(async () => {
     if (!user) {
       setDbLoading(false);
@@ -58,24 +53,20 @@ export const useTrades = () => {
 
       if (error) throw error;
       setDbTrades((data || []) as Trade[]);
-    } catch (error) {
-      console.error('Error fetching trades from database:', error);
+    } catch {
       setDbTrades([]);
     } finally {
       setDbLoading(false);
     }
   }, [user]);
 
-  // Initial database load
   useEffect(() => {
     fetchTrades();
   }, [fetchTrades]);
 
-  // Use real-time data if connected, fallback to database data
   const trades = isConnected && realtimeTrades.length > 0 ? realtimeTrades : dbTrades;
   const loading = isConnected ? realtimeLoading : dbLoading;
 
-  // Derived data
   const openTrades = trades.filter(trade => trade.status === 'open');
   const closedTrades = trades.filter(trade => trade.status === 'closed');
   const botTrades = trades.filter(trade => trade.trade_source === 'bot');
@@ -99,13 +90,10 @@ export const useTrades = () => {
     if (!user) return null;
 
     try {
-      // Try WebSocket first if connected
       if (isConnected) {
-        // Opening trade via WebSocket
         await realtimeOpenTrade(assetId, symbol, tradeType, amount, leverage, openPrice, marginUsed, stopLoss, takeProfit);
       } else {
-        // Fallback to direct database insertion
-        const { data, error } = await supabase
+        const { error } = await supabase
           .from('trades')
           .insert({
             user_id: user.id,
@@ -127,56 +115,41 @@ export const useTrades = () => {
           .single();
 
         if (error) throw error;
-        
-        // Refresh database data
         await fetchTrades();
       }
       
       return true;
     } catch (error) {
-      console.error('Error opening trade:', error);
       throw error;
     }
   };
 
   const closeTrade = async (tradeId: string, closePrice: number) => {
     try {
-      // Try WebSocket first if connected
       if (isConnected) {
-        // Closing trade via WebSocket
         await realtimeCloseTrade(tradeId, closePrice);
-    } else {
-      // Fallback to RPC (WebSocket not connected)
-      
-      const { data: result, error } = await supabase
-        .rpc('close_trade_with_pnl', {
-          p_trade_id: tradeId,
-          p_close_price: closePrice
-        });
+      } else {
+        const { data: result, error } = await supabase
+          .rpc('close_trade_with_pnl', {
+            p_trade_id: tradeId,
+            p_close_price: closePrice
+          });
 
-      if (error) throw error;
+        if (error) throw error;
 
-      const rpcResult = result as any;
-      if (rpcResult?.error) {
-        throw new Error(rpcResult.error);
+        const rpcResult = result as any;
+        if (rpcResult?.error) {
+          throw new Error(rpcResult.error);
+        }
+
+        await fetchTrades();
       }
-
-      // Trade closed via RPC fallback
-      
-      // Refresh database data
-      await fetchTrades();
-    }
       
       return true;
     } catch (error) {
-      console.error('Error closing trade:', error);
       throw error;
     }
   };
-
-  // Real-time P&L updates are now handled by the WebSocket system
-
-  // Derived data is now provided by useRealTimeTrading
 
   return {
     trades,
@@ -192,7 +165,7 @@ export const useTrades = () => {
     refetch: fetchTrades,
     openTrade,
     closeTrade,
-    updateTradePnL: async () => {}, // No longer needed with real-time system
+    updateTradePnL: async () => {},
     recalculateMargins: async () => true,
   };
 };

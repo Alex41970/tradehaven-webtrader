@@ -16,26 +16,22 @@ export const TradingChart = ({ symbol, category, name }: TradingChartProps) => {
   useEffect(() => {
     if (!chartRef.current) return;
 
-    // Cleanup previous widget
     if (widgetRef.current) {
       try {
         widgetRef.current.remove();
-      } catch (error) {
-        console.log('Widget cleanup error:', error);
+      } catch {
+        // Silent fail
       }
       widgetRef.current = null;
     }
 
-    // Clear the container
     if (chartRef.current) {
       chartRef.current.innerHTML = '<div class="text-center text-muted-foreground">Loading ' + symbol + ' chart...</div>';
     }
 
-    // Check if TradingView is already loaded
     if (window.TradingView) {
       createWidget();
     } else {
-      // Load TradingView script if not already loaded
       const existingScript = document.querySelector('script[src*="tradingview.com/tv.js"]');
       if (!existingScript) {
         const script = document.createElement("script");
@@ -44,7 +40,6 @@ export const TradingChart = ({ symbol, category, name }: TradingChartProps) => {
         script.onload = createWidget;
         document.head.appendChild(script);
       } else {
-        // Script exists but TradingView might not be ready yet
         const checkTradingView = () => {
           if (window.TradingView) {
             createWidget();
@@ -79,8 +74,8 @@ export const TradingChart = ({ symbol, category, name }: TradingChartProps) => {
           container_id: chartRef.current?.id || "tradingview_chart",
           height: 400,
         });
-      } catch (error) {
-        console.error('Error creating TradingView widget:', error);
+      } catch {
+        // Silent fail
       }
     }
 
@@ -88,8 +83,8 @@ export const TradingChart = ({ symbol, category, name }: TradingChartProps) => {
       if (widgetRef.current) {
         try {
           widgetRef.current.remove();
-        } catch (error) {
-          console.log('Widget cleanup error:', error);
+        } catch {
+          // Silent fail
         }
         widgetRef.current = null;
       }
@@ -107,7 +102,6 @@ export const TradingChart = ({ symbol, category, name }: TradingChartProps) => {
   );
 };
 
-// Add TradingView types
 declare global {
   interface Window {
     TradingView: any;

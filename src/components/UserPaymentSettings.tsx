@@ -64,19 +64,16 @@ export const UserPaymentSettings: React.FC<UserPaymentSettingsProps> = ({ users 
         .maybeSingle();
 
       if (error) {
-        console.error('Error fetching user payment settings:', error);
         return;
       }
 
       if (data) {
-        // Parse crypto wallets from JSONB
         const wallets = Object.entries(data.crypto_wallets || {}).map(([currency, address]) => ({
           currency,
           address: address as string
         }));
         setCryptoWallets(wallets);
 
-        // Parse bank details from JSONB
         const bankData = data.bank_wire_details as any || {};
         setBankDetails({
           bank_name: bankData.bank_name || '',
@@ -87,7 +84,6 @@ export const UserPaymentSettings: React.FC<UserPaymentSettingsProps> = ({ users 
           iban: bankData.iban || ''
         });
       } else {
-        // Reset to empty state if no settings found
         setCryptoWallets([]);
         setBankDetails({
           bank_name: '',
@@ -98,8 +94,7 @@ export const UserPaymentSettings: React.FC<UserPaymentSettingsProps> = ({ users 
           iban: ''
         });
       }
-    } catch (error) {
-      console.error('Error fetching payment settings:', error);
+    } catch {
       toast.error('Failed to load payment settings');
     } finally {
       setIsLoading(false);
@@ -138,7 +133,6 @@ export const UserPaymentSettings: React.FC<UserPaymentSettingsProps> = ({ users 
 
     setIsSaving(true);
     try {
-      // Permission preflight: ensure admin is assigned or is super admin
       if (!isSuperAdmin()) {
         const { data: relationship, error: relError } = await supabase
           .from('admin_user_relationships')
@@ -159,7 +153,6 @@ export const UserPaymentSettings: React.FC<UserPaymentSettingsProps> = ({ users 
         }
       }
 
-      // Convert crypto wallets to object format
       const cryptoWalletsObj = cryptoWallets.reduce((acc, wallet) => {
         if (wallet.currency && wallet.address) {
           acc[wallet.currency] = wallet.address;
@@ -167,7 +160,6 @@ export const UserPaymentSettings: React.FC<UserPaymentSettingsProps> = ({ users 
         return acc;
       }, {} as Record<string, string>);
 
-      // Filter out empty bank details
       const filteredBankDetails = Object.entries(bankDetails).reduce((acc, [key, value]) => {
         if (value && value.trim()) {
           acc[key] = value.trim();
@@ -211,8 +203,6 @@ export const UserPaymentSettings: React.FC<UserPaymentSettingsProps> = ({ users 
     }
   };
 
-  const selectedUser = users.find(u => u.user_id === selectedUserId);
-
   return (
     <div className="space-y-6">
       <div className="space-y-2">
@@ -222,11 +212,11 @@ export const UserPaymentSettings: React.FC<UserPaymentSettingsProps> = ({ users 
             <SelectValue placeholder="Choose a user to configure payment settings" />
           </SelectTrigger>
           <SelectContent>
-            {users.map((user) => (
-              <SelectItem key={user.user_id} value={user.user_id}>
-                {user.first_name && user.surname 
-                  ? `${user.first_name} ${user.surname} (${user.email})`
-                  : user.email
+            {users.map((u) => (
+              <SelectItem key={u.user_id} value={u.user_id}>
+                {u.first_name && u.surname 
+                  ? `${u.first_name} ${u.surname} (${u.email})`
+                  : u.email
                 }
               </SelectItem>
             ))}

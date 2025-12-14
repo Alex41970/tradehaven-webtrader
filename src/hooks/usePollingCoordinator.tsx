@@ -16,15 +16,11 @@ export const usePollingCoordinator = () => {
   const configMap = useRef<Map<string, PollingConfig>>(new Map());
   const lastExecutionMap = useRef<Map<string, number>>(new Map());
 
-  // Register a poller with the coordinator
   const registerPoller = useCallback((config: PollingConfig) => {
     configMap.current.set(config.id, config);
     
-    // Start the poller
     const startPoller = () => {
-      // Check conditions before starting
       if (config.conditions && !config.conditions()) {
-        // Re-check conditions every 5 seconds
         const timeoutId = setTimeout(startPoller, 5000);
         activePollers.current.set(config.id, timeoutId);
         return;
@@ -34,7 +30,6 @@ export const usePollingCoordinator = () => {
         const now = Date.now();
         const lastExecution = lastExecutionMap.current.get(config.id) || 0;
         
-        // Prevent too frequent executions (minimum 1 second between calls)
         if (now - lastExecution < 1000) {
           return;
         }
@@ -42,12 +37,11 @@ export const usePollingCoordinator = () => {
         try {
           await config.callback();
           lastExecutionMap.current.set(config.id, now);
-        } catch (error) {
-          console.error(`Polling error for ${config.id}:`, error);
+        } catch {
+          // Silent fail
         }
       };
 
-      // Execute immediately, then set up interval
       execute();
       
       const intervalId = setInterval(execute, config.interval);
@@ -55,10 +49,8 @@ export const usePollingCoordinator = () => {
     };
 
     startPoller();
-    console.log(`📊 Registered poller: ${config.id} (${config.interval}ms, ${config.priority} priority)`);
   }, []);
 
-  // Unregister a poller
   const unregisterPoller = useCallback((id: string) => {
     const intervalId = activePollers.current.get(id);
     if (intervalId) {
@@ -67,10 +59,8 @@ export const usePollingCoordinator = () => {
     }
     configMap.current.delete(id);
     lastExecutionMap.current.delete(id);
-    console.log(`📊 Unregistered poller: ${id}`);
   }, []);
 
-  // Update poller configuration (useful for dynamic intervals)
   const updatePoller = useCallback((id: string, updates: Partial<PollingConfig>) => {
     const existingConfig = configMap.current.get(id);
     if (existingConfig) {
@@ -80,7 +70,6 @@ export const usePollingCoordinator = () => {
     }
   }, [registerPoller, unregisterPoller]);
 
-  // Get status of all pollers
   const getStatus = useCallback(() => {
     return Array.from(configMap.current.entries()).map(([id, config]) => ({
       id,
@@ -91,7 +80,6 @@ export const usePollingCoordinator = () => {
     }));
   }, []);
 
-  // Cleanup on unmount
   useEffect(() => {
     return () => {
       activePollers.current.forEach((intervalId) => {

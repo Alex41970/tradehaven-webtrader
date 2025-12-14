@@ -34,13 +34,12 @@ export const useFavorites = () => {
         .eq('user_id', user.id);
 
       if (error) {
-        console.error('Error fetching favorites:', error);
         return;
       }
 
       setFavorites(data || []);
-    } catch (error) {
-      console.error('Error:', error);
+    } catch {
+      // Silent fail
     } finally {
       setLoading(false);
     }
@@ -58,7 +57,6 @@ export const useFavorites = () => {
         });
 
       if (error) {
-        console.error('Error adding favorite:', error);
         return false;
       }
 
@@ -68,8 +66,7 @@ export const useFavorites = () => {
         description: "Asset added to your favorites list",
       });
       return true;
-    } catch (error) {
-      console.error('Error:', error);
+    } catch {
       return false;
     }
   };
@@ -85,7 +82,6 @@ export const useFavorites = () => {
         .eq('asset_id', assetId);
 
       if (error) {
-        console.error('Error removing favorite:', error);
         return false;
       }
 
@@ -95,8 +91,7 @@ export const useFavorites = () => {
         description: "Asset removed from your favorites list",
       });
       return true;
-    } catch (error) {
-      console.error('Error:', error);
+    } catch {
       return false;
     }
   };
