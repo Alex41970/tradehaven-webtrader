@@ -16,8 +16,8 @@ export const MarginCallWarning: React.FC<MarginCallWarningProps> = ({
 }) => {
   const [isVisible, setIsVisible] = useState(false);
 
-  // Calculate margin level: (Equity / Used Margin) × 100%
-  const marginLevel = usedMargin > 0 ? (equity / usedMargin) * 100 : 999;
+  // Calculate margin level: (Equity / Used Margin) × 100% - capped at 9999 for display
+  const marginLevel = usedMargin > 0 ? Math.min((equity / usedMargin) * 100, 9999) : 9999;
 
   useEffect(() => {
     // Show warning when margin level is critical
