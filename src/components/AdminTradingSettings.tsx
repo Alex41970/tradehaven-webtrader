@@ -155,7 +155,7 @@ export const AdminTradingSettings: React.FC = () => {
         <div className="space-y-2">
           <div className="flex items-center gap-2">
             <Gauge className="h-4 w-4 text-muted-foreground" />
-            <Label>Price Movement Intensity</Label>
+            <Label>Price Movement Size</Label>
           </div>
           <Select value={priceIntensity} onValueChange={setPriceIntensity}>
             <SelectTrigger>
@@ -163,13 +163,13 @@ export const AdminTradingSettings: React.FC = () => {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="off">Off - No movement</SelectItem>
-              <SelectItem value="low">Low - Slow updates (5s)</SelectItem>
-              <SelectItem value="medium">Medium - Normal (2s)</SelectItem>
-              <SelectItem value="high">High - Fast updates (1s)</SelectItem>
+              <SelectItem value="low">Low - Small price movements</SelectItem>
+              <SelectItem value="medium">Medium - Normal movements</SelectItem>
+              <SelectItem value="high">High - Large price movements</SelectItem>
             </SelectContent>
           </Select>
           <p className="text-xs text-muted-foreground">
-            Controls how often prices visually update for users between real data fetches
+            Controls the size of price movements between real data fetches (volatility level)
           </p>
         </div>
 

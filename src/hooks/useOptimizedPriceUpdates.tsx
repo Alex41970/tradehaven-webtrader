@@ -19,12 +19,12 @@ const BASE_VOLATILITY: Record<string, number> = {
   stock: 0.0005,    // 0.05%
 };
 
-// Intensity settings: interval (ms) and volatility multiplier
+// Intensity settings: interval fixed at 2s, only volatility multiplier changes (controls SIZE of movement)
 const INTENSITY_CONFIG: Record<PriceIntensity, { interval: number; multiplier: number }> = {
   off: { interval: 0, multiplier: 0 },
-  low: { interval: 5000, multiplier: 0.3 },
-  medium: { interval: 2000, multiplier: 1 },
-  high: { interval: 1000, multiplier: 2 },
+  low: { interval: 2000, multiplier: 0.3 },    // Small price movements
+  medium: { interval: 2000, multiplier: 1 },   // Normal price movements
+  high: { interval: 2000, multiplier: 2 },     // Large price movements
 };
 
 const CRYPTO_SYMBOLS = ['BTC', 'ETH', 'BNB', 'XRP', 'ADA', 'SOL', 'DOGE', 'DOT', 'MATIC', 'LTC', 'LINK', 'UNI', 'AAVE', 'ALGO', 'APT', 'ARB', 'AR', 'ATOM', 'AVAX', 'AXS', 'COMP', 'CRO', 'CRV', 'ENJ', 'FTM', 'GALA', 'GRT', 'ICP', 'IMX', 'INJ', 'LDO', 'MANA', 'NEAR', 'OP', 'PEPE', 'RNDR', 'SAND', 'SHIB', 'STX', 'SUI', 'TIA', 'TON', 'TRX', 'UMA', 'VET', 'WLD', 'XLM', 'XTZ', 'FIL'];
