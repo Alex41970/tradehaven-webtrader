@@ -32,7 +32,7 @@ export interface BotStatus {
   loading: boolean;
 }
 
-const POLL_INTERVAL = 60000; // 60 seconds polling (bot status changes rarely)
+const POLL_INTERVAL = 120000; // 2 minutes polling (bot status changes rarely)
 
 export const useBotStatus = () => {
   const { user } = useAuth();

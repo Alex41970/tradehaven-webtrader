@@ -160,7 +160,7 @@ export const useSmartPriceSubscription = (): SmartPriceSubscriptionResult => {
     };
   }, [isUserActive]);
 
-  // Keep edge function alive with periodic pings - every 5 minutes instead of 45 seconds
+  // Keep edge function alive with periodic pings - every 10 minutes
   useEffect(() => {
     if (!isUserActive || document.hidden) return;
 
@@ -175,8 +175,8 @@ export const useSmartPriceSubscription = (): SmartPriceSubscriptionResult => {
     // Initial ping
     keepAlive();
 
-    // Keep alive every 5 minutes (reduced from 45 seconds)
-    const interval = setInterval(keepAlive, 300000);
+    // Keep alive every 10 minutes (reduced from 5 minutes)
+    const interval = setInterval(keepAlive, 600000);
 
     return () => clearInterval(interval);
   }, [isUserActive]);
