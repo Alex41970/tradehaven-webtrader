@@ -4,13 +4,14 @@ import { useTrades } from "@/hooks/useTrades";
 import { useSharedUserProfile } from "@/hooks/useSharedUserProfile";
 import { useAssets } from "@/hooks/useAssets";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Shield, AlertTriangle } from "lucide-react";
+import { Shield, AlertTriangle } from "lucide-react";
 import { useMemo, useState, useCallback } from "react";
 import { useRealTimePrices } from "@/hooks/useRealTimePrices";
 import { useRealtimeAccountMetrics } from "@/hooks/useRealtimeAccountMetrics";
 import { TradeRow } from "@/components/TradeRow";
 import { useEventDrivenUpdates } from "@/hooks/useEventDrivenUpdates";
 import { PortfolioSkeleton } from "./PortfolioSkeleton";
+import { useStopLossTakeProfit } from "@/hooks/useStopLossTakeProfit";
 
 export const Portfolio = () => {
   // ALL HOOKS MUST BE CALLED FIRST - NO CONDITIONAL HOOK CALLS
@@ -40,6 +41,38 @@ export const Portfolio = () => {
     }
   }, [assets, getUpdatedAssets]);
 
+  // SL/TP close handler for auto-execution
+  const handleSLTPClose = useCallback(async (tradeId: string, closePrice: number) => {
+    if (closingTrades.has(tradeId)) return;
+    
+    setClosingTrades(prev => new Set(prev).add(tradeId));
+    excludeTradeFromPnL(tradeId);
+
+    try {
+      const success = await closeTrade(tradeId, closePrice);
+      if (success) {
+        handleTradeAction('close', { tradeId });
+      } else {
+        includeTradeInPnL(tradeId);
+      }
+      return success;
+    } catch {
+      includeTradeInPnL(tradeId);
+      return false;
+    } finally {
+      setClosingTrades(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(tradeId);
+        return newSet;
+      });
+    }
+  }, [closeTrade, closingTrades, excludeTradeFromPnL, includeTradeInPnL, handleTradeAction]);
+
+  // Enable SL/TP auto-execution
+  useStopLossTakeProfit({
+    openTrades,
+    onCloseTrade: handleSLTPClose
+  });
   // Use real-time account metrics for equity calculation
   const totalPnL = realTimeEquity - (profile?.balance || 0);
 

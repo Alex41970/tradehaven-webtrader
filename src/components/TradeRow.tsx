@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { TrendingUp, TrendingDown, Loader2 } from "lucide-react";
+import { TrendingUp, TrendingDown, Loader2, Target, ShieldAlert } from "lucide-react";
 import { PulsingPriceIndicator } from "@/components/PulsingPriceIndicator";
 import { formatPnL, calculateRealTimePnL } from "@/utils/pnlCalculator";
 import { Trade } from "@/hooks/useTrades";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 
 interface TradeRowProps {
   trade: Trade;
@@ -117,8 +118,26 @@ const TradeRowComponent = ({ trade, asset, onCloseTrade, isClosing }: TradeRowPr
             <span className={!isLocalClosed ? "animate-pulse-subtle" : ""}>{formatPnL(realTimePnL)}</span>
           </div>
         </div>
+
+        {/* SL/TP Levels */}
+        {(trade.stop_loss_price || trade.take_profit_price) && (
+          <div className="flex gap-2 text-xs">
+            {trade.stop_loss_price && (
+              <div className="flex items-center gap-1 text-red-500">
+                <ShieldAlert className="h-3 w-3" />
+                <span>SL: {trade.stop_loss_price.toFixed(4)}</span>
+              </div>
+            )}
+            {trade.take_profit_price && (
+              <div className="flex items-center gap-1 text-green-500">
+                <Target className="h-3 w-3" />
+                <span>TP: {trade.take_profit_price.toFixed(4)}</span>
+              </div>
+            )}
+          </div>
+        )}
         
-        <Button 
+        <Button
           size="sm" 
           variant="destructive"
           onClick={handleCloseClick}
@@ -142,7 +161,7 @@ const TradeRowComponent = ({ trade, asset, onCloseTrade, isClosing }: TradeRowPr
 
   return (
     <div key={trade.id} className="border rounded-lg p-4">
-      <div className="grid md:grid-cols-7 gap-3 items-center text-sm">
+      <div className="grid md:grid-cols-8 gap-3 items-center text-sm">
         <div>
           <div className="text-xs text-muted-foreground mb-1">Symbol</div>
           <div className="font-medium">{trade.symbol}</div>
@@ -189,8 +208,42 @@ const TradeRowComponent = ({ trade, asset, onCloseTrade, isClosing }: TradeRowPr
             <span className={!isLocalClosed ? "animate-pulse-subtle" : ""}>{formatPnL(realTimePnL)}</span>
           </div>
         </div>
+
+        {/* SL/TP Indicators */}
+        <div>
+          <div className="text-xs text-muted-foreground mb-1">SL/TP</div>
+          <TooltipProvider>
+            <div className="flex flex-col gap-1">
+              {trade.stop_loss_price && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="flex items-center gap-1 text-red-500 text-xs bg-red-500/10 px-2 py-0.5 rounded cursor-help">
+                      <ShieldAlert className="h-3 w-3" />
+                      <span>{trade.stop_loss_price.toFixed(2)}</span>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>Stop Loss at {trade.stop_loss_price.toFixed(4)}</TooltipContent>
+                </Tooltip>
+              )}
+              {trade.take_profit_price && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="flex items-center gap-1 text-green-500 text-xs bg-green-500/10 px-2 py-0.5 rounded cursor-help">
+                      <Target className="h-3 w-3" />
+                      <span>{trade.take_profit_price.toFixed(2)}</span>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>Take Profit at {trade.take_profit_price.toFixed(4)}</TooltipContent>
+                </Tooltip>
+              )}
+              {!trade.stop_loss_price && !trade.take_profit_price && (
+                <span className="text-muted-foreground text-xs">—</span>
+              )}
+            </div>
+          </TooltipProvider>
+        </div>
         
-        <div className="col-span-2">
+        <div className="col-span-1">
           <div className="text-xs text-muted-foreground mb-1">Action</div>
           <Button 
             size="sm" 
@@ -218,11 +271,12 @@ const TradeRowComponent = ({ trade, asset, onCloseTrade, isClosing }: TradeRowPr
 
 // Memoize the component to prevent unnecessary re-renders
 export const TradeRow = React.memo(TradeRowComponent, (prevProps, nextProps) => {
-  // Custom comparison for better performance
   return (
     prevProps.trade.id === nextProps.trade.id &&
     prevProps.trade.status === nextProps.trade.status &&
     prevProps.trade.pnl === nextProps.trade.pnl &&
+    prevProps.trade.stop_loss_price === nextProps.trade.stop_loss_price &&
+    prevProps.trade.take_profit_price === nextProps.trade.take_profit_price &&
     prevProps.asset?.price === nextProps.asset?.price &&
     prevProps.asset?.change_24h === nextProps.asset?.change_24h &&
     prevProps.isClosing === nextProps.isClosing
