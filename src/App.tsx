@@ -9,6 +9,7 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import RoleBasedRoute from "@/components/RoleBasedRoute";
 
 import { ActivityProvider } from "@/contexts/ActivityContext";
+import { PriceProvider } from "@/contexts/PriceContext";
 import { useActivityAwareConnectionManager } from "@/hooks/useActivityAwareConnectionManager";
 import { useActivityTracker } from "@/hooks/useActivityTracker";
 import { usePromoCodeFallback } from "@/hooks/usePromoCodeFallback";
@@ -51,8 +52,8 @@ const App = () => {
   <QueryClientProvider client={queryClient}>
     <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
       <AuthProvider>
-        <ActivityProvider>
-          
+        <PriceProvider>
+          <ActivityProvider>
             <ConnectionManager />
             <TooltipProvider>
               <Toaster />
@@ -113,9 +114,9 @@ const App = () => {
               <CookieConsentBanner />
             </BrowserRouter>
           </TooltipProvider>
-        
-      </ActivityProvider>
-    </AuthProvider>
+          </ActivityProvider>
+        </PriceProvider>
+      </AuthProvider>
     </ThemeProvider>
   </QueryClientProvider>
   );
