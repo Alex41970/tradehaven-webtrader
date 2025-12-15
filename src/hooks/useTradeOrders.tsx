@@ -1,8 +1,7 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { toast } from './use-toast';
-import { getActivityAwareSubscriptionManager } from '@/services/ActivityAwareSubscriptionManager';
 
 export interface TradeOrder {
   id: string;
@@ -23,10 +22,13 @@ export interface TradeOrder {
   updated_at: string;
 }
 
+const POLL_INTERVAL = 30000; // 30 seconds polling
+
 export const useTradeOrders = () => {
   const [orders, setOrders] = useState<TradeOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
+  const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const fetchOrders = useCallback(async () => {
     if (!user) return;
@@ -55,34 +57,23 @@ export const useTradeOrders = () => {
     }
   }, [user]);
 
+  // Initial fetch and polling setup
   useEffect(() => {
-    fetchOrders();
-
-    if (!user) return;
-
-    // Set up activity-aware real-time subscription
-    const subscriptionManager = getActivityAwareSubscriptionManager(supabase);
-    const subscriptionId = subscriptionManager.subscribe({
-      channel: 'trade-orders-changes',
-      event: '*',
-      schema: 'public',
-      table: 'trade_orders',
-      filter: `user_id=eq.${user.id}`,
-      callback: (payload) => {
-        if (payload.eventType === 'INSERT') {
-          setOrders(prev => [payload.new as TradeOrder, ...prev]);
-        } else if (payload.eventType === 'UPDATE') {
-          setOrders(prev => prev.map(order => 
-            order.id === payload.new.id ? payload.new as TradeOrder : order
-          ));
-        } else if (payload.eventType === 'DELETE') {
-          setOrders(prev => prev.filter(order => order.id !== payload.old.id));
-        }
-      }
-    });
+    if (user) {
+      fetchOrders();
+      
+      // Set up polling instead of Realtime subscription
+      pollIntervalRef.current = setInterval(fetchOrders, POLL_INTERVAL);
+    } else {
+      setOrders([]);
+      setLoading(false);
+    }
 
     return () => {
-      subscriptionManager.unsubscribe(subscriptionId);
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current);
+        pollIntervalRef.current = null;
+      }
     };
   }, [user, fetchOrders]);
 
@@ -120,6 +111,9 @@ export const useTradeOrders = () => {
         description: "Order created successfully",
       });
 
+      // Immediately refetch to update the list
+      await fetchOrders();
+
       return data as TradeOrder;
     } catch {
       return null;
@@ -147,6 +141,9 @@ export const useTradeOrders = () => {
         title: "Success",
         description: "Order cancelled successfully",
       });
+
+      // Immediately refetch to update the list
+      await fetchOrders();
 
       return true;
     } catch {

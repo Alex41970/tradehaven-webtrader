@@ -1,8 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 import { useToast } from "./use-toast";
-import { getActivityAwareSubscriptionManager } from "@/services/ActivityAwareSubscriptionManager";
 
 export interface BotSettings {
   maxDrawdown: number;
@@ -33,6 +32,8 @@ export interface BotStatus {
   loading: boolean;
 }
 
+const POLL_INTERVAL = 60000; // 60 seconds polling (bot status changes rarely)
+
 export const useBotStatus = () => {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -47,37 +48,14 @@ export const useBotStatus = () => {
     },
     loading: true,
   });
+  const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  useEffect(() => {
-    if (user) {
-      fetchBotStatus();
-      
-      // Set up activity-aware real-time subscription for bot status changes
-      const subscriptionManager = getActivityAwareSubscriptionManager(supabase);
-      const subscriptionId = subscriptionManager.subscribe({
-        channel: 'bot-status-changes',
-        event: '*',
-        schema: 'public',
-        table: 'user_bot_status',
-        filter: `user_id=eq.${user.id}`,
-        callback: () => {
-          // Refetch bot status when changes occur
-          fetchBotStatus();
-        }
-      });
-
-      return () => {
-        subscriptionManager.unsubscribe(subscriptionId);
-      };
-    } else {
-      setBotStatus(prev => ({ ...prev, loading: false, isConnected: false }));
-    }
-  }, [user]);
-
-  const fetchBotStatus = async () => {
+  const fetchBotStatus = useCallback(async () => {
+    if (!user) return;
+    
     try {
       const { data, error } = await supabase.rpc('get_valid_bot_status', {
-        _user_id: user?.id,
+        _user_id: user.id,
       });
 
       if (error) throw error;
@@ -115,7 +93,26 @@ export const useBotStatus = () => {
     } catch {
       setBotStatus(prev => ({ ...prev, loading: false, isConnected: false }));
     }
-  };
+  }, [user]);
+
+  // Initial fetch and polling setup
+  useEffect(() => {
+    if (user) {
+      fetchBotStatus();
+      
+      // Set up polling instead of Realtime subscription
+      pollIntervalRef.current = setInterval(fetchBotStatus, POLL_INTERVAL);
+    } else {
+      setBotStatus(prev => ({ ...prev, loading: false, isConnected: false }));
+    }
+
+    return () => {
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current);
+        pollIntervalRef.current = null;
+      }
+    };
+  }, [user, fetchBotStatus]);
 
   const activateLicense = async (licenseKey: string) => {
     try {

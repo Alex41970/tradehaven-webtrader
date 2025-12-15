@@ -1,8 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 import { toast } from "@/hooks/use-toast";
-import { getActivityAwareSubscriptionManager } from "@/services/ActivityAwareSubscriptionManager";
 
 export interface DepositRequest {
   id: string;
@@ -45,29 +44,19 @@ export type TransactionHistory = {
   bank_details?: any;
 };
 
+const POLL_INTERVAL = 30000; // 30 seconds polling
+
 export const useTransactionHistory = () => {
   const { user } = useAuth();
   const [deposits, setDeposits] = useState<DepositRequest[]>([]);
   const [withdrawals, setWithdrawals] = useState<WithdrawalRequest[]>([]);
   const [loading, setLoading] = useState(true);
+  const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  useEffect(() => {
-    if (user) {
-      fetchTransactions();
-      setupRealtimeSubscriptions();
-    } else {
-      setDeposits([]);
-      setWithdrawals([]);
-      setLoading(false);
-    }
-  }, [user]);
-
-  const fetchTransactions = async () => {
+  const fetchTransactions = useCallback(async () => {
     if (!user) return;
 
     try {
-      setLoading(true);
-      
       // Fetch deposits
       const { data: depositsData, error: depositsError } = await supabase
         .from('deposit_requests')
@@ -106,52 +95,29 @@ export const useTransactionHistory = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
 
-  const setupRealtimeSubscriptions = () => {
-    if (!user) return;
-
-    const subscriptionManager = getActivityAwareSubscriptionManager(supabase);
-    
-    const depositSubscriptionId = subscriptionManager.subscribe({
-      channel: 'deposit-requests-changes',
-      event: '*',
-      schema: 'public',
-      table: 'deposit_requests',
-      filter: `user_id=eq.${user.id}`,
-      callback: (payload) => {
-        if (payload.eventType === 'INSERT') {
-          setDeposits(prev => [payload.new as DepositRequest, ...prev]);
-        } else if (payload.eventType === 'UPDATE') {
-          setDeposits(prev => prev.map(deposit => 
-            deposit.id === payload.new.id ? payload.new as DepositRequest : deposit
-          ));
-        }
-      }
-    });
-
-    const withdrawalSubscriptionId = subscriptionManager.subscribe({
-      channel: 'withdrawal-requests-changes',
-      event: '*',
-      schema: 'public',
-      table: 'withdrawal_requests',
-      filter: `user_id=eq.${user.id}`,
-      callback: (payload) => {
-        if (payload.eventType === 'INSERT') {
-          setWithdrawals(prev => [payload.new as WithdrawalRequest, ...prev]);
-        } else if (payload.eventType === 'UPDATE') {
-          setWithdrawals(prev => prev.map(withdrawal => 
-            withdrawal.id === payload.new.id ? payload.new as WithdrawalRequest : withdrawal
-          ));
-        }
-      }
-    });
+  // Initial fetch and polling setup
+  useEffect(() => {
+    if (user) {
+      setLoading(true);
+      fetchTransactions();
+      
+      // Set up polling instead of Realtime subscription
+      pollIntervalRef.current = setInterval(fetchTransactions, POLL_INTERVAL);
+    } else {
+      setDeposits([]);
+      setWithdrawals([]);
+      setLoading(false);
+    }
 
     return () => {
-      subscriptionManager.unsubscribe(depositSubscriptionId);
-      subscriptionManager.unsubscribe(withdrawalSubscriptionId);
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current);
+        pollIntervalRef.current = null;
+      }
     };
-  };
+  }, [user, fetchTransactions]);
 
   // Combine and format transactions for display
   const transactionHistory: TransactionHistory[] = [

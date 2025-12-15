@@ -2,38 +2,24 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { logger } from '@/utils/logger';
 
-interface PriceUpdate {
-  symbol: string;
-  price: number;
-  change_24h: number;
-  timestamp: number;
-  source?: string;
-  mode?: 'websocket' | 'polling' | 'offline';
-}
-
 interface SmartPriceSubscriptionResult {
-  prices: Map<string, PriceUpdate>;
   isConnected: boolean;
   lastUpdate: Date | null;
   connectionStatus: 'connecting' | 'connected' | 'disconnected' | 'paused';
   isUserActive: boolean;
-  connectionMode: 'websocket' | 'polling' | 'offline';
 }
 
 /**
- * Activity-aware price subscription hook
- * Uses presence tracking to signal the relay that users are online
- * The relay handles all coordination via database locks
+ * Simplified activity-aware presence hook
+ * Only tracks user presence to signal the relay that users are online
+ * Prices are loaded from database on mount - NO broadcast channel needed
  */
 export const useSmartPriceSubscription = (): SmartPriceSubscriptionResult => {
-  const [prices, setPrices] = useState<Map<string, PriceUpdate>>(new Map());
   const [isConnected, setIsConnected] = useState(false);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
   const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'disconnected' | 'paused'>('disconnected');
   const [isUserActive, setIsUserActive] = useState(true);
-  const [connectionMode, setConnectionMode] = useState<'websocket' | 'polling' | 'offline'>('offline');
 
-  const channelRef = useRef<any>(null);
   const presenceChannelRef = useRef<any>(null);
   const inactivityTimerRef = useRef<NodeJS.Timeout | null>(null);
   
@@ -95,18 +81,21 @@ export const useSmartPriceSubscription = (): SmartPriceSubscriptionResult => {
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, [isUserActive]);
 
-  // Manage presence tracking - this is how we signal the relay
+  // Manage presence tracking only - this signals the relay that users are online
   useEffect(() => {
     if (!isUserActive || document.hidden) {
       if (presenceChannelRef.current) {
         logger.debug('👋 Leaving presence channel');
         supabase.removeChannel(presenceChannelRef.current);
         presenceChannelRef.current = null;
+        setIsConnected(false);
+        setConnectionStatus('paused');
       }
       return;
     }
 
     logger.debug('👋 Joining presence channel');
+    setConnectionStatus('connecting');
     
     const presenceChannel = supabase.channel('price-relay-presence', {
       config: {
@@ -127,6 +116,12 @@ export const useSmartPriceSubscription = (): SmartPriceSubscriptionResult => {
             user_id: (await supabase.auth.getUser()).data.user?.id || 'anonymous',
           });
           logger.debug('✅ Presence tracked');
+          setIsConnected(true);
+          setConnectionStatus('connected');
+          setLastUpdate(new Date());
+        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          setIsConnected(false);
+          setConnectionStatus('disconnected');
         }
       });
 
@@ -136,82 +131,6 @@ export const useSmartPriceSubscription = (): SmartPriceSubscriptionResult => {
       if (presenceChannelRef.current) {
         supabase.removeChannel(presenceChannelRef.current);
         presenceChannelRef.current = null;
-      }
-    };
-  }, [isUserActive]);
-
-  // Manage price updates subscription
-  useEffect(() => {
-    if (!isUserActive || document.hidden) {
-      if (channelRef.current) {
-        logger.debug('🔌 Unsubscribing from prices');
-        supabase.removeChannel(channelRef.current);
-        channelRef.current = null;
-        setIsConnected(false);
-        setConnectionStatus('paused');
-      }
-      return;
-    }
-
-    logger.debug('🔌 Subscribing to prices');
-    setConnectionStatus('connecting');
-
-    const channel = supabase.channel('price-updates', {
-      config: {
-        broadcast: { self: false },
-      },
-    });
-
-    channel
-      .on('broadcast', { event: 'price' }, (payload: any) => {
-        const { symbol, price, change_24h, timestamp, source, mode } = payload.payload;
-        
-        if (symbol && price) {
-          setPrices((prev) => {
-            const newPrices = new Map(prev);
-            newPrices.set(symbol, {
-              symbol,
-              price,
-              change_24h: change_24h || 0,
-              timestamp: timestamp || Date.now(),
-              source: source || 'unknown',
-              mode: mode || 'websocket',
-            });
-            return newPrices;
-          });
-          
-          setLastUpdate(new Date());
-          
-          if (mode) {
-            setConnectionMode(mode);
-          }
-        }
-      })
-      .on('broadcast', { event: 'connection_mode' }, (payload: any) => {
-        const { mode } = payload.payload;
-        if (mode) {
-          logger.debug(`📡 Mode: ${mode}`);
-          setConnectionMode(mode);
-        }
-      })
-      .subscribe(async (status: string) => {
-        logger.debug(`📡 Status: ${status}`);
-        
-        if (status === 'SUBSCRIBED') {
-          setIsConnected(true);
-          setConnectionStatus('connected');
-        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-          setIsConnected(false);
-          setConnectionStatus('disconnected');
-        }
-      });
-
-    channelRef.current = channel;
-
-    return () => {
-      if (channelRef.current) {
-        supabase.removeChannel(channelRef.current);
-        channelRef.current = null;
         setIsConnected(false);
       }
     };
@@ -241,7 +160,7 @@ export const useSmartPriceSubscription = (): SmartPriceSubscriptionResult => {
     };
   }, [isUserActive]);
 
-  // Keep edge function alive with periodic pings
+  // Keep edge function alive with periodic pings - every 5 minutes instead of 45 seconds
   useEffect(() => {
     if (!isUserActive || document.hidden) return;
 
@@ -256,18 +175,16 @@ export const useSmartPriceSubscription = (): SmartPriceSubscriptionResult => {
     // Initial ping
     keepAlive();
 
-    // Keep alive every 45 seconds (before 60s timeout)
-    const interval = setInterval(keepAlive, 45000);
+    // Keep alive every 5 minutes (reduced from 45 seconds)
+    const interval = setInterval(keepAlive, 300000);
 
     return () => clearInterval(interval);
   }, [isUserActive]);
 
   return {
-    prices,
     isConnected,
     lastUpdate,
     connectionStatus,
     isUserActive,
-    connectionMode,
   };
 };
