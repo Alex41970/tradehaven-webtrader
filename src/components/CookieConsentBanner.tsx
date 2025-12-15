@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Cookie, X } from "lucide-react";
+import { Cookie } from "lucide-react";
 
 const COOKIE_CONSENT_KEY = "cookie-consent-accepted";
 
@@ -11,7 +10,6 @@ const CookieConsentBanner = () => {
   useEffect(() => {
     const consent = localStorage.getItem(COOKIE_CONSENT_KEY);
     if (!consent) {
-      // Small delay to avoid flash on page load
       const timer = setTimeout(() => setShowBanner(true), 500);
       return () => clearTimeout(timer);
     }
@@ -30,48 +28,32 @@ const CookieConsentBanner = () => {
   if (!showBanner) return null;
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 p-4 animate-fade-in">
-      <div className="container mx-auto max-w-4xl">
-        <div className="bg-card border border-border rounded-lg shadow-lg p-4 md:p-6">
-          <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
-            <div className="flex items-start gap-3 flex-1">
-              <Cookie className="h-6 w-6 text-primary flex-shrink-0 mt-0.5" />
-              <div className="space-y-1">
-                <h3 className="font-semibold text-foreground">Cookie Consent</h3>
-                <p className="text-sm text-muted-foreground">
-                  We use cookies to enhance your browsing experience, serve personalized content, and analyze our traffic. 
-                  By clicking "Accept All", you consent to our use of cookies.{" "}
-                  <Link to="/cookie-policy" className="text-primary hover:underline">
-                    Learn more
-                  </Link>
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2 w-full md:w-auto">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleDecline}
-                className="flex-1 md:flex-none"
-              >
-                Decline
-              </Button>
-              <Button
-                size="sm"
-                onClick={handleAccept}
-                className="flex-1 md:flex-none"
-              >
-                Accept All
-              </Button>
-            </div>
-            <button
-              onClick={handleDecline}
-              className="absolute top-2 right-2 md:hidden text-muted-foreground hover:text-foreground"
-              aria-label="Close"
-            >
-              <X className="h-4 w-4" />
-            </button>
+    <div className="fixed bottom-4 left-4 right-4 md:left-auto md:right-6 md:max-w-sm z-50 animate-fade-in">
+      <div className="bg-card/95 backdrop-blur-md border border-border/50 rounded-xl shadow-xl p-4">
+        <div className="flex items-center gap-3">
+          <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+            <Cookie className="h-4 w-4 text-primary" />
           </div>
+          <p className="text-sm text-muted-foreground flex-1">
+            We use cookies to improve your experience. Do you consent?
+          </p>
+        </div>
+        <div className="flex items-center gap-2 mt-3">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleDecline}
+            className="flex-1 h-8 text-xs"
+          >
+            Decline
+          </Button>
+          <Button
+            size="sm"
+            onClick={handleAccept}
+            className="flex-1 h-8 text-xs"
+          >
+            Accept
+          </Button>
         </div>
       </div>
     </div>
