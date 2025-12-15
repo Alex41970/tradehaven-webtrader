@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { toZonedTime } from 'date-fns-tz';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import type { PriceIntensity } from './useOptimizedPriceUpdates';
@@ -43,7 +44,7 @@ const DEFAULT_SETTINGS: TradingSettings = {
   isLoading: true,
 };
 
-// Check if current time is within trading hours
+// Check if current time is within trading hours (timezone-aware)
 const isWithinTradingHours = (
   openTime: string,
   closeTime: string,
@@ -51,22 +52,23 @@ const isWithinTradingHours = (
   tradingDays: string[]
 ): boolean => {
   try {
-    const now = new Date();
+    // Get current time in the configured timezone
+    const zonedNow = toZonedTime(new Date(), timezone);
     
-    // Get current day name
+    // Get current day name in the configured timezone
     const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-    const currentDay = dayNames[now.getDay()];
+    const currentDay = dayNames[zonedNow.getDay()];
     
     // Check if today is a trading day
     if (!tradingDays.includes(currentDay)) {
       return false;
     }
     
-    // Parse times and compare (simplified - uses local time for now)
+    // Parse times and compare using timezone-adjusted time
     const [openHour, openMin] = openTime.split(':').map(Number);
     const [closeHour, closeMin] = closeTime.split(':').map(Number);
     
-    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+    const currentMinutes = zonedNow.getHours() * 60 + zonedNow.getMinutes();
     const openMinutes = openHour * 60 + openMin;
     const closeMinutes = closeHour * 60 + closeMin;
     
