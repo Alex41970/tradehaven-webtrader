@@ -1,10 +1,9 @@
-import { useEffect, useRef } from 'react';
 import { useActivity } from '@/contexts/ActivityContext';
 import { usePrices } from '@/contexts/PriceContext';
 import { useActivityAwareConnectionManager } from './useActivityAwareConnectionManager';
 
 export const usePriceActivityManager = () => {
-  // Use the new activity-aware connection manager instead of page reloads
+  // Use the activity-aware connection manager for event dispatching
   const connectionManager = useActivityAwareConnectionManager();
   
   const { isUserActive, isCompletelyDisconnected } = useActivity();
@@ -15,7 +14,6 @@ export const usePriceActivityManager = () => {
     isCompletelyDisconnected,
     isConnected,
     connectionStatus,
-    managedByConnectionManager: connectionManager.isManaged,
-    subscriptionStatus: connectionManager.subscriptionStatus
+    managedByConnectionManager: connectionManager.isManaged
   };
 };

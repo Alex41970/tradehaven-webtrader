@@ -1,16 +1,13 @@
 import { useEffect, useRef } from 'react';
 import { useActivity } from '@/contexts/ActivityContext';
-import { getActivityAwareSubscriptionManager } from '@/services/ActivityAwareSubscriptionManager';
-import { supabase } from '@/integrations/supabase/client';
 
 /**
- * Enhanced connection lifecycle management hook that replaces the page reload mechanism
- * Provides smart reconnection logic based on user activity states
+ * Simplified connection lifecycle management hook
+ * Dispatches events for activity state changes (no longer manages subscriptions)
  */
 export const useActivityAwareConnectionManager = () => {
   const { isUserActive, isCompletelyDisconnected } = useActivity();
   const lastActivityRef = useRef({ isUserActive: true, isCompletelyDisconnected: false });
-  const subscriptionManager = getActivityAwareSubscriptionManager(supabase);
 
   useEffect(() => {
     const prevState = lastActivityRef.current;
@@ -24,43 +21,21 @@ export const useActivityAwareConnectionManager = () => {
       return;
     }
 
-    // Handle specific transitions without page reload
+    // Dispatch events for activity state changes
     if (prevState.isCompletelyDisconnected && !currentState.isCompletelyDisconnected) {
-      handleReconnection();
+      window.dispatchEvent(new CustomEvent('activity-reconnection'));
     } else if (!prevState.isCompletelyDisconnected && currentState.isCompletelyDisconnected) {
-      handleDisconnection();
+      window.dispatchEvent(new CustomEvent('activity-disconnection'));
     } else if (prevState.isUserActive && !currentState.isUserActive) {
-      handleInactiveTransition();
+      window.dispatchEvent(new CustomEvent('activity-inactive'));
     } else if (!prevState.isUserActive && currentState.isUserActive) {
-      handleActiveTransition();
+      window.dispatchEvent(new CustomEvent('activity-active'));
     }
 
     lastActivityRef.current = currentState;
   }, [isUserActive, isCompletelyDisconnected]);
 
-  const handleReconnection = () => {
-    // Surgical reconnection without page reload
-    // The ActivityAwareSubscriptionManager automatically handles this
-    window.dispatchEvent(new CustomEvent('activity-reconnection'));
-  };
-
-  const handleDisconnection = () => {
-    // The ActivityAwareSubscriptionManager automatically handles this
-    window.dispatchEvent(new CustomEvent('activity-disconnection'));
-  };
-
-  const handleInactiveTransition = () => {
-    // Subscriptions are automatically paused by ActivityAwareSubscriptionManager
-    window.dispatchEvent(new CustomEvent('activity-inactive'));
-  };
-
-  const handleActiveTransition = () => {
-    // Subscriptions are automatically resumed by ActivityAwareSubscriptionManager
-    window.dispatchEvent(new CustomEvent('activity-active'));
-  };
-
   return {
     isManaged: true,
-    subscriptionStatus: subscriptionManager.getSubscriptionStatus(),
   };
 };
