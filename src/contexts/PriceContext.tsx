@@ -44,13 +44,11 @@ export const PriceProvider: React.FC<PriceProviderProps> = ({ children }) => {
   // Get trading settings from user's admin
   const { priceIntensity, isMarketClosed, canTrade } = useTradingSettings();
 
-  // Get real prices from server (every ~10 min)
+  // Presence tracking only - NO price broadcast channel (saves Realtime costs)
   const {
-    prices: serverPrices,
     isConnected,
     connectionStatus,
     isUserActive,
-    connectionMode,
   } = useSmartPriceSubscription();
 
   // Client-side mock price simulation with admin-controlled intensity
@@ -59,7 +57,7 @@ export const PriceProvider: React.FC<PriceProviderProps> = ({ children }) => {
     isMarketClosed,
   });
 
-  // Fetch initial prices from database on mount
+  // Fetch initial prices from database on mount (replaces broadcast channel)
   useEffect(() => {
     const fetchInitialPrices = async () => {
       const { data } = await supabase.from('assets').select('symbol, price, change_24h');
@@ -76,20 +74,13 @@ export const PriceProvider: React.FC<PriceProviderProps> = ({ children }) => {
     fetchInitialPrices();
   }, [addPriceUpdates]);
 
-  // When real prices arrive from server, feed them into mock generator
-  useEffect(() => {
-    if (serverPrices.size > 0) {
-      addPriceUpdates(Array.from(serverPrices.values()));
-    }
-  }, [serverPrices, addPriceUpdates]);
-
   const value: PriceContextType = {
     prices: mockPrices,
     isConnected,
     lastUpdate,
     connectionStatus,
     isUserActive,
-    connectionMode,
+    connectionMode: 'polling', // Always polling mode now (no WebSocket broadcasts)
     // Expose trading settings
     isMarketClosed,
     canTrade,

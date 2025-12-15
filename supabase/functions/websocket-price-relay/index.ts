@@ -43,7 +43,6 @@ const YAHOO_SYMBOLS: Record<string, string> = {
 
 // ==================== CONFIGURATION ====================
 const REAL_PRICE_INTERVAL = 600000;     // 10 minutes
-const HEARTBEAT_INTERVAL = 2000;        // 2 seconds
 const DB_PERSIST_INTERVAL = 600000;     // 10 minutes
 const LOCK_RENEWAL_INTERVAL = 15000;    // 15 seconds
 const INSTANCE_ID = crypto.randomUUID().slice(0, 8);
@@ -52,10 +51,9 @@ const INSTANCE_ID = crypto.randomUUID().slice(0, 8);
 let presenceChannel: any = null;
 let coingeckoPollingInterval: number | null = null;
 let yahooPollingInterval: number | null = null;
-let heartbeatInterval: number | null = null;
 let lockRenewalInterval: number | null = null;
 let dbUpdateInterval: number | null = null;
-let connectionMode: 'websocket' | 'polling' | 'offline' = 'offline';
+let connectionMode: 'polling' | 'offline' = 'offline';
 
 let pendingUpdates: Map<string, {price: number, change: number}> = new Map();
 let lastDbFlush = 0;
@@ -63,7 +61,6 @@ let activeUserCount = 0;
 let isCoordinator = false;
 
 const realPrices: Map<string, { price: number; change_24h: number; lastRealUpdate: number }> = new Map();
-const simulatedPrices: Map<string, number> = new Map();
 
 // ==================== COORDINATOR LOCK ====================
 async function tryBecomeCoordinator(): Promise<boolean> {
@@ -116,122 +113,6 @@ async function releaseLock(): Promise<void> {
   }
 }
 
-// ==================== VOLATILITY ====================
-function getVolatilityForSymbol(symbol: string): number {
-  if (COINGECKO_SYMBOLS[symbol]) return 0.001;
-  
-  const forexSymbols = ['EURUSD', 'GBPUSD', 'USDJPY', 'USDCHF', 'AUDUSD', 'USDCAD', 'NZDUSD', 
-                        'EURGBP', 'EURJPY', 'GBPJPY', 'EURCHF', 'AUDJPY', 'EURAUD', 
-                        'USDMXN', 'USDZAR', 'USDHKD', 'USDSGD', 'USDNOK', 'USDSEK', 'USDDKK'];
-  if (forexSymbols.includes(symbol)) return 0.0001;
-  
-  const commodities = ['XAUUSD', 'XAGUSD', 'USOIL', 'UKOIL', 'NATGAS', 'XPTUSD', 'COPPER'];
-  if (commodities.includes(symbol)) return 0.0003;
-  
-  const indices = ['US30', 'US100', 'US500', 'UK100', 'GER40', 'FRA40', 'JPN225', 'AUS200'];
-  if (indices.includes(symbol)) return 0.0002;
-  
-  return 0.0005;
-}
-
-function generateHeartbeatPrice(symbol: string, basePrice: number): number {
-  const volatility = getVolatilityForSymbol(symbol);
-  const direction = Math.random() > 0.5 ? 1 : -1;
-  const magnitude = Math.random() * volatility;
-  const newPrice = basePrice * (1 + direction * magnitude);
-  
-  if (newPrice < 0.01) return Number(newPrice.toPrecision(4));
-  if (newPrice < 1) return Number(newPrice.toPrecision(5));
-  if (newPrice < 100) return Number(newPrice.toFixed(4));
-  if (newPrice < 10000) return Number(newPrice.toFixed(2));
-  return Number(newPrice.toFixed(2));
-}
-
-// ==================== BROADCASTING (HTTP API) ====================
-async function broadcastPriceUpdate(symbol: string, price: number, change24h: number, source: string) {
-  const payload = { 
-    symbol, 
-    price, 
-    change_24h: change24h,
-    timestamp: Date.now(),
-    source,
-    mode: connectionMode 
-  };
-
-  try {
-    await fetch(`${SUPABASE_URL}/realtime/v1/api/broadcast`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'apikey': SUPABASE_SERVICE_ROLE_KEY,
-        'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`
-      },
-      body: JSON.stringify({
-        channel: 'price-updates',
-        event: 'price',
-        payload
-      })
-    });
-  } catch {
-    // Silent fail - next broadcast will succeed
-  }
-  
-  if (source !== 'simulated') {
-    pendingUpdates.set(symbol, { price, change: change24h });
-  }
-}
-
-async function broadcastConnectionMode() {
-  try {
-    await fetch(`${SUPABASE_URL}/realtime/v1/api/broadcast`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'apikey': SUPABASE_SERVICE_ROLE_KEY,
-        'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`
-      },
-      body: JSON.stringify({
-        channel: 'price-updates',
-        event: 'connection_mode',
-        payload: { mode: connectionMode, timestamp: Date.now() }
-      })
-    });
-  } catch {
-    // Silent fail
-  }
-}
-
-// ==================== HEARTBEAT ====================
-async function broadcastHeartbeatPrices() {
-  if (!isCoordinator || activeUserCount === 0) return;
-  
-  const symbols = [...realPrices.keys()];
-  if (symbols.length === 0) return;
-  
-  for (const symbol of symbols) {
-    const realData = realPrices.get(symbol);
-    if (!realData) continue;
-    
-    const currentSimulated = simulatedPrices.get(symbol) || realData.price;
-    const newPrice = generateHeartbeatPrice(symbol, currentSimulated);
-    simulatedPrices.set(symbol, newPrice);
-    
-    await broadcastPriceUpdate(symbol, newPrice, realData.change_24h, 'simulated');
-  }
-}
-
-function startHeartbeat() {
-  if (heartbeatInterval) return;
-  heartbeatInterval = setInterval(broadcastHeartbeatPrices, HEARTBEAT_INTERVAL);
-}
-
-function stopHeartbeat() {
-  if (heartbeatInterval) {
-    clearInterval(heartbeatInterval);
-    heartbeatInterval = null;
-  }
-}
-
 // ==================== REAL PRICE FETCHING ====================
 async function fetchCoinGeckoPrices() {
   if (!isCoordinator) return;
@@ -257,8 +138,7 @@ async function fetchCoinGeckoPrices() {
         const change = (priceData as any).usd_24h_change || 0;
         
         realPrices.set(internalSymbol, { price, change_24h: change, lastRealUpdate: Date.now() });
-        simulatedPrices.set(internalSymbol, price);
-        await broadcastPriceUpdate(internalSymbol, price, change, 'coingecko');
+        pendingUpdates.set(internalSymbol, { price, change });
         updatedCount++;
       }
     }
@@ -322,8 +202,7 @@ async function pollYahooFinance() {
             change_24h: result.change,
             lastRealUpdate: Date.now()
           });
-          simulatedPrices.set(internalSymbol, result.price);
-          await broadcastPriceUpdate(internalSymbol, result.price, result.change, 'yahoo');
+          pendingUpdates.set(internalSymbol, { price: result.price, change: result.change });
         }
       })
     );
@@ -340,7 +219,6 @@ function startYahooPolling() {
   if (yahooPollingInterval) return;
   
   connectionMode = 'polling';
-  broadcastConnectionMode();
   
   pollYahooFinance();
   yahooPollingInterval = setInterval(pollYahooFinance, REAL_PRICE_INTERVAL);
@@ -411,10 +289,9 @@ async function startAllPolling() {
   // Start lock renewal
   lockRenewalInterval = setInterval(renewLock, LOCK_RENEWAL_INTERVAL);
   
-  // Start all polling
+  // Start all polling (no heartbeat/broadcast needed - client does simulation)
   startCoinGeckoPolling();
   startYahooPolling();
-  setTimeout(startHeartbeat, 3000);
   startDatabasePersistence();
 }
 
@@ -435,14 +312,11 @@ async function stopAllPolling() {
   isCoordinator = false;
   connectionMode = 'offline';
   
-  stopHeartbeat();
   stopCoinGeckoPolling();
   stopYahooPolling();
   stopDatabasePersistence();
   
   realPrices.clear();
-  simulatedPrices.clear();
-  broadcastConnectionMode();
 }
 
 // ==================== PRESENCE TRACKING ====================
