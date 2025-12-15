@@ -22,6 +22,8 @@ export interface Trade {
   closed_at?: string;
   created_at: string;
   updated_at: string;
+  stop_loss_price?: number;
+  take_profit_price?: number;
 }
 
 export const useTrades = () => {
