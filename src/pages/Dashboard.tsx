@@ -499,7 +499,10 @@ const Dashboard = () => {
                           : 'text-red-500'
                       }`}>
                         {totalUsedMargin && totalUsedMargin > 0 && realTimeEquity 
-                          ? formatPercentage((realTimeEquity / totalUsedMargin) * 100, 0)
+                          ? (() => {
+                              const marginLevel = (realTimeEquity / totalUsedMargin) * 100;
+                              return marginLevel > 9999 ? '>9999%' : formatPercentage(marginLevel, 0);
+                            })()
                           : '∞'
                         }
                       </span>
