@@ -42,8 +42,7 @@ const YAHOO_SYMBOLS: Record<string, string> = {
 };
 
 // ==================== CONFIGURATION ====================
-const REAL_PRICE_INTERVAL = 600000;     // 10 minutes
-const DB_PERSIST_INTERVAL = 600000;     // 10 minutes
+const REAL_PRICE_INTERVAL = 300000;     // 5 minutes (reduced from 10)
 const LOCK_RENEWAL_INTERVAL = 15000;    // 15 seconds
 const INSTANCE_ID = crypto.randomUUID().slice(0, 8);
 
@@ -52,11 +51,8 @@ let presenceChannel: any = null;
 let coingeckoPollingInterval: number | null = null;
 let yahooPollingInterval: number | null = null;
 let lockRenewalInterval: number | null = null;
-let dbUpdateInterval: number | null = null;
 let connectionMode: 'polling' | 'offline' = 'offline';
 
-let pendingUpdates: Map<string, {price: number, change: number}> = new Map();
-let lastDbFlush = 0;
 let activeUserCount = 0;
 let isCoordinator = false;
 
@@ -113,6 +109,38 @@ async function releaseLock(): Promise<void> {
   }
 }
 
+// ==================== DATABASE PERSISTENCE (IMMEDIATE) ====================
+async function persistPrices(updates: Array<{symbol: string, price: number, change: number}>) {
+  if (updates.length === 0) return;
+  
+  const timestamp = new Date().toISOString();
+  let successCount = 0;
+  
+  try {
+    // Batch update using Promise.all for speed
+    const results = await Promise.all(
+      updates.map(async (update) => {
+        const { error } = await supabase
+          .from('assets')
+          .update({ 
+            price: update.price, 
+            change_24h: update.change, 
+            price_updated_at: timestamp,
+            price_source: 'live_api'
+          })
+          .eq('symbol', update.symbol);
+        
+        return error ? null : update.symbol;
+      })
+    );
+    
+    successCount = results.filter(r => r !== null).length;
+    console.log(`💾 [${INSTANCE_ID}] Persisted ${successCount}/${updates.length} prices to DB`);
+  } catch (e) {
+    console.error(`❌ [${INSTANCE_ID}] DB persist failed: ${e}`);
+  }
+}
+
 // ==================== REAL PRICE FETCHING ====================
 async function fetchCoinGeckoPrices() {
   if (!isCoordinator) return;
@@ -123,14 +151,18 @@ async function fetchCoinGeckoPrices() {
       `https://api.coingecko.com/api/v3/simple/price?ids=${coinIds}&vs_currencies=usd&include_24hr_change=true`
     );
     
-    if (!response.ok) return;
+    if (!response.ok) {
+      console.error(`❌ [${INSTANCE_ID}] CoinGecko API error: ${response.status}`);
+      return;
+    }
     
     const data = await response.json();
     const coinGeckoReversed = Object.fromEntries(
       Object.entries(COINGECKO_SYMBOLS).map(([k, v]) => [v, k])
     );
     
-    let updatedCount = 0;
+    const updates: Array<{symbol: string, price: number, change: number}> = [];
+    
     for (const [coinId, priceData] of Object.entries(data)) {
       const internalSymbol = coinGeckoReversed[coinId];
       if (internalSymbol && priceData && typeof priceData === 'object') {
@@ -138,14 +170,16 @@ async function fetchCoinGeckoPrices() {
         const change = (priceData as any).usd_24h_change || 0;
         
         realPrices.set(internalSymbol, { price, change_24h: change, lastRealUpdate: Date.now() });
-        pendingUpdates.set(internalSymbol, { price, change });
-        updatedCount++;
+        updates.push({ symbol: internalSymbol, price, change });
       }
     }
     
-    console.log(`📊 [${INSTANCE_ID}] CoinGecko: ${updatedCount} prices`);
-  } catch {
-    // Silent fail - will retry next interval
+    console.log(`📊 [${INSTANCE_ID}] CoinGecko: ${updates.length} prices`);
+    
+    // Persist immediately after fetching
+    await persistPrices(updates);
+  } catch (e) {
+    console.error(`❌ [${INSTANCE_ID}] CoinGecko fetch failed: ${e}`);
   }
 }
 
@@ -189,6 +223,7 @@ async function pollYahooFinance() {
   
   const symbols = Object.entries(YAHOO_SYMBOLS);
   const batchSize = 10;
+  const allUpdates: Array<{symbol: string, price: number, change: number}> = [];
   
   for (let i = 0; i < symbols.length; i += batchSize) {
     const batch = symbols.slice(i, i + batchSize);
@@ -202,7 +237,7 @@ async function pollYahooFinance() {
             change_24h: result.change,
             lastRealUpdate: Date.now()
           });
-          pendingUpdates.set(internalSymbol, { price: result.price, change: result.change });
+          allUpdates.push({ symbol: internalSymbol, price: result.price, change: result.change });
         }
       })
     );
@@ -212,7 +247,10 @@ async function pollYahooFinance() {
     }
   }
   
-  console.log(`📊 [${INSTANCE_ID}] Yahoo: ${symbols.length} prices`);
+  console.log(`📊 [${INSTANCE_ID}] Yahoo: ${allUpdates.length} prices`);
+  
+  // Persist immediately after fetching
+  await persistPrices(allUpdates);
 }
 
 function startYahooPolling() {
@@ -231,46 +269,8 @@ function stopYahooPolling() {
   }
 }
 
-// ==================== DATABASE PERSISTENCE ====================
-async function flushPricesToDatabase() {
-  if (!isCoordinator || pendingUpdates.size === 0) return;
-  
-  const now = Date.now();
-  if (now - lastDbFlush < 60000) return;
-  lastDbFlush = now;
-  
-  const updates = Array.from(pendingUpdates.entries()).map(([symbol, data]) => ({
-    symbol, price: data.price, change: data.change
-  }));
-  pendingUpdates.clear();
-  
-  try {
-    for (const update of updates) {
-      await supabase
-        .from('assets')
-        .update({ price: update.price, change_24h: update.change, price_updated_at: new Date().toISOString() })
-        .eq('symbol', update.symbol);
-    }
-    console.log(`💾 [${INSTANCE_ID}] Persisted ${updates.length} prices`);
-  } catch {
-    // Silent fail
-  }
-}
-
-function startDatabasePersistence() {
-  if (dbUpdateInterval) return;
-  dbUpdateInterval = setInterval(flushPricesToDatabase, DB_PERSIST_INTERVAL);
-}
-
-function stopDatabasePersistence() {
-  if (dbUpdateInterval) {
-    flushPricesToDatabase();
-    clearInterval(dbUpdateInterval);
-    dbUpdateInterval = null;
-  }
-}
-
 // ==================== COORDINATOR LIFECYCLE ====================
+
 async function startAllPolling() {
   if (isCoordinator) return;
   
@@ -289,10 +289,9 @@ async function startAllPolling() {
   // Start lock renewal
   lockRenewalInterval = setInterval(renewLock, LOCK_RENEWAL_INTERVAL);
   
-  // Start all polling (no heartbeat/broadcast needed - client does simulation)
+  // Start all polling - prices persist immediately after each fetch
   startCoinGeckoPolling();
   startYahooPolling();
-  startDatabasePersistence();
 }
 
 async function stopAllPolling() {
@@ -314,7 +313,6 @@ async function stopAllPolling() {
   
   stopCoinGeckoPolling();
   stopYahooPolling();
-  stopDatabasePersistence();
   
   realPrices.clear();
 }
