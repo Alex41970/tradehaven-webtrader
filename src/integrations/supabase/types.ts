@@ -86,12 +86,17 @@ export type Database = {
       admin_trading_settings: {
         Row: {
           admin_id: string
+          allow_negative_balance: boolean | null
+          auto_close_enabled: boolean | null
           created_at: string | null
+          grace_period_hours: number | null
           id: string
+          margin_call_level: number | null
           market_close_time: string | null
           market_closed: boolean
           market_open_time: string | null
           price_intensity: string
+          stop_out_level: number | null
           trading_days: string[] | null
           trading_hours_enabled: boolean | null
           trading_timezone: string | null
@@ -99,12 +104,17 @@ export type Database = {
         }
         Insert: {
           admin_id: string
+          allow_negative_balance?: boolean | null
+          auto_close_enabled?: boolean | null
           created_at?: string | null
+          grace_period_hours?: number | null
           id?: string
+          margin_call_level?: number | null
           market_close_time?: string | null
           market_closed?: boolean
           market_open_time?: string | null
           price_intensity?: string
+          stop_out_level?: number | null
           trading_days?: string[] | null
           trading_hours_enabled?: boolean | null
           trading_timezone?: string | null
@@ -112,12 +122,17 @@ export type Database = {
         }
         Update: {
           admin_id?: string
+          allow_negative_balance?: boolean | null
+          auto_close_enabled?: boolean | null
           created_at?: string | null
+          grace_period_hours?: number | null
           id?: string
+          margin_call_level?: number | null
           market_close_time?: string | null
           market_closed?: boolean
           market_open_time?: string | null
           price_intensity?: string
+          stop_out_level?: number | null
           trading_days?: string[] | null
           trading_hours_enabled?: boolean | null
           trading_timezone?: string | null
@@ -781,6 +796,7 @@ export type Database = {
       }
       user_profiles: {
         Row: {
+          account_status: string | null
           admin_id: string | null
           assigned_at: string | null
           assignment_method: string | null
@@ -790,6 +806,9 @@ export type Database = {
           email: string | null
           equity: number
           first_name: string | null
+          frozen_at: string | null
+          frozen_reason: string | null
+          grace_period_until: string | null
           id: string
           last_activity_at: string | null
           phone_number: string | null
@@ -800,6 +819,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          account_status?: string | null
           admin_id?: string | null
           assigned_at?: string | null
           assignment_method?: string | null
@@ -809,6 +829,9 @@ export type Database = {
           email?: string | null
           equity?: number
           first_name?: string | null
+          frozen_at?: string | null
+          frozen_reason?: string | null
+          grace_period_until?: string | null
           id?: string
           last_activity_at?: string | null
           phone_number?: string | null
@@ -819,6 +842,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          account_status?: string | null
           admin_id?: string | null
           assigned_at?: string | null
           assignment_method?: string | null
@@ -828,6 +852,9 @@ export type Database = {
           email?: string | null
           equity?: number
           first_name?: string | null
+          frozen_at?: string | null
+          frozen_reason?: string | null
+          grace_period_until?: string | null
           id?: string
           last_activity_at?: string | null
           phone_number?: string | null
@@ -936,6 +963,10 @@ export type Database = {
         }
         Returns: Json
       }
+      admin_delete_trade: {
+        Args: { _admin_id: string; _trade_id: string }
+        Returns: Json
+      }
       admin_modify_trade_open_price: {
         Args: { _admin_id: string; _new_open_price: number; _trade_id: string }
         Returns: boolean
@@ -946,6 +977,16 @@ export type Database = {
           _amount: number
           _operation: string
           _reason?: string
+          _user_id: string
+        }
+        Returns: Json
+      }
+      admin_reset_account: {
+        Args: {
+          _admin_id: string
+          _clear_history?: boolean
+          _close_trades?: boolean
+          _reset_balance?: boolean
           _user_id: string
         }
         Returns: Json

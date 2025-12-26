@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useAdminTradingSettings } from '@/hooks/useTradingSettings';
 import { toast } from 'sonner';
-import { Activity, Clock, Power, Gauge } from 'lucide-react';
+import { Activity, Clock, Power, Gauge, AlertTriangle } from 'lucide-react';
 
 const DAYS_OF_WEEK = [
   { value: 'monday', label: 'Mon' },
@@ -44,6 +44,13 @@ export const AdminTradingSettings: React.FC = () => {
   const [marketCloseTime, setMarketCloseTime] = useState('16:00');
   const [tradingTimezone, setTradingTimezone] = useState('America/New_York');
   const [tradingDays, setTradingDays] = useState<string[]>(['monday', 'tuesday', 'wednesday', 'thursday', 'friday']);
+  
+  // Risk management settings
+  const [marginCallLevel, setMarginCallLevel] = useState(100);
+  const [stopOutLevel, setStopOutLevel] = useState(50);
+  const [allowNegativeBalance, setAllowNegativeBalance] = useState(false);
+  const [gracePeriodHours, setGracePeriodHours] = useState(24);
+  const [autoCloseEnabled, setAutoCloseEnabled] = useState(true);
 
   // Sync form state with fetched settings
   useEffect(() => {
@@ -55,6 +62,12 @@ export const AdminTradingSettings: React.FC = () => {
       setMarketCloseTime(settings.market_close_time || '16:00');
       setTradingTimezone(settings.trading_timezone || 'America/New_York');
       setTradingDays(settings.trading_days || ['monday', 'tuesday', 'wednesday', 'thursday', 'friday']);
+      // Risk settings
+      setMarginCallLevel((settings as any).margin_call_level ?? 100);
+      setStopOutLevel((settings as any).stop_out_level ?? 50);
+      setAllowNegativeBalance((settings as any).allow_negative_balance ?? false);
+      setGracePeriodHours((settings as any).grace_period_hours ?? 24);
+      setAutoCloseEnabled((settings as any).auto_close_enabled ?? true);
     }
   }, [settings]);
 
@@ -68,7 +81,12 @@ export const AdminTradingSettings: React.FC = () => {
       market_close_time: marketCloseTime,
       trading_timezone: tradingTimezone,
       trading_days: tradingDays,
-    });
+      margin_call_level: marginCallLevel,
+      stop_out_level: stopOutLevel,
+      allow_negative_balance: allowNegativeBalance,
+      grace_period_hours: gracePeriodHours,
+      auto_close_enabled: autoCloseEnabled,
+    } as any);
 
     if (result.error) {
       toast.error('Failed to save settings: ' + result.error);
@@ -118,146 +136,255 @@ export const AdminTradingSettings: React.FC = () => {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Activity className="h-5 w-5" />
-          Trading Controls
-        </CardTitle>
-        <CardDescription>
-          Control price movement intensity and market hours for all your assigned users
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        {/* Market Closed Toggle - Prominent */}
-        <div className="flex items-center justify-between p-4 rounded-lg border bg-card">
-          <div className="flex items-center gap-3">
-            <Power className={`h-5 w-5 ${marketClosed ? 'text-destructive' : 'text-green-500'}`} />
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Activity className="h-5 w-5" />
+            Trading Controls
+          </CardTitle>
+          <CardDescription>
+            Control price movement intensity and market hours for all your assigned users
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {/* Market Closed Toggle - Prominent */}
+          <div className="flex items-center justify-between p-4 rounded-lg border bg-card">
+            <div className="flex items-center gap-3">
+              <Power className={`h-5 w-5 ${marketClosed ? 'text-destructive' : 'text-green-500'}`} />
+              <div>
+                <Label className="text-base font-medium">Market Status</Label>
+                <p className="text-sm text-muted-foreground">
+                  {marketClosed ? 'Trading is disabled for all users' : 'Trading is enabled'}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className={`text-sm font-medium ${marketClosed ? 'text-destructive' : 'text-green-500'}`}>
+                {marketClosed ? 'CLOSED' : 'OPEN'}
+              </span>
+              <Switch
+                checked={!marketClosed}
+                onCheckedChange={(checked) => handleMarketClosedToggle(!checked)}
+              />
+            </div>
+          </div>
+
+          {/* Price Intensity */}
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <Gauge className="h-4 w-4 text-muted-foreground" />
+              <Label>Price Movement Size</Label>
+            </div>
+            <Select value={priceIntensity} onValueChange={setPriceIntensity}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="off">Off - No movement</SelectItem>
+                <SelectItem value="low">Low - Small price movements</SelectItem>
+                <SelectItem value="medium">Medium - Normal movements</SelectItem>
+                <SelectItem value="high">High - Large price movements</SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              Controls the size of price movements between real data fetches (volatility level)
+            </p>
+          </div>
+
+          {/* Trading Hours Section */}
+          <div className="space-y-4 pt-4 border-t">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Clock className="h-4 w-4 text-muted-foreground" />
+                <Label>Scheduled Trading Hours</Label>
+              </div>
+              <Switch
+                checked={tradingHoursEnabled}
+                onCheckedChange={setTradingHoursEnabled}
+              />
+            </div>
+
+            {tradingHoursEnabled && (
+              <div className="space-y-4 pl-6 animate-in slide-in-from-top-2">
+                {/* Time Range */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-sm">Market Open</Label>
+                    <Input
+                      type="time"
+                      value={marketOpenTime}
+                      onChange={(e) => setMarketOpenTime(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm">Market Close</Label>
+                    <Input
+                      type="time"
+                      value={marketCloseTime}
+                      onChange={(e) => setMarketCloseTime(e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                {/* Timezone */}
+                <div className="space-y-2">
+                  <Label className="text-sm">Timezone</Label>
+                  <Select value={tradingTimezone} onValueChange={setTradingTimezone}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {TIMEZONES.map((tz) => (
+                        <SelectItem key={tz.value} value={tz.value}>
+                          {tz.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Trading Days */}
+                <div className="space-y-2">
+                  <Label className="text-sm">Trading Days</Label>
+                  <div className="flex flex-wrap gap-2">
+                    {DAYS_OF_WEEK.map((day) => (
+                      <div
+                        key={day.value}
+                        className="flex items-center gap-1.5"
+                      >
+                        <Checkbox
+                          id={day.value}
+                          checked={tradingDays.includes(day.value)}
+                          onCheckedChange={() => handleDayToggle(day.value)}
+                        />
+                        <Label
+                          htmlFor={day.value}
+                          className="text-sm cursor-pointer"
+                        >
+                          {day.label}
+                        </Label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Save Button */}
+          <Button onClick={handleSave} disabled={isSaving} className="w-full">
+            {isSaving ? 'Saving...' : 'Save Settings'}
+          </Button>
+        </CardContent>
+      </Card>
+
+      {/* Risk Management Card */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <AlertTriangle className="h-5 w-5 text-amber-500" />
+            Risk Management
+          </CardTitle>
+          <CardDescription>
+            Configure margin levels and automatic position closing
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {/* Margin Call Level */}
+          <div className="space-y-2">
+            <Label>Margin Call Warning Level</Label>
+            <div className="flex items-center gap-2">
+              <Input
+                type="number"
+                value={marginCallLevel}
+                onChange={(e) => setMarginCallLevel(Number(e.target.value))}
+                min={0}
+                max={500}
+                className="w-24"
+              />
+              <span className="text-sm text-muted-foreground">%</span>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Users will see a warning when their margin level drops to this percentage. Industry standard: 100%
+            </p>
+          </div>
+
+          {/* Stop-Out Level */}
+          <div className="space-y-2">
+            <Label>Stop-Out Level</Label>
+            <div className="flex items-center gap-2">
+              <Input
+                type="number"
+                value={stopOutLevel}
+                onChange={(e) => setStopOutLevel(Number(e.target.value))}
+                min={0}
+                max={marginCallLevel}
+                className="w-24"
+              />
+              <span className="text-sm text-muted-foreground">%</span>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Positions will be force-closed when margin level reaches this percentage. Industry standard: 50%
+            </p>
+          </div>
+
+          {/* Auto Close Toggle */}
+          <div className="flex items-center justify-between p-4 rounded-lg border">
             <div>
-              <Label className="text-base font-medium">Market Status</Label>
+              <Label className="text-base">Auto-Close at Stop-Out</Label>
               <p className="text-sm text-muted-foreground">
-                {marketClosed ? 'Trading is disabled for all users' : 'Trading is enabled'}
+                Automatically close trades when stop-out level is reached
               </p>
             </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className={`text-sm font-medium ${marketClosed ? 'text-destructive' : 'text-green-500'}`}>
-              {marketClosed ? 'CLOSED' : 'OPEN'}
-            </span>
             <Switch
-              checked={!marketClosed}
-              onCheckedChange={(checked) => handleMarketClosedToggle(!checked)}
-            />
-          </div>
-        </div>
-
-        {/* Price Intensity */}
-        <div className="space-y-2">
-          <div className="flex items-center gap-2">
-            <Gauge className="h-4 w-4 text-muted-foreground" />
-            <Label>Price Movement Size</Label>
-          </div>
-          <Select value={priceIntensity} onValueChange={setPriceIntensity}>
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="off">Off - No movement</SelectItem>
-              <SelectItem value="low">Low - Small price movements</SelectItem>
-              <SelectItem value="medium">Medium - Normal movements</SelectItem>
-              <SelectItem value="high">High - Large price movements</SelectItem>
-            </SelectContent>
-          </Select>
-          <p className="text-xs text-muted-foreground">
-            Controls the size of price movements between real data fetches (volatility level)
-          </p>
-        </div>
-
-        {/* Trading Hours Section */}
-        <div className="space-y-4 pt-4 border-t">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Clock className="h-4 w-4 text-muted-foreground" />
-              <Label>Scheduled Trading Hours</Label>
-            </div>
-            <Switch
-              checked={tradingHoursEnabled}
-              onCheckedChange={setTradingHoursEnabled}
+              checked={autoCloseEnabled}
+              onCheckedChange={setAutoCloseEnabled}
             />
           </div>
 
-          {tradingHoursEnabled && (
-            <div className="space-y-4 pl-6 animate-in slide-in-from-top-2">
-              {/* Time Range */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label className="text-sm">Market Open</Label>
-                  <Input
-                    type="time"
-                    value={marketOpenTime}
-                    onChange={(e) => setMarketOpenTime(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-sm">Market Close</Label>
-                  <Input
-                    type="time"
-                    value={marketCloseTime}
-                    onChange={(e) => setMarketCloseTime(e.target.value)}
-                  />
-                </div>
+          {/* Allow Negative Balance */}
+          <div className="space-y-4 pt-4 border-t">
+            <div className="flex items-center justify-between">
+              <div>
+                <Label className="text-base">Allow Negative Balance (Grace Period)</Label>
+                <p className="text-sm text-muted-foreground">
+                  Let accounts go negative without immediately closing trades
+                </p>
               </div>
-
-              {/* Timezone */}
-              <div className="space-y-2">
-                <Label className="text-sm">Timezone</Label>
-                <Select value={tradingTimezone} onValueChange={setTradingTimezone}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {TIMEZONES.map((tz) => (
-                      <SelectItem key={tz.value} value={tz.value}>
-                        {tz.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Trading Days */}
-              <div className="space-y-2">
-                <Label className="text-sm">Trading Days</Label>
-                <div className="flex flex-wrap gap-2">
-                  {DAYS_OF_WEEK.map((day) => (
-                    <div
-                      key={day.value}
-                      className="flex items-center gap-1.5"
-                    >
-                      <Checkbox
-                        id={day.value}
-                        checked={tradingDays.includes(day.value)}
-                        onCheckedChange={() => handleDayToggle(day.value)}
-                      />
-                      <Label
-                        htmlFor={day.value}
-                        className="text-sm cursor-pointer"
-                      >
-                        {day.label}
-                      </Label>
-                    </div>
-                  ))}
-                </div>
-              </div>
+              <Switch
+                checked={allowNegativeBalance}
+                onCheckedChange={setAllowNegativeBalance}
+              />
             </div>
-          )}
-        </div>
 
-        {/* Save Button */}
-        <Button onClick={handleSave} disabled={isSaving} className="w-full">
-          {isSaving ? 'Saving...' : 'Save Settings'}
-        </Button>
-      </CardContent>
-    </Card>
+            {allowNegativeBalance && (
+              <div className="space-y-2 pl-4 animate-in slide-in-from-top-2">
+                <Label>Grace Period Duration</Label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="number"
+                    value={gracePeriodHours}
+                    onChange={(e) => setGracePeriodHours(Number(e.target.value))}
+                    min={1}
+                    max={168}
+                    className="w-24"
+                  />
+                  <span className="text-sm text-muted-foreground">hours</span>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  How long to wait before force-closing trades when account is in stop-out territory
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Save Button */}
+          <Button onClick={handleSave} disabled={isSaving} className="w-full">
+            {isSaving ? 'Saving...' : 'Save Risk Settings'}
+          </Button>
+        </CardContent>
+      </Card>
+    </div>
   );
 };

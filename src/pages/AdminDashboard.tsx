@@ -19,10 +19,12 @@ import { ModifyBalanceDialog } from "@/components/admin/ModifyBalanceDialog";
 import { CreateTradeDialog } from "@/components/admin/CreateTradeDialog";
 import { RejectRequestDialog } from "@/components/admin/RejectRequestDialog";
 import { ViewWithdrawalDetailsDialog } from "@/components/admin/ViewWithdrawalDetailsDialog";
+import { ResetAccountDialog } from "@/components/admin/ResetAccountDialog";
+import { DeleteTradeDialog } from "@/components/admin/DeleteTradeDialog";
 import { useAssets } from "@/hooks/useAssets";
 import { useRealTimePrices } from "@/hooks/useRealTimePrices";
 import { calculateRealTimePnL } from "@/utils/pnlCalculator";
-import { Users, DollarSign, Settings, LogOut, Search, Filter, Activity, Plus, CreditCard, Eye, TrendingUp } from "lucide-react";
+import { Users, DollarSign, Settings, LogOut, Search, Filter, Activity, Plus, CreditCard, Eye, TrendingUp, RotateCcw, Trash2 } from "lucide-react";
 import { Navigate } from "react-router-dom";
 import { Logo } from "@/components/Logo";
 
@@ -86,6 +88,9 @@ const AdminDashboard = () => {
   } | null>(null);
   const [viewDetailsDialogOpen, setViewDetailsDialogOpen] = useState(false);
   const [selectedWithdrawalRequest, setSelectedWithdrawalRequest] = useState<any>(null);
+  const [resetAccountDialogOpen, setResetAccountDialogOpen] = useState(false);
+  const [deleteTradeDialogOpen, setDeleteTradeDialogOpen] = useState(false);
+  const [selectedTradeForDelete, setSelectedTradeForDelete] = useState<UserTrade | null>(null);
   
   // Search and filter states
   const [userSearchQuery, setUserSearchQuery] = useState("");
@@ -887,6 +892,18 @@ const AdminDashboard = () => {
                                   <CreditCard className="h-4 w-4 mr-1" />
                                   Payment
                                 </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="text-destructive border-destructive/50 hover:bg-destructive/10"
+                                  onClick={() => {
+                                    setSelectedUserForAction(user);
+                                    setResetAccountDialogOpen(true);
+                                  }}
+                                >
+                                  <RotateCcw className="h-4 w-4 mr-1" />
+                                  Reset
+                                </Button>
                               </div>
                             </TableCell>
                           </TableRow>
@@ -1174,35 +1191,46 @@ const AdminDashboard = () => {
                                       Edit
                                     </Button>
                                     {trade.status === 'open' && (
-                                      <Button
-                                        size="sm"
-                                        variant="destructive"
-                                        onClick={() => setSelectedTradeForClose(trade)}
-                                      >
-                                        Close
-                                      </Button>
-                                    )}
-                                  </div>
-                                </TableCell>
-                              </TableRow>
-                            );
-                          })}
-                        </TableBody>
-                      </Table>
-                    )}
-                  </CardContent>
-                </Card>
-              </>
-            ) : (
-              <Card>
-                <CardContent className="py-12">
-                  <div className="text-center text-muted-foreground">
-                    <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p className="text-lg">Select a user above to view and manage their trades</p>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
+                                                <Button
+                                                  size="sm"
+                                                  variant="destructive"
+                                                  onClick={() => setSelectedTradeForClose(trade)}
+                                                >
+                                                  Close
+                                                </Button>
+                                              )}
+                                              <Button
+                                                size="sm"
+                                                variant="ghost"
+                                                className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                                onClick={() => {
+                                                  setSelectedTradeForDelete(trade);
+                                                  setDeleteTradeDialogOpen(true);
+                                                }}
+                                              >
+                                                <Trash2 className="h-4 w-4" />
+                                              </Button>
+                                            </div>
+                                          </TableCell>
+                                        </TableRow>
+                                      );
+                                    })}
+                                  </TableBody>
+                                </Table>
+                              )}
+                            </CardContent>
+                          </Card>
+                        </>
+                      ) : (
+                        <Card>
+                          <CardContent className="py-12">
+                            <div className="text-center text-muted-foreground">
+                              <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                              <p className="text-lg">Select a user above to view and manage their trades</p>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      )}
           </TabsContent>
 
           <TabsContent value="financial-requests" className="space-y-6">
@@ -1571,6 +1599,23 @@ const AdminDashboard = () => {
         open={viewDetailsDialogOpen}
         onOpenChange={setViewDetailsDialogOpen}
         request={selectedWithdrawalRequest}
+      />
+
+      {/* Reset Account Dialog */}
+      <ResetAccountDialog
+        open={resetAccountDialogOpen}
+        onOpenChange={setResetAccountDialogOpen}
+        user={selectedUserForAction}
+        openTradesCount={trades.filter(t => t.user_id === selectedUserForAction?.user_id && t.status === 'open').length}
+        onSuccess={fetchAdminData}
+      />
+
+      {/* Delete Trade Dialog */}
+      <DeleteTradeDialog
+        open={deleteTradeDialogOpen}
+        onOpenChange={setDeleteTradeDialogOpen}
+        trade={selectedTradeForDelete}
+        onSuccess={fetchAdminData}
       />
     </div>
   );
