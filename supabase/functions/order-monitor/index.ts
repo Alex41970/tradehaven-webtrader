@@ -24,7 +24,7 @@ serve(async (req) => {
   const startTime = Date.now();
   
   try {
-    console.log('🔍 Starting order monitor cycle...');
+
     
     const nowIso = new Date().toISOString();
 
