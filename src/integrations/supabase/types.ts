@@ -20,10 +20,103 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      activate_bot_license: {
+        Args: { _license_key: string; _user_id: string }
+        Returns: Json
+      }
+      admin_close_trade: {
+        Args: { _admin_id: string; _close_price: number; _trade_id: string }
+        Returns: Json
+      }
+      admin_create_trade: {
+        Args: {
+          _admin_id: string
+          _amount: number
+          _asset_id: string
+          _leverage: number
+          _open_price: number
+          _symbol: string
+          _trade_type: string
+          _user_id: string
+        }
+        Returns: Json
+      }
+      admin_delete_trade: {
+        Args: { _admin_id: string; _trade_id: string }
+        Returns: Json
+      }
+      admin_modify_trade_open_price: {
+        Args: { _admin_id: string; _new_open_price: number; _trade_id: string }
+        Returns: boolean
+      }
+      admin_modify_user_balance: {
+        Args: {
+          _admin_id: string
+          _amount: number
+          _operation: string
+          _reason?: string
+          _user_id: string
+        }
+        Returns: Json
+      }
+      admin_reset_account: {
+        Args: {
+          _admin_id: string
+          _clear_history?: boolean
+          _close_trades?: boolean
+          _reset_balance?: boolean
+          _user_id: string
+        }
+        Returns: Json
+      }
+      assign_user_to_admin_via_promo: {
+        Args: { _promo_code: string; _user_id: string }
+        Returns: Json
+      }
+      auto_fix_detected_issues: { Args: never; Returns: Json }
+      auto_recalculate_user_margins: {
+        Args: { _user_id: string }
+        Returns: undefined
+      }
+      calculate_pnl:
+        | {
+            Args: {
+              amount: number
+              current_price: number
+              open_price: number
+              trade_type: string
+            }
+            Returns: number
+          }
+        | {
+            Args: {
+              amount: number
+              current_price: number
+              leverage_param?: number
+              open_price: number
+              trade_type: string
+            }
+            Returns: number
+          }
+      check_and_liquidate_positions: {
+        Args: { _user_id: string }
+        Returns: Json
+      }
+      close_trade_with_pnl: {
+        Args: { p_close_price: number; p_trade_id: string }
+        Returns: Json
+      }
+      deactivate_and_disconnect_license: {
+        Args: { _admin_id: string; _license_id: string }
+        Returns: Json
+      }
+      generate_bot_license: {
+        Args: { _admin_id: string; _expires_at?: string }
+        Returns: string
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "super_admin" | "admin" | "user"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +243,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["super_admin", "admin", "user"],
+    },
   },
 } as const
