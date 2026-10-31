@@ -57,6 +57,13 @@
       "when": 1793485581965,
       "tag": "0007_authoritative_trade_open_pricing",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1793487756009,
+      "tag": "0008_candle_helpers",
+      "breakpoints": true
     }
   ]
 }
