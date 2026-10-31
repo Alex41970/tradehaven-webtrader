@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useMemo, useState } from '
 import { useOptimizedPriceUpdates } from '@/hooks/useOptimizedPriceUpdates';
 import { useTradingSettings, PriceIntensity } from '@/hooks/useTradingSettings';
 import { supabase } from '@/integrations/supabase/client';
+import { setContractSizes } from '@/utils/pnlCalculator';
 
 interface PriceUpdate {
   symbol: string;
@@ -62,13 +63,14 @@ export const PriceProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const load = async () => {
       const { data, error } = await supabase
         .from('assets')
-        .select('symbol, price, change_24h, category, price_updated_at, price_source')
+        .select('symbol, price, change_24h, category, price_updated_at, price_source, contract_size')
         .eq('is_active', true);
       if (cancelled) return;
       if (error || !data) {
         setStatus('disconnected');
         return;
       }
+      setContractSizes(data);
       let newest = 0;
       addPriceUpdates(
         data.map((a) => {
