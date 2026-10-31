@@ -197,7 +197,7 @@ Deno.serve(async (request) => {
   const needHistory: Asset[] = [];
   const offset = new Date().getUTCMinutes() % Math.max(assets.length, 1);
   const rotated = [...assets.slice(offset), ...assets.slice(0, offset)];
-  for (const a of rotated) {
+  for (const a of rotated.slice(0, 15)) {
     if (needHistory.length >= BACKFILL_PER_RUN) break;
     const { count } = await supabase.from('price_candles').select('symbol', { count: 'exact', head: true })
       .eq('symbol', a.symbol).lt('bucket', since);
