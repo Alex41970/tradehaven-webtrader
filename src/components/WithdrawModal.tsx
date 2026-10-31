@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { CreditCard, Wallet, AlertTriangle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import type { TablesInsert } from '@/lib/trading-database.types';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { useSharedUserProfile } from '@/hooks/useSharedUserProfile';
@@ -58,7 +59,7 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({ open, onOpenChange
 
     setIsLoading(true);
     try {
-      const requestData = {
+      const requestData: TablesInsert<'withdrawal_requests'> = {
         user_id: user.id,
         amount: parseFloat(amount),
         withdrawal_type: withdrawalType,
