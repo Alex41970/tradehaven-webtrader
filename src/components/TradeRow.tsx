@@ -35,6 +35,7 @@ const TradeRowComponent = ({ trade, asset, onCloseTrade, isClosing }: TradeRowPr
       return calculateRealTimePnL(
         {
           trade_type: trade.trade_type,
+          symbol: trade.symbol,
           amount: trade.amount,
           open_price: trade.open_price,
           leverage: trade.leverage

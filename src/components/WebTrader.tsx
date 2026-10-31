@@ -101,11 +101,8 @@ export const WebTrader = () => {
   const calculateMargin = useMemo(() => {
     if (!selectedAsset) return 0;
     
-    if (selectedAsset.category === 'forex') {
-      return (selectedAsset.contract_size * selectedAsset.price) / leverage;
-    } else {
-      return (amount * selectedAsset.price) / leverage;
-    }
+    // Lots x contract size x price / leverage
+    return (amount * (selectedAsset.contract_size || 1) * selectedAsset.price) / leverage;
   }, [selectedAsset, amount, leverage]);
 
   // Calculate position size

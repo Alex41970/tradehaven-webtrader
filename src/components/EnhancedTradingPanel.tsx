@@ -61,8 +61,10 @@ export const EnhancedTradingPanel: React.FC<EnhancedTradingPanelProps> = ({
 
   // Risk calculations (crypto-only, simplified)
   const calculations = useMemo(() => {
-    const positionSize = amount * selectedAsset.price * leverage;
-    const marginRequired = (amount * selectedAsset.price) / leverage;
+    // Lots x contract size = units; margin = units x price / leverage
+    const units = amount * (selectedAsset.contract_size || 1);
+    const positionSize = units * selectedAsset.price;
+    const marginRequired = positionSize / leverage;
 
     const availableAfterTrade = userProfile ? userProfile.available_margin - marginRequired : 0;
     
