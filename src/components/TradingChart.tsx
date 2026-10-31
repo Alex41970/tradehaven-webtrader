@@ -61,20 +61,6 @@ const cssColor = (name: string, alpha = 1) => {
   return `rgba(${f(0)}, ${f(8)}, ${f(4)}, ${alpha})`;
 };
 
-type Row = { bucket: string; open: number; high: number; low: number; close: number };
-
-function aggregate(rows: Row[], seconds: number): CandlestickData[] {
-  const out = new Map<number, CandlestickData>();
-  for (const r of rows) {
-    const t = Math.floor(new Date(r.bucket).getTime() / 1000 / seconds) * seconds;
-    const c = out.get(t);
-    const o = Number(r.open), h = Number(r.high), l = Number(r.low), cl = Number(r.close);
-    if (!c) out.set(t, { time: t as UTCTimestamp, open: o, high: h, low: l, close: cl });
-    else { c.high = Math.max(c.high, h); c.low = Math.min(c.low, l); c.close = cl; }
-  }
-  return [...out.values()].sort((a, b) => (a.time as number) - (b.time as number));
-}
-
 const loadPrefs = () => {
   try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}"); } catch { return {}; }
 };
@@ -136,18 +122,11 @@ export const TradingChart = ({ symbol, name }: TradingChartProps) => {
     setState("loading");
     (async () => {
       const since = new Date(Date.now() - tf.days * 86400_000).toISOString();
-      const all: Row[] = [];
-      for (let from = 0; from < 12000; from += 1000) {
-        const { data, error } = await supabase
-          .from("price_candles").select("bucket, open, high, low, close")
-          .eq("symbol", symbol).gte("bucket", since)
-          .order("bucket", { ascending: true }).range(from, from + 999);
-        if (error || !data) break;
-        all.push(...(data as Row[]));
-        if (data.length < 1000) break;
-      }
+      const { data } = await supabase.rpc("get_candles", { _symbol: symbol, _seconds: tf.seconds, _since: since });
       if (cancelled) return;
-      const c = aggregate(all, tf.seconds);
+      const c: CandlestickData[] = ((data as { t: number; open: number; high: number; low: number; close: number }[]) ?? []).map((r) => ({
+        time: Number(r.t) as UTCTimestamp, open: Number(r.open), high: Number(r.high), low: Number(r.low), close: Number(r.close),
+      }));
       candlesRef.current = c;
       setRows(c);
       setLegend(c[c.length - 1] ?? null);
@@ -230,7 +209,7 @@ export const TradingChart = ({ symbol, name }: TradingChartProps) => {
   }, [rows, type, active, state]);
 
   useEffect(() => {
-    if (rows.length) chartRef.current?.timeScale().setVisibleLogicalRange({ from: Math.max(0, rows.length - 120), to: rows.length + 8 });
+    if (rows.length) chartRef.current?.timeScale().setVisibleLogicalRange({ from: Math.max(0, rows.length - 150), to: rows.length + 8 });
   }, [rows]);
 
   // Live price moves the latest candle
@@ -297,6 +276,9 @@ export const TradingChart = ({ symbol, name }: TradingChartProps) => {
             <span>L <b className={change >= 0 ? "text-trading-success" : "text-trading-danger"}>{fmt(legend.low)}</b></span>
             <span>C <b className={change >= 0 ? "text-trading-success" : "text-trading-danger"}>{fmt(legend.close)}</b></span>
           </div>
+        )}
+        {state === "ready" && rows.length > 0 && Date.now() / 1000 - (rows[rows.length - 1].time as number) > 3 * 3600 && (
+          <div className="absolute right-20 top-1 z-10 text-[11px] px-2 py-0.5 rounded bg-secondary text-muted-foreground">Market closed</div>
         )}
         {state !== "ready" && (
           <div className="absolute inset-0 flex items-center justify-center text-sm text-muted-foreground pointer-events-none">

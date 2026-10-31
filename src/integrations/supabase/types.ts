@@ -1097,6 +1097,16 @@ export type Database = {
         Args: { _admin_id: string; _expires_at?: string }
         Returns: string
       }
+      get_candles: {
+        Args: { _seconds: number; _since: string; _symbol: string }
+        Returns: {
+          close: number
+          high: number
+          low: number
+          open: number
+          t: number
+        }[]
+      }
       get_promo_code_stats: {
         Args: never
         Returns: {
@@ -1165,6 +1175,12 @@ export type Database = {
       }
       run_system_health_check: { Args: never; Returns: Json }
       signup_requires_promo: { Args: never; Returns: boolean }
+      symbols_missing_history: {
+        Args: { _since: string }
+        Returns: {
+          symbol: string
+        }[]
+      }
       sync_admin_user_relationships: { Args: never; Returns: undefined }
       transfer_user_to_admin: {
         Args: { _new_admin_id: string; _user_id: string }
