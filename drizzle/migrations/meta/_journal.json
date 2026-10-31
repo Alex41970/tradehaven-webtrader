@@ -36,6 +36,13 @@
       "when": 1793484688005,
       "tag": "0004_fix_financial_guard_for_internal_updates",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1793484735669,
+      "tag": "0005_revoke_internal_function_access",
+      "breakpoints": true
     }
   ]
 }
