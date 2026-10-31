@@ -352,6 +352,33 @@ export type Database = {
           },
         ]
       }
+      price_candles: {
+        Row: {
+          bucket: string
+          close: number
+          high: number
+          low: number
+          open: number
+          symbol: string
+        }
+        Insert: {
+          bucket: string
+          close: number
+          high: number
+          low: number
+          open: number
+          symbol: string
+        }
+        Update: {
+          bucket?: string
+          close?: number
+          high?: number
+          low?: number
+          open?: number
+          symbol?: string
+        }
+        Relationships: []
+      }
       price_history: {
         Row: {
           change_24h: number
@@ -1023,6 +1050,17 @@ export type Database = {
         Args: { _user_id: string }
         Returns: undefined
       }
+      backfill_candles: { Args: { _candles: Json }; Returns: number }
+      calc_trade_pnl: {
+        Args: {
+          _contract_size: number
+          _lots: number
+          _open: number
+          _price: number
+          _trade_type: string
+        }
+        Returns: number
+      }
       calculate_pnl:
         | {
             Args: {
@@ -1086,6 +1124,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      ingest_prices: { Args: { _prices: Json }; Returns: number }
       process_deposit_request: {
         Args: {
           _action: string
@@ -1095,6 +1134,7 @@ export type Database = {
         }
         Returns: Json
       }
+      process_price_triggers: { Args: never; Returns: Json }
       process_withdrawal_request: {
         Args: {
           _action: string

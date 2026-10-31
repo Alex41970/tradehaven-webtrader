@@ -43,6 +43,13 @@
       "when": 1793484735669,
       "tag": "0005_revoke_internal_function_access",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1793485542846,
+      "tag": "0006_price_feed_candles_and_lot_based_risk",
+      "breakpoints": true
     }
   ]
 }
