@@ -1,5 +1,48 @@
 {
   "version": "7",
   "dialect": "postgresql",
-  "entries": []
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1793484203057,
+      "tag": "0000_restore_trading_functions_part1",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1793484293581,
+      "tag": "0001_restore_trading_functions_part2",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1793484429156,
+      "tag": "0002_restore_trading_tables_policies",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1793484591271,
+      "tag": "0003_signup_setup_mode",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1793484688005,
+      "tag": "0004_fix_financial_guard_for_internal_updates",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1793484735669,
+      "tag": "0005_revoke_internal_function_access",
+      "breakpoints": true
+    }
+  ]
 }

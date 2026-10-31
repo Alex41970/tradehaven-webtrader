@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { CreditCard, Wallet, AlertTriangle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import type { TablesInsert } from '@/lib/trading-database.types';
+import type { TablesInsert } from '@/integrations/supabase/types';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { useSharedUserProfile } from '@/hooks/useSharedUserProfile';

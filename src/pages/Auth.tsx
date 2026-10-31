@@ -22,7 +22,15 @@ const Auth = () => {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [promoRequired, setPromoRequired] = useState(true);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    // First-time setup: until an admin exists, the first account can be created without a promo code
+    supabase.rpc('signup_requires_promo').then(({ data, error }) => {
+      if (!error && data === false) setPromoRequired(false);
+    });
+  }, []);
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
@@ -65,7 +73,7 @@ const Auth = () => {
     }
 
     // PRE-VALIDATE promo code before creating account
-    if (!promoCode.trim()) {
+    if (promoRequired && !promoCode.trim()) {
       toast({
         title: "Promo Code Required",
         description: "A valid promo code is required to create an account. Contact your administrator to receive a promo code.",
@@ -76,6 +84,7 @@ const Auth = () => {
 
     setLoading(true);
 
+    if (promoRequired || promoCode.trim()) {
     // Validate promo code with database BEFORE creating account
     const { data: validationResult, error: validationError } = await supabase.rpc(
       'validate_promo_code_for_signup',
@@ -106,9 +115,10 @@ const Auth = () => {
 
     // Promo code is VALID - proceed with account creation
     localStorage.setItem('signup_promo_code', promoCode.trim());
+    }
 
     try {
-      const promoParam = `?promo=${encodeURIComponent(promoCode.trim())}`;
+      const promoParam = promoCode.trim() ? `?promo=${encodeURIComponent(promoCode.trim())}` : '';
       const redirectUrl = `${window.location.origin}/dashboard${promoParam}`;
 
       const { data, error } = await supabase.auth.signUp({
@@ -120,7 +130,7 @@ const Auth = () => {
             first_name: firstName,
             surname: surname,
             phone_number: phoneNumber,
-            promo_code: promoCode.trim()
+            ...(promoCode.trim() ? { promo_code: promoCode.trim() } : {})
           }
         }
       });
@@ -328,17 +338,19 @@ const Auth = () => {
                   )}
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="promo-code">Promo Code (Required)</Label>
+                  <Label htmlFor="promo-code">{promoRequired ? "Promo Code (Required)" : "Promo Code (Optional during setup)"}</Label>
                   <Input
                     id="promo-code"
                     type="text"
-                    placeholder="Required - Contact admin for code"
+                    placeholder={promoRequired ? "Required - Contact admin for code" : "Not needed for the first account"}
                     value={promoCode}
                     onChange={(e) => setPromoCode(e.target.value)}
-                    required
+                    required={promoRequired}
                   />
                   <p className="text-xs text-muted-foreground">
-                    Contact your assigned administrator to receive a valid promo code
+                    {promoRequired
+                      ? "Contact your assigned administrator to receive a valid promo code"
+                      : "No administrator exists yet, so the first account can be created without a code"}
                   </p>
                 </div>
                 <div className="flex items-start space-x-2">

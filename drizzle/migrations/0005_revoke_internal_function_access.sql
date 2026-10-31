@@ -1,0 +1,10 @@
+REVOKE EXECUTE ON FUNCTION public.handle_new_user() FROM authenticated;
+REVOKE EXECUTE ON FUNCTION public.handle_new_user_role() FROM authenticated;
+REVOKE EXECUTE ON FUNCTION public.handle_trade_closed() FROM authenticated;
+REVOKE EXECUTE ON FUNCTION public.handle_trade_opened() FROM authenticated;
+REVOKE EXECUTE ON FUNCTION public.notify_profile_changes() FROM authenticated;
+REVOKE EXECUTE ON FUNCTION public.update_user_balance_on_trade_close_safe() FROM authenticated;
+REVOKE EXECUTE ON FUNCTION public.update_user_balance_on_trade_open_safe() FROM authenticated;
+REVOKE EXECUTE ON FUNCTION public.validate_role_transition() FROM authenticated;
+REVOKE EXECUTE ON FUNCTION public.recalculate_user_margins(uuid) FROM authenticated;
+REVOKE EXECUTE ON FUNCTION public.check_and_liquidate_positions(uuid) FROM authenticated;
