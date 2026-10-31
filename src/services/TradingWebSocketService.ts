@@ -51,7 +51,7 @@ export class TradingWebSocketService {
   private isUserActive = true;
   private connecting = false;
   
-  private readonly wsUrl = `wss://stdfkfutgkmnaajixguz.functions.supabase.co/functions/v1/websocket-trading-updates`;
+  private readonly wsUrl = `${String(import.meta.env.VITE_SUPABASE_URL).replace(/^http/, 'ws')}/functions/v1/websocket-trading-updates`;
 
   constructor() {
     this.setupEventHandlers();
