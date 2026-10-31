@@ -61,20 +61,6 @@ const cssColor = (name: string, alpha = 1) => {
   return `rgba(${f(0)}, ${f(8)}, ${f(4)}, ${alpha})`;
 };
 
-type Row = { bucket: string; open: number; high: number; low: number; close: number };
-
-function aggregate(rows: Row[], seconds: number): CandlestickData[] {
-  const out = new Map<number, CandlestickData>();
-  for (const r of rows) {
-    const t = Math.floor(new Date(r.bucket).getTime() / 1000 / seconds) * seconds;
-    const c = out.get(t);
-    const o = Number(r.open), h = Number(r.high), l = Number(r.low), cl = Number(r.close);
-    if (!c) out.set(t, { time: t as UTCTimestamp, open: o, high: h, low: l, close: cl });
-    else { c.high = Math.max(c.high, h); c.low = Math.min(c.low, l); c.close = cl; }
-  }
-  return [...out.values()].sort((a, b) => (a.time as number) - (b.time as number));
-}
-
 const loadPrefs = () => {
   try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}"); } catch { return {}; }
 };
