@@ -11,7 +11,6 @@ import { useRealtimeAccountMetrics } from "@/hooks/useRealtimeAccountMetrics";
 import { TradeRow } from "@/components/TradeRow";
 import { useEventDrivenUpdates } from "@/hooks/useEventDrivenUpdates";
 import { PortfolioSkeleton } from "./PortfolioSkeleton";
-import { useStopLossTakeProfit } from "@/hooks/useStopLossTakeProfit";
 
 export const Portfolio = () => {
   // ALL HOOKS MUST BE CALLED FIRST - NO CONDITIONAL HOOK CALLS
@@ -68,11 +67,7 @@ export const Portfolio = () => {
     }
   }, [closeTrade, closingTrades, excludeTradeFromPnL, includeTradeInPnL, handleTradeAction]);
 
-  // Enable SL/TP auto-execution
-  useStopLossTakeProfit({
-    openTrades,
-    onCloseTrade: handleSLTPClose
-  });
+  // Stop-loss / take-profit are executed on the server at real market prices (price-feed)
   // Use real-time account metrics for equity calculation
   const totalPnL = realTimeEquity - (profile?.balance || 0);
 
