@@ -29,6 +29,13 @@
       "when": 1793484591271,
       "tag": "0003_signup_setup_mode",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1793484688005,
+      "tag": "0004_fix_financial_guard_for_internal_updates",
+      "breakpoints": true
     }
   ]
 }
