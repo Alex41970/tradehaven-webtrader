@@ -26,44 +26,23 @@ serve(async (req) => {
   try {
     console.log('🔍 Starting order monitor cycle...');
     
-    // Early exit if no trades or orders need monitoring (performance optimization)
-    const { data: quickCheck } = await supabase
-      .from('trades')
-      .select('id', { count: 'exact', head: true })
-      .eq('status', 'open')
-      .or('stop_loss_price.not.is.null,take_profit_price.not.is.null');
-    
-    const { data: orderCheck } = await supabase
+    const nowIso = new Date().toISOString();
+
+    // Expire pending orders past their expiry time
+    await supabase
       .from('trade_orders')
-      .select('id', { count: 'exact', head: true })
-      .eq('status', 'pending')
-      .not('expires_at', 'is', null);
-    
-    // If no SL/TP trades and no pending orders, exit early
-    if ((!quickCheck || quickCheck.length === 0) && (!orderCheck || orderCheck.length === 0)) {
-      const executionTime = Date.now() - startTime;
-      console.log(`⚡ No monitoring needed - early exit (${executionTime}ms)`);
-      return new Response(JSON.stringify({
-        success: true,
-        ordersProcessed: 0,
-        tradesProcessed: 0,
-        executionTime,
-        message: 'No monitoring required - system idle'
-      }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
-    }
-    
-    // Get all pending orders
-    const { data: pendingOrders, error: ordersError } = await supabase
-      .from('trade_orders')
-      .select(`
-        *,
-        assets!inner(symbol, price, contract_size, category)
-      `)
+      .update({ status: 'expired', updated_at: nowIso })
       .eq('status', 'pending')
       .not('expires_at', 'is', null)
-      .lt('expires_at', new Date().toISOString());
+      .lt('expires_at', nowIso);
+
+    // Active pending orders (no expiry, or not yet expired). Stop-loss / take-profit
+    // and stop-outs are handled by the price-feed function right after each price update.
+    const { data: pendingOrders, error: ordersError } = await supabase
+      .from('trade_orders')
+      .select(`*, assets!inner(symbol, price, contract_size, category)`)
+      .eq('status', 'pending')
+      .or(`expires_at.is.null,expires_at.gt.${nowIso}`);
 
     if (ordersError) {
       console.error('Error fetching pending orders:', ordersError);
@@ -73,93 +52,28 @@ serve(async (req) => {
       });
     }
 
-    // Get all open trades with stop-loss or take-profit
-    const { data: openTrades, error: tradesError } = await supabase
-      .from('trades')
-      .select(`
-        *,
-        assets!inner(symbol, price, contract_size, category)
-      `)
-      .eq('status', 'open')
-      .or('stop_loss_price.not.is.null,take_profit_price.not.is.null');
-
-    if (tradesError) {
-      console.error('Error fetching open trades:', tradesError);
-      return new Response(JSON.stringify({ error: 'Failed to fetch trades' }), {
-        status: 500,
+    if (!pendingOrders || pendingOrders.length === 0) {
+      return new Response(JSON.stringify({ success: true, ordersProcessed: 0, executionTime: Date.now() - startTime }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
 
     let ordersProcessed = 0;
-    let tradesProcessed = 0;
+    const tradesProcessed = 0;
 
-    // Process pending orders
-    if (pendingOrders && pendingOrders.length > 0) {
-      console.log(`📋 Processing ${pendingOrders.length} pending orders...`);
-      
-      for (const order of pendingOrders) {
-        const currentPrice = order.assets.price;
+    console.log(`📋 Processing ${pendingOrders.length} pending orders...`);
+    for (const order of pendingOrders) {
+        const currentPrice = Number(order.assets.price);
         let shouldExecute = false;
-
-        // Check if order should be executed
         if (order.order_type === 'limit') {
-          if (order.trade_type === 'BUY' && currentPrice <= order.trigger_price) {
-            shouldExecute = true;
-          } else if (order.trade_type === 'SELL' && currentPrice >= order.trigger_price) {
-            shouldExecute = true;
-          }
+          shouldExecute = order.trade_type === 'BUY' ? currentPrice <= order.trigger_price : currentPrice >= order.trigger_price;
         } else if (order.order_type === 'stop') {
-          if (order.trade_type === 'BUY' && currentPrice >= order.trigger_price) {
-            shouldExecute = true;
-          } else if (order.trade_type === 'SELL' && currentPrice <= order.trigger_price) {
-            shouldExecute = true;
-          }
+          shouldExecute = order.trade_type === 'BUY' ? currentPrice >= order.trigger_price : currentPrice <= order.trigger_price;
         }
-
         if (shouldExecute) {
           await executeOrder(order, currentPrice);
           ordersProcessed++;
         }
-      }
-    }
-
-    // Process stop-loss and take-profit for open trades
-    if (openTrades && openTrades.length > 0) {
-      console.log(`🎯 Processing ${openTrades.length} trades with SL/TP...`);
-      
-      for (const trade of openTrades) {
-        const currentPrice = trade.assets.price;
-        let shouldClose = false;
-        let closeReason = '';
-
-        // Check stop-loss
-        if (trade.stop_loss_price) {
-          if (trade.trade_type === 'BUY' && currentPrice <= trade.stop_loss_price) {
-            shouldClose = true;
-            closeReason = 'stop_loss';
-          } else if (trade.trade_type === 'SELL' && currentPrice >= trade.stop_loss_price) {
-            shouldClose = true;
-            closeReason = 'stop_loss';
-          }
-        }
-
-        // Check take-profit
-        if (!shouldClose && trade.take_profit_price) {
-          if (trade.trade_type === 'BUY' && currentPrice >= trade.take_profit_price) {
-            shouldClose = true;
-            closeReason = 'take_profit';
-          } else if (trade.trade_type === 'SELL' && currentPrice <= trade.take_profit_price) {
-            shouldClose = true;
-            closeReason = 'take_profit';
-          }
-        }
-
-        if (shouldClose) {
-          await closeTrade(trade, currentPrice, closeReason);
-          tradesProcessed++;
-        }
-      }
     }
 
     console.log(`✅ Order monitoring complete: ${ordersProcessed} orders executed, ${tradesProcessed} trades closed`);
@@ -194,9 +108,8 @@ async function executeOrder(order: any, currentPrice: number) {
     console.log(`⚡ Executing order ${order.id} for ${order.symbol} at ${currentPrice}`);
     
     // Calculate margin required
-    const marginUsed = order.assets.category === 'forex'
-      ? (order.assets.contract_size * currentPrice) / order.leverage
-      : (order.amount * currentPrice) / order.leverage;
+    // Lots x contract size x price / leverage (the database recomputes this on insert)
+    const marginUsed = (order.amount * (order.assets.contract_size || 1) * currentPrice) / order.leverage;
 
     // Check if user has sufficient margin
     const { data: userProfile } = await supabase
