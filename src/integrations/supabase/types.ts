@@ -1112,6 +1112,16 @@ export type Database = {
           max_uses: number
         }[]
       }
+      get_risk_settings: {
+        Args: { _admin_id: string }
+        Returns: {
+          ac: boolean
+          gh: number
+          mc: number
+          neg: boolean
+          so: number
+        }[]
+      }
       get_user_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]

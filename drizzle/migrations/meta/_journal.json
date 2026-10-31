@@ -50,6 +50,13 @@
       "when": 1793485542846,
       "tag": "0006_price_feed_candles_and_lot_based_risk",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1793485581965,
+      "tag": "0007_authoritative_trade_open_pricing",
+      "breakpoints": true
     }
   ]
 }
