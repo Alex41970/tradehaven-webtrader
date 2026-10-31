@@ -230,8 +230,13 @@ Deno.serve(async (request) => {
     // De-duplicate buckets
     const uniq = new Map(hist.map((c) => [`${c.symbol}|${c.t}`, c]));
     if (uniq.size) {
-      const { data: n } = await supabase.rpc('backfill_candles', { _candles: [...uniq.values()] });
-      backfilled = (n as number) ?? 0;
+      const all = [...uniq.values()];
+      for (let i = 0; i < all.length; i += 5000) {
+        const { data: n, error: bfErr } = await supabase.rpc('backfill_candles', { _candles: all.slice(i, i + 5000) });
+        if (bfErr) console.error('backfill_candles failed', bfErr.message);
+        backfilled += (n as number) ?? 0;
+      }
+      console.log(`📈 history for ${needHistory.map((a) => a.symbol).join(',')}: ${all.length} candles`);
     }
   }
 
