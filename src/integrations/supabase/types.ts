@@ -114,6 +114,74 @@ export type Database = {
         Args: { _admin_id: string; _expires_at?: string }
         Returns: string
       }
+      get_promo_code_stats: {
+        Args: never
+        Returns: {
+          admin_email: string
+          admin_id: string
+          assigned_users_count: number
+          code: string
+          created_at: string
+          current_uses: number
+          expires_at: string
+          id: string
+          is_active: boolean
+          max_uses: number
+        }[]
+      }
+      get_user_role: {
+        Args: { _user_id: string }
+        Returns: Database["public"]["Enums"]["app_role"]
+      }
+      get_valid_bot_status: { Args: { _user_id: string }; Returns: Json }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      process_deposit_request: {
+        Args: {
+          _action: string
+          _admin_id: string
+          _admin_notes?: string
+          _request_id: string
+        }
+        Returns: Json
+      }
+      process_withdrawal_request: {
+        Args: {
+          _action: string
+          _admin_id: string
+          _admin_notes?: string
+          _request_id: string
+        }
+        Returns: Json
+      }
+      recalculate_user_margins: { Args: { _user_id: string }; Returns: Json }
+      release_coordinator_lock: {
+        Args: { p_instance_id: string }
+        Returns: boolean
+      }
+      renew_coordinator_lock: {
+        Args: { p_instance_id: string }
+        Returns: boolean
+      }
+      run_system_health_check: { Args: never; Returns: Json }
+      sync_admin_user_relationships: { Args: never; Returns: undefined }
+      transfer_user_to_admin: {
+        Args: { _new_admin_id: string; _user_id: string }
+        Returns: boolean
+      }
+      try_acquire_coordinator_lock: {
+        Args: { p_instance_id: string }
+        Returns: boolean
+      }
+      validate_promo_code_for_signup: {
+        Args: { _promo_code: string }
+        Returns: Json
+      }
     }
     Enums: {
       app_role: "super_admin" | "admin" | "user"
