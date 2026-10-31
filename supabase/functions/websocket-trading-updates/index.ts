@@ -358,6 +358,7 @@ async function handleOpenTrade(connection: ClientConnection, data: any) {
     // Broadcast trade opened
     connection.socket.send(JSON.stringify({
       type: 'trade_opened',
+      requestId: data.requestId,
       trade: newTrade,
       profile,
       trades,
@@ -368,6 +369,7 @@ async function handleOpenTrade(connection: ClientConnection, data: any) {
     console.error('Error opening trade:', error);
     connection.socket.send(JSON.stringify({
       type: 'trade_error',
+      requestId: data?.requestId,
       message: error.message || 'Failed to open trade'
     }));
   }
@@ -424,9 +426,10 @@ async function handleCloseTrade(connection: ClientConnection, data: any) {
     // Broadcast trade closed
     connection.socket.send(JSON.stringify({
       type: 'trade_closed',
+      requestId: data.requestId,
       tradeId: data.tradeId,
       pnl: result.pnl,
-      closePrice: data.closePrice,
+      closePrice: result.close_price ?? data.closePrice,
       tradeSource: data.tradeSource || 'user',
       profile,
       trades,
@@ -437,6 +440,7 @@ async function handleCloseTrade(connection: ClientConnection, data: any) {
     console.error('Error closing trade:', error);
     connection.socket.send(JSON.stringify({
       type: 'trade_error',
+      requestId: data?.requestId,
       message: error.message || 'Failed to close trade'
     }));
   }
