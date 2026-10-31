@@ -192,10 +192,17 @@ Deno.serve(async (request) => {
 
   // Backfill chart history for a few symbols that have little of it
   let backfilled = 0;
-  const since = new Date(Date.now() - 2 * 86400_000).toISOString();
-  const { data: covered } = await supabase.from('price_candles').select('symbol').lt('bucket', since).limit(1000);
-  const haveHistory = new Set((covered ?? []).map((r) => r.symbol));
-  const needHistory = assets.filter((a) => !haveHistory.has(a.symbol)).slice(0, BACKFILL_PER_RUN);
+  // A symbol "has history" if it owns candles older than 1 day (checked per symbol, rotating start)
+  const since = new Date(Date.now() - 86400_000).toISOString();
+  const needHistory: Asset[] = [];
+  const offset = new Date().getUTCMinutes() % Math.max(assets.length, 1);
+  const rotated = [...assets.slice(offset), ...assets.slice(0, offset)];
+  for (const a of rotated.slice(0, 15)) {
+    if (needHistory.length >= BACKFILL_PER_RUN) break;
+    const { count } = await supabase.from('price_candles').select('symbol', { count: 'exact', head: true })
+      .eq('symbol', a.symbol).lt('bucket', since);
+    if (!count) needHistory.push(a as Asset);
+  }
   if (needHistory.length) {
     const hist: Candle[] = [];
     const yh = needHistory.filter((a) => a.category !== 'crypto');
