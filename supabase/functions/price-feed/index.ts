@@ -12,7 +12,8 @@ type Candle = { symbol: string; t: number; o: number; h: number; l: number; c: n
 const UA = { 'User-Agent': 'Mozilla/5.0 (compatible; TradeHavenPriceFeed/1.0)' };
 const TIMEOUT_MS = 8000;
 const TWELVE_DATA_MAX_PER_RUN = 8; // free tier: 8 credits / minute
-const BACKFILL_PER_RUN = 4;
+const BACKFILL_PER_RUN = 8;
+const HISTORY_DAYS = 30;
 
 async function getJson(url: string): Promise<any | null> {
   try {
@@ -138,9 +139,33 @@ async function fetchTwelveData(assets: Asset[]): Promise<Quote[]> {
 }
 
 async function binanceHistory(a: Asset): Promise<Candle[]> {
-  const d = await getJson(`https://data-api.binance.vision/api/v3/klines?symbol=${binanceSymbol(a)}&interval=5m&limit=1000`);
-  if (!Array.isArray(d)) return [];
-  return d.map((k: any[]) => ({ symbol: a.symbol, t: Math.floor(k[0] / 1000), o: +k[1], h: +k[2], l: +k[3], c: +k[4] }));
+  const out: Candle[] = [];
+  let start = Date.now() - HISTORY_DAYS * 86400_000;
+  for (let i = 0; i < 10 && start < Date.now(); i++) {
+    const d = await getJson(`https://data-api.binance.vision/api/v3/klines?symbol=${binanceSymbol(a)}&interval=5m&limit=1000&startTime=${start}`);
+    if (!Array.isArray(d) || !d.length) break;
+    for (const k of d) out.push({ symbol: a.symbol, t: Math.floor(k[0] / 1000), o: +k[1], h: +k[2], l: +k[3], c: +k[4] });
+    start = d[d.length - 1][0] + 300_000;
+    if (d.length < 1000) break;
+  }
+  return out;
+}
+
+async function yahooHistory(a: Asset): Promise<Candle[]> {
+  let r = null;
+  for (const host of ['query2', 'query1']) {
+    const d = await getJson(`https://${host}.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(yahooSymbol(a))}?interval=5m&range=${HISTORY_DAYS}d`);
+    r = d?.chart?.result?.[0];
+    if (r) break;
+  }
+  const ts: number[] = r?.timestamp ?? [];
+  const q = r?.indicators?.quote?.[0] ?? {};
+  const out: Candle[] = [];
+  ts.forEach((t, i) => {
+    const o = q.open?.[i], h = q.high?.[i], l = q.low?.[i], c = q.close?.[i];
+    if (valid(o) && valid(h) && valid(l) && valid(c)) out.push({ symbol: a.symbol, t: Math.floor(t / 300) * 300, o, h, l, c });
+  });
+  return out;
 }
 
 Deno.serve(async (request) => {
@@ -192,22 +217,16 @@ Deno.serve(async (request) => {
 
   // Backfill chart history for a few symbols that have little of it
   let backfilled = 0;
-  // A symbol "has history" if it owns candles older than 1 day (checked per symbol, rotating start)
-  const since = new Date(Date.now() - 86400_000).toISOString();
-  const needHistory: Asset[] = [];
-  const offset = new Date().getUTCMinutes() % Math.max(assets.length, 1);
-  const rotated = [...assets.slice(offset), ...assets.slice(0, offset)];
-  for (const a of rotated.slice(0, 15)) {
-    if (needHistory.length >= BACKFILL_PER_RUN) break;
-    const { count } = await supabase.from('price_candles').select('symbol', { count: 'exact', head: true })
-      .eq('symbol', a.symbol).lt('bucket', since);
-    if (!count) needHistory.push(a as Asset);
-  }
+  // Markets without real history back to ~HISTORY_DAYS get filled (a few per run)
+  const since = new Date(Date.now() - (HISTORY_DAYS - 3) * 86400_000).toISOString();
+  const { data: missingRows, error: mhErr } = await supabase.rpc('symbols_missing_history', { _since: since });
+  if (mhErr) console.error('symbols_missing_history failed', mhErr.message);
+  const missingSet = new Set(((missingRows as { symbol: string }[]) ?? []).map((r) => r.symbol));
+  const needHistory = (assets as Asset[]).filter((a) => missingSet.has(a.symbol)).slice(0, BACKFILL_PER_RUN);
   if (needHistory.length) {
     const hist: Candle[] = [];
-    const yh = needHistory.filter((a) => a.category !== 'crypto');
-    if (yh.length) hist.push(...(await fetchYahoo(yh, true)).candles);
-    for (const a of needHistory.filter((a) => a.category === 'crypto')) hist.push(...(await binanceHistory(a)));
+    const parts = await Promise.all(needHistory.map((a) => (a.category === 'crypto' ? binanceHistory(a) : yahooHistory(a))));
+    parts.forEach((p) => hist.push(...p));
     // De-duplicate buckets
     const uniq = new Map(hist.map((c) => [`${c.symbol}|${c.t}`, c]));
     if (uniq.size) {
@@ -216,9 +235,9 @@ Deno.serve(async (request) => {
     }
   }
 
-  // Keep 30 days of candles (once an hour)
+  // Keep HISTORY_DAYS of candles (once an hour)
   if (new Date().getUTCMinutes() === 0) {
-    await supabase.from('price_candles').delete().lt('bucket', new Date(Date.now() - 30 * 86400_000).toISOString());
+    await supabase.from('price_candles').delete().lt('bucket', new Date(Date.now() - (HISTORY_DAYS + 1) * 86400_000).toISOString());
   }
 
   const missing = assets.filter((a) => !quotes.has(a.symbol)).map((a) => a.symbol);
