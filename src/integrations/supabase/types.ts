@@ -14,7 +14,952 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      admin_audit_log: {
+        Row: {
+          action: string
+          action_details: Json | null
+          admin_id: string
+          id: string
+          ip_address: unknown
+          new_value: Json | null
+          old_value: Json | null
+          performed_at: string | null
+          reason: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          action_details?: Json | null
+          admin_id: string
+          id?: string
+          ip_address?: unknown
+          new_value?: Json | null
+          old_value?: Json | null
+          performed_at?: string | null
+          reason?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          action_details?: Json | null
+          admin_id?: string
+          id?: string
+          ip_address?: unknown
+          new_value?: Json | null
+          old_value?: Json | null
+          performed_at?: string | null
+          reason?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      admin_payment_settings: {
+        Row: {
+          admin_id: string
+          bank_wire_details: Json | null
+          created_at: string
+          crypto_wallets: Json | null
+          id: string
+          is_active: boolean
+          updated_at: string
+        }
+        Insert: {
+          admin_id: string
+          bank_wire_details?: Json | null
+          created_at?: string
+          crypto_wallets?: Json | null
+          id?: string
+          is_active?: boolean
+          updated_at?: string
+        }
+        Update: {
+          admin_id?: string
+          bank_wire_details?: Json | null
+          created_at?: string
+          crypto_wallets?: Json | null
+          id?: string
+          is_active?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      admin_trading_settings: {
+        Row: {
+          admin_id: string
+          allow_negative_balance: boolean | null
+          auto_close_enabled: boolean | null
+          created_at: string | null
+          grace_period_hours: number | null
+          id: string
+          margin_call_level: number | null
+          market_close_time: string | null
+          market_closed: boolean
+          market_open_time: string | null
+          price_intensity: string
+          stop_out_level: number | null
+          trading_days: string[] | null
+          trading_hours_enabled: boolean | null
+          trading_timezone: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          admin_id: string
+          allow_negative_balance?: boolean | null
+          auto_close_enabled?: boolean | null
+          created_at?: string | null
+          grace_period_hours?: number | null
+          id?: string
+          margin_call_level?: number | null
+          market_close_time?: string | null
+          market_closed?: boolean
+          market_open_time?: string | null
+          price_intensity?: string
+          stop_out_level?: number | null
+          trading_days?: string[] | null
+          trading_hours_enabled?: boolean | null
+          trading_timezone?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          admin_id?: string
+          allow_negative_balance?: boolean | null
+          auto_close_enabled?: boolean | null
+          created_at?: string | null
+          grace_period_hours?: number | null
+          id?: string
+          margin_call_level?: number | null
+          market_close_time?: string | null
+          market_closed?: boolean
+          market_open_time?: string | null
+          price_intensity?: string
+          stop_out_level?: number | null
+          trading_days?: string[] | null
+          trading_hours_enabled?: boolean | null
+          trading_timezone?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      admin_user_relationships: {
+        Row: {
+          admin_id: string
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          admin_id: string
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          admin_id?: string
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admin_user_relationships_admin_id_fkey"
+            columns: ["admin_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "fk_admin_user_relationships_user_profiles"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "user_profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      assets: {
+        Row: {
+          api_source: string | null
+          api_symbol: string | null
+          base_currency: string | null
+          category: string
+          change_24h: number
+          contract_size: number | null
+          created_at: string
+          id: string
+          is_active: boolean
+          last_ws_update: string | null
+          max_leverage: number
+          min_trade_size: number
+          name: string
+          price: number
+          price_source: string | null
+          price_updated_at: string | null
+          quote_currency: string | null
+          spread: number
+          symbol: string
+          updated_at: string
+        }
+        Insert: {
+          api_source?: string | null
+          api_symbol?: string | null
+          base_currency?: string | null
+          category: string
+          change_24h?: number
+          contract_size?: number | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          last_ws_update?: string | null
+          max_leverage?: number
+          min_trade_size?: number
+          name: string
+          price: number
+          price_source?: string | null
+          price_updated_at?: string | null
+          quote_currency?: string | null
+          spread?: number
+          symbol: string
+          updated_at?: string
+        }
+        Update: {
+          api_source?: string | null
+          api_symbol?: string | null
+          base_currency?: string | null
+          category?: string
+          change_24h?: number
+          contract_size?: number | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          last_ws_update?: string | null
+          max_leverage?: number
+          min_trade_size?: number
+          name?: string
+          price?: number
+          price_source?: string | null
+          price_updated_at?: string | null
+          quote_currency?: string | null
+          spread?: number
+          symbol?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      bot_licenses: {
+        Row: {
+          admin_id: string
+          created_at: string
+          expires_at: string | null
+          id: string
+          is_active: boolean
+          license_key: string
+          updated_at: string
+          used_by_user_id: string | null
+        }
+        Insert: {
+          admin_id: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          license_key: string
+          updated_at?: string
+          used_by_user_id?: string | null
+        }
+        Update: {
+          admin_id?: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          license_key?: string
+          updated_at?: string
+          used_by_user_id?: string | null
+        }
+        Relationships: []
+      }
+      coordinator_lock: {
+        Row: {
+          expires_at: string
+          heartbeat_at: string
+          id: string
+          instance_id: string
+          locked_at: string
+        }
+        Insert: {
+          expires_at?: string
+          heartbeat_at?: string
+          id?: string
+          instance_id: string
+          locked_at?: string
+        }
+        Update: {
+          expires_at?: string
+          heartbeat_at?: string
+          id?: string
+          instance_id?: string
+          locked_at?: string
+        }
+        Relationships: []
+      }
+      deposit_requests: {
+        Row: {
+          admin_notes: string | null
+          amount: number
+          bank_details: Json | null
+          created_at: string
+          crypto_wallet_address: string | null
+          deposit_type: string
+          id: string
+          processed_at: string | null
+          processed_by_admin: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          amount: number
+          bank_details?: Json | null
+          created_at?: string
+          crypto_wallet_address?: string | null
+          deposit_type: string
+          id?: string
+          processed_at?: string | null
+          processed_by_admin?: string | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          admin_notes?: string | null
+          amount?: number
+          bank_details?: Json | null
+          created_at?: string
+          crypto_wallet_address?: string | null
+          deposit_type?: string
+          id?: string
+          processed_at?: string | null
+          processed_by_admin?: string | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_deposit_requests_user_profiles"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      price_history: {
+        Row: {
+          change_24h: number
+          created_at: string
+          id: string
+          price: number
+          snapshot_date: string
+          symbol: string
+        }
+        Insert: {
+          change_24h?: number
+          created_at?: string
+          id?: string
+          price: number
+          snapshot_date?: string
+          symbol: string
+        }
+        Update: {
+          change_24h?: number
+          created_at?: string
+          id?: string
+          price?: number
+          snapshot_date?: string
+          symbol?: string
+        }
+        Relationships: []
+      }
+      promo_codes: {
+        Row: {
+          admin_id: string
+          code: string
+          created_at: string
+          current_uses: number
+          expires_at: string | null
+          id: string
+          is_active: boolean
+          max_uses: number | null
+        }
+        Insert: {
+          admin_id: string
+          code: string
+          created_at?: string
+          current_uses?: number
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          max_uses?: number | null
+        }
+        Update: {
+          admin_id?: string
+          code?: string
+          created_at?: string
+          current_uses?: number
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          max_uses?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "promo_codes_admin_id_fkey"
+            columns: ["admin_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      promo_validation_attempts: {
+        Row: {
+          attempted_at: string
+          created_user_id: string | null
+          error_reason: string | null
+          id: string
+          ip_address: unknown
+          promo_code: string
+          resulted_in_signup: boolean | null
+          user_agent: string | null
+          was_valid: boolean
+        }
+        Insert: {
+          attempted_at?: string
+          created_user_id?: string | null
+          error_reason?: string | null
+          id?: string
+          ip_address?: unknown
+          promo_code: string
+          resulted_in_signup?: boolean | null
+          user_agent?: string | null
+          was_valid: boolean
+        }
+        Update: {
+          attempted_at?: string
+          created_user_id?: string | null
+          error_reason?: string | null
+          id?: string
+          ip_address?: unknown
+          promo_code?: string
+          resulted_in_signup?: boolean | null
+          user_agent?: string | null
+          was_valid?: boolean
+        }
+        Relationships: []
+      }
+      trade_execution_log: {
+        Row: {
+          action: string
+          executed_at: string | null
+          executed_by: string | null
+          executed_price: number | null
+          execution_source: string | null
+          id: string
+          ip_address: unknown
+          notes: string | null
+          requested_price: number | null
+          slippage_percent: number | null
+          trade_id: string | null
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          action: string
+          executed_at?: string | null
+          executed_by?: string | null
+          executed_price?: number | null
+          execution_source?: string | null
+          id?: string
+          ip_address?: unknown
+          notes?: string | null
+          requested_price?: number | null
+          slippage_percent?: number | null
+          trade_id?: string | null
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          action?: string
+          executed_at?: string | null
+          executed_by?: string | null
+          executed_price?: number | null
+          execution_source?: string | null
+          id?: string
+          ip_address?: unknown
+          notes?: string | null
+          requested_price?: number | null
+          slippage_percent?: number | null
+          trade_id?: string | null
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trade_execution_log_trade_id_fkey"
+            columns: ["trade_id"]
+            isOneToOne: false
+            referencedRelation: "trades"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trade_orders: {
+        Row: {
+          amount: number
+          asset_id: string
+          created_at: string
+          expires_at: string | null
+          filled_at: string | null
+          id: string
+          leverage: number
+          max_slippage_percent: number | null
+          order_type: string
+          price_at_order: number | null
+          status: string
+          stop_loss_price: number | null
+          symbol: string
+          take_profit_price: number | null
+          trade_type: string
+          trigger_price: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          asset_id: string
+          created_at?: string
+          expires_at?: string | null
+          filled_at?: string | null
+          id?: string
+          leverage?: number
+          max_slippage_percent?: number | null
+          order_type?: string
+          price_at_order?: number | null
+          status?: string
+          stop_loss_price?: number | null
+          symbol: string
+          take_profit_price?: number | null
+          trade_type: string
+          trigger_price?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          asset_id?: string
+          created_at?: string
+          expires_at?: string | null
+          filled_at?: string | null
+          id?: string
+          leverage?: number
+          max_slippage_percent?: number | null
+          order_type?: string
+          price_at_order?: number | null
+          status?: string
+          stop_loss_price?: number | null
+          symbol?: string
+          take_profit_price?: number | null
+          trade_type?: string
+          trigger_price?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_trade_orders_assets"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_trade_orders_user_profiles"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      trades: {
+        Row: {
+          amount: number
+          asset_id: string
+          close_price: number | null
+          closed_at: string | null
+          created_at: string
+          current_price: number | null
+          id: string
+          idempotency_key: string | null
+          leverage: number
+          margin_used: number
+          open_price: number
+          opened_at: string
+          parent_order_id: string | null
+          pnl: number | null
+          price_age_ms: number | null
+          slippage_percent: number | null
+          status: string
+          stop_loss_price: number | null
+          symbol: string
+          take_profit_price: number | null
+          trade_source: string
+          trade_type: string
+          updated_at: string
+          user_id: string
+          version: number | null
+        }
+        Insert: {
+          amount: number
+          asset_id: string
+          close_price?: number | null
+          closed_at?: string | null
+          created_at?: string
+          current_price?: number | null
+          id?: string
+          idempotency_key?: string | null
+          leverage?: number
+          margin_used: number
+          open_price: number
+          opened_at?: string
+          parent_order_id?: string | null
+          pnl?: number | null
+          price_age_ms?: number | null
+          slippage_percent?: number | null
+          status?: string
+          stop_loss_price?: number | null
+          symbol: string
+          take_profit_price?: number | null
+          trade_source?: string
+          trade_type: string
+          updated_at?: string
+          user_id: string
+          version?: number | null
+        }
+        Update: {
+          amount?: number
+          asset_id?: string
+          close_price?: number | null
+          closed_at?: string | null
+          created_at?: string
+          current_price?: number | null
+          id?: string
+          idempotency_key?: string | null
+          leverage?: number
+          margin_used?: number
+          open_price?: number
+          opened_at?: string
+          parent_order_id?: string | null
+          pnl?: number | null
+          price_age_ms?: number | null
+          slippage_percent?: number | null
+          status?: string
+          stop_loss_price?: number | null
+          symbol?: string
+          take_profit_price?: number | null
+          trade_source?: string
+          trade_type?: string
+          updated_at?: string
+          user_id?: string
+          version?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_trades_parent_order"
+            columns: ["parent_order_id"]
+            isOneToOne: false
+            referencedRelation: "trade_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_trades_user_profiles"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "trades_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_bot_status: {
+        Row: {
+          bot_status: string
+          connected_at: string
+          created_at: string
+          id: string
+          is_active: boolean
+          license_key: string
+          permissions: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          bot_status?: string
+          connected_at?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          license_key: string
+          permissions?: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          bot_status?: string
+          connected_at?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          license_key?: string
+          permissions?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_user_bot_status_user_profiles"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "user_profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      user_favorites: {
+        Row: {
+          asset_id: string
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          asset_id: string
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          asset_id?: string
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_user_favorites_user_profiles"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "user_favorites_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_payment_settings: {
+        Row: {
+          admin_id: string
+          bank_wire_details: Json | null
+          created_at: string
+          crypto_wallets: Json | null
+          id: string
+          is_active: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          admin_id: string
+          bank_wire_details?: Json | null
+          created_at?: string
+          crypto_wallets?: Json | null
+          id?: string
+          is_active?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          admin_id?: string
+          bank_wire_details?: Json | null
+          created_at?: string
+          crypto_wallets?: Json | null
+          id?: string
+          is_active?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_profiles: {
+        Row: {
+          account_status: string | null
+          admin_id: string | null
+          assigned_at: string | null
+          assignment_method: string | null
+          available_margin: number
+          balance: number
+          created_at: string
+          email: string | null
+          equity: number
+          first_name: string | null
+          frozen_at: string | null
+          frozen_reason: string | null
+          grace_period_until: string | null
+          id: string
+          last_activity_at: string | null
+          phone_number: string | null
+          promo_code_used: string | null
+          surname: string | null
+          updated_at: string
+          used_margin: number
+          user_id: string
+        }
+        Insert: {
+          account_status?: string | null
+          admin_id?: string | null
+          assigned_at?: string | null
+          assignment_method?: string | null
+          available_margin?: number
+          balance?: number
+          created_at?: string
+          email?: string | null
+          equity?: number
+          first_name?: string | null
+          frozen_at?: string | null
+          frozen_reason?: string | null
+          grace_period_until?: string | null
+          id?: string
+          last_activity_at?: string | null
+          phone_number?: string | null
+          promo_code_used?: string | null
+          surname?: string | null
+          updated_at?: string
+          used_margin?: number
+          user_id: string
+        }
+        Update: {
+          account_status?: string | null
+          admin_id?: string | null
+          assigned_at?: string | null
+          assignment_method?: string | null
+          available_margin?: number
+          balance?: number
+          created_at?: string
+          email?: string | null
+          equity?: number
+          first_name?: string | null
+          frozen_at?: string | null
+          frozen_reason?: string | null
+          grace_period_until?: string | null
+          id?: string
+          last_activity_at?: string | null
+          phone_number?: string | null
+          promo_code_used?: string | null
+          surname?: string | null
+          updated_at?: string
+          used_margin?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_profiles_admin_id_fkey"
+            columns: ["admin_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      withdrawal_requests: {
+        Row: {
+          admin_notes: string | null
+          amount: number
+          bank_details: Json | null
+          created_at: string
+          crypto_wallet_address: string | null
+          id: string
+          processed_at: string | null
+          processed_by_admin: string | null
+          status: string
+          user_id: string
+          withdrawal_type: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          amount: number
+          bank_details?: Json | null
+          created_at?: string
+          crypto_wallet_address?: string | null
+          id?: string
+          processed_at?: string | null
+          processed_by_admin?: string | null
+          status?: string
+          user_id: string
+          withdrawal_type: string
+        }
+        Update: {
+          admin_notes?: string | null
+          amount?: number
+          bank_details?: Json | null
+          created_at?: string
+          crypto_wallet_address?: string | null
+          id?: string
+          processed_at?: string | null
+          processed_by_admin?: string | null
+          status?: string
+          user_id?: string
+          withdrawal_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_withdrawal_requests_user_profiles"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
