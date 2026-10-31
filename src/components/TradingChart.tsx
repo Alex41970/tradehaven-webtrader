@@ -18,9 +18,16 @@ const TIMEFRAMES = [
   { label: "4H", seconds: 14400, days: 30 },
 ] as const;
 
+// Read a theme color (stored as "H S% L%") and convert to rgba for the chart library
 const cssColor = (name: string, alpha = 1) => {
   const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
-  return v ? `hsl(${v.split(" ").join(", ")}${alpha < 1 ? `, ${alpha}` : ""})`.replace("hsl(", alpha < 1 ? "hsla(" : "hsl(") : "";
+  const m = v.match(/([\d.]+)\s+([\d.]+)%\s+([\d.]+)%/);
+  if (!m) return `rgba(128, 128, 128, ${alpha})`;
+  const h = +m[1], s = +m[2] / 100, l = +m[3] / 100;
+  const k = (n: number) => (n + h / 30) % 12;
+  const a = s * Math.min(l, 1 - l);
+  const f = (n: number) => Math.round(255 * (l - a * Math.max(-1, Math.min(k(n) - 3, 9 - k(n), 1))));
+  return `rgba(${f(0)}, ${f(8)}, ${f(4)}, ${alpha})`;
 };
 
 type Row = { bucket: string; open: number; high: number; low: number; close: number };
