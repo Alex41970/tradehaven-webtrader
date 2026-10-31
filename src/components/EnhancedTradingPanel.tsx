@@ -198,7 +198,7 @@ export const EnhancedTradingPanel: React.FC<EnhancedTradingPanelProps> = ({
 
         {/* Amount */}
         <div className="space-y-2">
-          <Label htmlFor="amount">Amount</Label>
+          <Label htmlFor="amount">Volume (lots){selectedAsset.contract_size > 1 ? ` · 1 lot = ${selectedAsset.contract_size.toLocaleString()} units` : ""}</Label>
           <Input
             id="amount"
             type="number"
