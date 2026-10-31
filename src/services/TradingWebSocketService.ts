@@ -341,67 +341,46 @@ export class TradingWebSocketService {
     }
   }
 
-  async openTrade(tradeData: TradeData): Promise<boolean> {
+  // Sends a trade action and waits for the reply that carries the same requestId.
+  // Listeners are always removed (reply, error or timeout), so nothing leaks.
+  private sendTradeAction(action: 'open_trade' | 'close_trade', data: Record<string, unknown>, successEvent: string): Promise<boolean> {
+    const requestId = crypto.randomUUID();
     return new Promise((resolve, reject) => {
-      const timeout = setTimeout(() => {
-        reject(new Error('Trade open timeout'));
-      }, 15000);
-
-      const handleResponse = () => {
+      const cleanup = () => {
         clearTimeout(timeout);
-        this.off('trade_opened', handleResponse);
+        this.off(successEvent, handleResponse);
         this.off('trade_error', handleError);
+      };
+      const matches = (message: TradingWebSocketMessage) => !message.requestId || message.requestId === requestId;
+      const handleResponse = (message: TradingWebSocketMessage) => {
+        if (!matches(message)) return;
+        cleanup();
         resolve(true);
       };
-
       const handleError = (message: TradingWebSocketMessage) => {
-        clearTimeout(timeout);
-        this.off('trade_opened', handleResponse);
-        this.off('trade_error', handleError);
-        reject(new Error(message.message || 'Trade open failed'));
+        if (!matches(message)) return;
+        cleanup();
+        reject(new Error(message.message || 'Trade action failed'));
       };
+      const timeout = setTimeout(() => {
+        cleanup();
+        reject(new Error(action === 'open_trade' ? 'Trade open timeout' : 'Trade close timeout'));
+      }, 15000);
 
-      this.on('trade_opened', handleResponse);
+      this.on(successEvent, handleResponse);
       this.on('trade_error', handleError);
-
-      this.send({
-        type: 'trade_action',
-        action: 'open_trade',
-        data: tradeData
-      });
+      this.send({ type: 'trade_action', action, data: { ...data, requestId } });
     });
   }
 
-  async closeTrade(tradeId: string, closePrice: number): Promise<boolean> {
-    return new Promise((resolve, reject) => {
-      const timeout = setTimeout(() => {
-        reject(new Error('Trade close timeout'));
-      }, 15000);
-
-      const handleResponse = () => {
-        clearTimeout(timeout);
-        this.off('trade_closed', handleResponse);
-        this.off('trade_error', handleError);
-        resolve(true);
-      };
-
-      const handleError = (message: TradingWebSocketMessage) => {
-        clearTimeout(timeout);
-        this.off('trade_closed', handleResponse);
-        this.off('trade_error', handleError);
-        reject(new Error(message.message || 'Trade close failed'));
-      };
-
-      this.on('trade_closed', handleResponse);
-      this.on('trade_error', handleError);
-
-      this.send({
-        type: 'trade_action',
-        action: 'close_trade',
-        data: { tradeId, closePrice }
-      });
-    });
+  openTrade(tradeData: TradeData): Promise<boolean> {
+    return this.sendTradeAction('open_trade', tradeData as unknown as Record<string, unknown>, 'trade_opened');
   }
+
+  closeTrade(tradeId: string, closePrice: number): Promise<boolean> {
+    return this.sendTradeAction('close_trade', { tradeId, closePrice }, 'trade_closed');
+  }
+
 
   ping(timestamp?: number) {
     this.send({ 

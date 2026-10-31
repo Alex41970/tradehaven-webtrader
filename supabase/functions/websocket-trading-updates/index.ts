@@ -257,7 +257,7 @@ async function handleOpenTrade(connection: ClientConnection, data: any) {
     // Get asset to check constraints
     const { data: asset, error: assetError } = await supabase
       .from('assets')
-      .select('max_leverage, min_trade_size, symbol, price, price_updated_at')
+      .select('max_leverage, min_trade_size, symbol, price, price_updated_at, contract_size')
       .eq('id', data.assetId)
       .single();
 
@@ -282,7 +282,8 @@ async function handleOpenTrade(connection: ClientConnection, data: any) {
     }
 
     // Calculate margin used
-    const marginUsed = (data.amount * data.openPrice) / data.leverage;
+    // Lots x contract size x price / leverage (the database re-checks price and margin on insert)
+    const marginUsed = (data.amount * (Number(asset.contract_size) || 1) * data.openPrice) / data.leverage;
 
     // ===== PHASE 1: BALANCE VALIDATION WITH LOCK =====
     const { data: userProfile, error: profileError } = await supabase
@@ -357,6 +358,7 @@ async function handleOpenTrade(connection: ClientConnection, data: any) {
     // Broadcast trade opened
     connection.socket.send(JSON.stringify({
       type: 'trade_opened',
+      requestId: data.requestId,
       trade: newTrade,
       profile,
       trades,
@@ -367,6 +369,7 @@ async function handleOpenTrade(connection: ClientConnection, data: any) {
     console.error('Error opening trade:', error);
     connection.socket.send(JSON.stringify({
       type: 'trade_error',
+      requestId: data?.requestId,
       message: error.message || 'Failed to open trade'
     }));
   }
@@ -423,9 +426,10 @@ async function handleCloseTrade(connection: ClientConnection, data: any) {
     // Broadcast trade closed
     connection.socket.send(JSON.stringify({
       type: 'trade_closed',
+      requestId: data.requestId,
       tradeId: data.tradeId,
       pnl: result.pnl,
-      closePrice: data.closePrice,
+      closePrice: result.close_price ?? data.closePrice,
       tradeSource: data.tradeSource || 'user',
       profile,
       trades,
@@ -436,6 +440,7 @@ async function handleCloseTrade(connection: ClientConnection, data: any) {
     console.error('Error closing trade:', error);
     connection.socket.send(JSON.stringify({
       type: 'trade_error',
+      requestId: data?.requestId,
       message: error.message || 'Failed to close trade'
     }));
   }
@@ -474,11 +479,12 @@ async function recalculateUserMargins(userId: string) {
         const symbols = [...new Set(openTrades.map(trade => trade.symbol))];
         const { data: assetPrices, error: priceError } = await supabase
           .from('assets')
-          .select('symbol, price')
+          .select('symbol, price, contract_size')
           .in('symbol', symbols);
 
         if (!priceError && assetPrices) {
           const priceMap = new Map(assetPrices.map(asset => [asset.symbol, asset.price]));
+          const sizeMap = new Map(assetPrices.map(asset => [asset.symbol, Number(asset.contract_size) || 1]));
           
           // Calculate unrealized PnL for each open trade
           totalUnrealizedPnL = openTrades.reduce((sum, trade) => {
@@ -489,13 +495,13 @@ async function recalculateUserMargins(userId: string) {
 
             const amount = Number(trade.amount);
             const openPrice = Number(trade.open_price);
-            const leverage = Number(trade.leverage) || 1;
+            const contractSize = sizeMap.get(trade.symbol) || 1;
 
             let pnl = 0;
             if (trade.trade_type === 'BUY') {
-              pnl = amount * (currentPrice - openPrice) * leverage;
+              pnl = amount * (currentPrice - openPrice) * contractSize;
             } else {
-              pnl = amount * (openPrice - currentPrice) * leverage;
+              pnl = amount * (openPrice - currentPrice) * contractSize;
             }
 
             return sum + pnl;

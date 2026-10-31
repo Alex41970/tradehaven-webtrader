@@ -66,7 +66,8 @@ export const useTrades = () => {
     fetchTrades();
   }, [fetchTrades]);
 
-  const trades = isConnected && realtimeTrades.length > 0 ? realtimeTrades : dbTrades;
+  // An empty live list is a valid answer (all trades closed) — don't fall back to an older snapshot
+  const trades = isConnected && !realtimeLoading ? realtimeTrades : dbTrades;
   const loading = isConnected ? realtimeLoading : dbLoading;
 
   const openTrades = trades.filter(trade => trade.status === 'open');

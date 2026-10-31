@@ -1,12 +1,12 @@
-# Roadmap — TradeHaven on Lovable Cloud
+# Roadmap — TradeHaven
 
-- [x] Rebuild database schema (tables, RLS, grants, functions, triggers) on Cloud
-- [x] Seed assets
-- [x] Point trading connection at new backend; remove old addresses
-- [x] Deploy 5 server functions
-- [x] Recreate scheduled jobs (order monitor every minute; prices refresh while users are online)
-- [x] Switch to generated types; retire temporary schema copy
-- [x] Email sign-up/sign-in enabled; first account can sign up without promo code
-- [~] Google sign-in — skipped: would bypass invite-only promo codes
-- [ ] Assign super admin to Ali — blocked: needs Ali's email after he signs up and confirms
-- [ ] End-to-end check signed in — blocked: needs a confirmed account
+- [x] Rebuild Cloud database, functions, schedules
+- [x] Email sign-up; first account without promo code
+- [ ] Assign super admin to Ali — blocked: needs Ali's email after sign-up
+- [ ] Signed-in end-to-end check (trade, chart) — blocked: needs a confirmed account
+- [x] Price feed: free sources first, fallbacks, every minute, own candles
+- [x] Server-side SL/TP, margin call, grace, stop-out; server price authority
+- [x] Lot-based P&L and margin everywhere
+- [x] Own charts replacing TradingView
+- [x] Trade-confirmation leak fix, account-switch fix, honest price badge, lazy pages
+- [ ] Later: merge duplicate data loading into one shared cache (larger refactor)

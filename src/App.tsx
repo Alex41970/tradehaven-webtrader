@@ -1,4 +1,4 @@
-import React from "react";
+import React, { lazy, Suspense } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -17,24 +17,24 @@ import { ThemeProvider } from "next-themes";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
-import AdminDashboard from "./pages/AdminDashboard";
-import SuperAdminDashboard from "./pages/SuperAdminDashboard";
+const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
+const SuperAdminDashboard = lazy(() => import("./pages/SuperAdminDashboard"));
 import NotFound from "./pages/NotFound";
-import Terms from "./pages/Terms";
-import PrivacyPolicy from "./pages/PrivacyPolicy";
-import AboutUs from "./pages/AboutUs";
-import Careers from "./pages/Careers";
-import Press from "./pages/Press";
-import Contact from "./pages/Contact";
-import Support from "./pages/Support";
-import CookiePolicy from "./pages/CookiePolicy";
-import Regulatory from "./pages/Regulatory";
-import Markets from "./pages/Markets";
-import Education from "./pages/Education";
+const Terms = lazy(() => import("./pages/Terms"));
+const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
+const AboutUs = lazy(() => import("./pages/AboutUs"));
+const Careers = lazy(() => import("./pages/Careers"));
+const Press = lazy(() => import("./pages/Press"));
+const Contact = lazy(() => import("./pages/Contact"));
+const Support = lazy(() => import("./pages/Support"));
+const CookiePolicy = lazy(() => import("./pages/CookiePolicy"));
+const Regulatory = lazy(() => import("./pages/Regulatory"));
+const Markets = lazy(() => import("./pages/Markets"));
+const Education = lazy(() => import("./pages/Education"));
 import { WebTrader } from "./components/WebTrader";
 import { MobilePortfolio } from "./pages/MobilePortfolio";
 import { MobileTradingHistory } from "./pages/MobileTradingHistory";
-import PromoCodeAnalytics from "./pages/PromoCodeAnalytics";
+const PromoCodeAnalytics = lazy(() => import("./pages/PromoCodeAnalytics"));
 import CookieConsentBanner from "./components/CookieConsentBanner";
 
 const queryClient = new QueryClient();
@@ -59,6 +59,7 @@ const App = () => {
               <Toaster />
               <Sonner />
               <BrowserRouter>
+              <Suspense fallback={<div className="min-h-screen bg-background" />}>
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/auth" element={<Auth />} />
@@ -111,6 +112,7 @@ const App = () => {
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
+              </Suspense>
               <CookieConsentBanner />
             </BrowserRouter>
           </TooltipProvider>

@@ -558,6 +558,7 @@ const AdminDashboard = () => {
     if (trade.status === 'open' && currentPrice && trade.open_price) {
       const calculatedPnL = calculateRealTimePnL({
         trade_type: trade.trade_type as 'BUY' | 'SELL',
+        symbol: trade.symbol,
         amount: trade.amount,
         open_price: trade.open_price,
         leverage: trade.leverage

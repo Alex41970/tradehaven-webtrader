@@ -19,6 +19,7 @@ export interface UserProfile {
 
 // Singleton state shared across all hook instances
 let sharedProfile: UserProfile | null = null;
+let sharedUserId: string | null = null;
 let sharedLoading = true;
 let sharedLastFetch = 0;
 let isInitialLoad = true;
@@ -49,6 +50,15 @@ export const useSharedUserProfile = (hasActiveTrades = false) => {
       isInitialLoad = true; // Reset for next user
       notifySubscribers();
       return null;
+    }
+
+    // New account signed in: drop the previous account's cached data
+    if (sharedUserId !== user.id) {
+      sharedUserId = user.id;
+      sharedProfile = null;
+      sharedLastFetch = 0;
+      fetchPromise = null;
+      isInitialLoad = true;
     }
 
     const now = Date.now();
