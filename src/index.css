@@ -229,3 +229,8 @@
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+/* Charts are built in-app from our own price feed — hide the chart library's badge. */
+#tv-attr-logo {
+  display: none !important;
+}

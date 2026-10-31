@@ -106,7 +106,10 @@ export const TradingChart = ({ symbol, name }: TradingChartProps) => {
         horzLine: { color: cssColor("--muted-foreground", 0.5), style: LineStyle.Dashed, labelBackgroundColor: cssColor("--secondary") },
       },
     });
+    // Our own chart, our own feed: drop the library's attribution badge.
+    containerRef.current.querySelector("#tv-attr-logo")?.remove();
     chart.subscribeCrosshairMove((p) => {
+
       const t = p.time as number | undefined;
       const c = t ? candlesRef.current.find((x) => x.time === t) : null;
       setLegend(c ?? candlesRef.current[candlesRef.current.length - 1] ?? null);
