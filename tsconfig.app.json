@@ -21,6 +21,7 @@
     "noImplicitAny": false,
     "noFallthroughCasesInSwitch": false,
     "paths": {
+      "@/integrations/supabase/client": ["./src/lib/trading-client.ts"],
       "@/*": [
         "./src/*"
       ]
