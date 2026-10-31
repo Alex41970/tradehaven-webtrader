@@ -257,7 +257,7 @@ async function handleOpenTrade(connection: ClientConnection, data: any) {
     // Get asset to check constraints
     const { data: asset, error: assetError } = await supabase
       .from('assets')
-      .select('max_leverage, min_trade_size, symbol, price, price_updated_at')
+      .select('max_leverage, min_trade_size, symbol, price, price_updated_at, contract_size')
       .eq('id', data.assetId)
       .single();
 
@@ -282,7 +282,8 @@ async function handleOpenTrade(connection: ClientConnection, data: any) {
     }
 
     // Calculate margin used
-    const marginUsed = (data.amount * data.openPrice) / data.leverage;
+    // Lots x contract size x price / leverage (the database re-checks price and margin on insert)
+    const marginUsed = (data.amount * (Number(asset.contract_size) || 1) * data.openPrice) / data.leverage;
 
     // ===== PHASE 1: BALANCE VALIDATION WITH LOCK =====
     const { data: userProfile, error: profileError } = await supabase
@@ -474,11 +475,12 @@ async function recalculateUserMargins(userId: string) {
         const symbols = [...new Set(openTrades.map(trade => trade.symbol))];
         const { data: assetPrices, error: priceError } = await supabase
           .from('assets')
-          .select('symbol, price')
+          .select('symbol, price, contract_size')
           .in('symbol', symbols);
 
         if (!priceError && assetPrices) {
           const priceMap = new Map(assetPrices.map(asset => [asset.symbol, asset.price]));
+          const sizeMap = new Map(assetPrices.map(asset => [asset.symbol, Number(asset.contract_size) || 1]));
           
           // Calculate unrealized PnL for each open trade
           totalUnrealizedPnL = openTrades.reduce((sum, trade) => {
@@ -489,13 +491,13 @@ async function recalculateUserMargins(userId: string) {
 
             const amount = Number(trade.amount);
             const openPrice = Number(trade.open_price);
-            const leverage = Number(trade.leverage) || 1;
+            const contractSize = sizeMap.get(trade.symbol) || 1;
 
             let pnl = 0;
             if (trade.trade_type === 'BUY') {
-              pnl = amount * (currentPrice - openPrice) * leverage;
+              pnl = amount * (currentPrice - openPrice) * contractSize;
             } else {
-              pnl = amount * (openPrice - currentPrice) * leverage;
+              pnl = amount * (openPrice - currentPrice) * contractSize;
             }
 
             return sum + pnl;
