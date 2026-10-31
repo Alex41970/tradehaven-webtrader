@@ -109,12 +109,9 @@ export const WebTrader = () => {
   const calculatePositionSize = useMemo(() => {
     if (!selectedAsset) return 0;
     
-    if (selectedAsset.category === 'forex') {
-      return selectedAsset.contract_size * leverage;
-    } else {
-      return amount * selectedAsset.price * leverage;
-    }
-  }, [selectedAsset, amount, leverage]);
+    // Notional value of the position: lots x contract size x price
+    return amount * (selectedAsset.contract_size || 1) * selectedAsset.price;
+  }, [selectedAsset, amount]);
 
   const handleTrade = async (tradeType: 'BUY' | 'SELL') => {
     if (!selectedAsset || !profile) return;
