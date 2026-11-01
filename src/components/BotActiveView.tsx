@@ -58,15 +58,30 @@ const SliderRow = ({ label, hint, value, min, max, step, onChange }: { label: st
 
 export const BotActiveView: React.FC<BotActiveViewProps> = ({ botStatus, onPause, onResume, onDelete, onBackToDashboard }) => {
   const { botTrades, openBotTrades, closedBotTrades } = useTrades();
-  const { updateBotSettings } = useBotStatus();
+  const { updateBotSettings, botStatus: bs } = useBotStatus();
   const { requestPermission } = useNotifications();
   const [s, setS] = useState<Settings>(DEFAULTS);
   const running = botStatus === "active";
+  const loadedRef = React.useRef(false);
+  const saveTimer = React.useRef<ReturnType<typeof setTimeout>>();
+
+  const saved = (bs as any)?.permissions?.settings;
+  React.useEffect(() => {
+    if (!loadedRef.current && saved && typeof saved === "object") {
+      loadedRef.current = true;
+      setS({ ...DEFAULTS, ...saved });
+    }
+  }, [saved]);
+  React.useEffect(() => () => clearTimeout(saveTimer.current), []);
 
   const set = (k: keyof Settings, v: any) => {
-    const next = { ...s, [k]: v };
-    setS(next);
-    updateBotSettings?.(next as any);
+    loadedRef.current = true;
+    setS((prev) => {
+      const next = { ...prev, [k]: v };
+      clearTimeout(saveTimer.current);
+      saveTimer.current = setTimeout(() => updateBotSettings?.(next as any), 700);
+      return next;
+    });
   };
   const setNotify = async (k: keyof Settings, on: boolean) => {
     if (on && typeof Notification !== "undefined" && !(await requestPermission())) {
