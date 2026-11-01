@@ -29,47 +29,25 @@ export const BotActiveView: React.FC<BotActiveViewProps> = ({
   const { updateBotSettings } = useBotStatus();
 
   return (
-    <div className="min-h-screen bg-trading-pattern p-2 md:p-6 relative overflow-x-hidden">
-      {/* Enhanced animated background */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        {/* Floating orbs with trading colors */}
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-gradient-to-r from-trading-primary/10 to-trading-accent/10 rounded-full blur-3xl animate-pulse-subtle"></div>
-        <div className="absolute bottom-1/4 right-1/4 w-64 h-64 bg-gradient-to-r from-trading-success/10 to-trading-accent/10 rounded-full blur-2xl animate-pulse-subtle delay-1000"></div>
-        <div className="absolute top-1/2 left-1/2 w-32 h-32 bg-trading-accent/5 rounded-full blur-xl animate-pulse-subtle delay-2000"></div>
-        
-        {/* Grid pattern overlay */}
-        <div className="absolute inset-0 bg-grid-white/[0.02] bg-[size:60px_60px]"></div>
-      </div>
-
-        <div className="relative z-10 max-w-7xl mx-auto space-y-4 md:space-y-8 w-full min-w-0">
-        {/* Enhanced Header */}
-        <Card className="border-primary/20 bg-gradient-to-br from-card/90 via-card/95 to-trading-primary/5 backdrop-blur-xl shadow-2xl">
-          <CardHeader className="p-3 md:p-6">
-            <CardTitle className="flex items-center justify-between flex-wrap gap-2 md:gap-4">
-              <div className="flex items-center gap-2 md:gap-4 min-w-0 flex-1">
-                <h1 className="text-xl md:text-3xl font-bold bg-gradient-to-r from-trading-primary to-trading-accent bg-clip-text text-transparent truncate">
-                  Neural Trading Bot Dashboard
-                </h1>
-                <div className="h-6 md:h-8 w-px bg-border hidden sm:block"></div>
-                <p className="text-muted-foreground text-sm md:text-base hidden sm:block truncate">
-                  Advanced AI Market Analysis System
-                </p>
-              </div>
-              <Button 
-                onClick={onBackToDashboard}
-                variant="outline"
-                size="sm"
-                className="flex items-center gap-2 hover:bg-trading-primary/10 border-trading-primary/30"
-              >
-                <ArrowLeft className="h-4 w-4" />
-                Back to Dashboard
-              </Button>
-            </CardTitle>
-          </CardHeader>
-        </Card>
+    <div className="mx-auto w-full max-w-[1500px] min-w-0 space-y-4">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-xs uppercase tracking-wider text-muted-foreground">Automation</p>
+            <h1 className="flex items-center gap-3 text-2xl font-semibold md:text-3xl">
+              Trading Bot
+              <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium ${botStatus === "active" ? "border-success/30 bg-success/10 text-success" : "border-primary/30 bg-primary/10 text-primary"}`}>
+                <span className={`h-1.5 w-1.5 rounded-full ${botStatus === "active" ? "animate-pulse bg-success" : "bg-primary"}`} />
+                {botStatus === "active" ? "Running" : "Paused"}
+              </span>
+            </h1>
+          </div>
+          <Button onClick={onBackToDashboard} variant="outline" size="sm">
+            <ArrowLeft className="mr-1.5 h-4 w-4" />Overview
+          </Button>
+        </div>
 
         {/* Main Content Grid */}
-        <div className="grid lg:grid-cols-3 gap-4 md:gap-8 w-full min-w-0">
+        <div className="grid lg:grid-cols-3 gap-4 w-full min-w-0">
           {/* Left Column - Control Panel */}
           <div className="lg:col-span-1">
             <BotControlPanel
@@ -85,7 +63,7 @@ export const BotActiveView: React.FC<BotActiveViewProps> = ({
           </div>
 
           {/* Right Column - Charts and Terminal */}
-          <div className="lg:col-span-2 space-y-4 md:space-y-8 min-w-0">
+          <div className="lg:col-span-2 space-y-4 min-w-0">
             {/* Performance Charts */}
             <BotMetricsChart
               trades={closedBotTrades}
@@ -99,7 +77,6 @@ export const BotActiveView: React.FC<BotActiveViewProps> = ({
             />
           </div>
         </div>
-      </div>
     </div>
   );
 };
