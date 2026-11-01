@@ -47,9 +47,9 @@ export const BotActiveView: React.FC<BotActiveViewProps> = ({
         </div>
 
         {/* Main Content Grid */}
-        <div className="grid lg:grid-cols-3 gap-4 w-full min-w-0">
+        <div className="grid xl:grid-cols-3 gap-4 w-full min-w-0">
           {/* Left Column - Control Panel */}
-          <div className="lg:col-span-1">
+          <div className="xl:col-span-1">
             <BotControlPanel
               botStatus={botStatus}
               onPause={onPause}
@@ -63,7 +63,7 @@ export const BotActiveView: React.FC<BotActiveViewProps> = ({
           </div>
 
           {/* Right Column - Charts and Terminal */}
-          <div className="lg:col-span-2 space-y-4 min-w-0">
+          <div className="xl:col-span-2 space-y-4 min-w-0">
             {/* Performance Charts */}
             <BotMetricsChart
               trades={closedBotTrades}
