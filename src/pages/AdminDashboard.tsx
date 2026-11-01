@@ -25,9 +25,10 @@ import { DeleteTradeDialog } from "@/components/admin/DeleteTradeDialog";
 import { useAssets } from "@/hooks/useAssets";
 import { useRealTimePrices } from "@/hooks/useRealTimePrices";
 import { calculateRealTimePnL } from "@/utils/pnlCalculator";
-import { Users, DollarSign, Settings, LogOut, Search, Filter, Activity, Plus, CreditCard, Eye, TrendingUp, RotateCcw, Trash2 } from "lucide-react";
+import { Users, DollarSign, Settings, LogOut, Search, Filter, Activity, Plus, CreditCard, Eye, TrendingUp, RotateCcw, Trash2, LayoutDashboard, Bot, Radio } from "lucide-react";
 import { Navigate } from "react-router-dom";
-import { Logo } from "@/components/Logo";
+import { AppShell, type NavItem } from "@/components/layout/AppShell";
+import { AdminOverview } from "@/components/admin/AdminOverview";
 
 interface UserProfile {
   user_id: string;
@@ -100,6 +101,7 @@ const AdminDashboard = () => {
   const [tradesSymbolFilter, setTradesSymbolFilter] = useState<string>("");
   const [requestsSearchQuery, setRequestsSearchQuery] = useState("");
   const [requestsStatusFilter, setRequestsStatusFilter] = useState<string>("all");
+  const [section, setSection] = useState<string>("overview");
   
   // Hooks for assets and prices
   const { assets, loading: assetsLoading } = useAssets();
@@ -729,74 +731,48 @@ const AdminDashboard = () => {
     return <Navigate to="/dashboard" replace />;
   }
 
+  const adminNav: NavItem[] = [
+    { id: "overview", label: "Overview", icon: LayoutDashboard },
+    { id: "users", label: "Users", icon: Users },
+    { id: "trades", label: "Trades", icon: Activity },
+    { id: "financial-requests", label: "Requests", icon: CreditCard },
+    { id: "bot-licenses", label: "Bots", icon: Bot },
+    { id: "trading-settings", label: "Controls", icon: Settings },
+    { id: "price-feed", label: "Price Feed", icon: Radio },
+  ];
+  const sectionTitle = adminNav.find((n) => n.id === section)?.label ?? "Overview";
+  const pendingRequests = depositRequests.filter((r) => r.status === "pending").length + withdrawalRequests.filter((r) => r.status === "pending").length;
+
   return (
-    <div className="min-h-screen bg-background dashboard-theme">
-      <div className="container mx-auto p-6">
-        <div className="flex items-center justify-between mb-6">
+    <>
+    <AppShell
+      nav={adminNav}
+      active={section}
+      onNavigate={setSection}
+      onSignOut={signingOut ? undefined : handleSignOut}
+      topbar={
+        <div className="flex flex-1 items-center justify-between gap-3">
           <div>
-            <h1 className="text-3xl font-bold">Admin Dashboard</h1>
-            <p className="text-muted-foreground">Manage your users and their trading activities</p>
+            <p className="label-caps">Admin</p>
+            <h1 className="text-base font-semibold text-foreground md:text-lg">{sectionTitle}</h1>
           </div>
-          <div className="flex items-center gap-3">
-            <Badge variant="secondary" className="text-lg px-4 py-2">
-              {role === 'super_admin' ? 'Super Admin' : 'Admin'}
-            </Badge>
-            <Button variant="outline" size="sm" onClick={handleSignOut} disabled={signingOut}>
-              <LogOut className="h-4 w-4 mr-2" />
-              {signingOut ? "Signing Out..." : "Sign Out"}
-            </Button>
+          <div className="flex items-center gap-2">
+            {pendingRequests > 0 && (
+              <Button variant="outline" size="sm" onClick={() => setSection("financial-requests")}>
+                {pendingRequests} pending
+              </Button>
+            )}
+            <Badge variant="secondary">{role === 'super_admin' ? 'Super Admin' : 'Admin'}</Badge>
           </div>
         </div>
+      }
+    >
+        <Tabs value={section} onValueChange={setSection} className="space-y-4">
+          <TabsContent value="overview" className="mt-0">
+            <AdminOverview users={users} trades={trades} stats={stats} tradeStats={tradeStats}
+              pendingRequests={pendingRequests} onNavigate={setSection} />
+          </TabsContent>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Users</CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.totalUsers}</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Balance</CardTitle>
-              <DollarSign className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">${stats.totalBalance.toFixed(2)}</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Active Trades</CardTitle>
-              <Activity className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.activeTrades}</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Trades</CardTitle>
-              <Settings className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.totalTrades}</div>
-            </CardContent>
-          </Card>
-        </div>
-
-        <Tabs defaultValue="users" className="space-y-4">
-          <TabsList>
-            <TabsTrigger value="users">Users & Accounts</TabsTrigger>
-            <TabsTrigger value="trades">Trades</TabsTrigger>
-            <TabsTrigger value="financial-requests">Financial Requests</TabsTrigger>
-            <TabsTrigger value="bot-licenses">Bot Management</TabsTrigger>
-            <TabsTrigger value="trading-settings">Trading Controls</TabsTrigger>
-            <TabsTrigger value="price-feed">Price Feed</TabsTrigger>
-          </TabsList>
 
           <TabsContent value="users" className="space-y-4">
             <Card>
@@ -1443,7 +1419,7 @@ const AdminDashboard = () => {
           </TabsContent>
 
         </Tabs>
-      </div>
+      </AppShell>
 
       {/* Dialogs */}
       <ModifyBalanceDialog
@@ -1624,7 +1600,7 @@ const AdminDashboard = () => {
         trade={selectedTradeForDelete}
         onSuccess={fetchAdminData}
       />
-    </div>
+    </>
   );
 };
 

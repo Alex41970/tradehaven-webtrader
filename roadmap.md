@@ -15,5 +15,5 @@
 
 ## UI redesign (Midnight + Amber, bento)
 - [x] Theme, fonts, app frame, client dashboard, trading layout
-- [ ] Admin dashboard redesign (sidebar sections, overview charts)
-- [ ] Landing page + sign-in redesign
+- [x] Admin dashboard redesign (sidebar sections, overview charts)
+- [x] Landing page + sign-in redesign
