@@ -25,9 +25,10 @@ import { DeleteTradeDialog } from "@/components/admin/DeleteTradeDialog";
 import { useAssets } from "@/hooks/useAssets";
 import { useRealTimePrices } from "@/hooks/useRealTimePrices";
 import { calculateRealTimePnL } from "@/utils/pnlCalculator";
-import { Users, DollarSign, Settings, LogOut, Search, Filter, Activity, Plus, CreditCard, Eye, TrendingUp, RotateCcw, Trash2 } from "lucide-react";
+import { Users, DollarSign, Settings, LogOut, Search, Filter, Activity, Plus, CreditCard, Eye, TrendingUp, RotateCcw, Trash2, LayoutDashboard, Bot, Radio } from "lucide-react";
 import { Navigate } from "react-router-dom";
-import { Logo } from "@/components/Logo";
+import { AppShell, type NavItem } from "@/components/layout/AppShell";
+import { AdminOverview } from "@/components/admin/AdminOverview";
 
 interface UserProfile {
   user_id: string;
@@ -100,6 +101,7 @@ const AdminDashboard = () => {
   const [tradesSymbolFilter, setTradesSymbolFilter] = useState<string>("");
   const [requestsSearchQuery, setRequestsSearchQuery] = useState("");
   const [requestsStatusFilter, setRequestsStatusFilter] = useState<string>("all");
+  const [section, setSection] = useState<string>("overview");
   
   // Hooks for assets and prices
   const { assets, loading: assetsLoading } = useAssets();
