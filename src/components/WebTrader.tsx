@@ -290,10 +290,10 @@ export const WebTrader = () => {
     
     return (
       <div 
-        className={`p-3 rounded-lg border cursor-pointer transition-all duration-200 touch-manipulation ${
+        className={`px-2.5 py-2 rounded-lg border cursor-pointer transition-colors touch-manipulation ${
           selectedAsset?.id === asset.id 
-            ? 'bg-primary/10 border-primary/30' 
-            : 'bg-muted/20 border-muted/30 hover:bg-muted/40'
+            ? 'bg-primary/10 border-primary/40' 
+            : 'border-transparent hover:bg-muted/60'
         }`}
         onClick={handleAssetSelect}
         onPointerDown={handlePointerDown}
@@ -301,8 +301,8 @@ export const WebTrader = () => {
         tabIndex={0}
       >
         <div className="flex items-center justify-between asset-row-main pointer-events-none">
-          <div className="flex-1">
-            <div className="flex items-center gap-2">
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-1">
               <span className="font-medium text-sm">{asset.symbol}</span>
               <Button
                 variant="ghost"
@@ -322,7 +322,7 @@ export const WebTrader = () => {
             </div>
             <div className="text-xs text-muted-foreground truncate">{asset.name}</div>
           </div>
-          <div className="text-right">
+          <div className="shrink-0 pl-2 text-right">
             <PulsingPriceIndicator 
               price={asset.price} 
               change={asset.change_24h}
@@ -351,36 +351,22 @@ export const WebTrader = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background p-0 md:p-6">
-      <div className="mx-auto max-w-none md:max-w-7xl">
-        <div className="mb-6">
-          <div className="flex flex-col gap-3 mb-2">
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={() => navigate('/dashboard')}
-              className="md:hidden self-start flex items-center gap-2 text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              <span className="hidden sm:inline">Back to Dashboard</span>
-              <span className="sm:hidden">Back</span>
-            </Button>
-            <div className="text-center">
-              <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Web Trading Platform</h1>
-              <p className="text-muted-foreground text-sm md:text-base mt-1">Advanced trading with real-time market data</p>
-            </div>
-          </div>
+    <div className="w-full">
+      <div className="mx-auto max-w-[1800px]">
+        <div className="mb-3 flex items-center gap-2 md:hidden">
+          <Button variant="ghost" size="sm" onClick={() => navigate('/dashboard')} className="text-muted-foreground">
+            <ArrowLeft className="mr-1 h-4 w-4" />Back
+          </Button>
         </div>
-
         {selectedAsset && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-[280px_minmax(0,1fr)] xl:grid-cols-[280px_minmax(0,1fr)_360px]">
             {/* Left Column - Market Watch - Fixed Height */}
-            <div className="lg:col-span-1">
-              <Card className="bg-card/80 backdrop-blur border-border/50">
+            <div className="order-2 lg:order-1 lg:row-span-2">
+              <Card className="bento lg:sticky lg:top-20">
                 <CardHeader className="pb-2 px-4 pt-4">
                   <div>
-                    <CardTitle className="text-lg">Market Watch</CardTitle>
-                    <CardDescription className="text-sm">Live market data</CardDescription>
+                    <CardTitle className="text-sm font-semibold">Markets</CardTitle>
+                    <CardDescription className="text-xs">{filteredAssets.length} instruments</CardDescription>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-3 px-4 pb-4">
@@ -413,8 +399,8 @@ export const WebTrader = () => {
                     </TabsList>
                     
                     <TabsContent value="all" className="mt-2">
-                      <ScrollArea className="h-[400px] md:h-[600px]">
-                        <div className="space-y-2 pr-2">
+                      <ScrollArea className="h-[420px] lg:h-[calc(100vh-280px)] [&_[data-radix-scroll-area-viewport]>div]:!block">
+                        <div className="space-y-1 pr-3">
                           {filteredAssets.map((asset) => (
                             <AssetRow key={asset.id} asset={asset} />
                           ))}
@@ -423,8 +409,8 @@ export const WebTrader = () => {
                     </TabsContent>
                     
                     <TabsContent value="favorites" className="mt-2">
-                      <ScrollArea className="h-[400px] md:h-[600px]">
-                        <div className="space-y-2 pr-2">
+                      <ScrollArea className="h-[420px] lg:h-[calc(100vh-280px)] [&_[data-radix-scroll-area-viewport]>div]:!block">
+                        <div className="space-y-1 pr-3">
                           {favoriteAssets.length > 0 ? (
                             favoriteAssets.map((asset) => (
                               <AssetRow key={asset.id} asset={asset} />
@@ -445,18 +431,16 @@ export const WebTrader = () => {
             </div>
 
             {/* Right Column - Chart and Trading - Fixed Heights */}
-            <div className="lg:col-span-2 space-y-4">
-              {/* Chart Section - 400px Fixed Height */}
-              <div className="h-[400px]">
+            <div className="order-1 h-[460px] md:h-[640px] lg:order-2">
                 <TradingChart 
                   key={selectedAsset?.id || 'no-asset'} 
                   symbol={selectedAsset?.symbol || ''} 
                   category={selectedAsset?.category}
                   name={selectedAsset?.name}
                 />
-              </div>
+            </div>
 
-              {/* Trading Tabs Interface - 200px Fixed Height */}
+            <div className="order-3 lg:col-start-2 xl:col-start-3 xl:row-start-1 xl:row-span-2">
               <TradingTabsInterface
                 selectedAsset={selectedAsset}
                 amount={amount}

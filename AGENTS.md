@@ -8,3 +8,4 @@
 - P&L and margin are lot-based (`calc_trade_pnl` in SQL, `src/utils/pnlCalculator.ts` in the client); keep both formulas identical. The `trades` insert trigger is the authority for open price and margin.
 - Charts are built in-app from `price_candles` (lightweight-charts); don't reintroduce third-party chart feeds that use different prices.
 - Price feed health: every `price-feed` run logs to `price_feed_runs` (provider calls incl. fallback retries, errors, blocked outlier jumps); `ingest_prices_v2` rejects outlier jumps and sets `price_changed_at` only on real moves; clients don't simulate movement on markets whose real price hasn't moved for 30 min. Admins see it in the Price Feed tab via `get_market_health()`.
+- Signed-in pages use `src/components/layout/AppShell` (sidebar + top bar + phone tab bar) and `src/components/dashboard/widgets` (bento cards, Recharts); colors only via theme tokens in `src/index.css` — keeps one consistent frame and theme.

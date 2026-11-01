@@ -19,13 +19,29 @@ export default {
 		},
 		extend: {
 			fontFamily: {
-				montserrat: ['Montserrat', 'sans-serif'],
+				sans: ['Work Sans', 'system-ui', 'sans-serif'],
+				mono: ['JetBrains Mono', 'ui-monospace', 'monospace'],
+				montserrat: ['JetBrains Mono', 'monospace'],
 			},
 			colors: {
 				border: 'hsl(var(--border))',
 				input: 'hsl(var(--input))',
 				ring: 'hsl(var(--ring))',
 				background: 'hsl(var(--background))',
+				surface: { DEFAULT: 'hsl(var(--surface))', 2: 'hsl(var(--surface-2))' },
+				success: { DEFAULT: 'hsl(var(--success))', foreground: 'hsl(var(--success-foreground))' },
+				warning: 'hsl(var(--warning))',
+				chart: { 1: 'hsl(var(--chart-1))', 2: 'hsl(var(--chart-2))', 3: 'hsl(var(--chart-3))', 4: 'hsl(var(--chart-4))', 5: 'hsl(var(--chart-5))' },
+				sidebar: {
+					DEFAULT: 'hsl(var(--sidebar-background))',
+					foreground: 'hsl(var(--sidebar-foreground))',
+					primary: 'hsl(var(--sidebar-primary))',
+					'primary-foreground': 'hsl(var(--sidebar-primary-foreground))',
+					accent: 'hsl(var(--sidebar-accent))',
+					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
+					border: 'hsl(var(--sidebar-border))',
+					ring: 'hsl(var(--sidebar-ring))',
+				},
 				foreground: 'hsl(var(--foreground))',
 				primary: {
 					DEFAULT: 'hsl(var(--primary))',
@@ -62,14 +78,15 @@ export default {
 					success: 'hsl(var(--trading-success))',
 					danger: 'hsl(var(--trading-danger))',
 					neutral: 'hsl(var(--trading-neutral))',
-					'blue-dark': 'hsl(225 25% 18%)',
-					'blue-light': 'hsl(225 100% 70%)',
-					'gold-dark': 'hsl(45 90% 40%)',
+					'blue-dark': 'hsl(var(--surface-2))',
+					'blue-light': 'hsl(var(--chart-3))',
+					'gold-dark': 'hsl(var(--primary) / 0.8)',
 				},
-				green: {
-					'500': 'hsl(145 63% 49%)',
-					'600': 'hsl(145 63% 42%)',
-				},
+				green: { 300: 'hsl(var(--success) / 0.85)', 400: 'hsl(var(--success))', 500: 'hsl(var(--success))', 600: 'hsl(var(--success))', 700: 'hsl(var(--success))' },
+				emerald: { 400: 'hsl(var(--success))', 500: 'hsl(var(--success))', 600: 'hsl(var(--success))' },
+				red: { 300: 'hsl(var(--destructive) / 0.85)', 400: 'hsl(var(--destructive))', 500: 'hsl(var(--destructive))', 600: 'hsl(var(--destructive))', 700: 'hsl(var(--destructive))' },
+				yellow: { 400: 'hsl(var(--warning))', 500: 'hsl(var(--warning))', 600: 'hsl(var(--warning))' },
+				blue: { 400: 'hsl(var(--chart-3))', 500: 'hsl(var(--chart-3))', 600: 'hsl(var(--chart-3))' },
 				'card-border': 'hsl(var(--card-border))'
 			},
 			borderRadius: {
