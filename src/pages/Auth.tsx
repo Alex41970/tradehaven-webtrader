@@ -171,17 +171,38 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-md">
+    <div className="grid min-h-screen bg-background lg:grid-cols-[1.1fr_1fr]">
+      <aside className="relative hidden overflow-hidden border-r border-border bg-sidebar p-12 lg:flex lg:flex-col lg:justify-between">
+        <div className="pointer-events-none absolute inset-0 bg-subtle-grid opacity-60" />
+        <div className="pointer-events-none absolute -right-32 -top-32 h-96 w-96 rounded-full bg-primary/10 blur-3xl" />
+        <a href="/" className="relative"><Logo size="lg" /></a>
+        <div className="relative max-w-md space-y-6">
+          <p className="label-caps text-primary">Web trader</p>
+          <h1 className="text-4xl font-semibold leading-tight text-foreground">Every market, one calm screen.</h1>
+          <p className="text-muted-foreground">Crypto, forex, stocks, indices and commodities with live prices, charts and clear risk numbers.</p>
+          <div className="grid grid-cols-3 gap-3">
+            {[["395", "markets"], ["15s", "crypto refresh"], ["24/7", "price feed"]].map(([v, l]) => (
+              <div key={l} className="bento p-4">
+                <div className="num text-xl font-semibold text-foreground">{v}</div>
+                <div className="text-xs text-muted-foreground">{l}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+        <p className="relative text-xs text-muted-foreground">Trading carries risk. Only trade what you can afford to lose.</p>
+      </aside>
+      <div className="flex items-center justify-center p-4 md:p-10">
+      <Card className="bento w-full max-w-md border-0 shadow-none">
         <CardHeader>
-          <CardTitle className="text-2xl text-center">Lexington Capital Investing</CardTitle>
-          <CardDescription className="text-center">
-            Premium Investment Solutions
+          <div className="mb-2 lg:hidden"><Logo size="md" /></div>
+          <CardTitle className="text-2xl">Welcome</CardTitle>
+          <CardDescription>
+            Sign in to your account or create a new one.
           </CardDescription>
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="signin" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
+            <TabsList className="mb-4 grid w-full grid-cols-2">
               <TabsTrigger value="signin">Sign In</TabsTrigger>
               <TabsTrigger value="signup">Sign Up</TabsTrigger>
             </TabsList>
