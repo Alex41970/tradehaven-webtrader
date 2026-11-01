@@ -89,6 +89,24 @@ export const TradingChart = ({ symbol, name, fullscreenOverlay, toolbarExtra }: 
   const { prices } = usePrices();
   const live = prices.get(symbol)?.price;
 
+  // Candles are sized to the space we actually have. Showing a fixed 150 bars turns
+  // them into hairlines on a phone, so fit a bar count that keeps each candle readable.
+  const widthRef = useRef(0);
+  const touchedRef = useRef(false);
+  const [chartWidth, setChartWidth] = useState(0);
+
+  const fitBars = (n: number) => {
+    const chart = chartRef.current;
+    if (!chart || n < 1) return;
+    const w = widthRef.current || chart.timeScale().width() || 320;
+    const axis = 64;                        // price axis + padding eat this much
+    const minPx = w < 520 ? 9 : 7;          // phones get fatter candles
+    const bars = Math.min(220, Math.max(18, Math.floor((w - axis) / minPx)));
+    const off = bars < 60 ? 2 : 6;
+    chart.timeScale().setVisibleLogicalRange({ from: Math.max(0, n - bars), to: n + off });
+  };
+
+
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify({ tf: tf.label, type, ind: active }));
   }, [tf, type, active]);
@@ -120,8 +138,23 @@ export const TradingChart = ({ symbol, name, fullscreenOverlay, toolbarExtra }: 
       setLegend(c ?? candlesRef.current[candlesRef.current.length - 1] ?? null);
     });
     chartRef.current = chart;
-    return () => { chart.remove(); chartRef.current = null; mainRef.current = null; overlayRefs.current = []; };
+    const el = containerRef.current;
+    const markTouched = () => { touchedRef.current = true; };
+    el.addEventListener("wheel", markTouched, { passive: true });
+    el.addEventListener("pointerdown", markTouched, { passive: true });
+    const ro = new ResizeObserver((entries) => {
+      const w = Math.round(entries[0].contentRect.width);
+      if (w !== widthRef.current) { widthRef.current = w; setChartWidth(w); }
+    });
+    ro.observe(el);
+    return () => {
+      ro.disconnect();
+      el.removeEventListener("wheel", markTouched);
+      el.removeEventListener("pointerdown", markTouched);
+      chart.remove(); chartRef.current = null; mainRef.current = null; overlayRefs.current = [];
+    };
   }, []);
+
 
   // Load history
   useEffect(() => {
@@ -227,9 +260,17 @@ export const TradingChart = ({ symbol, name, fullscreenOverlay, toolbarExtra }: 
     if (state === "ready") chart.timeScale().scrollToRealTime();
   }, [rows, type, active, state]);
 
+  // Fit on load (fresh dataset), and re-fit when the box changes size — unless the
+  // trader has zoomed or panned by hand, in which case their view is left alone.
   useEffect(() => {
-    if (rows.length) chartRef.current?.timeScale().setVisibleLogicalRange({ from: Math.max(0, rows.length - 150), to: rows.length + 8 });
+    touchedRef.current = false;
+    if (rows.length) fitBars(rows.length);
   }, [rows]);
+
+  useEffect(() => {
+    if (rows.length && !touchedRef.current) fitBars(rows.length);
+  }, [chartWidth]);
+
 
   // Live price moves the latest candle
   useEffect(() => {
