@@ -1,4 +1,8 @@
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
+import { PriceAlertsProvider } from "@/hooks/usePriceAlerts";
+import { MarketsView } from "@/components/intel/MarketsView";
+import { JournalView } from "@/components/intel/JournalView";
+import { Flame, NotebookPen } from "lucide-react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -33,7 +37,7 @@ import { useTransactionHistory, TransactionHistory } from "@/hooks/useTransactio
 import { useRealtimeAccountMetrics } from "@/hooks/useRealtimeAccountMetrics";
 import { cn } from "@/lib/utils";
 
-type View = "overview" | "trade" | "portfolio" | "history" | "bot";
+type View = "overview" | "trade" | "markets" | "portfolio" | "history" | "journal" | "bot";
 
 const CATEGORY_LABEL: Record<string, string> = {
   crypto: "Crypto", forex: "Forex", stock: "Stocks", stocks: "Stocks", index: "Indices", indices: "Indices", commodity: "Commodities", commodities: "Commodities",
@@ -85,11 +89,16 @@ const Dashboard = () => {
     [...updatedAssets].filter((a) => a.is_active && Number.isFinite(a.change_24h))
       .sort((a, b) => Math.abs(b.change_24h) - Math.abs(a.change_24h)).slice(0, 6), [updatedAssets]);
 
+  const categoryOf = useCallback((t: { asset_id: string; symbol: string }) =>
+    assets.find((x) => x.id === t.asset_id || x.symbol === t.symbol)?.category, [assets]);
+
   const nav: NavItem[] = [
     { id: "overview", label: "Overview", icon: LayoutGrid },
     { id: "trade", label: "Trade", icon: CandlestickChart },
+    { id: "markets", label: "Markets", icon: Flame },
     { id: "portfolio", label: "Positions", icon: Briefcase },
     { id: "history", label: "History", icon: History },
+    { id: "journal", label: "Journal", icon: NotebookPen },
     { id: "wallet", label: "Deposit", icon: Wallet, onClick: () => setShowDeposit(true) },
     { id: "bot", label: "Trading Bot", icon: Bot, onClick: botStatus.isConnected ? undefined : () => setBotModalOpen(true) },
   ];
@@ -121,6 +130,7 @@ const Dashboard = () => {
   );
 
   return (
+    <PriceAlertsProvider>
     <AppShell nav={nav} active={view} onNavigate={setView} topbar={topbar} onSignOut={() => signOut()}
       footer={<div className="rounded-xl border border-border bg-surface-2 p-3 text-xs">
         <div className="truncate font-medium">{name}</div>
@@ -130,7 +140,9 @@ const Dashboard = () => {
         <MarginCallWarning equity={realTimeEquity} usedMargin={totalUsedMargin} className="mb-4" />
       )}
 
-      {view === "trade" && <WebTrader />}
+      {view === "trade" && <WebTrader initialSymbol={params.get("symbol") ?? undefined} />}
+      {view === "markets" && <MarketsView assets={updatedAssets} onOpen={(s) => setParams({ view: "trade", symbol: s })} />}
+      {view === "journal" && <JournalView trades={trades} categoryOf={categoryOf} />}
       {view === "portfolio" && <Bento className="p-0 md:p-2"><Portfolio /></Bento>}
       {view === "history" && <Bento className="p-0 md:p-2"><TradingHistory /></Bento>}
       {view === "bot" && botStatus.isConnected && (
@@ -264,6 +276,7 @@ const Dashboard = () => {
       <TransactionHistoryPopup transaction={selectedTx} isOpen={!!selectedTx} onClose={() => setSelectedTx(null)} />
       <ContactSupportModal isOpen={showSupport} onClose={() => setShowSupport(false)} />
     </AppShell>
+    </PriceAlertsProvider>
   );
 };
 
