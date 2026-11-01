@@ -212,7 +212,7 @@ export const BotControlPanel: React.FC<BotControlPanelProps> = ({
 
         <TabsContent value="overview" className="space-y-3 md:space-y-4">
           {/* Quick Stats Grid */}
-          <div className={`grid grid-cols-1 gap-2 w-full max-w-full`}>
+          <div className={`grid grid-cols-2 lg:grid-cols-4 gap-2 w-full max-w-full`}>
             <Card className="border-primary/20 bg-gradient-to-br from-card via-card/95 to-trading-success/5 backdrop-blur-xl min-w-0 w-full max-w-full box-border">
               <CardContent className={`${isMobile ? 'p-2' : 'p-4'} w-full max-w-full box-border`}>
                 <div className={`flex items-center ${isMobile ? 'gap-2' : 'gap-2'} min-w-0 w-full max-w-full overflow-hidden`}>
