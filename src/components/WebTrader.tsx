@@ -28,6 +28,8 @@ import { toast } from "@/hooks/use-toast";
 import { useEventDrivenUpdates } from "@/hooks/useEventDrivenUpdates";
 import { WebTraderSkeleton } from "./WebTraderSkeleton";
 import { useRealtimeAccountMetrics } from "@/hooks/useRealtimeAccountMetrics";
+import { useResizableWidth } from "@/hooks/useResizableWidth";
+import { ResizeHandle } from "@/components/ResizeHandle";
 
 export const WebTrader = ({ initialSymbol }: { initialSymbol?: string } = {}) => {
   const { openTrade, closeTrade, openTrades } = useTrades();
@@ -50,6 +52,10 @@ export const WebTrader = ({ initialSymbol }: { initialSymbol?: string } = {}) =>
   const [isExecuting, setIsExecuting] = useState(false);
   const [listTab, setListTab] = useState("all");
   const pickedInitial = useRef(false);
+
+  // Panel widths the trader can drag and have remembered.
+  const marketsPanel = useResizableWidth("markets", 220, 180, 420);
+  const ticketPanel = useResizableWidth("ticket", 300, 250, 480);
 
   // Get real-time price updates for assets
   const realtimeAssets = useMemo(() => {
@@ -361,6 +367,7 @@ export const WebTrader = ({ initialSymbol }: { initialSymbol?: string } = {}) =>
 
   return (
     <div className="w-full">
+      {(marketsPanel.dragging || ticketPanel.dragging) && <div className="fixed inset-0 z-[70] cursor-col-resize" />}
       <div className="mx-auto max-w-[1800px]">
         <div className="mb-3 flex items-center gap-2 md:hidden">
           <Button variant="ghost" size="sm" onClick={() => navigate('/dashboard')} className="text-muted-foreground">
@@ -368,17 +375,22 @@ export const WebTrader = ({ initialSymbol }: { initialSymbol?: string } = {}) =>
           </Button>
         </div>
         {selectedAsset && (
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-[280px_minmax(0,1fr)] xl:grid-cols-[280px_minmax(0,1fr)_360px]">
+        <div
+          className="grid grid-cols-1 gap-4 lg:grid-cols-[var(--mk)_minmax(0,1fr)] xl:grid-cols-[var(--mk)_minmax(0,1fr)_var(--tk)]"
+          style={{ "--mk": `${marketsPanel.width}px`, "--tk": `${ticketPanel.width}px` } as React.CSSProperties}
+        >
             {/* Left Column - Market Watch - Fixed Height */}
-            <div className="order-2 lg:order-1 lg:row-span-2">
+            <div className="relative order-2 lg:order-1 lg:row-span-2">
+              <ResizeHandle side="right" label="Resize markets list" dragging={marketsPanel.dragging}
+                onPointerDown={(e) => marketsPanel.startDrag(e, 1)} />
               <Card className="bento lg:sticky lg:top-20">
-                <CardHeader className="pb-2 px-4 pt-4">
+                <CardHeader className="pb-2 px-3 pt-3">
                   <div>
                     <CardTitle className="text-sm font-semibold">Markets</CardTitle>
                     <CardDescription className="text-xs">{filteredAssets.length} instruments</CardDescription>
                   </div>
                 </CardHeader>
-                <CardContent className="space-y-3 px-4 pb-4">
+                <CardContent className="space-y-3 px-3 pb-3">
                   <div className="space-y-2">
                     <Input
                       placeholder="Search assets..."
@@ -465,7 +477,9 @@ export const WebTrader = ({ initialSymbol }: { initialSymbol?: string } = {}) =>
               <SentimentBar symbol={selectedAsset.symbol} change24h={Number(selectedAsset.change_24h) || 0} category={selectedAsset.category} />
             </div>
 
-            <div className="order-3 space-y-4 lg:col-start-2 xl:col-start-3 xl:row-start-1 xl:row-span-2">
+            <div className="relative order-3 space-y-4 lg:col-start-2 xl:col-start-3 xl:row-start-1 xl:row-span-2">
+              <ResizeHandle side="left" label="Resize trade panel" dragging={ticketPanel.dragging}
+                showClassName="hidden xl:flex" onPointerDown={(e) => ticketPanel.startDrag(e, -1)} />
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium">{selectedAsset.symbol}</span>
                 <PriceAlertButton symbol={selectedAsset.symbol} price={serverPrices.get(selectedAsset.symbol) ?? selectedAsset.price} />
