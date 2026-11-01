@@ -365,7 +365,7 @@ export class TradingWebSocketService {
       const timeout = setTimeout(() => {
         cleanup();
         reject(new Error(action === 'open_trade' ? 'Trade open timeout' : 'Trade close timeout'));
-      }, 15000);
+      }, action === 'close_trade' ? 8000 : 15000);
 
       this.on(successEvent, handleResponse);
       this.on('trade_error', handleError);
