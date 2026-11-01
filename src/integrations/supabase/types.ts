@@ -192,6 +192,7 @@ export type Database = {
           min_trade_size: number
           name: string
           price: number
+          price_changed_at: string | null
           price_source: string | null
           price_updated_at: string | null
           quote_currency: string | null
@@ -214,6 +215,7 @@ export type Database = {
           min_trade_size?: number
           name: string
           price: number
+          price_changed_at?: string | null
           price_source?: string | null
           price_updated_at?: string | null
           quote_currency?: string | null
@@ -236,6 +238,7 @@ export type Database = {
           min_trade_size?: number
           name?: string
           price?: number
+          price_changed_at?: string | null
           price_source?: string | null
           price_updated_at?: string | null
           quote_currency?: string | null
@@ -376,6 +379,48 @@ export type Database = {
           low?: number
           open?: number
           symbol?: string
+        }
+        Relationships: []
+      }
+      price_feed_runs: {
+        Row: {
+          backfilled: number
+          by_source: Json
+          duration_ms: number
+          errors: string[]
+          id: number
+          markets_total: number
+          markets_updated: number
+          missing: string[]
+          provider_calls: Json
+          ran_at: string
+          rejected: Json
+        }
+        Insert: {
+          backfilled?: number
+          by_source?: Json
+          duration_ms: number
+          errors?: string[]
+          id?: number
+          markets_total: number
+          markets_updated: number
+          missing?: string[]
+          provider_calls?: Json
+          ran_at?: string
+          rejected?: Json
+        }
+        Update: {
+          backfilled?: number
+          by_source?: Json
+          duration_ms?: number
+          errors?: string[]
+          id?: number
+          markets_total?: number
+          markets_updated?: number
+          missing?: string[]
+          provider_calls?: Json
+          ran_at?: string
+          rejected?: Json
         }
         Relationships: []
       }
@@ -1107,6 +1152,19 @@ export type Database = {
           t: number
         }[]
       }
+      get_market_health: {
+        Args: never
+        Returns: {
+          candles_24h: number
+          category: string
+          changed_age_s: number
+          price: number
+          price_source: string
+          status: string
+          symbol: string
+          updated_age_s: number
+        }[]
+      }
       get_promo_code_stats: {
         Args: never
         Returns: {
@@ -1145,6 +1203,7 @@ export type Database = {
         Returns: boolean
       }
       ingest_prices: { Args: { _prices: Json }; Returns: number }
+      ingest_prices_v2: { Args: { _prices: Json }; Returns: Json }
       process_deposit_request: {
         Args: {
           _action: string

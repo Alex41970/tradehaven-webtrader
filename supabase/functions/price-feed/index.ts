@@ -24,16 +24,27 @@ const TWELVE_DATA_CALLS_PER_MIN = Math.floor(8 * SAFETY); // 5
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const HISTORY_DAYS = 30;
 
+// Per-run counters (reset at the start of every run; module state survives warm restarts)
+const calls: Record<string, number> = {};
+const errors: string[] = [];
+const noteError = (msg: string) => { if (errors.length < 30) errors.push(msg); };
+const provider = (host: string) =>
+  host.includes('yahoo') ? 'yahoo' : host.includes('binance') ? 'binance' : host.includes('coinbase') ? 'coinbase' : host.includes('twelvedata') ? 'twelvedata' : host;
+
 async function getJson(url: string): Promise<any | null> {
+  const host = new URL(url).host;
+  calls[provider(host)] = (calls[provider(host)] ?? 0) + 1;
   try {
     const res = await fetch(url, { headers: UA, signal: AbortSignal.timeout(TIMEOUT_MS) });
     if (!res.ok) {
-      console.warn(`HTTP ${res.status} from ${new URL(url).host}`);
+      console.warn(`HTTP ${res.status} from ${host}`);
+      noteError(`HTTP ${res.status} ${host}`);
       return null;
     }
     return await res.json();
   } catch (e) {
-    console.warn(`Request failed for ${new URL(url).host}: ${(e as Error).message}`);
+    console.warn(`Request failed for ${host}: ${(e as Error).message}`);
+    noteError(`${host}: ${(e as Error).message}`);
     return null;
   }
 }
@@ -186,6 +197,10 @@ Deno.serve(async (request) => {
   if (authFailure) return authFailure;
 
   const started = Date.now();
+  yahooThrottled = false;
+  for (const k of Object.keys(calls)) delete calls[k];
+  errors.length = 0;
+  const rejected: unknown[] = [];
   const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
 
   const { data: assets, error } = await supabase
@@ -203,13 +218,18 @@ Deno.serve(async (request) => {
   // Yahoo symbols rotate in chunks of 20 so the call budget is spread across passes.
   const chunks: Asset[][] = [];
   for (let i = 0; i < other.length; i += YAHOO_BATCH) chunks.push(other.slice(i, i + YAHOO_BATCH));
-  const yahooPerPass = Math.max(1, Math.floor(YAHOO_CALLS_PER_MIN / PASSES));
+  // While some markets still lack chart history, keep a few Yahoo calls free for it
+  // (still refreshes every market at least once a minute: 4 calls x 4 passes >= chunks).
+  const { data: missingCount } = await supabase.rpc('symbols_missing_history', { _since: new Date(Date.now() - (HISTORY_DAYS - 3) * 86400_000).toISOString() });
+  const historyPending = ((missingCount as unknown[]) ?? []).length > 0;
+  const fullPerPass = Math.max(1, Math.floor(YAHOO_CALLS_PER_MIN / PASSES));
+  const yahooPerPass = historyPending ? Math.max(1, Math.min(fullPerPass, Math.ceil(Math.ceil(other.length / YAHOO_BATCH) / PASSES))) : fullPerPass;
   const minute = Math.floor(started / 60_000);
   let tdBudget = TWELVE_DATA_CALLS_PER_MIN;
 
   const latest = new Map<string, Quote>();
   let stored = 0;
-  let yahooCalls = 0;
+  const yahooUsed = () => calls.yahoo ?? 0;
   for (let pass = 0; pass < PASSES; pass++) {
     const passStart = started + pass * PASS_GAP_MS;
     if (Date.now() < passStart) await sleep(passStart - Date.now());
@@ -219,10 +239,12 @@ Deno.serve(async (request) => {
       const n = Math.min(yahooPerPass, chunks.length);
       const offset = ((minute * PASSES + pass) * yahooPerPass) % chunks.length;
       for (let k = 0; k < n; k++) pick.push(...chunks[(offset + k) % chunks.length]);
-      yahooCalls += n;
     }
 
-    const [cryptoQuotes, yahoo] = await Promise.all([fetchBinance(crypto), yahooThrottled ? { quotes: [] as Quote[] } : fetchYahoo(pick)]);
+    // Never go over the Yahoo budget, counting fallback-host retries too
+    const yahooRoom = Math.max(0, YAHOO_CALLS_PER_MIN - yahooUsed());
+    const yahooPick = pick.slice(0, yahooRoom * YAHOO_BATCH);
+    const [cryptoQuotes, yahoo] = await Promise.all([fetchBinance(crypto), yahooThrottled || !yahooPick.length ? { quotes: [] as Quote[] } : fetchYahoo(yahooPick)]);
     const quotes = new Map<string, Quote>();
     [...cryptoQuotes, ...yahoo.quotes].forEach((q) => quotes.set(q.symbol, q));
 
@@ -242,14 +264,23 @@ Deno.serve(async (request) => {
     }));
     quotes.forEach((q, k) => latest.set(k, q));
     if (list.length) {
-      const { data: n, error: ingestError } = await supabase.rpc('ingest_prices', { _prices: list });
-      if (ingestError) console.error('ingest_prices failed', ingestError.message);
-      stored += (n as number) ?? 0;
+      const { data: res, error: ingestError } = await supabase.rpc('ingest_prices_v2', { _prices: list });
+      if (ingestError) {
+        console.error('ingest_prices failed', ingestError.message);
+        noteError(`ingest: ${ingestError.message}`);
+      }
+      const r = res as { stored?: number; rejected?: { symbol: string }[] } | null;
+      stored += r?.stored ?? 0;
+      // Rejected outliers keep their old price and are not counted as updated
+      for (const x of r?.rejected ?? []) {
+        rejected.push(x);
+        latest.delete(x.symbol);
+      }
     }
     // SL/TP and stop-out on every pass so triggers follow the fresher prices
     if (pass < PASSES - 1) {
       const { error: e } = await supabase.rpc('process_price_triggers');
-      if (e) console.error('process_price_triggers failed', e.message);
+      if (e) { console.error('process_price_triggers failed', e.message); noteError(`triggers: ${e.message}`); }
     }
   }
   const quotes = latest;
@@ -257,7 +288,7 @@ Deno.serve(async (request) => {
 
   // Server-side SL/TP and margin call / stop-out
   const { data: triggers, error: trigErr } = await supabase.rpc('process_price_triggers');
-  if (trigErr) console.error('process_price_triggers failed', trigErr.message);
+  if (trigErr) { console.error('process_price_triggers failed', trigErr.message); noteError(`triggers: ${trigErr.message}`); }
 
   // Backfill chart history for a few symbols that have little of it
   let backfilled = 0;
@@ -270,9 +301,11 @@ Deno.serve(async (request) => {
   // Crypto history comes from Binance (plenty of room); Yahoo history shares the Yahoo budget, so only a few per run.
   const needHistory = [
     ...missingAssets.filter((a) => a.category === 'crypto').slice(0, BACKFILL_PER_RUN),
-    ...missingAssets.filter((a) => a.category !== 'crypto').slice(0, Math.max(0, YAHOO_CALLS_PER_MIN - yahooCalls) + 3),
+    // Each Yahoo history fetch can cost 2 calls (fallback host)
+    ...missingAssets.filter((a) => a.category !== 'crypto').slice(0, Math.floor(Math.max(0, YAHOO_CALLS_PER_MIN - yahooUsed()) / 2)),
   ];
-  if (needHistory.length) {
+  // Only backfill when this run still has time, so runs never pile up on top of each other
+  if (needHistory.length && Date.now() - started < 52_000) {
     const hist: Candle[] = [];
     const parts = await Promise.all(needHistory.map((a) => (a.category === 'crypto' ? binanceHistory(a) : yahooHistory(a))));
     parts.forEach((p) => hist.push(...p));
@@ -280,9 +313,10 @@ Deno.serve(async (request) => {
     const uniq = new Map(hist.map((c) => [`${c.symbol}|${c.t}`, c]));
     if (uniq.size) {
       const all = [...uniq.values()];
-      for (let i = 0; i < all.length; i += 5000) {
-        const { data: n, error: bfErr } = await supabase.rpc('backfill_candles', { _candles: all.slice(i, i + 5000) });
-        if (bfErr) console.error('backfill_candles failed', bfErr.message);
+      // Small batches: big ones hit the database statement timeout
+      for (let i = 0; i < all.length && Date.now() - started < 58_000; i += 1500) {
+        const { data: n, error: bfErr } = await supabase.rpc('backfill_candles', { _candles: all.slice(i, i + 1500) });
+        if (bfErr) { console.error('backfill_candles failed', bfErr.message); noteError(`backfill: ${bfErr.message}`); }
         backfilled += (n as number) ?? 0;
       }
       console.log(`📈 history for ${needHistory.map((a) => a.symbol).join(',')}: ${all.length} candles`);
@@ -292,11 +326,24 @@ Deno.serve(async (request) => {
   // Keep HISTORY_DAYS of candles (once an hour)
   if (new Date().getUTCMinutes() === 0) {
     await supabase.from('price_candles').delete().lt('bucket', new Date(Date.now() - (HISTORY_DAYS + 1) * 86400_000).toISOString());
+    await supabase.from('price_feed_runs').delete().lt('ran_at', new Date(Date.now() - 3 * 86400_000).toISOString());
   }
 
   const missing = assets.filter((a) => !quotes.has(a.symbol)).map((a) => a.symbol);
   const bySource = list.reduce<Record<string, number>>((m, q) => ((m[q.source] = (m[q.source] ?? 0) + 1), m), {});
-  console.log(`💾 ${PASSES} passes, yahoo calls ${yahooCalls}/${YAHOO_CALLS_PER_MIN}${yahooThrottled ? ' (throttled)' : ''}, ${stored} updates for ${latest.size}/${assets.length} markets ${JSON.stringify(bySource)} in ${Date.now() - started}ms; missing: ${missing.join(',') || 'none'}; backfilled ${backfilled}; triggers ${JSON.stringify(triggers)}`);
+  const { error: runErr } = await supabase.from('price_feed_runs').insert({
+    duration_ms: Date.now() - started,
+    markets_total: assets.length,
+    markets_updated: latest.size,
+    missing,
+    by_source: bySource,
+    provider_calls: { ...calls, yahoo_budget: YAHOO_CALLS_PER_MIN },
+    rejected,
+    errors,
+    backfilled,
+  });
+  if (runErr) console.error('price_feed_runs insert failed', runErr.message);
+  console.log(`💾 ${PASSES} passes, calls ${JSON.stringify(calls)}, yahoo ${yahooUsed()}/${YAHOO_CALLS_PER_MIN}${yahooThrottled ? ' (throttled)' : ''}, ${stored} updates for ${latest.size}/${assets.length} markets ${JSON.stringify(bySource)} in ${Date.now() - started}ms; missing: ${missing.join(',') || 'none'}; backfilled ${backfilled}; triggers ${JSON.stringify(triggers)}`);
 
   return Response.json({ success: true, stored, total: assets.length, bySource, missing, backfilled, triggers });
 });

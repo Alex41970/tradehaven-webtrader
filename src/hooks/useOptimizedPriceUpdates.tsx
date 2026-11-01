@@ -9,6 +9,8 @@ interface PriceUpdate {
   timestamp: number;
   isSimulated?: boolean;
   category?: string;
+  /** When the real price last actually changed (ms) */
+  changedAt?: number;
 }
 
 // Size of one simulated step per asset type (fraction of price)
@@ -23,6 +25,11 @@ const BASE_VOLATILITY: Record<string, number> = {
 // The simulated price never drifts more than this from the real server price.
 // The server accepts client prices only within 0.25% of the market, so stay well inside it.
 export const MAX_SIMULATED_DEVIATION = 0.0015;
+
+// A market whose real price hasn't moved for this long is treated as closed: no fake movement.
+export const CLOSED_AFTER_MS = 30 * 60_000;
+export const isMarketQuiet = (u: { changedAt?: number; category?: string }, now = Date.now()) =>
+  u.changedAt != null && u.changedAt > 0 && now - u.changedAt > CLOSED_AFTER_MS;
 
 // Interval fixed at 2s; intensity only changes the SIZE of movements
 const INTENSITY_CONFIG: Record<PriceIntensity, { interval: number; multiplier: number }> = {
@@ -72,6 +79,11 @@ export const useOptimizedPriceUpdates = (options: UseOptimizedPriceUpdatesOption
       const next = new Map<string, PriceUpdate>();
       const now = Date.now();
       realPricesRef.current.forEach((real, symbol) => {
+        if (isMarketQuiet(real, now)) {
+          offsetsRef.current.delete(symbol);
+          next.set(symbol, real);
+          return;
+        }
         const step = (BASE_VOLATILITY[real.category ?? 'stocks'] ?? BASE_VOLATILITY.stocks) * config.multiplier;
         const prev = offsetsRef.current.get(symbol) ?? 0;
         // Random step plus a pull back towards the real price

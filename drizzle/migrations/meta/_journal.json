@@ -64,6 +64,13 @@
       "when": 1793487756009,
       "tag": "0008_candle_helpers",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1793549762731,
+      "tag": "0009_migration",
+      "breakpoints": true
     }
   ]
 }
