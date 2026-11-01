@@ -37,7 +37,7 @@ export const usePrices = () => {
 };
 
 // Server refreshes prices every minute; reading them is a cheap database read (no realtime channel)
-const POLL_MS = 30_000;
+const POLL_MS = 15_000;
 const STALE_MS = 5 * 60_000;
 
 export const PriceProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {

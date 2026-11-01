@@ -266,7 +266,12 @@ Deno.serve(async (request) => {
   const { data: missingRows, error: mhErr } = await supabase.rpc('symbols_missing_history', { _since: since });
   if (mhErr) console.error('symbols_missing_history failed', mhErr.message);
   const missingSet = new Set(((missingRows as { symbol: string }[]) ?? []).map((r) => r.symbol));
-  const needHistory = (assets as Asset[]).filter((a) => missingSet.has(a.symbol)).slice(0, BACKFILL_PER_RUN);
+  const missingAssets = (assets as Asset[]).filter((a) => missingSet.has(a.symbol));
+  // Crypto history comes from Binance (plenty of room); Yahoo history shares the Yahoo budget, so only a few per run.
+  const needHistory = [
+    ...missingAssets.filter((a) => a.category === 'crypto').slice(0, BACKFILL_PER_RUN),
+    ...missingAssets.filter((a) => a.category !== 'crypto').slice(0, Math.max(0, YAHOO_CALLS_PER_MIN - yahooCalls) + 3),
+  ];
   if (needHistory.length) {
     const hist: Candle[] = [];
     const parts = await Promise.all(needHistory.map((a) => (a.category === 'crypto' ? binanceHistory(a) : yahooHistory(a))));
