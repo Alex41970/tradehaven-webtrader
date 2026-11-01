@@ -33,7 +33,7 @@ import { useTransactionHistory, TransactionHistory } from "@/hooks/useTransactio
 import { useRealtimeAccountMetrics } from "@/hooks/useRealtimeAccountMetrics";
 import { cn } from "@/lib/utils";
 
-type View = "overview" | "trade" | "portfolio" | "history";
+type View = "overview" | "trade" | "portfolio" | "history" | "bot";
 
 const CATEGORY_LABEL: Record<string, string> = {
   crypto: "Crypto", forex: "Forex", stock: "Stocks", stocks: "Stocks", index: "Indices", indices: "Indices", commodity: "Commodities", commodities: "Commodities",
@@ -85,17 +85,13 @@ const Dashboard = () => {
     [...updatedAssets].filter((a) => a.is_active && Number.isFinite(a.change_24h))
       .sort((a, b) => Math.abs(b.change_24h) - Math.abs(a.change_24h)).slice(0, 6), [updatedAssets]);
 
-  if (botStatus.isConnected && !botStatus.loading && showBotFullScreen) {
-    return <BotActiveView botStatus={botStatus.botStatus} onPause={pauseBot} onResume={resumeBot}
-      onDelete={() => { disconnectBot(); setShowBotFullScreen(true); }} onBackToDashboard={() => setShowBotFullScreen(false)} />;
-  }
-
   const nav: NavItem[] = [
     { id: "overview", label: "Overview", icon: LayoutGrid },
     { id: "trade", label: "Trade", icon: CandlestickChart },
     { id: "portfolio", label: "Positions", icon: Briefcase },
     { id: "history", label: "History", icon: History },
     { id: "wallet", label: "Deposit", icon: Wallet, onClick: () => setShowDeposit(true) },
+    { id: "bot", label: "Trading Bot", icon: Bot, onClick: botStatus.isConnected ? undefined : () => setBotModalOpen(true) },
   ];
 
   const name = profile?.first_name ? `${profile.first_name}${profile.surname ? " " + profile.surname : ""}` : user?.email?.split("@")[0];
@@ -118,15 +114,6 @@ const Dashboard = () => {
       </div>
       <div className="ml-auto flex items-center gap-2">
         <ConnectionStatus />
-        {botStatus.isConnected ? (
-          <Button size="sm" variant="outline" onClick={() => setShowBotFullScreen(true)}>
-            <Activity className="mr-1.5 h-4 w-4 text-success" />Bot {botStatus.botStatus === "active" ? "active" : "paused"}
-          </Button>
-        ) : (
-          <Button size="sm" variant="outline" className="hidden sm:inline-flex" onClick={() => setBotModalOpen(true)}>
-            <Bot className="mr-1.5 h-4 w-4" />Connect bot
-          </Button>
-        )}
         <Button size="icon" variant="ghost" onClick={() => setShowSupport(true)} aria-label="Support"><MessageCircle className="h-4 w-4" /></Button>
         <Button size="sm" onClick={() => setShowDeposit(true)}><Plus className="mr-1 h-4 w-4" />Deposit</Button>
       </div>
@@ -146,6 +133,10 @@ const Dashboard = () => {
       {view === "trade" && <WebTrader />}
       {view === "portfolio" && <Bento className="p-0 md:p-2"><Portfolio /></Bento>}
       {view === "history" && <Bento className="p-0 md:p-2"><TradingHistory /></Bento>}
+      {view === "bot" && botStatus.isConnected && (
+        <BotActiveView botStatus={botStatus.botStatus} onPause={pauseBot} onResume={resumeBot}
+          onDelete={() => { disconnectBot(); setView("overview"); }} onBackToDashboard={() => setView("overview")} />
+      )}
 
       {view === "overview" && (
         loading ? (
