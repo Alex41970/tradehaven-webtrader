@@ -10,3 +10,5 @@
 - [x] Own charts replacing TradingView
 - [x] Trade-confirmation leak fix, account-switch fix, honest price badge, lazy pages
 - [ ] Later: merge duplicate data loading into one shared cache (larger refactor)
+
+- [x] Faster price passes (4/min, 70% provider budget) + ~395 markets
