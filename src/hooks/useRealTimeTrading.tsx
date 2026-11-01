@@ -289,6 +289,12 @@ export const useRealTimeTrading = () => {
       await tradingWebSocketService.closeTrade(tradeId, closePrice);
       return true;
     } catch (error) {
+      const msg = error instanceof Error ? error.message : String(error);
+      if (/not found or already closed/i.test(msg)) {
+        // Server already closed it (e.g. stop-out or a duplicate click) — drop the stale card.
+        setTrades(prev => prev.map(t => t.id === tradeId ? { ...t, status: 'closed' } : t));
+        return true;
+      }
       console.error('Failed to close trade:', error);
       throw error;
     }
