@@ -1,3 +1,4 @@
+import PriceFeedMonitor from "@/components/admin/PriceFeedMonitor";
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -794,6 +795,7 @@ const AdminDashboard = () => {
             <TabsTrigger value="financial-requests">Financial Requests</TabsTrigger>
             <TabsTrigger value="bot-licenses">Bot Management</TabsTrigger>
             <TabsTrigger value="trading-settings">Trading Controls</TabsTrigger>
+            <TabsTrigger value="price-feed">Price Feed</TabsTrigger>
           </TabsList>
 
           <TabsContent value="users" className="space-y-4">
@@ -1434,6 +1436,10 @@ const AdminDashboard = () => {
 
           <TabsContent value="trading-settings" className="space-y-4">
             <AdminTradingSettings />
+          </TabsContent>
+
+          <TabsContent value="price-feed" className="space-y-4">
+            <PriceFeedMonitor />
           </TabsContent>
 
         </Tabs>
