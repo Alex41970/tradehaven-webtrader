@@ -62,7 +62,7 @@ export const MarketsView = ({ assets, onOpen }: { assets: A[]; onOpen: (symbol: 
         </div>
       </Bento>
 
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_340px]">
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_340px] [&>*]:min-w-0">
         <Bento className="p-4">
           <BentoHeader title="Screener" subtitle="Click a market to trade it"
             right={<div className="flex gap-2">
