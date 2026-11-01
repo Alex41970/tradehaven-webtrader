@@ -51,18 +51,11 @@ const Index = () => {
 
   useEffect(() => { if (user) navigate("/dashboard"); }, [user, navigate]);
 
-  const counts = useMemo(() => {
-    const c: Record<string, number> = {};
-    CATS.forEach((k) => (c[k.key] = assets.filter((a) => k.match.includes(a.category)).length));
-    return c;
-  }, [assets]);
 
   const rows = useMemo(() => {
     const m = CATS.find((c) => c.key === cat)!.match;
     return assets.filter((a) => m.includes(a.category)).sort((a, b) => Math.abs(b.change_24h) - Math.abs(a.change_24h)).slice(0, 8);
   }, [assets, cat]);
-
-  const total = assets.length || 395;
 
   const handleDemoRequest = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -88,11 +81,11 @@ const Index = () => {
     { icon: Gem, key: "commodities", title: "Commodities", text: "Gold, silver, oil, gas and agriculture." },
   ];
 
-  const features = [
+  const features: { icon: any; title: string; text?: string; span?: string; big?: boolean }[] = [
     { icon: LineChart, title: "Pro charts, built in", text: "Candles, bars, line or area. Bollinger Bands, SMA, EMA, RSI and MACD — on the same prices you trade.", span: "md:col-span-2 md:row-span-2", big: true },
-    { icon: Zap, title: "Fast prices", text: "Crypto refreshes every 15 seconds, other markets within a minute." },
-    { icon: Shield, title: "Server-side protection", text: "Stop-loss, take-profit and stop-out run on our servers, even when you're offline." },
-    { icon: Activity, title: "Live risk numbers", text: "Equity, margin, free margin and margin level update with every tick." },
+    { icon: Zap, title: "Fast prices" },
+    { icon: Shield, title: "Server-side protection" },
+    { icon: Activity, title: "Live risk numbers", text: "Equity, margin, free margin and margin level, always in view." },
     { icon: Smartphone, title: "Any device", text: "Full trading on desktop, tablet and phone — no download needed." },
   ];
 
@@ -115,7 +108,7 @@ const Index = () => {
         <div className="container mx-auto px-4 pb-24 pt-20 lg:pb-36 lg:pt-32">
           <div className="max-w-2xl">
             <span className="label-caps inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-primary">
-              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-primary" />{total} live markets
+              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-primary" />Live markets
             </span>
             <h1 className="mt-6 text-5xl font-semibold leading-[1.02] tracking-tight text-foreground md:text-7xl">
               Every market.<br /><span className="text-primary">One sharp screen.</span>
@@ -185,14 +178,11 @@ const Index = () => {
           </div>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
             {classes.map((c) => (
-              <Link key={c.key} to={`/markets/${c.key}`} className="bento group p-6 transition-all hover:-translate-y-1 hover:border-primary/50">
+              <Link key={c.key} to={`/markets/${c.key}`} className="bento group flex flex-col p-6 transition-all hover:-translate-y-1 hover:border-primary/50">
                 <div className="mb-6 flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary"><c.icon className="h-5 w-5" /></div>
                 <h3 className="text-lg font-semibold text-foreground">{c.title}</h3>
                 <p className="mt-2 text-sm text-muted-foreground">{c.text}</p>
-                <div className="mt-6 flex items-center justify-between text-sm">
-                  <span className="num text-muted-foreground">{counts[c.key] || "—"} markets</span>
-                  <ArrowRight className="h-4 w-4 text-primary transition-transform group-hover:translate-x-1" />
-                </div>
+                <ArrowRight className="mt-auto h-4 w-4 pt-6 text-primary transition-transform group-hover:translate-x-1" />
               </Link>
             ))}
           </div>
@@ -210,7 +200,7 @@ const Index = () => {
             <div key={f.title} className={`bento relative overflow-hidden p-6 ${f.span ?? ""}`}>
               <div className="mb-5 flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary"><f.icon className="h-5 w-5" /></div>
               <h3 className={`${f.big ? "text-2xl" : "text-lg"} font-semibold text-foreground`}>{f.title}</h3>
-              <p className="mt-2 text-sm text-muted-foreground">{f.text}</p>
+              {f.text && <p className="mt-2 text-sm text-muted-foreground">{f.text}</p>}
               {f.big && <div className="mt-6 rounded-xl border border-border bg-background/50 p-3"><HeroChart /></div>}
             </div>
           ))}
@@ -279,7 +269,7 @@ const Index = () => {
         <h2 className="mb-8 text-center text-3xl font-semibold text-foreground md:text-4xl">Questions, answered.</h2>
         <Accordion type="single" collapsible className="w-full">
           {[
-            ["What markets can I trade?", `Crypto, forex, US and European stocks, indices and commodities — ${total} markets in total.`],
+            ["What markets can I trade?", "Crypto, forex, US and European stocks, indices and commodities."],
             ["Where do prices come from?", "Our own price feed collects real market prices around the clock. Charts use the same prices you trade at."],
             ["How do stop-loss and take-profit work?", "They're checked on our servers on every price update, so they trigger even when your browser is closed."],
             ["How do I sign up?", "Create an account with your email and the promo code you got from your account manager."],
@@ -299,7 +289,7 @@ const Index = () => {
           <img src={heroImg} alt="" loading="lazy" className="absolute inset-0 -z-20 h-full w-full object-cover opacity-50" />
           <div className="absolute inset-0 -z-10 bg-background/70" />
           <h2 className="text-3xl font-semibold text-foreground md:text-5xl">Ready when you are.</h2>
-          <p className="mx-auto mt-4 max-w-xl text-muted-foreground">Open your account in a couple of minutes and trade {total} markets from one screen.</p>
+          <p className="mx-auto mt-4 max-w-xl text-muted-foreground">Open your account in a couple of minutes and trade every market from one screen.</p>
           <div className="mt-10 flex flex-col justify-center gap-3 sm:flex-row">
             <Button size="lg" className="h-12 px-7" onClick={() => navigate("/auth")}>Create account<ArrowRight className="ml-2 h-5 w-5" /></Button>
             <Button size="lg" variant="outline" className="h-12 px-7" onClick={() => setIsDemoModalOpen(true)}>Request a demo</Button>

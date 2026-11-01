@@ -181,14 +181,6 @@ const Auth = () => {
           <p className="label-caps text-primary">Web trader</p>
           <h1 className="text-4xl font-semibold leading-tight text-foreground">Every market, one calm screen.</h1>
           <p className="text-muted-foreground">Crypto, forex, stocks, indices and commodities with live prices, charts and clear risk numbers.</p>
-          <div className="grid grid-cols-3 gap-3">
-            {[["395", "markets"], ["15s", "crypto refresh"], ["24/7", "price feed"]].map(([v, l]) => (
-              <div key={l} className="bento p-4">
-                <div className="num text-xl font-semibold text-foreground">{v}</div>
-                <div className="text-xs text-muted-foreground">{l}</div>
-              </div>
-            ))}
-          </div>
         </div>
         <p className="relative text-xs text-muted-foreground">Trading carries risk. Only trade what you can afford to lose.</p>
       </aside>
