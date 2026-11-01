@@ -459,6 +459,9 @@ export const WebTrader = ({ initialSymbol }: { initialSymbol?: string } = {}) =>
                   symbol={selectedAsset?.symbol || ''} 
                   category={selectedAsset?.category}
                   name={selectedAsset?.name}
+                  toolbarExtra={selectedAsset && (
+                    <PriceAlertButton symbol={selectedAsset.symbol} price={serverPrices.get(selectedAsset.symbol) ?? selectedAsset.price} />
+                  )}
                   fullscreenOverlay={selectedAsset && (
                     <QuickTradePanel
                       price={Number(selectedAsset.price) || 0}
@@ -480,10 +483,6 @@ export const WebTrader = ({ initialSymbol }: { initialSymbol?: string } = {}) =>
             <div className="relative order-3 space-y-4 lg:col-start-2 xl:col-start-3 xl:row-start-1 xl:row-span-2">
               <ResizeHandle side="left" label="Resize trade panel" dragging={ticketPanel.dragging}
                 showClassName="hidden xl:flex" onPointerDown={(e) => ticketPanel.startDrag(e, -1)} />
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">{selectedAsset.symbol}</span>
-                <PriceAlertButton symbol={selectedAsset.symbol} price={serverPrices.get(selectedAsset.symbol) ?? selectedAsset.price} />
-              </div>
               <TradingTabsInterface
                 selectedAsset={selectedAsset}
                 amount={amount}
