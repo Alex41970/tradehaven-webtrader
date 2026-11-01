@@ -22,8 +22,8 @@ export const PriceAlertButton = ({ symbol, price }: { symbol: string; price: num
   return (
     <Popover open={open} onOpenChange={(o) => { setOpen(o); if (o && !target) setTarget(String(price)); }}>
       <PopoverTrigger asChild>
-        <Button size="sm" variant="outline" className="relative h-8 gap-1.5" aria-label="Price alert">
-          <Bell className="h-3.5 w-3.5" />Alert
+        <Button size="sm" variant="ghost" className="relative h-7 gap-1 px-2 text-xs" aria-label="Price alert">
+          <Bell className="h-4 w-4" />Alert
           {mine.length > 0 && <span className="num ml-0.5 rounded bg-primary px-1 text-[10px] text-primary-foreground">{mine.length}</span>}
         </Button>
       </PopoverTrigger>
