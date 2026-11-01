@@ -38,16 +38,10 @@ export const useRealtimePnL = (trades: Trade[], assets: Asset[] = [], excludeTra
   const calculatePnL = useCallback(() => {
     // Circuit breaker: don't calculate if no open trades
     if (!hasOpenTrades) {
-      // Clear PnL for any excluded trades
-      if (excludeTradeIds.length > 0) {
-        const filteredPnL = { ...lastPnL };
-        excludeTradeIds.forEach(tradeId => {
-          delete filteredPnL[tradeId];
-        });
-        if (Object.keys(filteredPnL).length !== Object.keys(lastPnL).length) {
-          setLastPnL(filteredPnL);
-          setPnLUpdatedAt(new Date());
-        }
+      // No open trades: no unrealized P&L at all
+      if (Object.keys(lastPnL).length > 0) {
+        setLastPnL({});
+        setPnLUpdatedAt(new Date());
       }
       return;
     }
