@@ -297,6 +297,7 @@ export const WebTrader = ({ initialSymbol }: { initialSymbol?: string } = {}) =>
     const handlePointerDown = useCallback((e: React.PointerEvent) => {
       if (e.target === e.currentTarget || (e.target as Element).closest('.asset-row-main')) {
         setSelectedAsset(asset);
+        setMobileView("chart");
       }
     }, [asset]);
     
