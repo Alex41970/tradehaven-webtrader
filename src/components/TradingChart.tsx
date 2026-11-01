@@ -170,6 +170,10 @@ export const TradingChart = ({ symbol, name }: TradingChartProps) => {
       main = chart.addAreaSeries({ lineColor: primary, topColor: cssColor("--primary", 0.35), bottomColor: cssColor("--primary", 0), lineWidth: 2 });
       main.setData(data.map((d) => ({ time: d.time, value: d.close })));
     }
+    // Price axis precision: 5 decimals for small prices (most forex), 3 for JPY-style, 2 for large
+    const ref = data[data.length - 1]?.close ?? live ?? 1;
+    const precision = ref >= 1000 ? 2 : ref >= 10 ? 3 : ref >= 1 ? 5 : ref >= 0.01 ? 5 : 8;
+    main.applyOptions({ priceFormat: { type: "price", precision, minMove: 1 / 10 ** precision } });
     mainRef.current = main;
 
     const line = (vals: (number | null)[], color: string, opts: Record<string, unknown> = {}) => {
