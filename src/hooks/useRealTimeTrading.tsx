@@ -179,6 +179,7 @@ export const useRealTimeTrading = () => {
 
     const handleTradeError = (message: TradingWebSocketMessage) => {
       console.error('Trade error via real-time:', message.message);
+      if (/not found or already closed/i.test(message.message || '')) return;
       
       toast({
         title: "Trade Error",
