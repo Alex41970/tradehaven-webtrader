@@ -6,6 +6,7 @@ import { useActivity } from '@/contexts/ActivityContext';
 import { toast } from '@/hooks/use-toast';
 import { useNotifications } from './useNotifications';
 import { useBotStatus } from './useBotStatus';
+import { supabase } from '@/integrations/supabase/client';
 
 export interface RealTimeUserProfile {
   id: string;
@@ -295,6 +296,14 @@ export const useRealTimeTrading = () => {
         // Server already closed it (e.g. stop-out or a duplicate click) — drop the stale card.
         setTrades(prev => prev.map(t => t.id === tradeId ? { ...t, status: 'closed' } : t));
         return true;
+      }
+      // Reply may be lost if the socket reconnected — check the real trade state
+      if (/timeout/i.test(msg)) {
+        const { data } = await supabase.from('trades').select('status').eq('id', tradeId).maybeSingle();
+        if (data?.status === 'closed') {
+          setTrades(prev => prev.map(t => t.id === tradeId ? { ...t, status: 'closed' } : t));
+          return true;
+        }
       }
       console.error('Failed to close trade:', error);
       throw error;
