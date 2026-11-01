@@ -10,7 +10,7 @@ const CAT: Record<string, string> = { crypto: "Crypto", forex: "Forex", stocks: 
 const RANGES: Record<string, number> = { "7": 7, "30": 30, "90": 90, all: 0 };
 
 const PnlBars = ({ data }: { data: { name: string; pnl: number }[] }) => (
-  <ResponsiveContainer width="100%" height={200}>
+  <div className="mt-2 h-[200px] w-full"><ResponsiveContainer>
     <BarChart data={data} margin={{ left: 0, right: 8, top: 8 }}>
       <CartesianGrid stroke="hsl(var(--border))" vertical={false} />
       <XAxis dataKey="name" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} axisLine={false} tickLine={false} />
@@ -21,7 +21,7 @@ const PnlBars = ({ data }: { data: { name: string; pnl: number }[] }) => (
         {data.map((d, i) => <Cell key={i} fill={d.pnl >= 0 ? "hsl(var(--success))" : "hsl(var(--destructive))"} />)}
       </Bar>
     </BarChart>
-  </ResponsiveContainer>
+  </ResponsiveContainer></div>
 );
 
 export const JournalView = ({ trades, categoryOf }: { trades: Trade[]; categoryOf: (t: Trade) => string | undefined }) => {

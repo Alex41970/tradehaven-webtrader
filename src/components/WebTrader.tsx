@@ -451,6 +451,7 @@ export const WebTrader = ({ initialSymbol }: { initialSymbol?: string } = {}) =>
                 <span className="text-sm font-medium">{selectedAsset.symbol}</span>
                 <PriceAlertButton symbol={selectedAsset.symbol} price={serverPrices.get(selectedAsset.symbol) ?? selectedAsset.price} />
               </div>
+              <SentimentBar symbol={selectedAsset.symbol} change24h={Number(selectedAsset.change_24h) || 0} category={selectedAsset.category} />
               <TradingTabsInterface
                 selectedAsset={selectedAsset}
                 amount={amount}
@@ -467,7 +468,6 @@ export const WebTrader = ({ initialSymbol }: { initialSymbol?: string } = {}) =>
                   handleCloseTrade(tradeId, asset?.price || 0);
                 }}
               />
-              <SentimentBar symbol={selectedAsset.symbol} change24h={Number(selectedAsset.change_24h) || 0} category={selectedAsset.category} />
             </div>
           </div>
         )}
