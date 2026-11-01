@@ -1,22 +1,24 @@
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuCheckboxItem, DropdownMenuLabel, DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 import { TradingChart } from "./TradingChart";
-import { TradeRow } from "./TradeRow";
 import { TradingTabsInterface } from "./TradingTabsInterface";
-import { Star, StarIcon, TrendingUp, TrendingDown, Menu, Wallet, History, ArrowLeft } from "lucide-react";
+import { Star, StarIcon, ArrowLeft, ListPlus } from "lucide-react";
 import { useAssets } from "@/hooks/useAssets";
 import { useTrades } from "@/hooks/useTrades";
 import { useSharedUserProfile } from "@/hooks/useSharedUserProfile";
-import { useFavorites } from "@/hooks/useFavorites";
+import { useWatchlists } from "@/hooks/useWatchlists";
+import { usePrices } from "@/contexts/PriceContext";
+import { SentimentBar } from "./intel/SentimentBar";
+import { PriceAlertButton } from "./intel/PriceAlertButton";
 import { useRealTimePrices } from "@/hooks/useRealTimePrices";
 import { useTradeOrders } from "@/hooks/useTradeOrders";
 import { useNavigate } from "react-router-dom";
@@ -27,11 +29,12 @@ import { useEventDrivenUpdates } from "@/hooks/useEventDrivenUpdates";
 import { WebTraderSkeleton } from "./WebTraderSkeleton";
 import { useRealtimeAccountMetrics } from "@/hooks/useRealtimeAccountMetrics";
 
-export const WebTrader = () => {
+export const WebTrader = ({ initialSymbol }: { initialSymbol?: string } = {}) => {
   const { openTrade, closeTrade, openTrades } = useTrades();
   const { assets, loading: assetsLoading } = useAssets();
   const { profile, loading: profileLoading, refetch: refetchProfile } = useSharedUserProfile(openTrades.length > 0);
-  const { favorites, addFavorite, removeFavorite } = useFavorites();
+  const { lists, createList, renameList, deleteList, toggleItem, inAnyList } = useWatchlists();
+  const { serverPrices } = usePrices();
   const { getUpdatedAssets, isConnected, lastUpdate } = useRealTimePrices();
   const { createOrder } = useTradeOrders();
   const { handleTradeAction } = useEventDrivenUpdates();
@@ -45,6 +48,8 @@ export const WebTrader = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [isExecuting, setIsExecuting] = useState(false);
+  const [listTab, setListTab] = useState("all");
+  const pickedInitial = useRef(false);
 
   // Get real-time price updates for assets
   const realtimeAssets = useMemo(() => {
@@ -61,18 +66,24 @@ export const WebTrader = () => {
     });
   }, [realtimeAssets, searchTerm, categoryFilter]);
 
-  // Get favorite assets with real-time prices
-  const favoriteAssets = useMemo(() => {
-    const favoriteIds = favorites.map(f => f.asset_id);
-    return realtimeAssets.filter(asset => favoriteIds.includes(asset.id));
-  }, [realtimeAssets, favorites]);
-
-  // Auto-select first asset if none selected
+  const activeList = lists.find((l) => l.id === listTab);
   useEffect(() => {
-    if (!selectedAsset && realtimeAssets.length > 0) {
-      setSelectedAsset(realtimeAssets[0]);
+    if (listTab !== "all" && !activeList && lists.length) setListTab("all");
+  }, [lists, listTab, activeList]);
+  const visibleAssets = useMemo(() => {
+    if (!activeList) return filteredAssets;
+    return filteredAssets.filter((a) => activeList.assetIds.includes(a.id));
+  }, [filteredAssets, activeList]);
+
+  // Auto-select the requested (or first) asset if none selected
+  useEffect(() => {
+    if (realtimeAssets.length === 0) return;
+    if (initialSymbol && selectedAsset?.symbol !== initialSymbol && !pickedInitial.current) {
+      const a = realtimeAssets.find((x) => x.symbol === initialSymbol);
+      if (a) { pickedInitial.current = true; setSelectedAsset(a); return; }
     }
-  }, [realtimeAssets, selectedAsset]);
+    if (!selectedAsset) setSelectedAsset(realtimeAssets[0]);
+  }, [realtimeAssets, selectedAsset, initialSymbol]);
 
   // Update selected asset with real-time data - REMOVED selectedAsset from dependencies to prevent infinite loop
   useEffect(() => {
@@ -264,18 +275,9 @@ export const WebTrader = () => {
     }
   };
 
-  const toggleFavorite = async (asset) => {
-    const isFavorited = favorites.some(f => f.asset_id === asset.id);
-    if (isFavorited) {
-      await removeFavorite(asset.id);
-    } else {
-      await addFavorite(asset.id);
-    }
-  };
-
   // Asset row component for market watch
   const AssetRow = React.memo(({ asset }: { asset: any }) => {
-    const isFavorited = favorites.some(f => f.asset_id === asset.id);
+    const isFavorited = inAnyList(asset.id);
     
     const handleAssetSelect = useCallback((e: React.MouseEvent) => {
       e.preventDefault();
@@ -304,21 +306,25 @@ export const WebTrader = () => {
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1">
               <span className="font-medium text-sm">{asset.symbol}</span>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-6 w-6 pointer-events-auto"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  toggleFavorite(asset);
-                }}
-              >
-                {isFavorited ? (
-                  <StarIcon className="h-3 w-3 fill-current text-yellow-500" />
-                ) : (
-                  <Star className="h-3 w-3" />
-                )}
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-6 w-6 pointer-events-auto" aria-label="Add to watchlist"
+                    onClick={(e) => e.stopPropagation()} onPointerDown={(e) => e.stopPropagation()}>
+                    {isFavorited ? <StarIcon className="h-3 w-3 fill-current text-primary" /> : <Star className="h-3 w-3" />}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" onClick={(e) => e.stopPropagation()}>
+                  <DropdownMenuLabel className="text-xs">Add {asset.symbol} to</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  {lists.map((l) => (
+                    <DropdownMenuCheckboxItem key={l.id} checked={l.assetIds.includes(asset.id)} onSelect={(e) => e.preventDefault()}
+                      onCheckedChange={() => toggleItem(l.id, asset.id)}>{l.name}</DropdownMenuCheckboxItem>
+                  ))}
+                  <DropdownMenuItem onClick={async () => { const n = window.prompt("New watchlist name"); if (n) { const id = await createList(n); if (id) toggleItem(id, asset.id); } }}>
+                    + New watchlist
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
             <div className="text-xs text-muted-foreground truncate">{asset.name}</div>
           </div>
@@ -461,6 +467,7 @@ export const WebTrader = () => {
                   handleCloseTrade(tradeId, asset?.price || 0);
                 }}
               />
+              <SentimentBar symbol={selectedAsset.symbol} change24h={Number(selectedAsset.change_24h) || 0} category={selectedAsset.category} />
             </div>
           </div>
         )}
