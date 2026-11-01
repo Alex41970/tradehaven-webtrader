@@ -392,39 +392,39 @@ export const WebTrader = () => {
                     </Select>
                   </div>
 
-                  <Tabs defaultValue="all" className="">
-                    <TabsList className="grid w-full grid-cols-2 h-9">
-                      <TabsTrigger value="all" className="text-xs">All</TabsTrigger>
-                      <TabsTrigger value="favorites" className="text-xs">Favorites</TabsTrigger>
-                    </TabsList>
-                    
-                    <TabsContent value="all" className="mt-2">
+                  <Tabs value={listTab} onValueChange={setListTab} className="">
+                    <div className="flex items-center gap-1">
+                      <div className="min-w-0 flex-1 overflow-x-auto">
+                        <TabsList className="h-9 w-max">
+                          <TabsTrigger value="all" className="text-xs">All</TabsTrigger>
+                          {lists.map((l) => <TabsTrigger key={l.id} value={l.id} className="max-w-[120px] truncate text-xs">{l.name}</TabsTrigger>)}
+                        </TabsList>
+                      </div>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild><Button size="icon" variant="ghost" className="h-8 w-8 shrink-0" aria-label="Watchlist options"><ListPlus className="h-4 w-4" /></Button></DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={async () => { const n = window.prompt("New watchlist name"); if (n) { const id = await createList(n); if (id) setListTab(id); } }}>New watchlist</DropdownMenuItem>
+                          {activeList && <>
+                            <DropdownMenuItem onClick={() => { const n = window.prompt("Rename watchlist", activeList.name); if (n) renameList(activeList.id, n); }}>Rename "{activeList.name}"</DropdownMenuItem>
+                            <DropdownMenuItem className="text-destructive" onClick={() => { if (window.confirm(`Delete "${activeList.name}"?`)) { deleteList(activeList.id); setListTab("all"); } }}>Delete "{activeList.name}"</DropdownMenuItem>
+                          </>}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                    <div className="mt-2">
                       <ScrollArea className="h-[420px] lg:h-[calc(100vh-280px)] [&_[data-radix-scroll-area-viewport]>div]:!block">
                         <div className="space-y-1 pr-3">
-                          {filteredAssets.map((asset) => (
-                            <AssetRow key={asset.id} asset={asset} />
-                          ))}
-                        </div>
-                      </ScrollArea>
-                    </TabsContent>
-                    
-                    <TabsContent value="favorites" className="mt-2">
-                      <ScrollArea className="h-[420px] lg:h-[calc(100vh-280px)] [&_[data-radix-scroll-area-viewport]>div]:!block">
-                        <div className="space-y-1 pr-3">
-                          {favoriteAssets.length > 0 ? (
-                            favoriteAssets.map((asset) => (
-                              <AssetRow key={asset.id} asset={asset} />
-                            ))
+                          {visibleAssets.length > 0 ? (
+                            visibleAssets.map((asset) => <AssetRow key={asset.id} asset={asset} />)
                           ) : (
                             <div className="text-center py-8 text-muted-foreground">
                               <Star className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                              <p className="text-sm">No favorite assets</p>
+                              <p className="text-sm">{activeList ? "Use the star on any market to add it here" : "No markets found"}</p>
                             </div>
                           )}
                         </div>
                       </ScrollArea>
-                    </TabsContent>
-                    
+                    </div>
                   </Tabs>
                 </CardContent>
               </Card>
@@ -440,7 +440,11 @@ export const WebTrader = () => {
                 />
             </div>
 
-            <div className="order-3 lg:col-start-2 xl:col-start-3 xl:row-start-1 xl:row-span-2">
+            <div className="order-3 space-y-4 lg:col-start-2 xl:col-start-3 xl:row-start-1 xl:row-span-2">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium">{selectedAsset.symbol}</span>
+                <PriceAlertButton symbol={selectedAsset.symbol} price={serverPrices.get(selectedAsset.symbol) ?? selectedAsset.price} />
+              </div>
               <TradingTabsInterface
                 selectedAsset={selectedAsset}
                 amount={amount}
