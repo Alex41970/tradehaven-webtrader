@@ -181,8 +181,8 @@ const Index = () => {
               <Link key={c.key} to={`/markets/${c.key}`} className="bento group flex flex-col p-6 transition-all hover:-translate-y-1 hover:border-primary/50">
                 <div className="mb-6 flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary"><c.icon className="h-5 w-5" /></div>
                 <h3 className="text-lg font-semibold text-foreground">{c.title}</h3>
-                <p className="mt-2 text-sm text-muted-foreground">{c.text}</p>
-                <ArrowRight className="mt-auto h-4 w-4 pt-6 text-primary transition-transform group-hover:translate-x-1" />
+                <p className="mt-2 min-h-[4rem] text-sm text-muted-foreground">{c.text}</p>
+                <div className="mt-auto pt-6"><ArrowRight className="h-4 w-4 text-primary transition-transform group-hover:translate-x-1" /></div>
               </Link>
             ))}
           </div>
@@ -197,11 +197,12 @@ const Index = () => {
         </div>
         <div className="grid auto-rows-fr gap-4 md:grid-cols-4">
           {features.map((f) => (
-            <div key={f.title} className={`bento relative overflow-hidden p-6 ${f.span ?? ""}`}>
+            <div key={f.title} className={`bento relative flex flex-col overflow-hidden p-6 ${f.span ?? ""} ${f.text ? "" : "justify-center"}`}>
+              {!f.text && <f.icon className="pointer-events-none absolute -bottom-8 -right-8 h-36 w-36 text-primary/5" />}
               <div className="mb-5 flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary"><f.icon className="h-5 w-5" /></div>
               <h3 className={`${f.big ? "text-2xl" : "text-lg"} font-semibold text-foreground`}>{f.title}</h3>
               {f.text && <p className="mt-2 text-sm text-muted-foreground">{f.text}</p>}
-              {f.big && <div className="mt-6 rounded-xl border border-border bg-background/50 p-3"><HeroChart /></div>}
+              {f.big && <div className="mt-auto pt-6 rounded-xl border border-border bg-background/50 p-3"><HeroChart /></div>}
             </div>
           ))}
         </div>
