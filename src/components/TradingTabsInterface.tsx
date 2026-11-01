@@ -37,7 +37,7 @@ export const TradingTabsInterface: React.FC<TradingTabsInterfaceProps> = ({
   // Get real-time P&L updates with asset contract sizes
   const { tradePnL, totalPnL, lastUpdated } = useRealtimePnL(openTrades, realtimeAssets);
   return (
-    <div className="h-[200px]">
+    <div className="h-[520px] xl:h-full">
       <Tabs defaultValue="trading" className="h-full flex flex-col">
         <TabsList className="grid w-full grid-cols-3 h-10 bg-muted/50 border border-border/30 rounded-lg shadow-sm">
           <TabsTrigger value="trading" className="text-xs font-medium">Trading Panel</TabsTrigger>
@@ -46,7 +46,7 @@ export const TradingTabsInterface: React.FC<TradingTabsInterfaceProps> = ({
         </TabsList>
         
         {/* Trading Panel Tab */}
-        <TabsContent value="trading" className="flex-1 mt-2 p-3 bg-card/90 backdrop-blur-sm border border-border/30 rounded-lg shadow-sm">
+        <TabsContent value="trading" className="min-h-0 flex-1 mt-2 p-3 bg-card/90 backdrop-blur-sm border border-border/30 rounded-lg shadow-sm">
           <div className="h-full overflow-y-auto">
             {selectedAsset ? (
               <EnhancedTradingPanel
@@ -68,7 +68,7 @@ export const TradingTabsInterface: React.FC<TradingTabsInterfaceProps> = ({
         </TabsContent>
         
         {/* Open Trades Tab */}
-        <TabsContent value="open-trades" className="flex-1 mt-2 p-3 bg-card/90 backdrop-blur-sm border border-border/30 rounded-lg shadow-sm">
+        <TabsContent value="open-trades" className="min-h-0 flex-1 mt-2 p-3 bg-card/90 backdrop-blur-sm border border-border/30 rounded-lg shadow-sm">
           <div className="h-full overflow-y-auto">
             {openTrades.length > 0 ? (
               <div className="space-y-3">
@@ -103,7 +103,7 @@ export const TradingTabsInterface: React.FC<TradingTabsInterfaceProps> = ({
         </TabsContent>
         
         {/* Order Management Tab */}
-        <TabsContent value="orders" className="flex-1 mt-2 p-3 bg-card/90 backdrop-blur-sm border border-border/30 rounded-lg shadow-sm">
+        <TabsContent value="orders" className="min-h-0 flex-1 mt-2 p-3 bg-card/90 backdrop-blur-sm border border-border/30 rounded-lg shadow-sm">
           <div className="h-full overflow-hidden">
             <OrderManagement />
           </div>

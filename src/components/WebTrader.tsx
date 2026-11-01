@@ -480,7 +480,7 @@ export const WebTrader = ({ initialSymbol }: { initialSymbol?: string } = {}) =>
               <SentimentBar symbol={selectedAsset.symbol} change24h={Number(selectedAsset.change_24h) || 0} category={selectedAsset.category} />
             </div>
 
-            <div className="relative order-3 space-y-4 lg:col-start-2 xl:col-start-3 xl:row-start-1 xl:row-span-2">
+            <div className="relative order-3 lg:col-start-2 xl:col-start-3 xl:row-start-1 xl:row-span-2 xl:h-[640px]">
               <ResizeHandle side="left" label="Resize trade panel" dragging={ticketPanel.dragging}
                 showClassName="hidden xl:flex" onPointerDown={(e) => ticketPanel.startDrag(e, -1)} />
               <TradingTabsInterface
