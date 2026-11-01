@@ -304,8 +304,8 @@ export const WebTrader = ({ initialSymbol }: { initialSymbol?: string } = {}) =>
       >
         <div className="flex items-center justify-between asset-row-main pointer-events-none">
           <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-1">
-              <span className="font-medium text-sm">{asset.symbol}</span>
+            <div className="flex items-center gap-1 min-w-0">
+              <span className="font-medium text-sm truncate">{asset.symbol}</span>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="icon" className="h-6 w-6 pointer-events-auto" aria-label="Add to watchlist"
