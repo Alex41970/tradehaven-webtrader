@@ -1,12 +1,8 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { TrendingUp, TrendingDown, Loader2, Target, ShieldAlert } from "lucide-react";
-import { PulsingPriceIndicator } from "@/components/PulsingPriceIndicator";
 import { formatPnL, calculateRealTimePnL } from "@/utils/pnlCalculator";
 import { Trade } from "@/hooks/useTrades";
-import { useIsMobile } from "@/hooks/use-mobile";
-import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 
 interface TradeRowProps {
   trade: Trade;
@@ -21,7 +17,6 @@ interface TradeRowProps {
 
 const TradeRowComponent = ({ trade, asset, onCloseTrade, isClosing }: TradeRowProps) => {
   const [isLocalClosed, setIsLocalClosed] = useState(trade.status === 'closed');
-  const isMobile = useIsMobile();
 
   // Calculate real-time P&L when trade is open and asset price is available
   const realTimePnL = useMemo(() => {
@@ -69,202 +64,59 @@ const TradeRowComponent = ({ trade, asset, onCloseTrade, isClosing }: TradeRowPr
   }
 
   const currentPrice = asset?.price || trade.current_price || trade.open_price || 0;
-
-  if (isMobile) {
-    return (
-      <div key={trade.id} className="border rounded-lg p-4 space-y-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="font-medium">{trade.symbol}</div>
-            <Badge variant={trade.trade_type === "BUY" ? "default" : "destructive"} className="text-xs">
-              {trade.trade_type}
-            </Badge>
-          </div>
-        </div>
-        
-        <div className="grid grid-cols-2 gap-3 text-sm">
-          <div>
-            <div className="text-xs text-muted-foreground mb-1">Amount</div>
-            <div className="font-medium">${Number(trade.amount).toFixed(2)}</div>
-          </div>
-          <div>
-            <div className="text-xs text-muted-foreground mb-1">Open Price</div>
-            <div className="font-mono">{Number(trade.open_price).toFixed(trade.symbol.includes('JPY') ? 2 : 4)}</div>
-          </div>
-        </div>
-
-        <div>
-          <div className="text-xs text-muted-foreground mb-1">Current Price</div>
-          {asset && asset.price && !isLocalClosed ? (
-            <PulsingPriceIndicator 
-              price={currentPrice}
-              change={asset.change_24h}
-              symbol={trade.symbol}
-            />
-          ) : (
-            <div className="font-mono">
-              {currentPrice.toFixed(trade.symbol.includes('JPY') ? 2 : 4)}
-            </div>
-          )}
-        </div>
-
-        <div>
-          <div className="text-xs text-muted-foreground mb-1">P&L</div>
-          <div className={`font-medium flex items-center gap-1 transition-colors duration-300 ${realTimePnL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-            {realTimePnL >= 0 ? (
-              <TrendingUp className="h-4 w-4" />
-            ) : (
-              <TrendingDown className="h-4 w-4" />
-            )}
-            <span className={!isLocalClosed ? "animate-pulse-subtle" : ""}>{formatPnL(realTimePnL)}</span>
-          </div>
-        </div>
-
-        {/* SL/TP Levels */}
-        {(trade.stop_loss_price || trade.take_profit_price) && (
-          <div className="flex gap-2 text-xs">
-            {trade.stop_loss_price && (
-              <div className="flex items-center gap-1 text-red-500">
-                <ShieldAlert className="h-3 w-3" />
-                <span>SL: {trade.stop_loss_price.toFixed(4)}</span>
-              </div>
-            )}
-            {trade.take_profit_price && (
-              <div className="flex items-center gap-1 text-green-500">
-                <Target className="h-3 w-3" />
-                <span>TP: {trade.take_profit_price.toFixed(4)}</span>
-              </div>
-            )}
-          </div>
-        )}
-        
-        <Button
-          size="sm" 
-          variant="destructive"
-          onClick={handleCloseClick}
-          className="w-full"
-          disabled={isClosing || isLocalClosed}
-        >
-          {isClosing ? (
-            <>
-              <Loader2 className="h-4 w-4 animate-spin mr-1" />
-              Closing...
-            </>
-          ) : isLocalClosed ? (
-            'Closing...'
-          ) : (
-            'Close Position'
-          )}
-        </Button>
-      </div>
-    );
-  }
+  const open = Number(trade.open_price);
+  const dp = (v: number) => (v >= 1000 ? 2 : v >= 10 ? 2 : v >= 1 ? 4 : 5);
+  const fmt = (v: number) => Number(v).toFixed(trade.symbol.includes("JPY") ? 3 : dp(Math.abs(v)));
+  const isBuy = trade.trade_type === "BUY";
+  const up = realTimePnL >= 0;
+  const movePct = open ? ((currentPrice - open) / open) * 100 * (isBuy ? 1 : -1) : 0;
 
   return (
-    <div key={trade.id} className="border rounded-lg p-4">
-      <div className="grid md:grid-cols-8 gap-3 items-center text-sm">
-        <div>
-          <div className="text-xs text-muted-foreground mb-1">Symbol</div>
-          <div className="font-medium">{trade.symbol}</div>
-          <Badge variant={trade.trade_type === "BUY" ? "default" : "destructive"} className="text-xs mt-1">
-            {trade.trade_type}
-          </Badge>
-        </div>
-        
-        <div>
-          <div className="text-xs text-muted-foreground mb-1">Amount</div>
-          <div className="font-medium">${Number(trade.amount).toFixed(2)}</div>
-        </div>
-        
-        <div>
-          <div className="text-xs text-muted-foreground mb-1">Open Price</div>
-          <div className="font-mono">{Number(trade.open_price).toFixed(trade.symbol.includes('JPY') ? 2 : 4)}</div>
-        </div>
-        
-        <div>
-          <div className="text-xs text-muted-foreground mb-1">Current Price</div>
-           {asset && asset.price && !isLocalClosed ? (
-             <PulsingPriceIndicator 
-               price={currentPrice}
-               change={asset.change_24h}
-               symbol={trade.symbol}
-               showPercentage={false}
-             />
-           ) : (
-            <div className="font-mono">
-              {currentPrice.toFixed(trade.symbol.includes('JPY') ? 2 : 4)}
-            </div>
-          )}
-        </div>
-
-        
-        <div>
-          <div className="text-xs text-muted-foreground mb-1">P&L</div>
-          <div className={`font-medium flex items-center gap-1 transition-colors duration-300 ${realTimePnL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-            {realTimePnL >= 0 ? (
-              <TrendingUp className="h-4 w-4" />
-            ) : (
-              <TrendingDown className="h-4 w-4" />
-            )}
-            <span className={!isLocalClosed ? "animate-pulse-subtle" : ""}>{formatPnL(realTimePnL)}</span>
+    <div className="rounded-xl border border-border bg-card/60 p-3 transition-colors hover:border-primary/40">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            <span className={`rounded px-1.5 py-0.5 text-[10px] font-semibold tracking-wider ${isBuy ? "bg-success/15 text-success" : "bg-destructive/15 text-destructive"}`}>
+              {trade.trade_type}
+            </span>
+            <span className="num truncate font-semibold text-foreground">{trade.symbol}</span>
           </div>
+          <div className="num mt-1 text-xs text-muted-foreground">{Number(trade.amount)} lot{Number(trade.amount) === 1 ? "" : "s"}</div>
         </div>
+        <div className="text-right">
+          <div className={`num flex items-center justify-end gap-1 text-base font-semibold ${up ? "text-success" : "text-destructive"}`}>
+            {up ? <TrendingUp className="h-3.5 w-3.5" /> : <TrendingDown className="h-3.5 w-3.5" />}
+            {formatPnL(realTimePnL)}
+          </div>
+          <div className={`num text-[11px] ${up ? "text-success/80" : "text-destructive/80"}`}>{movePct >= 0 ? "+" : ""}{movePct.toFixed(2)}%</div>
+        </div>
+      </div>
 
-        {/* SL/TP Indicators */}
+      <div className="mt-3 grid grid-cols-2 gap-2 rounded-lg bg-background/60 p-2 text-xs">
         <div>
-          <div className="text-xs text-muted-foreground mb-1">SL/TP</div>
-          <TooltipProvider>
-            <div className="flex flex-col gap-1">
-              {trade.stop_loss_price && (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="flex items-center gap-1 text-red-500 text-xs bg-red-500/10 px-2 py-0.5 rounded cursor-help">
-                      <ShieldAlert className="h-3 w-3" />
-                      <span>{trade.stop_loss_price.toFixed(2)}</span>
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent>Stop Loss at {trade.stop_loss_price.toFixed(4)}</TooltipContent>
-                </Tooltip>
-              )}
-              {trade.take_profit_price && (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="flex items-center gap-1 text-green-500 text-xs bg-green-500/10 px-2 py-0.5 rounded cursor-help">
-                      <Target className="h-3 w-3" />
-                      <span>{trade.take_profit_price.toFixed(2)}</span>
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent>Take Profit at {trade.take_profit_price.toFixed(4)}</TooltipContent>
-                </Tooltip>
-              )}
-              {!trade.stop_loss_price && !trade.take_profit_price && (
-                <span className="text-muted-foreground text-xs">—</span>
-              )}
-            </div>
-          </TooltipProvider>
+          <div className="text-muted-foreground">Open</div>
+          <div className="num text-foreground">{fmt(open)}</div>
         </div>
-        
-        <div className="col-span-1">
-          <div className="text-xs text-muted-foreground mb-1">Action</div>
-          <Button 
-            size="sm" 
-            variant="destructive"
-            onClick={handleCloseClick}
-            className="w-full"
-            disabled={isClosing || isLocalClosed}
-          >
-            {isClosing ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin mr-1" />
-                Closing...
-              </>
-            ) : isLocalClosed ? (
-              'Closing...'
-            ) : (
-              'Close Position'
-            )}
-          </Button>
+        <div className="text-right">
+          <div className="text-muted-foreground">Current</div>
+          <div className="num text-foreground">{fmt(currentPrice)}</div>
         </div>
+      </div>
+
+      <div className="mt-3 flex items-center justify-between gap-2">
+        <div className="flex min-w-0 flex-wrap gap-1.5 text-[11px]">
+          {trade.stop_loss_price ? (
+            <span className="num inline-flex items-center gap-1 rounded bg-destructive/10 px-1.5 py-0.5 text-destructive"><ShieldAlert className="h-3 w-3" />SL {fmt(trade.stop_loss_price)}</span>
+          ) : null}
+          {trade.take_profit_price ? (
+            <span className="num inline-flex items-center gap-1 rounded bg-success/10 px-1.5 py-0.5 text-success"><Target className="h-3 w-3" />TP {fmt(trade.take_profit_price)}</span>
+          ) : null}
+          {!trade.stop_loss_price && !trade.take_profit_price && <span className="text-muted-foreground">No SL / TP</span>}
+        </div>
+        <Button size="sm" variant="outline" onClick={handleCloseClick} disabled={isClosing || isLocalClosed}
+          className="h-8 shrink-0 border-destructive/40 text-destructive hover:bg-destructive hover:text-destructive-foreground">
+          {isClosing || isLocalClosed ? (<><Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />Closing</>) : "Close"}
+        </Button>
       </div>
     </div>
   );
