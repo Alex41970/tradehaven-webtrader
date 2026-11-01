@@ -33,7 +33,7 @@ import { useTransactionHistory, TransactionHistory } from "@/hooks/useTransactio
 import { useRealtimeAccountMetrics } from "@/hooks/useRealtimeAccountMetrics";
 import { cn } from "@/lib/utils";
 
-type View = "overview" | "trade" | "portfolio" | "history";
+type View = "overview" | "trade" | "portfolio" | "history" | "bot";
 
 const CATEGORY_LABEL: Record<string, string> = {
   crypto: "Crypto", forex: "Forex", stock: "Stocks", stocks: "Stocks", index: "Indices", indices: "Indices", commodity: "Commodities", commodities: "Commodities",
