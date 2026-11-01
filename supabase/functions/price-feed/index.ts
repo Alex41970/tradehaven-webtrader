@@ -238,7 +238,7 @@ Deno.serve(async (request) => {
 
     // Never go over the Yahoo budget, counting fallback-host retries too
     const yahooRoom = Math.max(0, YAHOO_CALLS_PER_MIN - yahooUsed());
-    const yahooPick = pick.slice(0, Math.floor(yahooRoom / 2) * YAHOO_BATCH || (yahooRoom > 0 ? YAHOO_BATCH : 0));
+    const yahooPick = pick.slice(0, yahooRoom * YAHOO_BATCH);
     const [cryptoQuotes, yahoo] = await Promise.all([fetchBinance(crypto), yahooThrottled || !yahooPick.length ? { quotes: [] as Quote[] } : fetchYahoo(yahooPick)]);
     const quotes = new Map<string, Quote>();
     [...cryptoQuotes, ...yahoo.quotes].forEach((q) => quotes.set(q.symbol, q));
