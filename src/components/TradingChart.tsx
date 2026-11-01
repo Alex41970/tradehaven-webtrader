@@ -17,6 +17,8 @@ interface TradingChartProps {
   name?: string;
   /** Rendered over the chart only while fullscreen (e.g. one-click trade panel). */
   fullscreenOverlay?: React.ReactNode;
+  /** Extra controls shown in the toolbar next to Indicators (e.g. price alert). */
+  toolbarExtra?: React.ReactNode;
 }
 
 // Our own chart, built from the same price feed used for trading, so chart and quotes always match.
@@ -70,7 +72,7 @@ const loadPrefs = () => {
 
 const fmt = (n?: number) => (n == null ? "-" : n >= 100 ? n.toFixed(2) : n.toFixed(5));
 
-export const TradingChart = ({ symbol, name, fullscreenOverlay }: TradingChartProps) => {
+export const TradingChart = ({ symbol, name, fullscreenOverlay, toolbarExtra }: TradingChartProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const mainRef = useRef<ISeriesApi<SeriesType> | null>(null);
@@ -280,6 +282,7 @@ export const TradingChart = ({ symbol, name, fullscreenOverlay }: TradingChartPr
             ))}
           </PopoverContent>
         </Popover>
+        {toolbarExtra}
         <Button size="icon" variant="ghost" className="h-7 w-7 ml-auto" title="Fullscreen" onClick={() => setFull((f) => !f)}>
           {full ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
         </Button>
