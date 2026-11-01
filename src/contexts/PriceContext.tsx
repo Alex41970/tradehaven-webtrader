@@ -16,6 +16,8 @@ interface PriceUpdate {
 
 interface PriceContextType {
   prices: Map<string, PriceUpdate>;
+  /** Real server prices only (no simulated movement) — use for anything that triggers actions */
+  serverPrices: Map<string, number>;
   isConnected: boolean;
   /** Time of the newest real price from the market (not the simulated movement) */
   lastUpdate: Date | null;
@@ -46,6 +48,7 @@ export const PriceProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const { prices, addPriceUpdates } = useOptimizedPriceUpdates({ intensity: priceIntensity, isMarketClosed });
 
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
+  const [serverPrices, setServerPrices] = useState<Map<string, number>>(() => new Map());
   const [status, setStatus] = useState<PriceContextType['connectionStatus']>('connecting');
   const [visible, setVisible] = useState(() => document.visibilityState !== 'hidden');
 
@@ -72,6 +75,7 @@ export const PriceProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         return;
       }
       setContractSizes(data);
+      setServerPrices(new Map(data.map((a) => [a.symbol, Number(a.price) || 0])));
       let newest = 0;
       addPriceUpdates(
         data.map((a) => {
@@ -102,6 +106,7 @@ export const PriceProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const value = useMemo<PriceContextType>(
     () => ({
       prices,
+      serverPrices,
       isConnected: status === 'connected',
       lastUpdate,
       connectionStatus: status,
@@ -111,7 +116,7 @@ export const PriceProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       canTrade,
       priceIntensity,
     }),
-    [prices, status, lastUpdate, visible, isMarketClosed, canTrade, priceIntensity],
+    [prices, serverPrices, status, lastUpdate, visible, isMarketClosed, canTrade, priceIntensity],
   );
 
   return <PriceContext.Provider value={value}>{children}</PriceContext.Provider>;

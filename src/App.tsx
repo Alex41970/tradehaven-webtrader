@@ -32,6 +32,7 @@ const Regulatory = lazy(() => import("./pages/Regulatory"));
 const Markets = lazy(() => import("./pages/Markets"));
 const Education = lazy(() => import("./pages/Education"));
 import { WebTrader } from "./components/WebTrader";
+import { PriceAlertsProvider } from "./hooks/usePriceAlerts";
 import { MobilePortfolio } from "./pages/MobilePortfolio";
 import { MobileTradingHistory } from "./pages/MobileTradingHistory";
 const PromoCodeAnalytics = lazy(() => import("./pages/PromoCodeAnalytics"));
@@ -97,7 +98,7 @@ const App = () => {
                 } />
                 <Route path="/webtrader" element={
                   <ProtectedRoute>
-                    <WebTrader />
+                    <PriceAlertsProvider><WebTrader /></PriceAlertsProvider>
                   </ProtectedRoute>
                 } />
                 <Route path="/webtrader/portfolio" element={

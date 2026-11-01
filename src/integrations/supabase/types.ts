@@ -355,6 +355,39 @@ export type Database = {
           },
         ]
       }
+      price_alerts: {
+        Row: {
+          created_at: string
+          direction: string
+          id: string
+          is_active: boolean
+          symbol: string
+          target_price: number
+          triggered_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          direction: string
+          id?: string
+          is_active?: boolean
+          symbol: string
+          target_price: number
+          triggered_at?: string | null
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          direction?: string
+          id?: string
+          is_active?: boolean
+          symbol?: string
+          target_price?: number
+          triggered_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       price_candles: {
         Row: {
           bucket: string
@@ -982,6 +1015,69 @@ export type Database = {
         }
         Relationships: []
       }
+      watchlist_items: {
+        Row: {
+          asset_id: string
+          created_at: string
+          id: string
+          user_id: string
+          watchlist_id: string
+        }
+        Insert: {
+          asset_id: string
+          created_at?: string
+          id?: string
+          user_id?: string
+          watchlist_id: string
+        }
+        Update: {
+          asset_id?: string
+          created_at?: string
+          id?: string
+          user_id?: string
+          watchlist_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "watchlist_items_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "watchlist_items_watchlist_id_fkey"
+            columns: ["watchlist_id"]
+            isOneToOne: false
+            referencedRelation: "watchlists"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      watchlists: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          sort_order: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          sort_order?: number
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          sort_order?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       withdrawal_requests: {
         Row: {
           admin_notes: string | null
@@ -1163,6 +1259,14 @@ export type Database = {
           status: string
           symbol: string
           updated_age_s: number
+        }[]
+      }
+      get_market_sentiment: {
+        Args: { _symbol: string }
+        Returns: {
+          buy_lots: number
+          sell_lots: number
+          traders: number
         }[]
       }
       get_promo_code_stats: {

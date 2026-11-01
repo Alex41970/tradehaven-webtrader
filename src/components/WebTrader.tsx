@@ -1,22 +1,24 @@
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuCheckboxItem, DropdownMenuLabel, DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 import { TradingChart } from "./TradingChart";
-import { TradeRow } from "./TradeRow";
 import { TradingTabsInterface } from "./TradingTabsInterface";
-import { Star, StarIcon, TrendingUp, TrendingDown, Menu, Wallet, History, ArrowLeft } from "lucide-react";
+import { Star, StarIcon, ArrowLeft, ListPlus } from "lucide-react";
 import { useAssets } from "@/hooks/useAssets";
 import { useTrades } from "@/hooks/useTrades";
 import { useSharedUserProfile } from "@/hooks/useSharedUserProfile";
-import { useFavorites } from "@/hooks/useFavorites";
+import { useWatchlists } from "@/hooks/useWatchlists";
+import { usePrices } from "@/contexts/PriceContext";
+import { SentimentBar } from "./intel/SentimentBar";
+import { PriceAlertButton } from "./intel/PriceAlertButton";
 import { useRealTimePrices } from "@/hooks/useRealTimePrices";
 import { useTradeOrders } from "@/hooks/useTradeOrders";
 import { useNavigate } from "react-router-dom";
@@ -27,11 +29,12 @@ import { useEventDrivenUpdates } from "@/hooks/useEventDrivenUpdates";
 import { WebTraderSkeleton } from "./WebTraderSkeleton";
 import { useRealtimeAccountMetrics } from "@/hooks/useRealtimeAccountMetrics";
 
-export const WebTrader = () => {
+export const WebTrader = ({ initialSymbol }: { initialSymbol?: string } = {}) => {
   const { openTrade, closeTrade, openTrades } = useTrades();
   const { assets, loading: assetsLoading } = useAssets();
   const { profile, loading: profileLoading, refetch: refetchProfile } = useSharedUserProfile(openTrades.length > 0);
-  const { favorites, addFavorite, removeFavorite } = useFavorites();
+  const { lists, createList, renameList, deleteList, toggleItem, inAnyList } = useWatchlists();
+  const { serverPrices } = usePrices();
   const { getUpdatedAssets, isConnected, lastUpdate } = useRealTimePrices();
   const { createOrder } = useTradeOrders();
   const { handleTradeAction } = useEventDrivenUpdates();
@@ -45,6 +48,8 @@ export const WebTrader = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [isExecuting, setIsExecuting] = useState(false);
+  const [listTab, setListTab] = useState("all");
+  const pickedInitial = useRef(false);
 
   // Get real-time price updates for assets
   const realtimeAssets = useMemo(() => {
@@ -61,18 +66,24 @@ export const WebTrader = () => {
     });
   }, [realtimeAssets, searchTerm, categoryFilter]);
 
-  // Get favorite assets with real-time prices
-  const favoriteAssets = useMemo(() => {
-    const favoriteIds = favorites.map(f => f.asset_id);
-    return realtimeAssets.filter(asset => favoriteIds.includes(asset.id));
-  }, [realtimeAssets, favorites]);
-
-  // Auto-select first asset if none selected
+  const activeList = lists.find((l) => l.id === listTab);
   useEffect(() => {
-    if (!selectedAsset && realtimeAssets.length > 0) {
-      setSelectedAsset(realtimeAssets[0]);
+    if (listTab !== "all" && !activeList && lists.length) setListTab("all");
+  }, [lists, listTab, activeList]);
+  const visibleAssets = useMemo(() => {
+    if (!activeList) return filteredAssets;
+    return filteredAssets.filter((a) => activeList.assetIds.includes(a.id));
+  }, [filteredAssets, activeList]);
+
+  // Auto-select the requested (or first) asset if none selected
+  useEffect(() => {
+    if (realtimeAssets.length === 0) return;
+    if (initialSymbol && selectedAsset?.symbol !== initialSymbol && !pickedInitial.current) {
+      const a = realtimeAssets.find((x) => x.symbol === initialSymbol);
+      if (a) { pickedInitial.current = true; setSelectedAsset(a); return; }
     }
-  }, [realtimeAssets, selectedAsset]);
+    if (!selectedAsset) setSelectedAsset(realtimeAssets[0]);
+  }, [realtimeAssets, selectedAsset, initialSymbol]);
 
   // Update selected asset with real-time data - REMOVED selectedAsset from dependencies to prevent infinite loop
   useEffect(() => {
@@ -264,18 +275,9 @@ export const WebTrader = () => {
     }
   };
 
-  const toggleFavorite = async (asset) => {
-    const isFavorited = favorites.some(f => f.asset_id === asset.id);
-    if (isFavorited) {
-      await removeFavorite(asset.id);
-    } else {
-      await addFavorite(asset.id);
-    }
-  };
-
   // Asset row component for market watch
   const AssetRow = React.memo(({ asset }: { asset: any }) => {
-    const isFavorited = favorites.some(f => f.asset_id === asset.id);
+    const isFavorited = inAnyList(asset.id);
     
     const handleAssetSelect = useCallback((e: React.MouseEvent) => {
       e.preventDefault();
@@ -304,21 +306,25 @@ export const WebTrader = () => {
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1">
               <span className="font-medium text-sm">{asset.symbol}</span>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-6 w-6 pointer-events-auto"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  toggleFavorite(asset);
-                }}
-              >
-                {isFavorited ? (
-                  <StarIcon className="h-3 w-3 fill-current text-yellow-500" />
-                ) : (
-                  <Star className="h-3 w-3" />
-                )}
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-6 w-6 pointer-events-auto" aria-label="Add to watchlist"
+                    onClick={(e) => e.stopPropagation()} onPointerDown={(e) => e.stopPropagation()}>
+                    {isFavorited ? <StarIcon className="h-3 w-3 fill-current text-primary" /> : <Star className="h-3 w-3" />}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" onClick={(e) => e.stopPropagation()}>
+                  <DropdownMenuLabel className="text-xs">Add {asset.symbol} to</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  {lists.map((l) => (
+                    <DropdownMenuCheckboxItem key={l.id} checked={l.assetIds.includes(asset.id)} onSelect={(e) => e.preventDefault()}
+                      onCheckedChange={() => toggleItem(l.id, asset.id)}>{l.name}</DropdownMenuCheckboxItem>
+                  ))}
+                  <DropdownMenuItem onClick={async () => { const n = window.prompt("New watchlist name"); if (n) { const id = await createList(n); if (id) toggleItem(id, asset.id); } }}>
+                    + New watchlist
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
             <div className="text-xs text-muted-foreground truncate">{asset.name}</div>
           </div>
@@ -392,39 +398,39 @@ export const WebTrader = () => {
                     </Select>
                   </div>
 
-                  <Tabs defaultValue="all" className="">
-                    <TabsList className="grid w-full grid-cols-2 h-9">
-                      <TabsTrigger value="all" className="text-xs">All</TabsTrigger>
-                      <TabsTrigger value="favorites" className="text-xs">Favorites</TabsTrigger>
-                    </TabsList>
-                    
-                    <TabsContent value="all" className="mt-2">
+                  <Tabs value={listTab} onValueChange={setListTab} className="">
+                    <div className="flex items-center gap-1">
+                      <div className="min-w-0 flex-1 overflow-x-auto">
+                        <TabsList className="h-9 w-max">
+                          <TabsTrigger value="all" className="text-xs">All</TabsTrigger>
+                          {lists.map((l) => <TabsTrigger key={l.id} value={l.id} className="max-w-[120px] truncate text-xs">{l.name}</TabsTrigger>)}
+                        </TabsList>
+                      </div>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild><Button size="icon" variant="ghost" className="h-8 w-8 shrink-0" aria-label="Watchlist options"><ListPlus className="h-4 w-4" /></Button></DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={async () => { const n = window.prompt("New watchlist name"); if (n) { const id = await createList(n); if (id) setListTab(id); } }}>New watchlist</DropdownMenuItem>
+                          {activeList && <>
+                            <DropdownMenuItem onClick={() => { const n = window.prompt("Rename watchlist", activeList.name); if (n) renameList(activeList.id, n); }}>Rename "{activeList.name}"</DropdownMenuItem>
+                            <DropdownMenuItem className="text-destructive" onClick={() => { if (window.confirm(`Delete "${activeList.name}"?`)) { deleteList(activeList.id); setListTab("all"); } }}>Delete "{activeList.name}"</DropdownMenuItem>
+                          </>}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                    <div className="mt-2">
                       <ScrollArea className="h-[420px] lg:h-[calc(100vh-280px)] [&_[data-radix-scroll-area-viewport]>div]:!block">
                         <div className="space-y-1 pr-3">
-                          {filteredAssets.map((asset) => (
-                            <AssetRow key={asset.id} asset={asset} />
-                          ))}
-                        </div>
-                      </ScrollArea>
-                    </TabsContent>
-                    
-                    <TabsContent value="favorites" className="mt-2">
-                      <ScrollArea className="h-[420px] lg:h-[calc(100vh-280px)] [&_[data-radix-scroll-area-viewport]>div]:!block">
-                        <div className="space-y-1 pr-3">
-                          {favoriteAssets.length > 0 ? (
-                            favoriteAssets.map((asset) => (
-                              <AssetRow key={asset.id} asset={asset} />
-                            ))
+                          {visibleAssets.length > 0 ? (
+                            visibleAssets.map((asset) => <AssetRow key={asset.id} asset={asset} />)
                           ) : (
                             <div className="text-center py-8 text-muted-foreground">
                               <Star className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                              <p className="text-sm">No favorite assets</p>
+                              <p className="text-sm">{activeList ? "Use the star on any market to add it here" : "No markets found"}</p>
                             </div>
                           )}
                         </div>
                       </ScrollArea>
-                    </TabsContent>
-                    
+                    </div>
                   </Tabs>
                 </CardContent>
               </Card>
@@ -440,7 +446,12 @@ export const WebTrader = () => {
                 />
             </div>
 
-            <div className="order-3 lg:col-start-2 xl:col-start-3 xl:row-start-1 xl:row-span-2">
+            <div className="order-3 space-y-4 lg:col-start-2 xl:col-start-3 xl:row-start-1 xl:row-span-2">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium">{selectedAsset.symbol}</span>
+                <PriceAlertButton symbol={selectedAsset.symbol} price={serverPrices.get(selectedAsset.symbol) ?? selectedAsset.price} />
+              </div>
+              <SentimentBar symbol={selectedAsset.symbol} change24h={Number(selectedAsset.change_24h) || 0} category={selectedAsset.category} />
               <TradingTabsInterface
                 selectedAsset={selectedAsset}
                 amount={amount}
