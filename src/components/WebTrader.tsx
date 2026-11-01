@@ -24,7 +24,6 @@ import { useTradeOrders } from "@/hooks/useTradeOrders";
 import { useNavigate } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { toast } from "@/hooks/use-toast";
-import { PulsingPriceIndicator } from "./PulsingPriceIndicator";
 import { useEventDrivenUpdates } from "@/hooks/useEventDrivenUpdates";
 import { WebTraderSkeleton } from "./WebTraderSkeleton";
 import { useRealtimeAccountMetrics } from "@/hooks/useRealtimeAccountMetrics";
