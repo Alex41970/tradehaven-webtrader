@@ -2,10 +2,11 @@
 
 Five additions, built in this order. All use our own database and current prices, so they add no calls to price providers and no live-connection costs.
 
-## 1. Community sentiment bar (trading screen)
-- A bar under the order ticket: "82% of traders are buying BTC/USD", with a buyer/seller split shown in green and red.
-- Worked out from open positions on the platform. It never shows who holds them, only totals.
-- If fewer than 5 traders hold a market, it shows "Not enough data yet" so the numbers aren't misleading.
+## 1. Sentiment bar (trading screen)
+- A bar under the order ticket: "68% bullish on BTC/USD", with a buy/sell split shown in green and red. Every market always shows a value.
+- Before the platform is busy, the value is a market-mood estimate worked out from real price movement (24h change and recent trend). It's labelled "Market sentiment".
+- Once 5 or more traders hold a market, the bar blends in real platform positions and the label changes to "Trader sentiment". It never shows who holds them, only totals.
+- It never claims "X% of our traders" unless that number comes from real trades. Made-up trader counts could mislead clients and get a broker in trouble with regulators.
 - Refreshes every 5 minutes.
 
 ## 2. Price alerts with a chime
