@@ -49,8 +49,7 @@ export const useWatchlists = () => {
   const toggleItem = async (listId: string, assetId: string) => {
     if (!user) return;
     const list = lists.find((w) => w.id === listId);
-    if (!list) return;
-    const has = list.assetIds.includes(assetId);
+    const has = !!list?.assetIds.includes(assetId); // list may be brand new (not yet in this closure)
     setLists((l) => l.map((w) => (w.id === listId ? { ...w, assetIds: has ? w.assetIds.filter((a) => a !== assetId) : [...w.assetIds, assetId] } : w)));
     if (has) await supabase.from("watchlist_items").delete().eq("watchlist_id", listId).eq("asset_id", assetId);
     else await supabase.from("watchlist_items").insert({ watchlist_id: listId, asset_id: assetId, user_id: user.id });
