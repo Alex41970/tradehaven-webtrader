@@ -437,13 +437,16 @@ export const WebTrader = ({ initialSymbol }: { initialSymbol?: string } = {}) =>
             </div>
 
             {/* Right Column - Chart and Trading - Fixed Heights */}
-            <div className="order-1 h-[460px] md:h-[640px] lg:order-2">
+            <div className="order-1 flex h-[460px] flex-col gap-3 md:h-[640px] lg:order-2">
+              <div className="min-h-0 flex-1">
                 <TradingChart 
                   key={selectedAsset?.id || 'no-asset'} 
                   symbol={selectedAsset?.symbol || ''} 
                   category={selectedAsset?.category}
                   name={selectedAsset?.name}
                 />
+              </div>
+              <SentimentBar symbol={selectedAsset.symbol} change24h={Number(selectedAsset.change_24h) || 0} category={selectedAsset.category} />
             </div>
 
             <div className="order-3 space-y-4 lg:col-start-2 xl:col-start-3 xl:row-start-1 xl:row-span-2">
@@ -451,7 +454,6 @@ export const WebTrader = ({ initialSymbol }: { initialSymbol?: string } = {}) =>
                 <span className="text-sm font-medium">{selectedAsset.symbol}</span>
                 <PriceAlertButton symbol={selectedAsset.symbol} price={serverPrices.get(selectedAsset.symbol) ?? selectedAsset.price} />
               </div>
-              <SentimentBar symbol={selectedAsset.symbol} change24h={Number(selectedAsset.change_24h) || 0} category={selectedAsset.category} />
               <TradingTabsInterface
                 selectedAsset={selectedAsset}
                 amount={amount}
