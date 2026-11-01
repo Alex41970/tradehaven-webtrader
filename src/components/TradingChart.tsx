@@ -127,9 +127,16 @@ export const TradingChart = ({ symbol, name }: TradingChartProps) => {
       const since = new Date(Date.now() - tf.days * 86400_000).toISOString();
       const { data } = await supabase.rpc("get_candles", { _symbol: symbol, _seconds: tf.seconds, _since: since });
       if (cancelled) return;
-      const c: CandlestickData[] = ((data as { t: number; open: number; high: number; low: number; close: number }[]) ?? []).map((r) => ({
+      const raw: CandlestickData[] = ((data as { t: number; open: number; high: number; low: number; close: number }[]) ?? []).map((r) => ({
         time: Number(r.t) as UTCTimestamp, open: Number(r.open), high: Number(r.high), low: Number(r.low), close: Number(r.close),
       }));
+      // Drop flat "no trading" filler bars (market closed: O=H=L=C = previous close) so
+      // weekends/nights don't push the real history off-screen. Always keep the last bar.
+      const c = raw.filter((b, i) => {
+        if (i === 0 || i === raw.length - 1) return true;
+        const flat = b.open === b.high && b.high === b.low && b.low === b.close;
+        return !(flat && b.close === raw[i - 1].close);
+      });
       candlesRef.current = c;
       setRows(c);
       setLegend(c[c.length - 1] ?? null);
