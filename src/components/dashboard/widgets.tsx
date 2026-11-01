@@ -28,12 +28,12 @@ export const Bento = ({ className, children }: { className?: string; children: R
 );
 
 export const BentoHeader = ({ title, subtitle, right }: { title: string; subtitle?: string; right?: ReactNode }) => (
-  <div className="mb-4 flex items-start justify-between gap-3">
-    <div>
+  <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+    <div className="min-w-0">
       <h3 className="text-sm font-semibold text-foreground md:text-sm">{title}</h3>
       {subtitle && <p className="mt-0.5 text-xs text-muted-foreground">{subtitle}</p>}
     </div>
-    {right}
+    {right && <div className="-mx-1 max-w-full overflow-x-auto px-1">{right}</div>}
   </div>
 );
 

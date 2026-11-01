@@ -12,7 +12,8 @@ import {
 import { TradingChart } from "./TradingChart";
 import { QuickTradePanel } from "./QuickTradePanel";
 import { TradingTabsInterface } from "./TradingTabsInterface";
-import { Star, StarIcon, ArrowLeft, ListPlus } from "lucide-react";
+import { Star, StarIcon, ArrowLeft, ListPlus, Minus, Plus, SlidersHorizontal, Search } from "lucide-react";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { useAssets } from "@/hooks/useAssets";
 import { useTrades } from "@/hooks/useTrades";
 import { useSharedUserProfile } from "@/hooks/useSharedUserProfile";
@@ -52,6 +53,8 @@ export const WebTrader = ({ initialSymbol }: { initialSymbol?: string } = {}) =>
   const [isExecuting, setIsExecuting] = useState(false);
   const [listTab, setListTab] = useState("all");
   const pickedInitial = useRef(false);
+  const [mobileView, setMobileView] = useState<"quotes" | "chart">(initialSymbol ? "chart" : "quotes");
+  const [orderSheet, setOrderSheet] = useState(false);
 
   // Panel widths the trader can drag and have remembered.
   const marketsPanel = useResizableWidth("markets", 220, 180, 420);
@@ -288,17 +291,19 @@ export const WebTrader = ({ initialSymbol }: { initialSymbol?: string } = {}) =>
     const handleAssetSelect = useCallback((e: React.MouseEvent) => {
       e.preventDefault();
       setSelectedAsset(asset);
+      setMobileView("chart");
     }, [asset]);
 
     const handlePointerDown = useCallback((e: React.PointerEvent) => {
       if (e.target === e.currentTarget || (e.target as Element).closest('.asset-row-main')) {
         setSelectedAsset(asset);
+        setMobileView("chart");
       }
     }, [asset]);
     
     return (
       <div 
-        className={`px-2.5 py-2 rounded-lg border cursor-pointer transition-colors touch-manipulation ${
+        className={`px-2.5 py-2 max-md:py-3 rounded-lg border cursor-pointer transition-colors touch-manipulation ${
           selectedAsset?.id === asset.id 
             ? 'bg-primary/10 border-primary/40' 
             : 'border-transparent hover:bg-muted/60'
@@ -362,6 +367,116 @@ export const WebTrader = ({ initialSymbol }: { initialSymbol?: string } = {}) =>
           </p>
         </CardContent>
       </Card>
+    );
+  }
+
+  if (isMobile && selectedAsset) {
+    const price = Number(selectedAsset.price) || 0;
+    const minLots = selectedAsset.min_trade_size || 0.01;
+    const step = amount >= 1 ? 0.1 : 0.01;
+    const setLots = (v: number) => setAmount(Math.max(minLots, Math.round(v * 100) / 100));
+    const fmtP = (n: number) => (n >= 100 ? n.toFixed(2) : n >= 1 ? n.toFixed(4) : n.toFixed(5));
+    const chg = Number(selectedAsset.change_24h) || 0;
+
+    if (mobileView === "quotes") {
+      return (
+        <div className="space-y-2">
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input placeholder="Search markets" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="h-11 bg-muted/20 pl-9 text-base" />
+          </div>
+          <div className="-mx-2 flex gap-1.5 overflow-x-auto px-2 pb-1">
+            {[["all", "All"], ["crypto", "Crypto"], ["forex", "Forex"], ["stocks", "Stocks"], ["indices", "Indices"], ["commodities", "Commodities"]].map(([v, l]) => (
+              <button key={v} onClick={() => setCategoryFilter(v)}
+                className={`h-9 shrink-0 rounded-full border px-3.5 text-xs ${categoryFilter === v ? "border-primary bg-primary/15 text-primary" : "border-border text-muted-foreground"}`}>{l}</button>
+            ))}
+          </div>
+          {lists.length > 0 && (
+            <div className="-mx-2 flex gap-1.5 overflow-x-auto px-2">
+              {[{ id: "all", name: "All markets" }, ...lists].map((l) => (
+                <button key={l.id} onClick={() => setListTab(l.id)}
+                  className={`h-8 shrink-0 rounded-md px-3 text-xs ${listTab === l.id ? "bg-muted text-foreground" : "text-muted-foreground"}`}>{l.name}</button>
+              ))}
+            </div>
+          )}
+          <div className="space-y-1">
+            {visibleAssets.length > 0 ? visibleAssets.map((asset) => <AssetRow key={asset.id} asset={asset} />)
+              : <p className="py-10 text-center text-sm text-muted-foreground">{activeList ? "Use the star on any market to add it here" : "No markets found"}</p>}
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="icon" className="h-10 w-10 shrink-0" onClick={() => setMobileView("quotes")} aria-label="Back to markets">
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <div className="min-w-0 flex-1">
+            <div className="truncate text-sm font-semibold">{selectedAsset.symbol}</div>
+            <div className="truncate text-xs text-muted-foreground">{selectedAsset.name}</div>
+          </div>
+          <div className="text-right">
+            <div className="num text-sm font-semibold">{fmtP(price)}</div>
+            <div className={`num text-xs ${chg >= 0 ? "text-success" : "text-destructive"}`}>{chg >= 0 ? "+" : ""}{chg.toFixed(2)}%</div>
+          </div>
+        </div>
+        <div className="h-[calc(100dvh-330px)] min-h-[300px]">
+          <TradingChart key={selectedAsset.id} symbol={selectedAsset.symbol} category={selectedAsset.category} name={selectedAsset.name}
+            toolbarExtra={<PriceAlertButton symbol={selectedAsset.symbol} price={serverPrices.get(selectedAsset.symbol) ?? price} />} />
+        </div>
+        <SentimentBar symbol={selectedAsset.symbol} change24h={chg} category={selectedAsset.category} />
+
+        {/* One-tap trade bar, pinned above the phone tab bar */}
+        <div className="fixed inset-x-0 bottom-[calc(56px+env(safe-area-inset-bottom))] z-30 border-t border-border bg-background/95 px-2 pb-2 pt-2 backdrop-blur-xl">
+          <div className="mb-1.5 flex items-center justify-between text-[11px] text-muted-foreground">
+            <span>Margin <span className="num text-foreground">${calculateMargin.toFixed(2)}</span> · 1:{leverage}</span>
+            <button className="flex h-7 items-center gap-1 text-primary" onClick={() => setOrderSheet(true)}>
+              <SlidersHorizontal className="h-3.5 w-3.5" />New order
+            </button>
+          </div>
+          <div className="grid grid-cols-[1fr_auto_1fr] items-stretch gap-2">
+            <button disabled={isExecuting} onClick={() => handleTrade("SELL")}
+              className="flex h-14 flex-col items-center justify-center rounded-lg bg-destructive text-destructive-foreground disabled:opacity-50">
+              <span className="text-[10px] font-semibold uppercase tracking-wider">Sell</span>
+              <span className="num text-base font-bold">{fmtP(price)}</span>
+            </button>
+            <div className="flex w-[118px] items-center rounded-lg border border-border">
+              <button className="flex h-full w-9 items-center justify-center" onClick={() => setLots(amount - step)} aria-label="Less lots"><Minus className="h-4 w-4" /></button>
+              <input type="number" inputMode="decimal" step="0.01" min={minLots} value={amount}
+                onChange={(e) => { const v = parseFloat(e.target.value); if (Number.isFinite(v)) setAmount(v); }}
+                onBlur={() => setLots(amount)} aria-label="Lots"
+                className="num h-full w-full min-w-0 bg-transparent text-center text-base outline-none" />
+              <button className="flex h-full w-9 items-center justify-center" onClick={() => setLots(amount + step)} aria-label="More lots"><Plus className="h-4 w-4" /></button>
+            </div>
+            <button disabled={isExecuting} onClick={() => handleTrade("BUY")}
+              className="flex h-14 flex-col items-center justify-center rounded-lg bg-success text-success-foreground disabled:opacity-50">
+              <span className="text-[10px] font-semibold uppercase tracking-wider">Buy</span>
+              <span className="num text-base font-bold">{fmtP(price)}</span>
+            </button>
+          </div>
+        </div>
+        <div className="h-[104px]" />
+
+        <Drawer open={orderSheet} onOpenChange={setOrderSheet}>
+          <DrawerContent className="max-h-[92dvh]">
+            <DrawerHeader className="text-left"><DrawerTitle>New order · {selectedAsset.symbol}</DrawerTitle></DrawerHeader>
+            <div className="overflow-y-auto px-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
+              <TradingTabsInterface
+                selectedAsset={selectedAsset} amount={amount} leverage={leverage}
+                onAmountChange={setAmount} onLeverageChange={setLeverage}
+                onTrade={async (o) => { await handleEnhancedTrade(o); setOrderSheet(false); }}
+                userProfile={profile} isExecuting={isExecuting} openTrades={openTrades} realtimeAssets={realtimeAssets}
+                onCloseTrade={(tradeId) => {
+                  const asset = realtimeAssets.find(a => openTrades.find(t => t.id === tradeId)?.asset_id === a.id);
+                  handleCloseTrade(tradeId, asset?.price || 0);
+                }}
+              />
+            </div>
+          </DrawerContent>
+        </Drawer>
+      </div>
     );
   }
 

@@ -121,17 +121,25 @@ const Dashboard = () => {
           </div>
         ))}
       </div>
-      <div className="ml-auto flex items-center gap-2">
-        <ConnectionStatus />
+      <div className="min-w-0 lg:hidden">
+        <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Equity</div>
+        <div className="num truncate text-sm font-medium">{fmtUsd(realTimeEquity)}</div>
+      </div>
+      <div className="hidden min-w-0 sm:block lg:hidden">
+        <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Free margin</div>
+        <div className="num truncate text-sm font-medium">{fmtUsd(realTimeFreeMargin)}</div>
+      </div>
+      <div className="ml-auto flex items-center gap-1 md:gap-2">
+        <span className="hidden sm:inline-flex"><ConnectionStatus /></span>
         <Button size="icon" variant="ghost" onClick={() => setShowSupport(true)} aria-label="Support"><MessageCircle className="h-4 w-4" /></Button>
-        <Button size="sm" onClick={() => setShowDeposit(true)}><Plus className="mr-1 h-4 w-4" />Deposit</Button>
+        <Button size="sm" onClick={() => setShowDeposit(true)}><Plus className="h-4 w-4 sm:mr-1" /><span className="hidden sm:inline">Deposit</span></Button>
       </div>
     </div>
   );
 
   return (
     <PriceAlertsProvider>
-    <AppShell nav={nav} active={view} onNavigate={setView} topbar={topbar} onSignOut={() => signOut()}
+    <AppShell nav={nav} active={view} onNavigate={setView} topbar={topbar} mobilePrimary={["overview", "trade", "portfolio", "history"]} onSignOut={() => signOut()}
       dense={view === "trade"} autoCollapse={view === "trade"}
       footer={<div className="rounded-xl border border-border bg-surface-2 p-3 text-xs">
         <div className="truncate font-medium">{name}</div>
