@@ -1,3 +1,4 @@
+import type React from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   createChart, IChartApi, ISeriesApi, UTCTimestamp, CandlestickData, LineStyle, CrosshairMode, SeriesType, Time,
@@ -14,6 +15,8 @@ interface TradingChartProps {
   symbol: string;
   category?: string;
   name?: string;
+  /** Rendered over the chart only while fullscreen (e.g. one-click trade panel). */
+  fullscreenOverlay?: React.ReactNode;
 }
 
 // Our own chart, built from the same price feed used for trading, so chart and quotes always match.
@@ -67,7 +70,7 @@ const loadPrefs = () => {
 
 const fmt = (n?: number) => (n == null ? "-" : n >= 100 ? n.toFixed(2) : n.toFixed(5));
 
-export const TradingChart = ({ symbol, name }: TradingChartProps) => {
+export const TradingChart = ({ symbol, name, fullscreenOverlay }: TradingChartProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const mainRef = useRef<ISeriesApi<SeriesType> | null>(null);
@@ -294,6 +297,7 @@ export const TradingChart = ({ symbol, name }: TradingChartProps) => {
         {state === "ready" && rows.length > 0 && Date.now() / 1000 - (rows[rows.length - 1].time as number) > 3 * 3600 && (
           <div className="absolute right-20 top-1 z-10 text-[11px] px-2 py-0.5 rounded bg-secondary text-muted-foreground">Market closed</div>
         )}
+        {full && fullscreenOverlay && <div className="absolute left-2 top-8 z-20">{fullscreenOverlay}</div>}
         {state !== "ready" && (
           <div className="absolute inset-0 flex items-center justify-center text-sm text-muted-foreground pointer-events-none">
             {state === "loading" ? `Loading ${symbol} chart...` : "Chart history is being collected for this market"}
