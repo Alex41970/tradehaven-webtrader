@@ -72,12 +72,9 @@ export const TradingTabsInterface: React.FC<TradingTabsInterfaceProps> = ({
           <div className="h-full overflow-y-auto">
             {openTrades.length > 0 ? (
               <div className="space-y-3">
-                {/* Header for desktop only - hidden on mobile since TradeRow handles its own labels */}
-                <div className="hidden md:flex text-xs font-medium text-muted-foreground px-4 py-2 bg-muted/30 rounded-lg items-center gap-1">
-                  Open Positions
-                  {lastUpdated && (
-                    <Clock className="h-3 w-3 text-primary animate-pulse" />
-                  )}
+                <div className="label-caps flex items-center justify-between px-1 text-muted-foreground">
+                  <span>{openTrades.length} open position{openTrades.length === 1 ? "" : "s"}</span>
+                  {lastUpdated && <Clock className="h-3 w-3 text-primary animate-pulse" />}
                 </div>
                 
                 {/* Use TradeRow components for mobile-responsive layout */}
