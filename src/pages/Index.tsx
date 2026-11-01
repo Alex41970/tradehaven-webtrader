@@ -137,8 +137,8 @@ const Index = () => {
       </section>
 
       {/* STATS */}
-      <section className="container mx-auto -mt-12 px-4">
-        <div className="bento grid grid-cols-2 divide-border md:grid-cols-4 md:divide-x">
+      <section className="container relative z-10 mx-auto -mt-12 px-4">
+        <div className="bento grid grid-cols-2 divide-border bg-card/90 backdrop-blur md:grid-cols-4 md:divide-x">
           {[
             [String(total), "Markets"], ["15s", "Crypto price refresh"], ["24/7", "Crypto trading"], ["5", "Asset classes"],
           ].map(([v, l]) => (
