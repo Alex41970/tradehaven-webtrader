@@ -10,6 +10,7 @@ import {
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuCheckboxItem, DropdownMenuLabel, DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { TradingChart } from "./TradingChart";
+import { QuickTradePanel } from "./QuickTradePanel";
 import { TradingTabsInterface } from "./TradingTabsInterface";
 import { Star, StarIcon, ArrowLeft, ListPlus } from "lucide-react";
 import { useAssets } from "@/hooks/useAssets";
@@ -446,6 +447,19 @@ export const WebTrader = ({ initialSymbol }: { initialSymbol?: string } = {}) =>
                   symbol={selectedAsset?.symbol || ''} 
                   category={selectedAsset?.category}
                   name={selectedAsset?.name}
+                  fullscreenOverlay={selectedAsset && (
+                    <QuickTradePanel
+                      price={Number(selectedAsset.price) || 0}
+                      lots={amount}
+                      leverage={leverage}
+                      minLots={selectedAsset.min_trade_size || 0.01}
+                      margin={calculateMargin}
+                      busy={isExecuting}
+                      onLotsChange={setAmount}
+                      onLeverageChange={setLeverage}
+                      onTrade={handleTrade}
+                    />
+                  )}
                 />
               </div>
               <SentimentBar symbol={selectedAsset.symbol} change24h={Number(selectedAsset.change_24h) || 0} category={selectedAsset.category} />
