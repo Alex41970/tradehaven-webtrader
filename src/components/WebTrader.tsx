@@ -328,12 +328,15 @@ export const WebTrader = ({ initialSymbol }: { initialSymbol?: string } = {}) =>
             </div>
             <div className="text-xs text-muted-foreground truncate">{asset.name}</div>
           </div>
-          <div className="shrink-0 pl-2 text-right">
-            <PulsingPriceIndicator 
-              price={asset.price} 
-              change={asset.change_24h}
-              symbol={asset.symbol} 
-            />
+          <div className="shrink-0 pl-2 flex flex-col items-end gap-0.5">
+            <span className="font-mono text-sm font-medium tabular-nums">
+              {(Number(asset.price) || 0).toFixed(asset.symbol.includes('JPY') ? 3 : Number(asset.price) >= 100 ? 2 : Number(asset.price) >= 1 ? 4 : 5)}
+            </span>
+            <span className={`font-mono text-[11px] tabular-nums px-1.5 rounded ${
+              (asset.change_24h || 0) >= 0 ? 'text-success bg-success/10' : 'text-destructive bg-destructive/10'
+            }`}>
+              {(asset.change_24h || 0) >= 0 ? '+' : ''}{(Number(asset.change_24h) || 0).toFixed(2)}%
+            </span>
           </div>
         </div>
       </div>
