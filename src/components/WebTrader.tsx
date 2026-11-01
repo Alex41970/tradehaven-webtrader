@@ -399,7 +399,7 @@ export const WebTrader = () => {
                     </TabsList>
                     
                     <TabsContent value="all" className="mt-2">
-                      <ScrollArea className="h-[420px] lg:h-[calc(100vh-280px)]">
+                      <ScrollArea className="h-[420px] lg:h-[calc(100vh-280px)] [&_[data-radix-scroll-area-viewport]>div]:!block">
                         <div className="space-y-1 pr-3">
                           {filteredAssets.map((asset) => (
                             <AssetRow key={asset.id} asset={asset} />
@@ -409,7 +409,7 @@ export const WebTrader = () => {
                     </TabsContent>
                     
                     <TabsContent value="favorites" className="mt-2">
-                      <ScrollArea className="h-[420px] lg:h-[calc(100vh-280px)]">
+                      <ScrollArea className="h-[420px] lg:h-[calc(100vh-280px)] [&_[data-radix-scroll-area-viewport]>div]:!block">
                         <div className="space-y-1 pr-3">
                           {favoriteAssets.length > 0 ? (
                             favoriteAssets.map((asset) => (
@@ -431,7 +431,7 @@ export const WebTrader = () => {
             </div>
 
             {/* Right Column - Chart and Trading - Fixed Heights */}
-            <div className="order-1 h-[440px] md:h-[560px] lg:order-2">
+            <div className="order-1 h-[460px] md:h-[640px] lg:order-2">
                 <TradingChart 
                   key={selectedAsset?.id || 'no-asset'} 
                   symbol={selectedAsset?.symbol || ''} 
