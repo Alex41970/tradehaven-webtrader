@@ -78,14 +78,15 @@ export default {
 					success: 'hsl(var(--trading-success))',
 					danger: 'hsl(var(--trading-danger))',
 					neutral: 'hsl(var(--trading-neutral))',
-					'blue-dark': 'hsl(225 25% 18%)',
-					'blue-light': 'hsl(225 100% 70%)',
-					'gold-dark': 'hsl(45 90% 40%)',
+					'blue-dark': 'hsl(var(--surface-2))',
+					'blue-light': 'hsl(var(--chart-3))',
+					'gold-dark': 'hsl(var(--primary) / 0.8)',
 				},
-				green: {
-					'500': 'hsl(145 63% 49%)',
-					'600': 'hsl(145 63% 42%)',
-				},
+				green: { 300: 'hsl(var(--success) / 0.85)', 400: 'hsl(var(--success))', 500: 'hsl(var(--success))', 600: 'hsl(var(--success))', 700: 'hsl(var(--success))' },
+				emerald: { 400: 'hsl(var(--success))', 500: 'hsl(var(--success))', 600: 'hsl(var(--success))' },
+				red: { 300: 'hsl(var(--destructive) / 0.85)', 400: 'hsl(var(--destructive))', 500: 'hsl(var(--destructive))', 600: 'hsl(var(--destructive))', 700: 'hsl(var(--destructive))' },
+				yellow: { 400: 'hsl(var(--warning))', 500: 'hsl(var(--warning))', 600: 'hsl(var(--warning))' },
+				blue: { 400: 'hsl(var(--chart-3))', 500: 'hsl(var(--chart-3))', 600: 'hsl(var(--chart-3))' },
 				'card-border': 'hsl(var(--card-border))'
 			},
 			borderRadius: {
