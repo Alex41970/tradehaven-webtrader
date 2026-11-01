@@ -218,7 +218,12 @@ Deno.serve(async (request) => {
   // Yahoo symbols rotate in chunks of 20 so the call budget is spread across passes.
   const chunks: Asset[][] = [];
   for (let i = 0; i < other.length; i += YAHOO_BATCH) chunks.push(other.slice(i, i + YAHOO_BATCH));
-  const yahooPerPass = Math.max(1, Math.floor(YAHOO_CALLS_PER_MIN / PASSES));
+  // While some markets still lack chart history, keep a few Yahoo calls free for it
+  // (still refreshes every market at least once a minute: 4 calls x 4 passes >= chunks).
+  const { data: missingCount } = await supabase.rpc('symbols_missing_history', { _since: new Date(Date.now() - (HISTORY_DAYS - 3) * 86400_000).toISOString() });
+  const historyPending = ((missingCount as unknown[]) ?? []).length > 0;
+  const fullPerPass = Math.max(1, Math.floor(YAHOO_CALLS_PER_MIN / PASSES));
+  const yahooPerPass = historyPending ? Math.max(1, Math.min(fullPerPass, Math.ceil(Math.ceil(other.length / YAHOO_BATCH) / PASSES))) : fullPerPass;
   const minute = Math.floor(started / 60_000);
   let tdBudget = TWELVE_DATA_CALLS_PER_MIN;
 
