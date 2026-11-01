@@ -62,9 +62,17 @@ export const useTrades = () => {
     }
   }, [user]);
 
+  // Refetch whenever the live link drops or comes back, so the fallback list is never stale
   useEffect(() => {
     fetchTrades();
-  }, [fetchTrades]);
+  }, [fetchTrades, isConnected]);
+
+  // While offline from the live link, keep the fallback list fresh
+  useEffect(() => {
+    if (isConnected || !user) return;
+    const id = setInterval(fetchTrades, 15000);
+    return () => clearInterval(id);
+  }, [isConnected, user, fetchTrades]);
 
   // An empty live list is a valid answer (all trades closed) — don't fall back to an older snapshot
   const trades = isConnected && !realtimeLoading ? realtimeTrades : dbTrades;
@@ -130,7 +138,11 @@ export const useTrades = () => {
   const closeTrade = async (tradeId: string, closePrice: number) => {
     try {
       if (isConnected) {
-        await realtimeCloseTrade(tradeId, closePrice);
+        try {
+          await realtimeCloseTrade(tradeId, closePrice);
+        } finally {
+          fetchTrades();
+        }
       } else {
         const { data: result, error } = await supabase
           .rpc('close_trade_with_pnl', {
