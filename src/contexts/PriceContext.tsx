@@ -11,6 +11,7 @@ interface PriceUpdate {
   timestamp: number;
   source?: string;
   category?: string;
+  changedAt?: number;
 }
 
 interface PriceContextType {
@@ -63,7 +64,7 @@ export const PriceProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const load = async () => {
       const { data, error } = await supabase
         .from('assets')
-        .select('symbol, price, change_24h, category, price_updated_at, price_source, contract_size')
+        .select('symbol, price, change_24h, category, price_updated_at, price_changed_at, price_source, contract_size')
         .eq('is_active', true);
       if (cancelled) return;
       if (error || !data) {
@@ -83,6 +84,7 @@ export const PriceProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             timestamp: t || Date.now(),
             source: a.price_source ?? undefined,
             category: a.category,
+            changedAt: a.price_changed_at ? new Date(a.price_changed_at).getTime() : undefined,
           };
         }),
       );
