@@ -37,7 +37,7 @@ export const TradingTabsInterface: React.FC<TradingTabsInterfaceProps> = ({
   // Get real-time P&L updates with asset contract sizes
   const { tradePnL, totalPnL, lastUpdated } = useRealtimePnL(openTrades, realtimeAssets);
   return (
-    <div className="h-[200px]">
+    <div className="h-[520px] xl:h-full">
       <Tabs defaultValue="trading" className="h-full flex flex-col">
         <TabsList className="grid w-full grid-cols-3 h-10 bg-muted/50 border border-border/30 rounded-lg shadow-sm">
           <TabsTrigger value="trading" className="text-xs font-medium">Trading Panel</TabsTrigger>
