@@ -302,7 +302,7 @@ export const WebTrader = ({ initialSymbol }: { initialSymbol?: string } = {}) =>
     
     return (
       <div 
-        className={`px-2.5 py-2 rounded-lg border cursor-pointer transition-colors touch-manipulation ${
+        className={`px-2.5 py-2 max-md:py-3 rounded-lg border cursor-pointer transition-colors touch-manipulation ${
           selectedAsset?.id === asset.id 
             ? 'bg-primary/10 border-primary/40' 
             : 'border-transparent hover:bg-muted/60'
