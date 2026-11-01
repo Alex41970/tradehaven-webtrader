@@ -1,3 +1,4 @@
+import { PublicHeader } from "@/components/PublicHeader";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { TrendingUp, ArrowRight, DollarSign, TrendingDown, BarChart3, Bitcoin, Wheat, Globe2, Clock, Zap } from "lucide-react";
@@ -9,32 +10,7 @@ const Markets = () => {
 
   return (
     <div className="min-h-screen bg-trading-pattern">
-      {/* Header */}
-      <header className="sticky top-0 z-50 bg-card/80 backdrop-blur-sm border-b border-border/50">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <div className="flex items-center space-x-2 cursor-pointer" onClick={() => navigate("/")}>
-            <div className="h-10 w-10 bg-gradient-to-br from-trading-primary to-trading-accent rounded-lg flex items-center justify-center">
-              <TrendingUp className="h-6 w-6 text-white" />
-            </div>
-            <h1 className="text-2xl font-bold bg-gradient-to-r from-trading-primary to-trading-accent bg-clip-text text-transparent">
-              <span className="hidden md:inline">Lexington Capital Investing</span>
-              <span className="md:hidden">LCI</span>
-            </h1>
-          </div>
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" className="hidden md:flex" onClick={() => navigate("/markets")}>
-              Markets
-            </Button>
-            <Button variant="ghost" className="hidden md:flex" onClick={() => navigate("/education")}>
-              Education
-            </Button>
-            <Button variant="trading" onClick={() => navigate("/auth")}>
-              Get Started
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-      </header>
+      <PublicHeader />
 
       {/* Hero Section */}
       <section className="relative py-20 overflow-hidden bg-hero-premium">
