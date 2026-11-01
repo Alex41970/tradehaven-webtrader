@@ -99,8 +99,8 @@ const Dashboard = () => {
     { id: "portfolio", label: "Positions", icon: Briefcase },
     { id: "history", label: "History", icon: History },
     { id: "journal", label: "Journal", icon: NotebookPen },
-    { id: "wallet", label: "Deposit", icon: Wallet, onClick: () => setShowDeposit(true) },
     { id: "bot", label: "Trading Bot", icon: Bot, onClick: botStatus.isConnected ? undefined : () => setBotModalOpen(true) },
+    { id: "wallet", label: "Deposit", icon: Wallet, onClick: () => setShowDeposit(true) },
   ];
 
   const name = profile?.first_name ? `${profile.first_name}${profile.surname ? " " + profile.surname : ""}` : user?.email?.split("@")[0];
