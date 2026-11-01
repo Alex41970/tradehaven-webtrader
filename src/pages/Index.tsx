@@ -2,11 +2,9 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
-import { Shield, Zap, Users, ArrowRight, BarChart3, Globe, Award, CheckCircle, Star, Quote } from "lucide-react";
+import { Shield, Zap, ArrowRight, BarChart3, Globe } from "lucide-react";
 import { MarketTicker } from "@/components/MarketTicker";
 import { HeroChart } from "@/components/HeroChart";
-import { TradingStats } from "@/components/TradingStats";
-import { TrustBadges } from "@/components/TrustBadges";
 import { Footer } from "@/components/Footer";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -78,374 +76,110 @@ const Index = () => {
     }
   };
 
+  const features = [
+    { icon: BarChart3, title: "Real charts", text: "Candles from our own price feed with Bollinger Bands, moving averages, RSI and MACD.", span: "md:col-span-2" },
+    { icon: Zap, title: "Fast prices", text: "Crypto refreshes every 15 seconds, all other markets within a minute.", span: "" },
+    { icon: Shield, title: "Clear risk", text: "Margin, free margin and margin level always visible. Stop-loss and take-profit run on the server.", span: "" },
+    { icon: Globe, title: "395 markets", text: "Crypto, forex, US and European stocks, indices and commodities in one place.", span: "md:col-span-2" },
+  ];
+  const steps = [
+    ["Create an account", "Sign up with your email and your promo code."],
+    ["Fund it", "Request a deposit from your dashboard."],
+    ["Trade", "Pick a market, set your size and go."],
+  ];
+
   return (
-    <div className="min-h-screen bg-trading-dark">
-      {/* Market Ticker */}
+    <div className="min-h-screen bg-background">
       <MarketTicker />
 
-      {/* Header */}
-      <header className="sticky top-0 z-50 bg-secondary border-b border-border">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <Logo size="md" className="lg:hidden hover:scale-105 transition-transform" />
-          <Logo size="lg" className="hidden lg:block hover:scale-105 transition-transform" />
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" className="hidden md:flex" onClick={() => navigate("/markets")}>
-              Markets
-            </Button>
-            <Button variant="ghost" className="hidden md:flex" onClick={() => navigate("/education")}>
-              Education
-            </Button>
-            <Button variant="trading" onClick={() => navigate("/auth")}>
-              Get Started
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
-          </div>
+      <header className="sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur-xl">
+        <div className="container mx-auto flex h-16 items-center justify-between px-4">
+          <Logo size="md" />
+          <nav className="flex items-center gap-1">
+            <Button variant="ghost" className="hidden md:inline-flex" onClick={() => navigate("/markets")}>Markets</Button>
+            <Button variant="ghost" className="hidden md:inline-flex" onClick={() => navigate("/education")}>Education</Button>
+            <Button variant="ghost" onClick={() => navigate("/auth")}>Sign in</Button>
+            <Button onClick={() => navigate("/auth")}>Get started<ArrowRight className="ml-1 h-4 w-4" /></Button>
+          </nav>
         </div>
       </header>
 
-      {/* Hero Section */}
-      <section className="relative py-16 lg:py-24 bg-subtle-grid">
-        <div className="container mx-auto px-4">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <div className="text-left w-full max-w-full min-w-0">
-              <div className="inline-flex items-center gap-2 bg-accent/10 text-accent px-4 py-2 rounded-lg text-sm font-semibold mb-6 border border-accent/20">
-                <Award className="h-4 w-4" />
-                Best Trading Platform 2024
-              </div>
-              <h1 className="text-3xl md:text-4xl lg:text-6xl font-bold mb-6 leading-tight text-foreground break-words">
-                <span className="block">Trade Global</span>
-                <span className="block text-accent mt-1">Markets 24/7</span>
-              </h1>
-              {/* Mobile version - short and focused */}
-              <p className="text-base md:hidden text-foreground/80 mb-8 leading-relaxed max-w-full break-words">
-                Professional trading platform with 10,000+ instruments. Forex, stocks, crypto, and more.
-              </p>
-              {/* Desktop version - more detail */}
-              <p className="hidden md:block text-lg lg:text-xl text-foreground/80 mb-8 max-w-xl leading-relaxed break-words">
-                Access global markets with institutional-grade tools. Trade forex, stocks, commodities, and cryptocurrencies on a single platform.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-3 mb-8 md:mb-12 w-full max-w-full">
-                <Button size="lg" variant="trading" onClick={() => navigate("/auth")} className="w-full sm:w-auto whitespace-nowrap">
-                  Start Trading Now
-                  <ArrowRight className="ml-2 h-5 w-5" />
-                </Button>
-                <Button 
-                  size="lg" 
-                  variant="trading-outline" 
-                  onClick={() => setIsDemoModalOpen(true)}
-                  className="w-full sm:w-auto whitespace-nowrap"
-                >
-                  Try Demo Account
-                </Button>
-              </div>
-              <TradingStats />
-            </div>
-            <div className="hidden lg:block">
-              <HeroChart />
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Features */}
-      <section className="py-20 bg-section-alt">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl lg:text-5xl font-bold mb-4 text-foreground">
-              Why Choose Our Platform
-            </h2>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Professional-grade tools trusted by traders worldwide
+      <section className="relative overflow-hidden">
+        <div className="pointer-events-none absolute inset-0 bg-subtle-grid opacity-50" />
+        <div className="pointer-events-none absolute left-1/2 top-0 h-[480px] w-[480px] -translate-x-1/2 rounded-full bg-primary/10 blur-3xl" />
+        <div className="container relative mx-auto grid items-center gap-12 px-4 py-16 lg:grid-cols-2 lg:py-24">
+          <div className="min-w-0">
+            <span className="label-caps inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-primary">
+              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-primary" />Live prices
+            </span>
+            <h1 className="mt-6 text-4xl font-semibold leading-[1.05] tracking-tight text-foreground md:text-6xl">
+              Trade global markets<br /><span className="text-primary">from one screen.</span>
+            </h1>
+            <p className="mt-6 max-w-xl text-lg text-muted-foreground">
+              Forex, stocks, crypto, indices and commodities with live charts and risk numbers you can actually read.
             </p>
-          </div>
-          
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-16">
-            <div className="p-6 bg-gradient-to-br from-green-500/5 to-transparent rounded-lg border-2 border-border/50 hover:border-green-500/50 transition-all duration-300">
-              <div className="h-14 w-14 bg-gradient-to-br from-green-500/20 to-green-500/5 rounded-xl flex items-center justify-center mb-4 border border-green-500/30">
-                <Shield className="h-7 w-7 text-trading-success" />
-              </div>
-              <h3 className="text-xl font-semibold mb-3 text-foreground">Regulated & Secure</h3>
-              <p className="text-muted-foreground mb-4">
-                FCA licensed with segregated funds and 256-bit SSL encryption protecting your investments
-              </p>
-              <div className="text-sm text-trading-success font-medium">Funds up to £85,000 protected</div>
-            </div>
-
-            <div className="p-6 bg-gradient-to-br from-accent/5 to-transparent rounded-lg border-2 border-border/50 hover:border-accent/50 transition-all duration-300">
-              <div className="h-14 w-14 bg-gradient-to-br from-accent/20 to-accent/5 rounded-xl flex items-center justify-center mb-4 border border-accent/30">
-                <Zap className="h-7 w-7 text-accent" />
-              </div>
-              <h3 className="text-xl font-semibold mb-3 text-foreground">Ultra-Fast Execution</h3>
-              <p className="text-muted-foreground mb-4">
-                Execute trades in milliseconds with our advanced matching engine and zero slippage
-              </p>
-              <div className="text-sm text-accent font-medium">Average execution: 0.03 seconds</div>
-            </div>
-
-            <div className="p-6 bg-gradient-to-br from-primary/10 to-transparent rounded-lg border-2 border-border/50 hover:border-primary/50 transition-all duration-300">
-              <div className="h-14 w-14 bg-gradient-to-br from-primary/20 to-primary/5 rounded-xl flex items-center justify-center mb-4 border border-primary/30">
-                <BarChart3 className="h-7 w-7 text-primary" />
-              </div>
-              <h3 className="text-xl font-semibold mb-3 text-foreground">Advanced Analytics</h3>
-              <p className="text-muted-foreground mb-4">
-                Professional charting tools, technical indicators, and AI-powered market insights
-              </p>
-              <div className="text-sm text-primary font-medium">100+ technical indicators</div>
-            </div>
-
-            <div className="p-6 bg-gradient-to-br from-green-500/5 to-transparent rounded-lg border-2 border-border/50 hover:border-green-500/50 transition-all duration-300">
-              <div className="h-14 w-14 bg-gradient-to-br from-green-500/20 to-green-500/5 rounded-xl flex items-center justify-center mb-4 border border-green-500/30">
-                <Globe className="h-7 w-7 text-trading-success" />
-              </div>
-              <h3 className="text-xl font-semibold mb-3 text-foreground">Global Markets</h3>
-              <p className="text-muted-foreground mb-4">
-                Trade forex, stocks, indices, commodities, and crypto from a single platform
-              </p>
-              <div className="text-sm text-trading-success font-medium">10,000+ instruments available</div>
-            </div>
-
-            <div className="p-6 bg-gradient-to-br from-accent/5 to-transparent rounded-lg border-2 border-border/50 hover:border-accent/50 transition-all duration-300">
-              <div className="h-14 w-14 bg-gradient-to-br from-accent/20 to-accent/5 rounded-xl flex items-center justify-center mb-4 border border-accent/30">
-                <Users className="h-7 w-7 text-accent" />
-              </div>
-              <h3 className="text-xl font-semibold mb-3 text-foreground">24/7 Expert Support</h3>
-              <p className="text-muted-foreground mb-4">
-                Get help from our multilingual support team and access premium educational content
-              </p>
-              <div className="text-sm text-accent font-medium">Available in 25 languages</div>
-            </div>
-
-            <div className="p-6 bg-gradient-to-br from-primary/10 to-transparent rounded-lg border-2 border-border/50 hover:border-primary/50 transition-all duration-300">
-              <div className="h-14 w-14 bg-gradient-to-br from-primary/20 to-primary/5 rounded-xl flex items-center justify-center mb-4 border border-primary/30">
-                <Award className="h-7 w-7 text-primary" />
-              </div>
-              <h3 className="text-xl font-semibold mb-3 text-foreground">Award Winning</h3>
-              <p className="text-muted-foreground mb-4">
-                Recognized as the best trading platform with multiple industry awards and certifications
-              </p>
-              <div className="text-sm text-primary font-medium">15+ industry awards</div>
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+              <Button size="lg" onClick={() => navigate("/auth")}>Start trading<ArrowRight className="ml-2 h-5 w-5" /></Button>
+              <Button size="lg" variant="outline" onClick={() => setIsDemoModalOpen(true)}>Request a demo</Button>
             </div>
           </div>
-
-          <TrustBadges />
+          <div className="bento hidden p-4 lg:block"><HeroChart /></div>
         </div>
       </section>
 
-      {/* Statistics Section */}
-      <section className="py-20 bg-secondary relative">
-        <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-transparent pointer-events-none"></div>
-        <div className="container mx-auto px-4 relative">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl lg:text-5xl font-bold mb-4 text-foreground">Trusted Globally</h2>
-            <p className="text-xl text-muted-foreground">Join a worldwide community of successful traders</p>
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-            <div className="text-center p-6 bg-gradient-to-br from-card to-card/50 rounded-lg border-2 border-card-border hover:border-accent/50 transition-all duration-300">
-              <div className="text-4xl lg:text-5xl font-bold text-accent mb-2 drop-shadow-[0_0_12px_rgba(240,185,11,0.3)]">500K+</div>
-              <div className="text-muted-foreground font-medium">Active Traders</div>
+      <section className="container mx-auto px-4 py-20">
+        <div className="mb-10 max-w-2xl">
+          <p className="label-caps text-primary">Platform</p>
+          <h2 className="mt-2 text-3xl font-semibold text-foreground md:text-4xl">Built for focus, not noise.</h2>
+        </div>
+        <div className="grid gap-4 md:grid-cols-3">
+          {features.map((f) => (
+            <div key={f.title} className={`bento p-6 ${f.span}`}>
+              <div className="mb-5 flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary"><f.icon className="h-5 w-5" /></div>
+              <h3 className="text-lg font-semibold text-foreground">{f.title}</h3>
+              <p className="mt-2 text-sm text-muted-foreground">{f.text}</p>
             </div>
-            <div className="text-center p-6 bg-gradient-to-br from-card to-card/50 rounded-lg border-2 border-card-border hover:border-trading-success/50 transition-all duration-300">
-              <div className="text-4xl lg:text-5xl font-bold text-trading-success mb-2 drop-shadow-[0_0_12px_rgba(14,203,129,0.3)]">$50B+</div>
-              <div className="text-muted-foreground font-medium">Monthly Volume</div>
-            </div>
-            <div className="text-center p-6 bg-gradient-to-br from-card to-card/50 rounded-lg border-2 border-card-border hover:border-primary/50 transition-all duration-300">
-              <div className="text-4xl lg:text-5xl font-bold text-primary mb-2 drop-shadow-[0_0_12px_rgba(56,97,251,0.3)]">10K+</div>
-              <div className="text-muted-foreground font-medium">Instruments</div>
-            </div>
-            <div className="text-center p-6 bg-gradient-to-br from-card to-card/50 rounded-lg border-2 border-card-border hover:border-accent/50 transition-all duration-300">
-              <div className="text-4xl lg:text-5xl font-bold text-accent mb-2 drop-shadow-[0_0_12px_rgba(240,185,11,0.3)]">0.03s</div>
-              <div className="text-muted-foreground font-medium">Avg Execution</div>
-            </div>
-          </div>
+          ))}
         </div>
       </section>
 
-      {/* How It Works Section */}
-      <section className="py-20 bg-section-alt">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl lg:text-5xl font-bold mb-4 text-foreground">Start Trading in 3 Steps</h2>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Get started in minutes and access global markets
-            </p>
-          </div>
-          <div className="grid md:grid-cols-3 gap-8">
-            <div className="text-center">
-              <div className="inline-flex h-16 w-16 bg-primary rounded-lg items-center justify-center mb-6">
-                <span className="text-3xl font-bold text-primary-foreground">1</span>
-              </div>
-              <h3 className="text-xl font-semibold mb-3 text-foreground">Create Account</h3>
-              <p className="text-muted-foreground">
-                Sign up in minutes with just your email. Complete our simple verification process.
-              </p>
+      <section className="border-y border-border bg-sidebar">
+        <div className="container mx-auto grid gap-8 px-4 py-20 md:grid-cols-3">
+          {steps.map(([t, d], i) => (
+            <div key={t}>
+              <div className="num text-sm text-primary">0{i + 1}</div>
+              <h3 className="mt-3 text-xl font-semibold text-foreground">{t}</h3>
+              <p className="mt-2 text-sm text-muted-foreground">{d}</p>
             </div>
-            <div className="text-center">
-              <div className="inline-flex h-16 w-16 bg-accent rounded-lg items-center justify-center mb-6">
-                <span className="text-3xl font-bold text-accent-foreground">2</span>
-              </div>
-              <h3 className="text-xl font-semibold mb-3 text-foreground">Fund Account</h3>
-              <p className="text-muted-foreground">
-                Deposit funds securely using your preferred payment method. Start with as little as $100.
-              </p>
-            </div>
-            <div className="text-center">
-              <div className="inline-flex h-16 w-16 bg-trading-success rounded-lg items-center justify-center mb-6">
-                <span className="text-3xl font-bold text-white">3</span>
-              </div>
-              <h3 className="text-xl font-semibold mb-3 text-foreground">Start Trading</h3>
-              <p className="text-muted-foreground">
-                Access 10,000+ instruments and start trading with professional-grade tools.
-              </p>
-            </div>
-          </div>
+          ))}
         </div>
       </section>
 
-      {/* Testimonials Section */}
-      <section className="py-20 bg-secondary">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl lg:text-5xl font-bold mb-4 text-foreground">What Traders Say</h2>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Real feedback from real traders
-            </p>
-          </div>
-          <div className="grid md:grid-cols-3 gap-6">
-            <div className="p-6 bg-card rounded-lg border border-border">
-              <Quote className="h-10 w-10 text-accent mb-4 opacity-50" />
-              <p className="text-muted-foreground mb-6">
-                "Best trading platform I've used. The execution speed is incredible and the interface is intuitive."
-              </p>
-              <div className="flex items-center gap-3">
-                <div className="h-12 w-12 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-semibold">
-                  JD
-                </div>
-                <div>
-                  <div className="font-semibold text-foreground">James Davidson</div>
-                  <div className="text-sm text-muted-foreground">Day Trader</div>
-                </div>
-              </div>
-              <div className="flex gap-1 mt-4">
-                {[...Array(5)].map((_, i) => (
-                  <Star key={i} className="h-4 w-4 fill-accent text-accent" />
-                ))}
-              </div>
-            </div>
-
-            <div className="p-6 bg-card rounded-lg border border-border">
-              <Quote className="h-10 w-10 text-accent mb-4 opacity-50" />
-              <p className="text-muted-foreground mb-6">
-                "The analytics tools are professional-grade. I've significantly improved my trading performance."
-              </p>
-              <div className="flex items-center gap-3">
-                <div className="h-12 w-12 rounded-full bg-accent flex items-center justify-center text-accent-foreground font-semibold">
-                  SC
-                </div>
-                <div>
-                  <div className="font-semibold text-foreground">Sarah Chen</div>
-                  <div className="text-sm text-muted-foreground">Forex Trader</div>
-                </div>
-              </div>
-              <div className="flex gap-1 mt-4">
-                {[...Array(5)].map((_, i) => (
-                  <Star key={i} className="h-4 w-4 fill-accent text-accent" />
-                ))}
-              </div>
-            </div>
-
-            <div className="p-6 bg-card rounded-lg border border-border">
-              <Quote className="h-10 w-10 text-accent mb-4 opacity-50" />
-              <p className="text-muted-foreground mb-6">
-                "Customer support is outstanding. They helped me set up my account and answered all my questions."
-              </p>
-              <div className="flex items-center gap-3">
-                <div className="h-12 w-12 rounded-full bg-trading-success flex items-center justify-center text-white font-semibold">
-                  MR
-                </div>
-                <div>
-                  <div className="font-semibold text-foreground">Michael Rodriguez</div>
-                  <div className="text-sm text-muted-foreground">Stock Trader</div>
-                </div>
-              </div>
-              <div className="flex gap-1 mt-4">
-                {[...Array(5)].map((_, i) => (
-                  <Star key={i} className="h-4 w-4 fill-accent text-accent" />
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
+      <section className="container mx-auto max-w-3xl px-4 py-20">
+        <h2 className="mb-8 text-3xl font-semibold text-foreground">Questions</h2>
+        <Accordion type="single" collapsible className="w-full">
+          {[
+            ["What markets can I trade?", "Crypto, forex, US and European stocks, indices and commodities — 395 markets in total."],
+            ["Where do prices come from?", "Our own price feed collects real market prices around the clock. Charts use the same prices you trade at."],
+            ["How do I sign up?", "Create an account with your email and the promo code you got from your account manager."],
+            ["Can I try it first?", "Yes, request a demo and we'll get in touch."],
+          ].map(([q, a], i) => (
+            <AccordionItem key={q} value={`q${i}`} className="border-border">
+              <AccordionTrigger className="text-left text-foreground hover:text-primary">{q}</AccordionTrigger>
+              <AccordionContent className="text-muted-foreground">{a}</AccordionContent>
+            </AccordionItem>
+          ))}
+        </Accordion>
       </section>
 
-      {/* FAQ Section */}
-      <section className="py-20 bg-background">
-        <div className="container mx-auto px-4 max-w-3xl">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl lg:text-5xl font-bold mb-4 text-foreground">Frequently Asked Questions</h2>
-            <p className="text-xl text-muted-foreground">Find answers to common questions</p>
-          </div>
-          <Accordion type="single" collapsible className="w-full">
-            <AccordionItem value="item-1" className="border-border">
-              <AccordionTrigger className="text-left text-foreground hover:text-primary">
-                What is the minimum deposit required?
-              </AccordionTrigger>
-              <AccordionContent className="text-muted-foreground">
-                The minimum deposit is just $100. You can start trading with a small amount and scale up as you gain confidence.
-              </AccordionContent>
-            </AccordionItem>
-            <AccordionItem value="item-2" className="border-border">
-              <AccordionTrigger className="text-left text-foreground hover:text-primary">
-                Is my money safe and secure?
-              </AccordionTrigger>
-              <AccordionContent className="text-muted-foreground">
-                Yes, we are FCA regulated and your funds are held in segregated accounts. We use 256-bit SSL encryption and funds are protected up to £85,000.
-              </AccordionContent>
-            </AccordionItem>
-            <AccordionItem value="item-3" className="border-border">
-              <AccordionTrigger className="text-left text-foreground hover:text-primary">
-                What markets can I trade?
-              </AccordionTrigger>
-              <AccordionContent className="text-muted-foreground">
-                You can trade forex, stocks, indices, commodities, and cryptocurrencies. We offer over 10,000 instruments across all major markets.
-              </AccordionContent>
-            </AccordionItem>
-            <AccordionItem value="item-4" className="border-border">
-              <AccordionTrigger className="text-left text-foreground hover:text-primary">
-                Can I try the platform before depositing?
-              </AccordionTrigger>
-              <AccordionContent className="text-muted-foreground">
-                Yes! We offer a free demo account with virtual funds so you can practice trading without any risk.
-              </AccordionContent>
-            </AccordionItem>
-            <AccordionItem value="item-5" className="border-border">
-              <AccordionTrigger className="text-left text-foreground hover:text-primary">
-                What are your trading fees?
-              </AccordionTrigger>
-              <AccordionContent className="text-muted-foreground">
-                We offer competitive spreads starting from 0.1 pips on major currency pairs. There are no hidden fees or commissions on most accounts.
-              </AccordionContent>
-            </AccordionItem>
-          </Accordion>
-        </div>
-      </section>
-
-      {/* Final CTA */}
-      <section className="py-20 bg-secondary">
-        <div className="container mx-auto px-4 text-center">
-          <h2 className="text-3xl lg:text-5xl font-bold mb-6 text-foreground">
-            Ready to Start Trading?
-          </h2>
-          <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-            Join thousands of traders who trust our platform for their trading needs
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button size="lg" variant="trading" onClick={() => navigate("/auth")}>
-              Create Free Account
-              <ArrowRight className="ml-2 h-5 w-5" />
-            </Button>
-            <Button size="lg" variant="trading-outline" onClick={() => setIsDemoModalOpen(true)}>
-              Try Demo First
-            </Button>
+      <section className="container mx-auto px-4 pb-20">
+        <div className="bento relative overflow-hidden p-10 text-center md:p-16">
+          <div className="pointer-events-none absolute inset-0 bg-subtle-grid opacity-40" />
+          <h2 className="relative text-3xl font-semibold text-foreground md:text-4xl">Ready when you are.</h2>
+          <p className="relative mx-auto mt-3 max-w-xl text-muted-foreground">Open your account in a couple of minutes.</p>
+          <div className="relative mt-8 flex flex-col justify-center gap-3 sm:flex-row">
+            <Button size="lg" onClick={() => navigate("/auth")}>Create account<ArrowRight className="ml-2 h-5 w-5" /></Button>
+            <Button size="lg" variant="outline" onClick={() => setIsDemoModalOpen(true)}>Request a demo</Button>
           </div>
         </div>
       </section>
@@ -485,7 +219,7 @@ const Index = () => {
               />
               {errors.email && <p className="text-destructive text-sm mt-1">{errors.email}</p>}
             </div>
-            <Button type="submit" className="w-full" variant="trading" disabled={isSubmitting}>
+            <Button type="submit" className="w-full" disabled={isSubmitting}>
               {isSubmitting ? "Submitting..." : "Request Demo Account"}
             </Button>
           </form>
