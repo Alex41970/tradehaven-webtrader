@@ -73,6 +73,7 @@ const App = () => {
           <Route path="/cookies" element={<CookiePolicy />} />
           <Route path="/regulatory" element={<Regulatory />} />
           <Route path="/markets" element={<Markets />} />
+          <Route path="/markets/:category" element={<Markets />} />
           <Route path="/education" element={<Education />} />
                 <Route path="/dashboard" element={
                   <ProtectedRoute>

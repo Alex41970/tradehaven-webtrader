@@ -55,8 +55,7 @@ export const Footer = () => {
           <div>
             <Logo size="md" className="mb-4" />
             <p className="text-sm text-muted-foreground">
-              Professional trading platform trusted by over 500,000 traders worldwide. 
-              Trade with confidence on our regulated and secure platform.
+              Trade crypto, forex, stocks, indices and commodities from one professional web platform.
             </p>
           </div>
 
