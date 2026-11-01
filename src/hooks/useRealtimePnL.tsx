@@ -143,6 +143,7 @@ export const useRealtimePnL = (trades: Trade[], assets: Asset[] = [], excludeTra
         clearInterval(intervalRef.current);
         intervalRef.current = null;
       }
+      setLastPnL(prev => (Object.keys(prev).length ? {} : prev));
       return;
     }
 
