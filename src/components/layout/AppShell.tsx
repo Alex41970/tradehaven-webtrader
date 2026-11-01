@@ -1,4 +1,4 @@
-import { ReactNode, useState } from "react";
+import { ReactNode, useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/Logo";
 import { ChevronsLeft, LogOut, LucideIcon } from "lucide-react";
@@ -12,13 +12,20 @@ interface AppShellProps {
   onNavigate: (id: string) => void;
   topbar?: ReactNode;
   footer?: ReactNode;
+  /** Tighter page padding, for screens that need every pixel (trading). */
+  dense?: boolean;
+  /** Open this screen with the menu already slim; the trader can still widen it. */
+  autoCollapse?: boolean;
   onSignOut?: () => void;
   children: ReactNode;
 }
 
 /** Shared app frame: collapsible sidebar on desktop, bottom tab bar on phones. */
-export const AppShell = ({ nav, active, onNavigate, topbar, footer, onSignOut, children }: AppShellProps) => {
-  const [collapsed, setCollapsed] = useState(false);
+export const AppShell = ({ nav, active, onNavigate, topbar, footer, onSignOut, children, dense, autoCollapse }: AppShellProps) => {
+  // Width-hungry screens (trading) start slim; the trader's own click wins until they switch screen.
+  const [manual, setManual] = useState<boolean | null>(null);
+  useEffect(() => { setManual(null); }, [autoCollapse]);
+  const collapsed = manual ?? !!autoCollapse;
   const go = (n: NavItem) => (n.onClick ? n.onClick() : onNavigate(n.id));
 
   return (
@@ -49,7 +56,7 @@ export const AppShell = ({ nav, active, onNavigate, topbar, footer, onSignOut, c
               <LogOut className="h-[18px] w-[18px] shrink-0" />{!collapsed && "Sign out"}
             </button>
           )}
-          <Button variant="ghost" size="sm" onClick={() => setCollapsed((c) => !c)} className="w-full justify-center text-muted-foreground">
+          <Button variant="ghost" size="sm" onClick={() => setManual(!collapsed)} className="w-full justify-center text-muted-foreground">
             <ChevronsLeft className={cn("h-4 w-4 transition-transform", collapsed && "rotate-180")} />
           </Button>
         </div>
@@ -60,7 +67,7 @@ export const AppShell = ({ nav, active, onNavigate, topbar, footer, onSignOut, c
           <div className="md:hidden"><Logo size="sm" iconOnly /></div>
           {topbar}
         </header>
-        <main className="flex-1 px-3 pb-24 pt-4 md:px-6 md:pb-8 md:pt-6">{children}</main>
+        <main className={cn("flex-1 pb-24 pt-4 md:pb-8 md:pt-6", dense ? "px-2 md:px-3 md:pb-4 md:pt-4" : "px-3 md:px-6")}>{children}</main>
       </div>
 
       <nav className="fixed inset-x-0 bottom-0 z-40 grid border-t border-border bg-sidebar/95 backdrop-blur-xl md:hidden"

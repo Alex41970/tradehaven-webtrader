@@ -132,6 +132,7 @@ const Dashboard = () => {
   return (
     <PriceAlertsProvider>
     <AppShell nav={nav} active={view} onNavigate={setView} topbar={topbar} onSignOut={() => signOut()}
+      dense={view === "trade"} autoCollapse={view === "trade"}
       footer={<div className="rounded-xl border border-border bg-surface-2 p-3 text-xs">
         <div className="truncate font-medium">{name}</div>
         <div className="mt-0.5 flex items-center gap-1 text-muted-foreground"><ShieldCheck className="h-3 w-3 text-primary" />ID {user?.id?.slice(-8).toUpperCase()}</div>
