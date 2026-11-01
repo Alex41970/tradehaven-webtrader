@@ -136,20 +136,6 @@ const Index = () => {
         </div>
       </section>
 
-      {/* STATS */}
-      <section className="container relative z-10 mx-auto -mt-12 px-4">
-        <div className="bento grid grid-cols-2 divide-border bg-card/90 backdrop-blur md:grid-cols-4 md:divide-x">
-          {[
-            [String(total), "Markets"], ["15s", "Crypto price refresh"], ["24/7", "Crypto trading"], ["5", "Asset classes"],
-          ].map(([v, l]) => (
-            <div key={l} className="p-6 text-center">
-              <div className="num text-3xl font-semibold text-foreground md:text-4xl">{v}</div>
-              <div className="mt-1 text-sm text-muted-foreground">{l}</div>
-            </div>
-          ))}
-        </div>
-      </section>
-
       {/* LIVE MARKETS */}
       <section className="container mx-auto px-4 py-24">
         <div className="mb-8 flex flex-col justify-between gap-6 md:flex-row md:items-end">
