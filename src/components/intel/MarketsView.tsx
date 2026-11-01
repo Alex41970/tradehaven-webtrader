@@ -66,7 +66,7 @@ export const MarketsView = ({ assets, onOpen }: { assets: A[]; onOpen: (symbol: 
         <Bento className="p-4">
           <BentoHeader title="Screener" subtitle="Click a market to trade it"
             right={<div className="flex gap-2">
-              <Input placeholder="Search" value={q} onChange={(e) => setQ(e.target.value)} className="h-8 w-36" />
+              <Input placeholder="Search" value={q} onChange={(e) => setQ(e.target.value)} className="h-8 w-28 sm:w-36" />
               <Tabs value={filter} onValueChange={(v) => setFilter(v as typeof filter)}><TabsList className="h-8">
                 <TabsTrigger value="all" className="text-xs">All</TabsTrigger>
                 <TabsTrigger value="gainers" className="text-xs">Top gainers</TabsTrigger>
@@ -75,12 +75,12 @@ export const MarketsView = ({ assets, onOpen }: { assets: A[]; onOpen: (symbol: 
             </div>} />
           <div className="mt-2 max-h-[560px] overflow-auto">
             <Table>
-              <TableHeader><TableRow><SortH k="symbol">Market</SortH><TableHead>Category</TableHead><SortH k="price" right>Price</SortH><SortH k="change_24h" right>24h</SortH></TableRow></TableHeader>
+              <TableHeader><TableRow><SortH k="symbol">Market</SortH><TableHead className="hidden sm:table-cell">Category</TableHead><SortH k="price" right>Price</SortH><SortH k="change_24h" right>24h</SortH></TableRow></TableHeader>
               <TableBody>
                 {rows.map((a) => (
                   <TableRow key={a.id} className="cursor-pointer" onClick={() => onOpen(a.symbol)}>
                     <TableCell><div className="font-medium">{a.symbol}</div><div className="max-w-[220px] truncate text-xs text-muted-foreground">{a.name}</div></TableCell>
-                    <TableCell className="text-xs capitalize text-muted-foreground">{a.category}</TableCell>
+                    <TableCell className="hidden text-xs capitalize text-muted-foreground sm:table-cell">{a.category}</TableCell>
                     <TableCell className="num text-right">{a.price.toLocaleString(undefined, { maximumFractionDigits: a.price < 10 ? 5 : 2 })}</TableCell>
                     <TableCell className={cn("num text-right", a.change_24h >= 0 ? "text-success" : "text-destructive")}>{a.change_24h >= 0 ? "+" : ""}{a.change_24h.toFixed(2)}%</TableCell>
                   </TableRow>
