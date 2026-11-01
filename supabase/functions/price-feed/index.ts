@@ -1,4 +1,4 @@
-// Scheduled price feed (runs every minute).
+// Scheduled price feed (runs every minute, fetching 4 times inside each run, 15s apart).
 // Free sources first: Binance (crypto) and Yahoo batch quotes (forex, metals, energy, indices, stocks).
 // Fallbacks: Coinbase for crypto, Twelve Data (free tier, capped per run) for forex/metals.
 // Writes prices + 5-minute candles, then runs server-side SL/TP and stop-out checks.
@@ -11,8 +11,17 @@ type Candle = { symbol: string; t: number; o: number; h: number; l: number; c: n
 
 const UA = { 'User-Agent': 'Mozilla/5.0 (compatible; TradeHavenPriceFeed/1.0)' };
 const TIMEOUT_MS = 8000;
-const TWELVE_DATA_MAX_PER_RUN = 8; // free tier: 8 credits / minute
-const BACKFILL_PER_RUN = 8;
+const BACKFILL_PER_RUN = 16;
+// Timing: each scheduled run (every minute) fetches PASSES times, PASS_GAP_MS apart.
+const PASSES = 4;
+const PASS_GAP_MS = 15_000;
+// Provider budgets, kept at 70% of their limits so 30% is always free.
+const SAFETY = 0.7;
+const YAHOO_LIMIT_PER_MIN = 2000 / 60; // unofficial; ~2,000 calls/hour is the safe working figure
+const YAHOO_CALLS_PER_MIN = Math.floor(YAHOO_LIMIT_PER_MIN * SAFETY); // 23
+const YAHOO_BATCH = 20; // Yahoo spark rejects more than 20 symbols per call
+const TWELVE_DATA_CALLS_PER_MIN = Math.floor(8 * SAFETY); // 5
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const HISTORY_DAYS = 30;
 
 async function getJson(url: string): Promise<any | null> {
@@ -75,19 +84,22 @@ async function fetchCoinbase(assets: Asset[]): Promise<Quote[]> {
   return out;
 }
 
+let yahooThrottled = false;
 async function fetchYahoo(assets: Asset[], withHistory = false): Promise<{ quotes: Quote[]; candles: Candle[] }> {
   const quotes: Quote[] = [];
   const candles: Candle[] = [];
   const bySym = new Map(assets.map((a) => [yahooSymbol(a), a.symbol]));
   const keys = [...bySym.keys()];
-  for (let i = 0; i < keys.length; i += 20) {
-    const chunk = keys.slice(i, i + 20).map(encodeURIComponent).join(',');
+  for (let i = 0; i < keys.length; i += YAHOO_BATCH) {
+    if (yahooThrottled) break;
+    const chunk = keys.slice(i, i + YAHOO_BATCH).map(encodeURIComponent).join(',');
     const range = withHistory ? '5d' : '1d';
     let data = null;
     for (const host of ['query2', 'query1']) {
       data = await getJson(`https://${host}.finance.yahoo.com/v7/finance/spark?symbols=${chunk}&range=${range}&interval=5m`);
       if (data?.spark?.result) break;
     }
+    if (!data) yahooThrottled = true; // both hosts failed: back off for the rest of this run
     for (const r of data?.spark?.result ?? []) {
       const resp = r?.response?.[0];
       const meta = resp?.meta;
@@ -121,13 +133,14 @@ function twelveDataSymbol(a: Asset): string | null {
   return null;
 }
 
-async function fetchTwelveData(assets: Asset[]): Promise<Quote[]> {
+async function fetchTwelveData(assets: Asset[], limit: number): Promise<Quote[]> {
+  if (limit <= 0) return [];
   const key = Deno.env.get('TWELVE_DATA_API_KEY');
   if (!key) return [];
   const map = new Map<string, string>();
   for (const a of assets) {
     const s = twelveDataSymbol(a);
-    if (s && map.size < TWELVE_DATA_MAX_PER_RUN) map.set(s, a.symbol);
+    if (s && map.size < limit) map.set(s, a.symbol);
   }
   if (!map.size) return [];
   const data = await getJson(`https://api.twelvedata.com/price?symbol=${encodeURIComponent([...map.keys()].join(','))}&apikey=${key}`);
@@ -187,29 +200,60 @@ Deno.serve(async (request) => {
   const crypto = assets.filter((a) => a.category === 'crypto');
   const other = assets.filter((a) => a.category !== 'crypto');
 
-  const [cryptoQuotes, yahoo] = await Promise.all([fetchBinance(crypto), fetchYahoo(other)]);
-  const quotes = new Map<string, Quote>();
-  [...cryptoQuotes, ...yahoo.quotes].forEach((q) => quotes.set(q.symbol, q));
+  // Yahoo symbols rotate in chunks of 20 so the call budget is spread across passes.
+  const chunks: Asset[][] = [];
+  for (let i = 0; i < other.length; i += YAHOO_BATCH) chunks.push(other.slice(i, i + YAHOO_BATCH));
+  const yahooPerPass = Math.max(1, Math.floor(YAHOO_CALLS_PER_MIN / PASSES));
+  const minute = Math.floor(started / 60_000);
+  let tdBudget = TWELVE_DATA_CALLS_PER_MIN;
 
-  // Fallbacks only for what is still missing
-  const missingCrypto = crypto.filter((a) => !quotes.has(a.symbol));
-  const missingOther = other.filter((a) => !quotes.has(a.symbol));
-  const [cb, td] = await Promise.all([fetchCoinbase(missingCrypto), fetchTwelveData(missingOther)]);
-  [...cb, ...td].forEach((q) => quotes.set(q.symbol, q));
-
-  const list = [...quotes.values()].map((q) => ({
-    symbol: q.symbol,
-    price: q.price,
-    change: q.change != null && Number.isFinite(q.change) ? Number(q.change.toFixed(4)) : '',
-    source: q.source,
-  }));
-
+  const latest = new Map<string, Quote>();
   let stored = 0;
-  if (list.length) {
-    const { data: n, error: ingestError } = await supabase.rpc('ingest_prices', { _prices: list });
-    if (ingestError) console.error('ingest_prices failed', ingestError.message);
-    stored = (n as number) ?? 0;
+  let yahooCalls = 0;
+  for (let pass = 0; pass < PASSES; pass++) {
+    const passStart = started + pass * PASS_GAP_MS;
+    if (Date.now() < passStart) await sleep(passStart - Date.now());
+
+    const pick: Asset[] = [];
+    if (chunks.length) {
+      const n = Math.min(yahooPerPass, chunks.length);
+      const offset = ((minute * PASSES + pass) * yahooPerPass) % chunks.length;
+      for (let k = 0; k < n; k++) pick.push(...chunks[(offset + k) % chunks.length]);
+      yahooCalls += n;
+    }
+
+    const [cryptoQuotes, yahoo] = await Promise.all([fetchBinance(crypto), yahooThrottled ? { quotes: [] as Quote[] } : fetchYahoo(pick)]);
+    const quotes = new Map<string, Quote>();
+    [...cryptoQuotes, ...yahoo.quotes].forEach((q) => quotes.set(q.symbol, q));
+
+    // Fallbacks only for what is still missing
+    const missingCrypto = crypto.filter((a) => !quotes.has(a.symbol));
+    const missingOther = pick.filter((a) => !quotes.has(a.symbol));
+    const tdLimit = Math.min(tdBudget, missingOther.length);
+    const [cb, td] = await Promise.all([fetchCoinbase(missingCrypto), fetchTwelveData(missingOther, tdLimit)]);
+    tdBudget -= td.length ? tdLimit : 0;
+    [...cb, ...td].forEach((q) => quotes.set(q.symbol, q));
+
+    const list = [...quotes.values()].map((q) => ({
+      symbol: q.symbol,
+      price: q.price,
+      change: q.change != null && Number.isFinite(q.change) ? Number(q.change.toFixed(4)) : '',
+      source: q.source,
+    }));
+    quotes.forEach((q, k) => latest.set(k, q));
+    if (list.length) {
+      const { data: n, error: ingestError } = await supabase.rpc('ingest_prices', { _prices: list });
+      if (ingestError) console.error('ingest_prices failed', ingestError.message);
+      stored += (n as number) ?? 0;
+    }
+    // SL/TP and stop-out on every pass so triggers follow the fresher prices
+    if (pass < PASSES - 1) {
+      const { error: e } = await supabase.rpc('process_price_triggers');
+      if (e) console.error('process_price_triggers failed', e.message);
+    }
   }
+  const quotes = latest;
+  const list = [...latest.values()];
 
   // Server-side SL/TP and margin call / stop-out
   const { data: triggers, error: trigErr } = await supabase.rpc('process_price_triggers');
@@ -247,7 +291,7 @@ Deno.serve(async (request) => {
 
   const missing = assets.filter((a) => !quotes.has(a.symbol)).map((a) => a.symbol);
   const bySource = list.reduce<Record<string, number>>((m, q) => ((m[q.source] = (m[q.source] ?? 0) + 1), m), {});
-  console.log(`💾 ${stored}/${assets.length} prices stored ${JSON.stringify(bySource)} in ${Date.now() - started}ms; missing: ${missing.join(',') || 'none'}; backfilled ${backfilled}; triggers ${JSON.stringify(triggers)}`);
+  console.log(`💾 ${PASSES} passes, yahoo calls ${yahooCalls}/${YAHOO_CALLS_PER_MIN}${yahooThrottled ? ' (throttled)' : ''}, ${stored} updates for ${latest.size}/${assets.length} markets ${JSON.stringify(bySource)} in ${Date.now() - started}ms; missing: ${missing.join(',') || 'none'}; backfilled ${backfilled}; triggers ${JSON.stringify(triggers)}`);
 
   return Response.json({ success: true, stored, total: assets.length, bySource, missing, backfilled, triggers });
 });
