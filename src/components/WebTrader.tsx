@@ -24,7 +24,6 @@ import { useTradeOrders } from "@/hooks/useTradeOrders";
 import { useNavigate } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { toast } from "@/hooks/use-toast";
-import { PulsingPriceIndicator } from "./PulsingPriceIndicator";
 import { useEventDrivenUpdates } from "@/hooks/useEventDrivenUpdates";
 import { WebTraderSkeleton } from "./WebTraderSkeleton";
 import { useRealtimeAccountMetrics } from "@/hooks/useRealtimeAccountMetrics";
@@ -304,8 +303,8 @@ export const WebTrader = ({ initialSymbol }: { initialSymbol?: string } = {}) =>
       >
         <div className="flex items-center justify-between asset-row-main pointer-events-none">
           <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-1">
-              <span className="font-medium text-sm">{asset.symbol}</span>
+            <div className="flex items-center gap-1 min-w-0">
+              <span className="font-medium text-sm truncate">{asset.symbol}</span>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="icon" className="h-6 w-6 pointer-events-auto" aria-label="Add to watchlist"
@@ -328,12 +327,15 @@ export const WebTrader = ({ initialSymbol }: { initialSymbol?: string } = {}) =>
             </div>
             <div className="text-xs text-muted-foreground truncate">{asset.name}</div>
           </div>
-          <div className="shrink-0 pl-2 text-right">
-            <PulsingPriceIndicator 
-              price={asset.price} 
-              change={asset.change_24h}
-              symbol={asset.symbol} 
-            />
+          <div className="shrink-0 pl-2 flex flex-col items-end gap-0.5">
+            <span className="font-mono text-sm font-medium tabular-nums">
+              {(Number(asset.price) || 0).toFixed(asset.symbol.includes('JPY') ? 3 : Number(asset.price) >= 100 ? 2 : Number(asset.price) >= 1 ? 4 : 5)}
+            </span>
+            <span className={`font-mono text-[11px] tabular-nums px-1.5 rounded ${
+              (asset.change_24h || 0) >= 0 ? 'text-success bg-success/10' : 'text-destructive bg-destructive/10'
+            }`}>
+              {(asset.change_24h || 0) >= 0 ? '+' : ''}{(Number(asset.change_24h) || 0).toFixed(2)}%
+            </span>
           </div>
         </div>
       </div>
