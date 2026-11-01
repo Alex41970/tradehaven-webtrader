@@ -744,6 +744,7 @@ const AdminDashboard = () => {
   const pendingRequests = depositRequests.filter((r) => r.status === "pending").length + withdrawalRequests.filter((r) => r.status === "pending").length;
 
   return (
+    <>
     <AppShell
       nav={adminNav}
       active={section}
@@ -1599,7 +1600,7 @@ const AdminDashboard = () => {
         trade={selectedTradeForDelete}
         onSuccess={fetchAdminData}
       />
-    </div>
+    </>
   );
 };
 
