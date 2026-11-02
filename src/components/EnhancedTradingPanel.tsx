@@ -52,12 +52,14 @@ export const EnhancedTradingPanel: React.FC<EnhancedTradingPanelProps> = ({
   const [riskManagementOpen, setRiskManagementOpen] = useState(false);
   const [orderDetailsOpen, setOrderDetailsOpen] = useState(false);
 
-  // Update price-dependent state when selectedAsset changes
+  // Reset price-dependent defaults only when the market changes — never on price ticks,
+  // otherwise presets and typed values get overwritten every second.
   useEffect(() => {
     setTriggerPrice(selectedAsset.price);
     setStopLoss(selectedAsset.price * 0.98);
     setTakeProfit(selectedAsset.price * 1.03);
-  }, [selectedAsset.id, selectedAsset.price]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedAsset.id]);
 
   // Risk calculations (crypto-only, simplified)
   const calculations = useMemo(() => {
@@ -98,12 +100,25 @@ export const EnhancedTradingPanel: React.FC<EnhancedTradingPanelProps> = ({
   };
 
   const handleTrade = (tradeType: 'BUY' | 'SELL') => {
+    // Direction-aware SL/TP: BUY → SL below, TP above; SELL → SL above, TP below.
+    // Values set on the wrong side are mirrored around the entry price.
+    const ref = orderType !== 'market' ? triggerPrice : selectedAsset.price;
+    const mirror = (v: number) => 2 * ref - v;
+    let sl = stopLoss;
+    let tp = takeProfit;
+    if (tradeType === 'BUY') {
+      if (sl > ref) sl = mirror(sl);
+      if (tp < ref) tp = mirror(tp);
+    } else {
+      if (sl < ref) sl = mirror(sl);
+      if (tp > ref) tp = mirror(tp);
+    }
     const orderData = {
       orderType,
       tradeType,
       triggerPrice: orderType !== 'market' ? triggerPrice : undefined,
-      stopLoss: useStopLoss ? stopLoss : undefined,
-      takeProfit: useTakeProfit ? takeProfit : undefined,
+      stopLoss: useStopLoss ? sl : undefined,
+      takeProfit: useTakeProfit ? tp : undefined,
       expiresAt: orderType !== 'market' ? new Date(Date.now() + expiryHours * 60 * 60 * 1000) : undefined,
       idempotencyKey: crypto.randomUUID(),
     };
