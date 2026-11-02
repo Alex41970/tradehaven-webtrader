@@ -32,8 +32,15 @@ const TIMEZONES = [
   { value: 'Australia/Sydney', label: 'Sydney (AEST)' },
 ];
 
-export const AdminTradingSettings: React.FC = () => {
-  const { settings, isLoading, updateSettings } = useAdminTradingSettings();
+interface AdminTradingSettingsProps {
+  /** 'risk' = risk management only (admins); 'controls' = market status, price movement, hours (super admin) */
+  mode: 'risk' | 'controls';
+  /** Whose settings to edit; defaults to the signed-in user */
+  adminId?: string;
+}
+
+export const AdminTradingSettings: React.FC<AdminTradingSettingsProps> = ({ mode, adminId }) => {
+  const { settings, isLoading, updateSettings } = useAdminTradingSettings(adminId);
   const [isSaving, setIsSaving] = useState(false);
   
   // Local state for form
