@@ -13,8 +13,10 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Users, Shield, UserCheck, Settings, Crown, LogOut, Trash2 } from "lucide-react";
+import { Users, Shield, UserCheck, Settings, Crown, LogOut, Trash2, Activity, Radio } from "lucide-react";
 import { Navigate } from "react-router-dom";
+import PriceFeedMonitor from "@/components/admin/PriceFeedMonitor";
+import SuperAdminTradingControls from "@/components/admin/SuperAdminTradingControls";
 
 interface UserWithRole {
   user_id: string;
@@ -526,7 +528,23 @@ const SuperAdminDashboard = () => {
                 <Settings className="h-4 w-4" />
                 Promo Codes ({promoCodes.length})
               </TabsTrigger>
+              <TabsTrigger value="controls" className="flex items-center gap-2">
+                <Activity className="h-4 w-4" />
+                Trading Controls
+              </TabsTrigger>
+              <TabsTrigger value="price-feed" className="flex items-center gap-2">
+                <Radio className="h-4 w-4" />
+                Price Feed
+              </TabsTrigger>
             </TabsList>
+
+            <TabsContent value="controls">
+              <SuperAdminTradingControls admins={admins} />
+            </TabsContent>
+
+            <TabsContent value="price-feed">
+              <PriceFeedMonitor />
+            </TabsContent>
 
             <TabsContent value="users">
               <Card>

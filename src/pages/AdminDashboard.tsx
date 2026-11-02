@@ -1,4 +1,3 @@
-import PriceFeedMonitor from "@/components/admin/PriceFeedMonitor";
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -737,8 +736,7 @@ const AdminDashboard = () => {
     { id: "trades", label: "Trades", icon: Activity },
     { id: "financial-requests", label: "Requests", icon: CreditCard },
     { id: "bot-licenses", label: "Bots", icon: Bot },
-    { id: "trading-settings", label: "Controls", icon: Settings },
-    { id: "price-feed", label: "Price Feed", icon: Radio },
+    { id: "trading-settings", label: "Risk", icon: Settings },
   ];
   const sectionTitle = adminNav.find((n) => n.id === section)?.label ?? "Overview";
   const pendingRequests = depositRequests.filter((r) => r.status === "pending").length + withdrawalRequests.filter((r) => r.status === "pending").length;
@@ -1411,11 +1409,7 @@ const AdminDashboard = () => {
           </TabsContent>
 
           <TabsContent value="trading-settings" className="space-y-4">
-            <AdminTradingSettings />
-          </TabsContent>
-
-          <TabsContent value="price-feed" className="space-y-4">
-            <PriceFeedMonitor />
+            <AdminTradingSettings mode="risk" />
           </TabsContent>
 
         </Tabs>
