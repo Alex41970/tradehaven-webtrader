@@ -163,20 +163,21 @@ export const useTradingSettings = () => {
 };
 
 // Hook for admins to manage their own settings
-export const useAdminTradingSettings = () => {
+export const useAdminTradingSettings = (targetAdminId?: string) => {
   const { user } = useAuth();
+  const ownerId = targetAdminId || user?.id;
   const [settings, setSettings] = useState<AdminTradingSettingsRow | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchSettings = useCallback(async () => {
-    if (!user?.id) return;
-
+    if (!ownerId) return;
+    setIsLoading(true);
     try {
       const { data } = await supabase
         .from('admin_trading_settings')
         .select('*')
-        .eq('admin_id', user.id)
-        .single();
+        .eq('admin_id', ownerId)
+        .maybeSingle();
 
       setSettings(data as AdminTradingSettingsRow | null);
     } catch {
@@ -184,14 +185,14 @@ export const useAdminTradingSettings = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [user?.id]);
+  }, [ownerId]);
 
   useEffect(() => {
     fetchSettings();
   }, [fetchSettings]);
 
   const updateSettings = async (updates: Partial<AdminTradingSettingsRow>) => {
-    if (!user?.id) return { error: 'Not authenticated' };
+    if (!ownerId) return { error: 'Not authenticated' };
 
     try {
       if (settings) {
@@ -199,14 +200,14 @@ export const useAdminTradingSettings = () => {
         const { error } = await supabase
           .from('admin_trading_settings')
           .update(updates)
-          .eq('admin_id', user.id);
+          .eq('admin_id', ownerId);
 
         if (error) throw error;
       } else {
         // Insert new
         const { error } = await supabase
           .from('admin_trading_settings')
-          .insert({ admin_id: user.id, ...updates });
+          .insert({ admin_id: ownerId, ...updates });
 
         if (error) throw error;
       }
