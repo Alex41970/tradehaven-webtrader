@@ -246,15 +246,15 @@ export const EnhancedTradingPanel: React.FC<EnhancedTradingPanelProps> = ({
                 variant="outline" 
                 size="sm" 
                 onClick={() => handleQuickRiskSetup('conservative')}
-                className="text-[11px] px-1 min-w-0 truncate"
+                className="text-xs px-2 min-w-0 whitespace-nowrap"
               >
-                Conservative
+                Safe
               </Button>
               <Button 
                 variant="outline" 
                 size="sm" 
                 onClick={() => handleQuickRiskSetup('balanced')}
-                className="text-[11px] px-1 min-w-0 truncate"
+                className="text-xs px-2 min-w-0 whitespace-nowrap"
               >
                 Balanced
               </Button>
@@ -262,7 +262,7 @@ export const EnhancedTradingPanel: React.FC<EnhancedTradingPanelProps> = ({
                 variant="outline" 
                 size="sm" 
                 onClick={() => handleQuickRiskSetup('aggressive')}
-                className="text-[11px] px-1 min-w-0 truncate"
+                className="text-xs px-2 min-w-0 whitespace-nowrap"
               >
                 Aggressive
               </Button>
