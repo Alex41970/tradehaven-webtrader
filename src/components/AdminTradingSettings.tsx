@@ -80,20 +80,24 @@ export const AdminTradingSettings: React.FC<AdminTradingSettingsProps> = ({ mode
 
   const handleSave = async () => {
     setIsSaving(true);
-    const result = await updateSettings({
-      price_intensity: priceIntensity,
-      market_closed: marketClosed,
-      trading_hours_enabled: tradingHoursEnabled,
-      market_open_time: marketOpenTime,
-      market_close_time: marketCloseTime,
-      trading_timezone: tradingTimezone,
-      trading_days: tradingDays,
-      margin_call_level: marginCallLevel,
-      stop_out_level: stopOutLevel,
-      allow_negative_balance: allowNegativeBalance,
-      grace_period_hours: gracePeriodHours,
-      auto_close_enabled: autoCloseEnabled,
-    } as any);
+    const payload = mode === 'controls'
+      ? {
+          price_intensity: priceIntensity,
+          market_closed: marketClosed,
+          trading_hours_enabled: tradingHoursEnabled,
+          market_open_time: marketOpenTime,
+          market_close_time: marketCloseTime,
+          trading_timezone: tradingTimezone,
+          trading_days: tradingDays,
+        }
+      : {
+          margin_call_level: marginCallLevel,
+          stop_out_level: stopOutLevel,
+          allow_negative_balance: allowNegativeBalance,
+          grace_period_hours: gracePeriodHours,
+          auto_close_enabled: autoCloseEnabled,
+        };
+    const result = await updateSettings(payload as any);
 
     if (result.error) {
       toast.error('Failed to save settings: ' + result.error);
@@ -144,6 +148,7 @@ export const AdminTradingSettings: React.FC<AdminTradingSettingsProps> = ({ mode
 
   return (
     <div className="space-y-6">
+      {mode === 'controls' && (
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -285,8 +290,10 @@ export const AdminTradingSettings: React.FC<AdminTradingSettingsProps> = ({ mode
           </Button>
         </CardContent>
       </Card>
+      )}
 
       {/* Risk Management Card */}
+      {mode === 'risk' && (
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -392,6 +399,7 @@ export const AdminTradingSettings: React.FC<AdminTradingSettingsProps> = ({ mode
           </Button>
         </CardContent>
       </Card>
+      )}
     </div>
   );
 };
