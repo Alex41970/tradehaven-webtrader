@@ -57,6 +57,29 @@ export class TradingWebSocketService {
     this.setupEventHandlers();
     this.setupNetworkStateHandlers();
     this.setupVisibilityHandlers();
+    this.setupAuthListener();
+  }
+
+  private setupAuthListener() {
+    supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_OUT' || !session) {
+        this.disconnect();
+        return;
+      }
+      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION') {
+        // Defer to avoid calling auth methods inside the auth callback
+        setTimeout(() => {
+          if (this.ws?.readyState === WebSocket.OPEN) {
+            if (event === 'TOKEN_REFRESHED' || !this.isAuthenticated) {
+              this.send({ type: 'auth', token: session.access_token });
+            }
+          } else {
+            this.reconnectAttempts = 0;
+            this.connect();
+          }
+        }, 0);
+      }
+    });
   }
 
   private setupEventHandlers() {
@@ -179,6 +202,15 @@ export class TradingWebSocketService {
       this.connecting = true;
       
       if (this.ws && (this.ws.readyState === WebSocket.CONNECTING || this.ws.readyState === WebSocket.OPEN)) {
+        this.connecting = false;
+        if (this.ws.readyState === WebSocket.OPEN && !this.isAuthenticated) {
+          await this.authenticate();
+        }
+        return;
+      }
+
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
         this.connecting = false;
         return;
       }
