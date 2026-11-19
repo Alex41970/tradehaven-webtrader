@@ -1,5 +1,11 @@
 # Roadmap — TradeHaven
 
+## Offline buyer release
+- [x] Add opt-in obfuscated domain lock without changing the live app
+- [x] Test exact-domain enforcement and zero license callbacks
+- [x] Document standalone delivery requirements and protection limits
+- [ ] Produce and verify buyer release — blocked: buyer domain and buyer-owned service settings not supplied
+
 - [x] Rebuild Cloud database, functions, schedules
 - [x] Email sign-up; first account without promo code
 - [ ] Assign super admin to Ali — blocked: needs Ali's email after sign-up
