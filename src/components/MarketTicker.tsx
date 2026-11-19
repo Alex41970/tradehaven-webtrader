@@ -21,8 +21,11 @@ export const MarketTicker = () => {
   return (
     <div className="w-full overflow-hidden bg-gradient-to-r from-secondary via-secondary/95 to-secondary border-b border-border border-t border-accent/20">
       <div className="flex items-center">
-        <MarketTickIndicator />
-        <div className="flex animate-[scroll_60s_linear_infinite] gap-8 py-3 flex-1">
+        <div className="relative z-10 shrink-0 self-stretch flex items-center border-r border-border bg-secondary pl-2">
+          <MarketTickIndicator />
+        </div>
+        <div className="min-w-0 flex-1 overflow-hidden">
+        <div className="flex w-max animate-[scroll_60s_linear_infinite] gap-8 py-3 flex-1">
           {[...tickerAssets, ...tickerAssets].map((asset, index) => {
             const percent = changePercent(asset);
             return (
@@ -42,6 +45,7 @@ export const MarketTicker = () => {
               </div>
             );
           })}
+        </div>
         </div>
       </div>
     </div>
