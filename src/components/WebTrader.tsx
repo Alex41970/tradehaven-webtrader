@@ -328,7 +328,6 @@ export const WebTrader = ({ initialSymbol }: { initialSymbol?: string } = {}) =>
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1 min-w-0">
               <span className="font-medium text-sm truncate">{asset.symbol}</span>
-              {closed && <span className="shrink-0 rounded bg-muted px-1 text-[9px] font-medium uppercase tracking-wide text-muted-foreground">Closed</span>}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="icon" className="h-6 w-6 pointer-events-auto" aria-label="Add to watchlist"
@@ -349,7 +348,7 @@ export const WebTrader = ({ initialSymbol }: { initialSymbol?: string } = {}) =>
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
-            <div className="text-xs text-muted-foreground truncate">{asset.name}</div>
+            <div className="text-xs text-muted-foreground truncate">{closed && <span className="mr-1 rounded bg-muted px-1 text-[9px] font-medium uppercase tracking-wide">Closed</span>}{asset.name}</div>
           </div>
           <div className="shrink-0 pl-2 flex flex-col items-end gap-0.5">
             <span className="font-mono text-sm font-medium tabular-nums">
