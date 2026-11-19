@@ -5,6 +5,7 @@
 - [x] Test exact-domain enforcement and zero license callbacks
 - [x] Document standalone delivery requirements and protection limits
 - [ ] Produce and verify buyer release — blocked: buyer domain and buyer-owned service settings not supplied
+- [ ] Confirm buyer backend setup (buyer-owned Supabase/Cloud project) and who hosts the frontend — blocked: awaiting Ali's answer
 
 - [x] Rebuild Cloud database, functions, schedules
 - [x] Email sign-up; first account without promo code
