@@ -78,6 +78,13 @@
       "when": 1793570434594,
       "tag": "0010_market_intelligence",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1795049712914,
+      "tag": "0011_restrict_price_candles_to_signed_in",
+      "breakpoints": true
     }
   ]
 }
