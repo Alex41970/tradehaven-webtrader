@@ -621,9 +621,11 @@ export type Database = {
         Row: {
           amount: number
           asset_id: string
+          cancel_reason: string | null
           created_at: string
           expires_at: string | null
           filled_at: string | null
+          filled_trade_id: string | null
           id: string
           leverage: number
           max_slippage_percent: number | null
@@ -641,9 +643,11 @@ export type Database = {
         Insert: {
           amount: number
           asset_id: string
+          cancel_reason?: string | null
           created_at?: string
           expires_at?: string | null
           filled_at?: string | null
+          filled_trade_id?: string | null
           id?: string
           leverage?: number
           max_slippage_percent?: number | null
@@ -661,9 +665,11 @@ export type Database = {
         Update: {
           amount?: number
           asset_id?: string
+          cancel_reason?: string | null
           created_at?: string
           expires_at?: string | null
           filled_at?: string | null
+          filled_trade_id?: string | null
           id?: string
           leverage?: number
           max_slippage_percent?: number | null
@@ -1234,6 +1240,7 @@ export type Database = {
         Args: { _admin_id: string; _license_id: string }
         Returns: Json
       }
+      fill_pending_orders: { Args: never; Returns: number }
       generate_bot_license: {
         Args: { _admin_id: string; _expires_at?: string }
         Returns: string
@@ -1308,6 +1315,10 @@ export type Database = {
       }
       ingest_prices: { Args: { _prices: Json }; Returns: number }
       ingest_prices_v2: { Args: { _prices: Json }; Returns: Json }
+      is_market_open: {
+        Args: { _category: string; _symbol: string; _ts?: string }
+        Returns: boolean
+      }
       process_deposit_request: {
         Args: {
           _action: string

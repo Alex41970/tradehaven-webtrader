@@ -28,6 +28,8 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { toast } from "@/hooks/use-toast";
 import { useEventDrivenUpdates } from "@/hooks/useEventDrivenUpdates";
 import { WebTraderSkeleton } from "./WebTraderSkeleton";
+import { MarketClosedBanner, useMarketSession } from "./market/MarketClosedBanner";
+import { isMarketOpen } from "@/utils/marketHours";
 import { useRealtimeAccountMetrics } from "@/hooks/useRealtimeAccountMetrics";
 import { useResizableWidth } from "@/hooks/useResizableWidth";
 import { ResizeHandle } from "@/components/ResizeHandle";
@@ -125,6 +127,8 @@ export const WebTrader = ({ initialSymbol }: { initialSymbol?: string } = {}) =>
     return (amount * (selectedAsset.contract_size || 1) * selectedAsset.price) / leverage;
   }, [selectedAsset, amount, leverage]);
 
+  const { open: selectedOpen, label: opensLabel } = useMarketSession(selectedAsset?.symbol, selectedAsset?.category);
+
   // Calculate position size
   const calculatePositionSize = useMemo(() => {
     if (!selectedAsset) return 0;
@@ -135,6 +139,10 @@ export const WebTrader = ({ initialSymbol }: { initialSymbol?: string } = {}) =>
 
   const handleTrade = async (tradeType: 'BUY' | 'SELL') => {
     if (!selectedAsset || !profile) return;
+    if (!selectedOpen) {
+      toast({ title: "Market closed", description: `${selectedAsset.symbol} ${opensLabel}. You can place a pending order instead.` });
+      return;
+    }
     
     const tradeAmount = amount;
     
@@ -215,7 +223,9 @@ export const WebTrader = ({ initialSymbol }: { initialSymbol?: string } = {}) =>
     setIsExecuting(true);
 
     try {
-      if (orderData.orderType === 'market') {
+      if (orderData.orderType === 'market' && !selectedOpen) {
+        toast({ title: "Market closed", description: `${selectedAsset.symbol} ${opensLabel}. You can place a pending order instead.` });
+      } else if (orderData.orderType === 'market') {
         // Execute market order immediately with stop loss and take profit
         const success = await openTrade(
           selectedAsset.id,
@@ -287,6 +297,7 @@ export const WebTrader = ({ initialSymbol }: { initialSymbol?: string } = {}) =>
   // Asset row component for market watch
   const AssetRow = React.memo(({ asset }: { asset: any }) => {
     const isFavorited = inAnyList(asset.id);
+    const closed = !isMarketOpen(asset.symbol, asset.category);
     
     const handleAssetSelect = useCallback((e: React.MouseEvent) => {
       e.preventDefault();
@@ -307,7 +318,7 @@ export const WebTrader = ({ initialSymbol }: { initialSymbol?: string } = {}) =>
           selectedAsset?.id === asset.id 
             ? 'bg-primary/10 border-primary/40' 
             : 'border-transparent hover:bg-muted/60'
-        }`}
+        } ${closed ? 'opacity-50' : ''}`}
         onClick={handleAssetSelect}
         onPointerDown={handlePointerDown}
         role="button"
@@ -317,6 +328,7 @@ export const WebTrader = ({ initialSymbol }: { initialSymbol?: string } = {}) =>
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1 min-w-0">
               <span className="font-medium text-sm truncate">{asset.symbol}</span>
+              {closed && <span className="shrink-0 rounded bg-muted px-1 text-[9px] font-medium uppercase tracking-wide text-muted-foreground">Closed</span>}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="icon" className="h-6 w-6 pointer-events-auto" aria-label="Add to watchlist"
@@ -426,6 +438,7 @@ export const WebTrader = ({ initialSymbol }: { initialSymbol?: string } = {}) =>
           <TradingChart key={selectedAsset.id} symbol={selectedAsset.symbol} category={selectedAsset.category} name={selectedAsset.name}
             toolbarExtra={<PriceAlertButton symbol={selectedAsset.symbol} price={serverPrices.get(selectedAsset.symbol) ?? price} />} />
         </div>
+        <MarketClosedBanner symbol={selectedAsset.symbol} category={selectedAsset.category} />
         <SentimentBar symbol={selectedAsset.symbol} change24h={chg} category={selectedAsset.category} />
 
         {/* One-tap trade bar, pinned above the phone tab bar */}
@@ -436,6 +449,13 @@ export const WebTrader = ({ initialSymbol }: { initialSymbol?: string } = {}) =>
               <SlidersHorizontal className="h-3.5 w-3.5" />New order
             </button>
           </div>
+          {!selectedOpen ? (
+            <button onClick={() => setOrderSheet(true)}
+              className="flex h-14 w-full flex-col items-center justify-center rounded-lg border border-border bg-muted/40 text-muted-foreground">
+              <span className="text-xs font-semibold uppercase tracking-wider">Market closed</span>
+              <span className="text-[11px] text-primary">Place a pending order</span>
+            </button>
+          ) : (
           <div className="grid grid-cols-[1fr_auto_1fr] items-stretch gap-2">
             <button disabled={isExecuting} onClick={() => handleTrade("SELL")}
               className="flex h-14 flex-col items-center justify-center rounded-lg bg-destructive text-destructive-foreground disabled:opacity-50">
@@ -456,6 +476,7 @@ export const WebTrader = ({ initialSymbol }: { initialSymbol?: string } = {}) =>
               <span className="num text-base font-bold">{fmtP(price)}</span>
             </button>
           </div>
+          )}
         </div>
         <div className="h-[104px]" />
 
@@ -568,6 +589,7 @@ export const WebTrader = ({ initialSymbol }: { initialSymbol?: string } = {}) =>
 
             {/* Right Column - Chart and Trading - Fixed Heights */}
             <div className="order-1 flex h-[460px] flex-col gap-3 md:h-[640px] lg:order-2">
+              <MarketClosedBanner symbol={selectedAsset?.symbol} category={selectedAsset?.category} />
               <div className="min-h-0 flex-1">
                 <TradingChart 
                   key={selectedAsset?.id || 'no-asset'} 

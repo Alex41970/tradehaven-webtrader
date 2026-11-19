@@ -10,6 +10,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { ChevronDown, ChevronUp, Calculator, Target, Shield, Clock, AlertTriangle } from 'lucide-react';
 import { Asset } from '@/hooks/useAssets';
 import { usePrices } from '@/contexts/PriceContext';
+import { useMarketSession } from '@/components/market/MarketClosedBanner';
 
 interface EnhancedTradingPanelProps {
   selectedAsset: Asset;
@@ -42,7 +43,12 @@ export const EnhancedTradingPanel: React.FC<EnhancedTradingPanelProps> = ({
   // Get market closed status from PriceContext
   const { isMarketClosed, canTrade } = usePrices();
 
+  const session = useMarketSession(selectedAsset.symbol, selectedAsset.category);
   const [orderType, setOrderType] = useState<'market' | 'limit' | 'stop'>('market');
+  // Closed market: only pending orders are allowed
+  useEffect(() => {
+    if (!session.open && orderType === 'market') setOrderType('limit');
+  }, [session.open, orderType]);
   const [triggerPrice, setTriggerPrice] = useState<number>(selectedAsset.price);
   const [useStopLoss, setUseStopLoss] = useState(false);
   const [useTakeProfit, setUseTakeProfit] = useState(false);
@@ -136,6 +142,12 @@ export const EnhancedTradingPanel: React.FC<EnhancedTradingPanelProps> = ({
     <Card className="bg-card/50 backdrop-blur-sm border-trading-secondary/20">
       <CardContent className="space-y-4">
         {/* Market Closed Warning */}
+        {session.open === false && !isMarketClosed && (
+          <div className="rounded-lg border border-border bg-muted/40 p-3">
+            <p className="text-sm font-medium">Market closed{session.label ? ` · ${session.label}` : ''}</p>
+            <p className="text-xs text-muted-foreground">Only pending orders now. They fill automatically when the market opens and your price is reached.</p>
+          </div>
+        )}
         {isMarketClosed && (
           <div className="flex items-center gap-2 p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
             <AlertTriangle className="h-5 w-5 text-destructive" />
@@ -153,10 +165,10 @@ export const EnhancedTradingPanel: React.FC<EnhancedTradingPanelProps> = ({
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="market">
+              <SelectItem value="market" disabled={!session.open}>
                 <div className="flex items-center gap-2">
                   <div className="h-2 w-2 rounded-full bg-trading-success" />
-                  Market Order (Instant)
+                  {session.open ? 'Market Order (Instant)' : 'Market Order (market closed)'}
                 </div>
               </SelectItem>
               <SelectItem value="limit">

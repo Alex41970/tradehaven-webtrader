@@ -85,6 +85,20 @@
       "when": 1795049712914,
       "tag": "0011_restrict_price_candles_to_signed_in",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1795090440740,
+      "tag": "0012_market_hours_and_pending_orders",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1795090474064,
+      "tag": "0013_pending_order_guard_and_fill",
+      "breakpoints": true
     }
   ]
 }
