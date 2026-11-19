@@ -29,7 +29,7 @@ export default defineConfig(({ mode }) => {
   },
   plugins: [
     react(),
-    domain ? offlineLicensePlugin(domain) : false,
+    ...(domain ? [offlineLicensePlugin(domain)] : []),
     mode === 'development' &&
     componentTagger(),
   ].filter(Boolean),
