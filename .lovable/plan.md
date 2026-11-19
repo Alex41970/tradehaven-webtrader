@@ -20,3 +20,15 @@ The existing admin "market closed" switch and scheduled trading hours keep worki
 - New `src/utils/marketHours.ts`: `getMarketSession(asset, now)` -> `{ open, nextOpen }`, timezone-aware via `Intl`, by asset category/symbol; vitest tests for weekend, after-hours and crypto cases.
 - Use it in the market list (WebTrader + phone list), `TradingChart` banner, `EnhancedTradingPanel` and phone Buy/Sell bar; disable order submit when closed.
 - Server side: the `trades` insert trigger rejects new market orders on a closed market (same rules mirrored in SQL) so it can't be bypassed.
+
+## Pre-market and after-hours (how big brokers do it)
+- **IG, Capital.com, Interactive Brokers, Robinhood**: US stocks tradable in *extended hours*: pre-market 04:00-09:30 and after-hours 16:00-20:00 New York time. Robinhood/IBKR also offer overnight sessions.
+- Common rules there: wider spreads, lower leverage, often limit orders only, clear "Pre-market" / "After-hours" label.
+- **Plus500, eToro (mostly)**: no trading while closed, but you can place **pending orders** that fill when the market opens.
+
+What we'll add:
+- Status tags per market: **Open**, **Pre-market**, **After-hours**, **Closed**.
+- During Pre-market/After-hours (US stocks only): trading allowed with a label "Extended hours - wider spreads", with leverage capped at half of normal. Prices come from the real pre/post-market feed (Yahoo provides these).
+- When fully Closed: grayed out, "Opens Mon 10:00 (pre-market)" message, Buy/Sell disabled.
+- Super Admin switch to turn extended hours on/off.
+- Pending orders while closed (eToro style) stay on the roadmap as a separate step.
