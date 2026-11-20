@@ -60,7 +60,7 @@ export const Logo = ({ size = "md", className, iconOnly = false }: LogoProps) =>
         <span className={cn(
           "font-montserrat font-semibold",
           sizes.text,
-          "bg-gradient-to-r from-accent to-primary bg-clip-text text-transparent"
+          "text-primary"
         )}>
           CAPITAL
         </span>
