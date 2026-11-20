@@ -24,7 +24,7 @@ const C = {
 };
 
 export const Bento = ({ className, children }: { className?: string; children: ReactNode }) => (
-  <section className={cn("bento p-5", className)}>{children}</section>
+  <section className={cn("bento min-w-0 p-5", className)}>{children}</section>
 );
 
 export const BentoHeader = ({ title, subtitle, right }: { title: string; subtitle?: string; right?: ReactNode }) => (
@@ -120,7 +120,7 @@ export const EquityChart = ({ points, equity, change }: { points: { t: number; v
         <div className="flex rounded-lg border border-border bg-surface-2 p-0.5">
           {(Object.keys(RANGE_MS) as Range[]).map((r) => (
             <button key={r} onClick={() => setRange(r)}
-              className={cn("num rounded-md px-2.5 py-1 text-xs transition-colors",
+              className={cn("num rounded-md px-2.5 py-1 max-md:py-2 max-md:px-3 text-xs transition-colors touch-manipulation",
                 r === range ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground")}>{r}</button>
           ))}
         </div>

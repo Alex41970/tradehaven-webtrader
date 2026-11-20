@@ -399,14 +399,14 @@ export const WebTrader = ({ initialSymbol }: { initialSymbol?: string } = {}) =>
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input placeholder="Search markets" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="h-11 bg-muted/20 pl-9 text-base" />
           </div>
-          <div className="-mx-2 flex gap-1.5 overflow-x-auto px-2 pb-1">
+          <div className="flex gap-1.5 overflow-x-auto pb-1 overscroll-x-contain">
             {[["all", "All"], ["crypto", "Crypto"], ["forex", "Forex"], ["stocks", "Stocks"], ["indices", "Indices"], ["commodities", "Commodities"]].map(([v, l]) => (
               <button key={v} onClick={() => setCategoryFilter(v)}
                 className={`h-10 shrink-0 rounded-full border px-4 text-xs touch-manipulation ${categoryFilter === v ? "border-primary bg-primary/15 text-primary" : "border-border text-muted-foreground"}`}>{l}</button>
             ))}
           </div>
           {lists.length > 0 && (
-            <div className="-mx-2 flex gap-1.5 overflow-x-auto px-2">
+            <div className="flex gap-1.5 overflow-x-auto overscroll-x-contain">
               {[{ id: "all", name: "All markets" }, ...lists].map((l) => (
                 <button key={l.id} onClick={() => setListTab(l.id)}
                   className={`h-10 shrink-0 rounded-md px-3 text-xs touch-manipulation ${listTab === l.id ? "bg-muted text-foreground" : "text-muted-foreground"}`}>{l.name}</button>

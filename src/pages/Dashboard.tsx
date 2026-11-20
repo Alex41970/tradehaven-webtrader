@@ -193,7 +193,7 @@ const Dashboard = () => {
             </div>
 
             <div className="grid gap-4 lg:grid-cols-3">
-              <div className="lg:col-span-2"><DailyPnlChart trades={trades} /></div>
+              <div className="min-w-0 lg:col-span-2"><DailyPnlChart trades={trades} /></div>
               <Donut title="Exposure" subtitle="Open positions by market" data={exposure}
                 center={<><span className="num text-xl font-semibold">{openTrades.length}</span><span className="text-[10px] text-muted-foreground">open</span></>} />
             </div>
