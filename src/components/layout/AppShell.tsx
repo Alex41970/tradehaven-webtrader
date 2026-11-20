@@ -47,7 +47,7 @@ export const AppShell = ({ nav, active, onNavigate, topbar, footer, onSignOut, c
             const on = n.id === active;
             return (
               <button key={n.id} onClick={() => go(n)} title={n.label}
-                className={cn("group relative flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-colors",
+                className={cn("group relative flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm transition-colors",
                   on ? "bg-sidebar-accent text-sidebar-accent-foreground" : "text-sidebar-foreground/70 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground")}>
                 {on && <span className="absolute left-0 top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-full bg-primary" />}
                 <n.icon className={cn("h-[18px] w-[18px] shrink-0", on && "text-primary")} />
@@ -59,7 +59,7 @@ export const AppShell = ({ nav, active, onNavigate, topbar, footer, onSignOut, c
         <div className="space-y-2 border-t border-sidebar-border p-3">
           {!collapsed && footer}
           {onSignOut && (
-            <button onClick={onSignOut} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-sidebar-foreground/70 hover:bg-destructive/10 hover:text-destructive">
+            <button onClick={onSignOut} className="flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm text-sidebar-foreground/70 hover:bg-destructive/10 hover:text-destructive">
               <LogOut className="h-[18px] w-[18px] shrink-0" />{!collapsed && "Sign out"}
             </button>
           )}
@@ -98,7 +98,7 @@ export const AppShell = ({ nav, active, onNavigate, topbar, footer, onSignOut, c
           <div className="grid grid-cols-3 gap-2 px-4">
             {rest.map((n) => (
               <button key={n.id} onClick={() => go(n)}
-                className={cn("flex min-h-[76px] flex-col items-center justify-center gap-2 rounded-xl border border-border bg-surface-2 text-xs",
+                className={cn("flex min-h-[76px] flex-col items-center justify-center gap-2 rounded-md border border-border bg-surface-2 text-xs",
                   n.id === active ? "border-primary/50 text-primary" : "text-foreground")}>
                 <n.icon className="h-5 w-5" />{n.label}
               </button>

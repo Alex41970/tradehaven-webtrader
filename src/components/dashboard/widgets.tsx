@@ -30,7 +30,7 @@ export const Bento = ({ className, children }: { className?: string; children: R
 export const BentoHeader = ({ title, subtitle, right }: { title: string; subtitle?: string; right?: ReactNode }) => (
   <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
     <div className="min-w-0">
-      <h3 className="text-sm font-semibold text-foreground md:text-sm">{title}</h3>
+      <h3 className="font-sans text-[13px] font-medium tracking-normal text-foreground md:text-[13px]">{title}</h3>
       {subtitle && <p className="mt-0.5 text-xs text-muted-foreground">{subtitle}</p>}
     </div>
     {right && <div className="-mx-1 max-w-full overflow-x-auto px-1">{right}</div>}
@@ -52,12 +52,11 @@ export const Pill = ({ value, suffix = "%" }: { value: number; suffix?: string }
 );
 
 export const StatCard = ({ label, value, hint, icon, tone }: { label: string; value: string; hint?: ReactNode; icon?: ReactNode; tone?: "up" | "down" }) => (
-  <Bento className="flex flex-col justify-between gap-3 p-4">
+  <Bento className="flex flex-col justify-between gap-2 p-4">
     <div className="flex items-center justify-between">
       <span className="label-caps">{label}</span>
-      {icon && <span className="text-muted-foreground">{icon}</span>}
     </div>
-    <div className={cn("num truncate text-xl font-semibold md:text-2xl", tone === "up" && "text-success", tone === "down" && "text-destructive")}>{value}</div>
+    <div className={cn("num truncate text-lg font-medium md:text-xl", tone === "up" && "text-success", tone === "down" && "text-destructive")}>{value}</div>
     {hint && <div className="text-xs text-muted-foreground">{hint}</div>}
   </Bento>
 );
@@ -65,7 +64,7 @@ export const StatCard = ({ label, value, hint, icon, tone }: { label: string; va
 const ChartTip = ({ active, payload, label, money = true }: any) => {
   if (!active || !payload?.length) return null;
   return (
-    <div className="rounded-lg border border-border bg-popover px-3 py-2 text-xs shadow-lg">
+    <div className="rounded border border-border bg-popover px-2.5 py-1.5 text-[11px]">
       <div className="mb-1 text-muted-foreground">{label}</div>
       {payload.map((p: any) => (
         <div key={p.dataKey} className="num font-medium text-foreground">{money ? fmtUsd(p.value) : p.value}</div>
@@ -113,15 +112,15 @@ export const EquityChart = ({ points, equity, change }: { points: { t: number; v
         <div>
           <span className="label-caps">Total equity</span>
           <div className="mt-1 flex items-baseline gap-3">
-            <span className="num text-3xl font-semibold md:text-4xl">{fmtUsd(equity)}</span>
+            <span className="num text-2xl font-medium md:text-3xl">{fmtUsd(equity)}</span>
             <Pill value={change} />
           </div>
         </div>
-        <div className="flex rounded-lg border border-border bg-surface-2 p-0.5">
+        <div className="flex rounded border border-border p-0.5">
           {(Object.keys(RANGE_MS) as Range[]).map((r) => (
             <button key={r} onClick={() => setRange(r)}
-              className={cn("num rounded-md px-2.5 py-1 max-md:py-2 max-md:px-3 text-xs transition-colors touch-manipulation",
-                r === range ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground")}>{r}</button>
+              className={cn("num rounded-sm px-2.5 py-1 max-md:py-2 max-md:px-3 text-xs transition-colors touch-manipulation",
+                r === range ? "bg-muted text-foreground" : "text-muted-foreground hover:text-foreground")}>{r}</button>
           ))}
         </div>
       </div>
@@ -130,15 +129,15 @@ export const EquityChart = ({ points, equity, change }: { points: { t: number; v
           <AreaChart data={data} margin={{ top: 10, right: 0, left: 0, bottom: 0 }}>
             <defs>
               <linearGradient id="eqFill" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={C.amber} stopOpacity={0.35} />
+                <stop offset="0%" stopColor={C.amber} stopOpacity={0.12} />
                 <stop offset="100%" stopColor={C.amber} stopOpacity={0} />
               </linearGradient>
             </defs>
-            <CartesianGrid stroke={C.grid} strokeDasharray="3 3" vertical={false} />
+            <CartesianGrid stroke={C.grid} strokeOpacity={0.6} vertical={false} />
             <XAxis dataKey="label" tick={{ fill: C.muted, fontSize: 11 }} axisLine={false} tickLine={false} minTickGap={40} />
             <YAxis tick={{ fill: C.muted, fontSize: 11 }} axisLine={false} tickLine={false} width={64} domain={["auto", "auto"]} tickFormatter={(v) => fmtCompact(v)} />
-            <Tooltip content={<ChartTip />} cursor={{ stroke: C.amber, strokeOpacity: 0.4 }} />
-            <Area type="stepAfter" dataKey="v" stroke={C.amber} strokeWidth={2} fill="url(#eqFill)" />
+            <Tooltip content={<ChartTip />} cursor={{ stroke: C.muted, strokeDasharray: "3 3" }} />
+            <Area type="stepAfter" dataKey="v" stroke={C.amber} strokeWidth={1.5} fill="url(#eqFill)" activeDot={{ r: 3, strokeWidth: 0 }} />
           </AreaChart>
         </ResponsiveContainer>
       </div>
@@ -166,12 +165,12 @@ export const DailyPnlChart = ({ trades }: { trades: Trade[] }) => {
         {has ? (
           <ResponsiveContainer>
             <BarChart data={data}>
-              <CartesianGrid stroke={C.grid} strokeDasharray="3 3" vertical={false} />
+              <CartesianGrid stroke={C.grid} strokeOpacity={0.6} vertical={false} />
               <XAxis dataKey="label" tick={{ fill: C.muted, fontSize: 10 }} axisLine={false} tickLine={false} minTickGap={20} />
               <YAxis tick={{ fill: C.muted, fontSize: 10 }} axisLine={false} tickLine={false} width={52} tickFormatter={(v) => fmtCompact(v)} />
               <ReferenceLine y={0} stroke={C.grid} />
               <Tooltip content={<ChartTip />} cursor={{ fill: "hsl(var(--muted) / 0.5)" }} />
-              <Bar dataKey="v" radius={[4, 4, 4, 4]}>
+              <Bar dataKey="v" radius={[1, 1, 1, 1]} maxBarSize={18}>
                 {data.map((d, i) => <Cell key={i} fill={d.v >= 0 ? C.green : C.red} />)}
               </Bar>
             </BarChart>
@@ -182,49 +181,45 @@ export const DailyPnlChart = ({ trades }: { trades: Trade[] }) => {
   );
 };
 
-export const Donut = ({ title, subtitle, data, center }: { title: string; subtitle?: string; data: { name: string; value: number }[]; center: ReactNode }) => {
-  const palette = [C.amber, C.green, C.cyan, C.violet, C.red];
-  const has = data.some((d) => d.value > 0);
+/** Exposure by market as horizontal share bars (replaces the old donut). */
+export const Donut = ({ title, subtitle, data }: { title: string; subtitle?: string; data: { name: string; value: number }[]; center?: ReactNode }) => {
+  const total = data.reduce((s, d) => s + (d.value || 0), 0);
+  const rows = [...data].filter((d) => d.value > 0).sort((x, y) => y.value - x.value).slice(0, 6);
   return (
     <Bento className="flex flex-col">
-      <BentoHeader title={title} subtitle={subtitle} />
-      {has ? (
-        <div className="flex items-center gap-4">
-          <div className="relative h-[140px] w-[140px] shrink-0">
-            <ResponsiveContainer>
-              <PieChart>
-                <Pie data={data} dataKey="value" innerRadius={48} outerRadius={66} paddingAngle={3} stroke="none">
-                  {data.map((_, i) => <Cell key={i} fill={palette[i % palette.length]} />)}
-                </Pie>
-              </PieChart>
-            </ResponsiveContainer>
-            <div className="absolute inset-0 flex flex-col items-center justify-center">{center}</div>
-          </div>
-          <ul className="min-w-0 flex-1 space-y-2 text-xs">
-            {data.map((d, i) => (
-              <li key={d.name} className="flex items-center justify-between gap-2">
-                <span className="flex min-w-0 items-center gap-2 truncate text-muted-foreground">
-                  <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: palette[i % palette.length] }} />{d.name}
-                </span>
-                <span className="num text-foreground">{d.value}</span>
+      <BentoHeader title={title} subtitle={subtitle} right={total > 0 ? <span className="num text-xs text-muted-foreground">{total} total</span> : undefined} />
+      {rows.length ? (
+        <ul className="space-y-3 text-xs">
+          {rows.map((d) => {
+            const pct = (d.value / total) * 100;
+            return (
+              <li key={d.name}>
+                <div className="mb-1 flex justify-between gap-2"><span className="truncate text-foreground">{d.name}</span><span className="num text-muted-foreground">{d.value} · {pct.toFixed(0)}%</span></div>
+                <div className="h-1 w-full rounded-sm bg-muted"><div className="h-full rounded-sm bg-primary" style={{ width: `${pct}%` }} /></div>
               </li>
-            ))}
-          </ul>
-        </div>
-      ) : <EmptyState text="Nothing to show yet" />}
+            );
+          })}
+        </ul>
+      ) : <EmptyState text="No open positions" />}
     </Bento>
   );
 };
 
 export const MarginGauge = ({ level }: { level: number | null }) => {
-  const pct = level === null ? 100 : Math.min(level / 1000, 1) * 100;
+  const max = 500;
+  const pct = level === null ? 100 : Math.min(level / max, 1) * 100;
   const tone = level === null || level > 200 ? "bg-success" : level > 100 ? "bg-warning" : "bg-destructive";
   return (
-    <div className="space-y-1.5">
-      <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
-        <div className={cn("h-full rounded-full transition-all", tone)} style={{ width: `${pct}%` }} />
+    <div className="space-y-1">
+      <div className="relative h-1.5 w-full rounded-sm bg-muted">
+        <div className={cn("h-full rounded-sm transition-all", tone)} style={{ width: `${pct}%` }} />
+        <span className="absolute -top-0.5 h-2.5 w-px bg-destructive" style={{ left: `${(50 / max) * 100}%` }} />
+        <span className="absolute -top-0.5 h-2.5 w-px bg-warning" style={{ left: `${(100 / max) * 100}%` }} />
       </div>
-      <div className="flex justify-between text-[10px] text-muted-foreground"><span>Stop-out</span><span>Safe</span></div>
+      <div className="relative h-3 text-[10px] text-muted-foreground">
+        <span className="absolute -translate-x-1/2" style={{ left: `${(100 / max) * 100}%` }}>Call 100</span>
+        <span className="absolute right-0">500%+</span>
+      </div>
     </div>
   );
 };
@@ -237,7 +232,7 @@ export const ActivityList = ({ items, onClick }: { items: TransactionHistory[]; 
         {items.slice(0, 6).map((t) => (
           <li key={t.id}>
             <button onClick={() => onClick(t)} className="flex w-full items-center gap-3 rounded-lg px-2 py-2 text-left transition-colors hover:bg-muted/60">
-              <span className={cn("flex h-8 w-8 items-center justify-center rounded-lg",
+              <span className={cn("flex h-7 w-7 items-center justify-center rounded",
                 t.type === "deposit" ? "bg-success/10 text-success" : "bg-chart-3/10 text-chart-3")}>
                 {t.type === "deposit" ? <ArrowDownLeft className="h-4 w-4" /> : <ArrowUpRight className="h-4 w-4" />}
               </span>

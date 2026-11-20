@@ -141,9 +141,9 @@ const Dashboard = () => {
     <PriceAlertsProvider>
     <AppShell nav={nav} active={view} onNavigate={setView} topbar={topbar} mobilePrimary={["overview", "trade", "portfolio", "history"]} onSignOut={() => signOut()}
       dense={view === "trade"} autoCollapse={view === "trade"}
-      footer={<div className="rounded-xl border border-border bg-surface-2 p-3 text-xs">
+      footer={<div className="rounded-md border border-border p-3 text-xs">
         <div className="truncate font-medium">{name}</div>
-        <div className="mt-0.5 flex items-center gap-1 text-muted-foreground"><ShieldCheck className="h-3 w-3 text-primary" />ID {user?.id?.slice(-8).toUpperCase()}</div>
+        <div className="mt-0.5 flex items-center gap-1 text-muted-foreground"><ShieldCheck className="h-3 w-3" />ID {user?.id?.slice(-8).toUpperCase()}</div>
       </div>}>
       {realTimeEquity > 0 && totalUsedMargin > 0 && (
         <MarginCallWarning equity={realTimeEquity} usedMargin={totalUsedMargin} className="mb-4" />
@@ -161,13 +161,13 @@ const Dashboard = () => {
 
       {view === "overview" && (
         loading ? (
-          <div className="grid gap-4 md:grid-cols-4">{Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} className={cn("h-32 rounded-2xl", i === 0 && "md:col-span-3 md:row-span-2 md:h-auto")} />)}</div>
+          <div className="grid gap-4 md:grid-cols-4">{Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} className={cn("h-32 rounded-md", i === 0 && "md:col-span-3 md:row-span-2 md:h-auto")} />)}</div>
         ) : (
-          <div className="mx-auto max-w-[1500px] space-y-4">
+          <div className="mx-auto max-w-[1500px] space-y-3">
             <div className="flex flex-wrap items-end justify-between gap-3">
               <div>
-                <p className="text-xs text-muted-foreground">Welcome back</p>
-                <h1 className="text-2xl font-semibold md:text-3xl lg:text-3xl">{name}</h1>
+                <h1 className="font-sans text-lg font-medium tracking-normal md:text-xl lg:text-xl">Account overview</h1>
+                <p className="text-xs text-muted-foreground">{name} · {new Date().toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" })}</p>
               </div>
               <div className="flex gap-2">
                 <Button variant="outline" size="sm" onClick={() => setShowWithdraw(true)}><Minus className="mr-1 h-4 w-4" />Withdraw</Button>
@@ -175,7 +175,7 @@ const Dashboard = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+            <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
               <div className="col-span-2 lg:col-span-3 lg:row-span-2">
                 <EquityChart points={equityCurve} equity={realTimeEquity} change={monthChange} />
               </div>
@@ -184,21 +184,21 @@ const Dashboard = () => {
                 icon={<Activity className="h-4 w-4" />} hint={`${openTrades.length} open position${openTrades.length === 1 ? "" : "s"}`} />
               <StatCard label="Free margin" value={fmtUsd(realTimeFreeMargin)} hint={`Used ${fmtUsd(totalUsedMargin)}`} />
               <Bento className="flex flex-col justify-between gap-3 p-4">
-                <div className="flex items-center justify-between"><span className="label-caps">Margin level</span><Gauge className="h-4 w-4 text-muted-foreground" /></div>
-                <div className="num text-xl font-semibold md:text-2xl">{marginLevel === null ? "No exposure" : marginLevel > 9999 ? ">9999%" : `${marginLevel.toFixed(0)}%`}</div>
+                <div className="flex items-center justify-between"><span className="label-caps">Margin level</span></div>
+                <div className="num text-lg font-medium md:text-xl">{marginLevel === null ? "No exposure" : marginLevel > 9999 ? ">9999%" : `${marginLevel.toFixed(0)}%`}</div>
                 <MarginGauge level={marginLevel} />
               </Bento>
               <StatCard label="Win rate" value={`${metrics.winRate.toFixed(1)}%`} hint={`${metrics.profitableTrades}W · ${metrics.losingTrades}L`} />
               <StatCard label="Profit factor" value={metrics.profitFactor.toFixed(2)} hint={`Max drawdown ${metrics.maximumDrawdownPercent.toFixed(1)}%`} />
             </div>
 
-            <div className="grid gap-4 lg:grid-cols-3">
+            <div className="grid gap-3 lg:grid-cols-3">
               <div className="min-w-0 lg:col-span-2"><DailyPnlChart trades={trades} /></div>
               <Donut title="Exposure" subtitle="Open positions by market" data={exposure}
                 center={<><span className="num text-xl font-semibold">{openTrades.length}</span><span className="text-[10px] text-muted-foreground">open</span></>} />
             </div>
 
-            <div className="grid gap-4 lg:grid-cols-3">
+            <div className="grid gap-3 lg:grid-cols-3">
               <Bento className="lg:col-span-2">
                 <BentoHeader title="Open positions" subtitle="Live profit and loss"
                   right={<Button variant="ghost" size="sm" onClick={() => setView("portfolio")}>View all<ArrowRight className="ml-1 h-3.5 w-3.5" /></Button>} />
@@ -252,7 +252,7 @@ const Dashboard = () => {
               </Bento>
             </div>
 
-            <div className="grid gap-4 lg:grid-cols-3">
+            <div className="grid gap-3 lg:grid-cols-3">
               <ActivityList items={transactionHistory} onClick={setSelectedTx} />
               <Donut title="Results" subtitle="Closed trades" center={<><span className="num text-xl font-semibold">{metrics.winRate.toFixed(0)}%</span><span className="text-[10px] text-muted-foreground">win rate</span></>}
                 data={[{ name: "Winning", value: metrics.profitableTrades }, { name: "Losing", value: metrics.losingTrades }]} />
