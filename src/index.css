@@ -169,3 +169,8 @@
 
 /* Charts are built in-app from our own price feed — hide the chart library's badge. */
 #tv-attr-logo { display: none !important; }
+
+@layer base {
+  html { -webkit-tap-highlight-color: transparent; }
+  button, [role="button"], a { touch-action: manipulation; }
+}

@@ -57,6 +57,15 @@ export const WebTrader = ({ initialSymbol }: { initialSymbol?: string } = {}) =>
   const pickedInitial = useRef(false);
   const [mobileView, setMobileView] = useState<"quotes" | "chart">(initialSymbol ? "chart" : "quotes");
   const [orderSheet, setOrderSheet] = useState(false);
+  const tapStart = useRef<{ x: number; y: number; t: number } | null>(null);
+  const selectAsset = useCallback((asset: any) => { setSelectedAsset(asset); setMobileView("chart"); }, []);
+  // Phone Buy/Sell needs a second tap to confirm, unless the trader turned on one-tap trading.
+  const [armedSide, setArmedSide] = useState<"BUY" | "SELL" | null>(null);
+  const [oneTap, setOneTap] = useState(() => typeof window !== "undefined" && localStorage.getItem("mobileOneTap") === "1");
+  useEffect(() => { if (!armedSide) return; const t = setTimeout(() => setArmedSide(null), 3000); return () => clearTimeout(t); }, [armedSide]);
+  const mobileTrade = (side: "BUY" | "SELL") => {
+    if (oneTap || armedSide === side) { setArmedSide(null); handleTrade(side); } else setArmedSide(side);
+  };
 
   // Panel widths the trader can drag and have remembered.
   const marketsPanel = useResizableWidth("markets", 220, 180, 420);
@@ -295,32 +304,26 @@ export const WebTrader = ({ initialSymbol }: { initialSymbol?: string } = {}) =>
   };
 
   // Asset row component for market watch
-  const AssetRow = React.memo(({ asset }: { asset: any }) => {
+  // Rendered as a plain function (not a component) so rows aren't remounted on every price tick.
+  const renderAssetRow = (asset: any) => {
     const isFavorited = inAnyList(asset.id);
     const closed = !isMarketOpen(asset.symbol, asset.category);
-    
-    const handleAssetSelect = useCallback((e: React.MouseEvent) => {
-      e.preventDefault();
-      setSelectedAsset(asset);
-      setMobileView("chart");
-    }, [asset]);
-
-    const handlePointerDown = useCallback((e: React.PointerEvent) => {
-      if (e.target === e.currentTarget || (e.target as Element).closest('.asset-row-main')) {
-        setSelectedAsset(asset);
-        setMobileView("chart");
-      }
-    }, [asset]);
-    
     return (
-      <div 
-        className={`px-2.5 py-2 max-md:py-3 rounded-lg border cursor-pointer transition-colors touch-manipulation ${
+      <div key={asset.id}
+        className={`px-2.5 py-2 max-md:py-3 rounded-lg border cursor-pointer transition-colors touch-manipulation select-none ${
           selectedAsset?.id === asset.id 
             ? 'bg-primary/10 border-primary/40' 
             : 'border-transparent hover:bg-muted/60'
         } ${closed ? 'opacity-50' : ''}`}
-        onClick={handleAssetSelect}
-        onPointerDown={handlePointerDown}
+        onPointerDown={(e) => { tapStart.current = { x: e.clientX, y: e.clientY, t: Date.now() }; }}
+        onPointerCancel={() => { tapStart.current = null; }}
+        onClick={(e) => {
+          // Only a real tap opens the market: a scroll/swipe that began on the row never does.
+          const st = tapStart.current; tapStart.current = null;
+          if (st && (Math.abs(e.clientX - st.x) > 8 || Math.abs(e.clientY - st.y) > 8 || Date.now() - st.t > 600)) return;
+          selectAsset(asset);
+        }}
+        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); selectAsset(asset); } }}
         role="button"
         tabIndex={0}
       >
@@ -330,7 +333,7 @@ export const WebTrader = ({ initialSymbol }: { initialSymbol?: string } = {}) =>
               <span className="font-medium text-sm truncate">{asset.symbol}</span>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-6 w-6 pointer-events-auto" aria-label="Add to watchlist"
+                  <Button variant="ghost" size="icon" className="h-6 w-6 max-md:h-9 max-md:w-9 -my-1.5 pointer-events-auto" aria-label="Add to watchlist"
                     onClick={(e) => e.stopPropagation()} onPointerDown={(e) => e.stopPropagation()}>
                     {isFavorited ? <StarIcon className="h-3 w-3 fill-current text-primary" /> : <Star className="h-3 w-3" />}
                   </Button>
@@ -363,7 +366,7 @@ export const WebTrader = ({ initialSymbol }: { initialSymbol?: string } = {}) =>
         </div>
       </div>
     );
-  });
+  };
 
   if (assetsLoading || profileLoading) {
     return <WebTraderSkeleton />;
@@ -399,19 +402,19 @@ export const WebTrader = ({ initialSymbol }: { initialSymbol?: string } = {}) =>
           <div className="-mx-2 flex gap-1.5 overflow-x-auto px-2 pb-1">
             {[["all", "All"], ["crypto", "Crypto"], ["forex", "Forex"], ["stocks", "Stocks"], ["indices", "Indices"], ["commodities", "Commodities"]].map(([v, l]) => (
               <button key={v} onClick={() => setCategoryFilter(v)}
-                className={`h-9 shrink-0 rounded-full border px-3.5 text-xs ${categoryFilter === v ? "border-primary bg-primary/15 text-primary" : "border-border text-muted-foreground"}`}>{l}</button>
+                className={`h-10 shrink-0 rounded-full border px-4 text-xs touch-manipulation ${categoryFilter === v ? "border-primary bg-primary/15 text-primary" : "border-border text-muted-foreground"}`}>{l}</button>
             ))}
           </div>
           {lists.length > 0 && (
             <div className="-mx-2 flex gap-1.5 overflow-x-auto px-2">
               {[{ id: "all", name: "All markets" }, ...lists].map((l) => (
                 <button key={l.id} onClick={() => setListTab(l.id)}
-                  className={`h-8 shrink-0 rounded-md px-3 text-xs ${listTab === l.id ? "bg-muted text-foreground" : "text-muted-foreground"}`}>{l.name}</button>
+                  className={`h-10 shrink-0 rounded-md px-3 text-xs touch-manipulation ${listTab === l.id ? "bg-muted text-foreground" : "text-muted-foreground"}`}>{l.name}</button>
               ))}
             </div>
           )}
           <div className="space-y-1">
-            {visibleAssets.length > 0 ? visibleAssets.map((asset) => <AssetRow key={asset.id} asset={asset} />)
+            {visibleAssets.length > 0 ? visibleAssets.map((asset) => renderAssetRow(asset))
               : <p className="py-10 text-center text-sm text-muted-foreground">{activeList ? "Use the star on any market to add it here" : "No markets found"}</p>}
           </div>
         </div>
@@ -433,7 +436,7 @@ export const WebTrader = ({ initialSymbol }: { initialSymbol?: string } = {}) =>
             <div className={`num text-xs ${chg >= 0 ? "text-success" : "text-destructive"}`}>{chg >= 0 ? "+" : ""}{chg.toFixed(2)}%</div>
           </div>
         </div>
-        <div className="h-[calc(100dvh-330px)] min-h-[300px]">
+        <div className="h-[calc(100dvh-340px)] min-h-[280px] touch-none overscroll-contain">
           <TradingChart key={selectedAsset.id} symbol={selectedAsset.symbol} category={selectedAsset.category} name={selectedAsset.name}
             toolbarExtra={<PriceAlertButton symbol={selectedAsset.symbol} price={serverPrices.get(selectedAsset.symbol) ?? price} />} />
         </div>
@@ -444,6 +447,11 @@ export const WebTrader = ({ initialSymbol }: { initialSymbol?: string } = {}) =>
         <div className="fixed inset-x-0 bottom-[calc(56px+env(safe-area-inset-bottom))] z-30 border-t border-border bg-background/95 px-2 pb-2 pt-2 backdrop-blur-xl">
           <div className="mb-1.5 flex items-center justify-between text-[11px] text-muted-foreground">
             <span>Margin <span className="num text-foreground">${calculateMargin.toFixed(2)}</span> · 1:{leverage}</span>
+            <label className="flex h-7 items-center gap-1.5">
+              <input type="checkbox" className="h-4 w-4 accent-primary" checked={oneTap}
+                onChange={(e) => { setOneTap(e.target.checked); localStorage.setItem("mobileOneTap", e.target.checked ? "1" : "0"); }} />
+              One-tap
+            </label>
             <button className="flex h-7 items-center gap-1 text-primary" onClick={() => setOrderSheet(true)}>
               <SlidersHorizontal className="h-3.5 w-3.5" />New order
             </button>
@@ -456,22 +464,22 @@ export const WebTrader = ({ initialSymbol }: { initialSymbol?: string } = {}) =>
             </button>
           ) : (
           <div className="grid grid-cols-[1fr_auto_1fr] items-stretch gap-2">
-            <button disabled={isExecuting} onClick={() => handleTrade("SELL")}
-              className="flex h-14 flex-col items-center justify-center rounded-lg bg-destructive text-destructive-foreground disabled:opacity-50">
-              <span className="text-[10px] font-semibold uppercase tracking-wider">Sell</span>
+            <button disabled={isExecuting} onClick={() => mobileTrade("SELL")}
+              className={`flex h-14 flex-col items-center justify-center rounded-lg bg-destructive text-destructive-foreground disabled:opacity-50 touch-manipulation ${armedSide === "SELL" ? "ring-2 ring-offset-2 ring-offset-background ring-destructive" : ""}`}>
+              <span className="text-[10px] font-semibold uppercase tracking-wider">{armedSide === "SELL" ? `Tap to confirm Sell` : "Sell"}</span>
               <span className="num text-base font-bold">{fmtP(price)}</span>
             </button>
-            <div className="flex w-[118px] items-center rounded-lg border border-border">
-              <button className="flex h-full w-9 items-center justify-center" onClick={() => setLots(amount - step)} aria-label="Less lots"><Minus className="h-4 w-4" /></button>
-              <input type="number" inputMode="decimal" step="0.01" min={minLots} value={amount}
+            <div className="flex w-[124px] items-center rounded-lg border border-border">
+              <button className="flex h-full w-10 items-center justify-center touch-manipulation" onClick={() => setLots(amount - step)} aria-label="Less lots"><Minus className="h-4 w-4" /></button>
+              <input type="text" inputMode="decimal" value={amount}
                 onChange={(e) => { const v = parseFloat(e.target.value); if (Number.isFinite(v)) setAmount(v); }}
                 onBlur={() => setLots(amount)} aria-label="Lots"
                 className="num h-full w-full min-w-0 bg-transparent text-center text-base outline-none" />
-              <button className="flex h-full w-9 items-center justify-center" onClick={() => setLots(amount + step)} aria-label="More lots"><Plus className="h-4 w-4" /></button>
+              <button className="flex h-full w-10 items-center justify-center touch-manipulation" onClick={() => setLots(amount + step)} aria-label="More lots"><Plus className="h-4 w-4" /></button>
             </div>
-            <button disabled={isExecuting} onClick={() => handleTrade("BUY")}
-              className="flex h-14 flex-col items-center justify-center rounded-lg bg-success text-success-foreground disabled:opacity-50">
-              <span className="text-[10px] font-semibold uppercase tracking-wider">Buy</span>
+            <button disabled={isExecuting} onClick={() => mobileTrade("BUY")}
+              className={`flex h-14 flex-col items-center justify-center rounded-lg bg-success text-success-foreground disabled:opacity-50 touch-manipulation ${armedSide === "BUY" ? "ring-2 ring-offset-2 ring-offset-background ring-success" : ""}`}>
+              <span className="text-[10px] font-semibold uppercase tracking-wider">{armedSide === "BUY" ? `Tap to confirm Buy` : "Buy"}</span>
               <span className="num text-base font-bold">{fmtP(price)}</span>
             </button>
           </div>
@@ -571,7 +579,7 @@ export const WebTrader = ({ initialSymbol }: { initialSymbol?: string } = {}) =>
                       <ScrollArea className="h-[420px] lg:h-[calc(100vh-280px)] [&_[data-radix-scroll-area-viewport]>div]:!block">
                         <div className="space-y-1 pr-3">
                           {visibleAssets.length > 0 ? (
-                            visibleAssets.map((asset) => <AssetRow key={asset.id} asset={asset} />)
+                            visibleAssets.map((asset) => renderAssetRow(asset))
                           ) : (
                             <div className="text-center py-8 text-muted-foreground">
                               <Star className="h-8 w-8 mx-auto mb-2 opacity-50" />
