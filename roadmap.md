@@ -25,3 +25,17 @@
 - [x] Admin dashboard redesign (sidebar sections, overview charts)
 - [x] Landing page + sign-in redesign
 - [x] Replace AI-look hero background with professional financial-district photo
+
+## Credit (company money: tradable, not withdrawable)
+- [ ] Database: credit pot, ledger, single source for equity / free margin / withdrawable
+- [ ] Rules: credit covers negative balance only when flat; negative-balance setting after that
+- [ ] Admin: add / remove / set credit with reason, margin-risk confirmation, history
+- [ ] Withdrawals: credit and margin in use excluded, checked on request and on approval
+- [ ] Money-integrity gaps found on the way (direct trade edits, double approval, leverage/size checks, duplicate order job)
+- [ ] Client screens: dashboard, trade ticket, positions, withdraw, wallet activity
+- [ ] Live-trading service: credit in updates, own-trade check on close
+- [ ] Tests: account maths (vitest) + database scenarios + browser check
+- [ ] Later: credit expiry dates
+- [ ] Later: automatic credit on sign-up or deposit (bonus %), set per promo code
+- [ ] Later: option to remove credit automatically when a client withdraws
+- [ ] Later: enforce each market's own leverage limit (today every market allows up to 100x)

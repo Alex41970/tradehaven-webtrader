@@ -305,6 +305,56 @@ export type Database = {
         }
         Relationships: []
       }
+      credit_transactions: {
+        Row: {
+          amount: number
+          balance_after: number
+          balance_change: number
+          created_at: string
+          credit_after: number
+          id: string
+          performed_by: string | null
+          reason: string | null
+          trade_id: string | null
+          type: string
+          user_id: string
+        }
+        Insert: {
+          amount?: number
+          balance_after: number
+          balance_change?: number
+          created_at?: string
+          credit_after: number
+          id?: string
+          performed_by?: string | null
+          reason?: string | null
+          trade_id?: string | null
+          type: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          balance_after?: number
+          balance_change?: number
+          created_at?: string
+          credit_after?: number
+          id?: string
+          performed_by?: string | null
+          reason?: string | null
+          trade_id?: string | null
+          type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "credit_transactions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       deposit_requests: {
         Row: {
           admin_notes: string | null
@@ -929,6 +979,7 @@ export type Database = {
           available_margin: number
           balance: number
           created_at: string
+          credit: number
           email: string | null
           equity: number
           first_name: string | null
@@ -952,6 +1003,7 @@ export type Database = {
           available_margin?: number
           balance?: number
           created_at?: string
+          credit?: number
           email?: string | null
           equity?: number
           first_name?: string | null
@@ -975,6 +1027,7 @@ export type Database = {
           available_margin?: number
           balance?: number
           created_at?: string
+          credit?: number
           email?: string | null
           equity?: number
           first_name?: string | null
@@ -1139,6 +1192,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      account_open_totals: {
+        Args: { _user_id: string }
+        Returns: {
+          floating: number
+          used: number
+        }[]
+      }
+      account_withdrawable: { Args: { _user_id: string }; Returns: number }
       activate_bot_license: {
         Args: { _license_key: string; _user_id: string }
         Returns: Json
@@ -1172,6 +1233,17 @@ export type Database = {
         Args: {
           _admin_id: string
           _amount: number
+          _operation: string
+          _reason?: string
+          _user_id: string
+        }
+        Returns: Json
+      }
+      admin_modify_user_credit: {
+        Args: {
+          _admin_id: string
+          _amount: number
+          _force?: boolean
           _operation: string
           _reason?: string
           _user_id: string
@@ -1228,10 +1300,6 @@ export type Database = {
             }
             Returns: number
           }
-      check_and_liquidate_positions: {
-        Args: { _user_id: string }
-        Returns: Json
-      }
       close_trade_with_pnl: {
         Args: { p_close_price: number; p_trade_id: string }
         Returns: Json
@@ -1306,6 +1374,7 @@ export type Database = {
         Returns: Database["public"]["Enums"]["app_role"]
       }
       get_valid_bot_status: { Args: { _user_id: string }; Returns: Json }
+      get_withdrawable_amount: { Args: { _user_id: string }; Returns: number }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -1338,7 +1407,6 @@ export type Database = {
         }
         Returns: Json
       }
-      recalculate_user_margins: { Args: { _user_id: string }; Returns: Json }
       release_coordinator_lock: {
         Args: { p_instance_id: string }
         Returns: boolean
@@ -1348,6 +1416,10 @@ export type Database = {
         Returns: boolean
       }
       run_system_health_check: { Args: never; Returns: Json }
+      settle_account: {
+        Args: { _trade_id?: string; _user_id: string }
+        Returns: Json
+      }
       signup_requires_promo: { Args: never; Returns: boolean }
       symbols_missing_history: {
         Args: { _since: string }

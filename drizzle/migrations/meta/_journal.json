@@ -106,6 +106,34 @@
       "when": 1795090763925,
       "tag": "0014_fix_closed_market_check",
       "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1795539157201,
+      "tag": "0015_credit_core",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1795539207373,
+      "tag": "0016_credit_trading_rules",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1795539515514,
+      "tag": "0017_credit_admin_tools",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1795539567684,
+      "tag": "0018_credit_withdrawals_and_housekeeping",
+      "breakpoints": true
     }
   ]
 }
