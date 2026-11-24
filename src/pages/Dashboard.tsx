@@ -20,17 +20,18 @@ import { ContactSupportModal } from "@/components/ContactSupportModal";
 import { MarginCallWarning } from "@/components/MarginCallWarning";
 import { AppShell, NavItem } from "@/components/layout/AppShell";
 import {
-  Bento, BentoHeader, StatCard, EquityChart, DailyPnlChart, Donut, MarginGauge, ActivityList, EmptyState, Pill,
+  Bento, BentoHeader, StatCard, BalanceCard, BalanceBreakdown, EquityChart, DailyPnlChart, Donut, MarginGauge, ActivityList, EmptyState, Pill,
   fmtUsd, fmtSigned, useEquityCurve,
 } from "@/components/dashboard/widgets";
 import {
-  LayoutGrid, CandlestickChart, Briefcase, History, Wallet, Plus, Minus, Bot, MessageCircle, Activity, ArrowRight, Gauge, Coins, ShieldCheck,
+  LayoutGrid, CandlestickChart, Briefcase, History, Wallet, Plus, Minus, Bot, MessageCircle, Activity, ArrowRight, ChevronDown, ShieldCheck,
 } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useSharedUserProfile } from "@/hooks/useSharedUserProfile";
 import { useTrades } from "@/hooks/useTrades";
 import { useAssets } from "@/hooks/useAssets";
 import { useRealTimePrices } from "@/hooks/useRealTimePrices";
-import { useRealtimePnL } from "@/hooks/useRealtimePnL";
+import { useBotTradeNotifications } from "@/hooks/useBotTradeNotifications";
 import { useProfessionalMetrics } from "@/hooks/usePerformanceMetrics";
 import { useBotStatus } from "@/hooks/useBotStatus";
 import { useTransactionHistory, TransactionHistory } from "@/hooks/useTransactionHistory";
@@ -51,19 +52,21 @@ const Dashboard = () => {
   const setView = (v: string) => setParams(v === "overview" ? {} : { view: v });
 
   const { trades, openTrades } = useTrades();
-  const { profile, loading: profileLoading } = useSharedUserProfile(openTrades.length > 0);
+  const { profile, loading: profileLoading } = useSharedUserProfile();
   const { assets, loading: assetsLoading } = useAssets();
   const { getUpdatedAssets } = useRealTimePrices();
   const { botStatus, activateLicense, pauseBot, resumeBot, disconnectBot } = useBotStatus();
-  const { realTimeBalance, realTimeEquity, realTimeFreeMargin, totalUsedMargin, credit, marginLevel, withdrawable } = useRealtimeAccountMetrics();
+  // One set of figures for the whole page: the headline balance is own funds + credit
+  const {
+    realTimeBalance, credit, totalBalance, realTimeEquity, realTimeFreeMargin, totalUsedMargin, marginLevel, withdrawable,
+    tradePnL, openPnL: totalPnL,
+  } = useRealtimeAccountMetrics();
   const { metrics } = useProfessionalMetrics(trades, realTimeEquity);
   const { transactionHistory, creditHistory } = useTransactionHistory();
-  // Credit is shown once the account has ever had any, so a used-up credit still reads $0.00
-  const showCredit = credit > 0 || creditHistory.length > 0;
+  useBotTradeNotifications(botStatus.permissions?.settings);
 
   const updatedAssets = useMemo(() => getUpdatedAssets(assets), [assets, getUpdatedAssets]);
-  const { tradePnL, totalPnL } = useRealtimePnL(trades, updatedAssets);
-  const equityCurve = useEquityCurve(realTimeBalance + credit, realTimeEquity, trades, transactionHistory, creditHistory);
+  const equityCurve = useEquityCurve(totalBalance, realTimeEquity, trades, transactionHistory, creditHistory);
 
   const [botModalOpen, setBotModalOpen] = useState(false);
   const [showPermissions, setShowPermissions] = useState(false);
@@ -107,28 +110,60 @@ const Dashboard = () => {
   const name = profile?.first_name ? `${profile.first_name}${profile.surname ? " " + profile.surname : ""}` : user?.email?.split("@")[0];
   const loading = profileLoading || assetsLoading;
 
+  const marginText = marginLevel === null ? "—" : marginLevel > 9999 ? ">9999%" : `${marginLevel.toFixed(0)}%`;
+  const topLabel = "flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-muted-foreground";
+  const topTrigger = "min-w-0 rounded-sm text-left outline-none focus-visible:ring-1 focus-visible:ring-ring";
+
+  // Opens from the balance (desktop) or from equity (phones): what the balance is made of, then the live figures
+  const accountPanel = (
+    <PopoverContent align="start" sideOffset={10} className="w-72 p-0">
+      <div className="p-3.5">
+        <div className="mb-2.5 flex items-baseline justify-between gap-3">
+          <span className="label-caps">Balance</span>
+          <span className="num text-sm font-medium">{fmtUsd(totalBalance)}</span>
+        </div>
+        <BalanceBreakdown balance={realTimeBalance} credit={credit} />
+      </div>
+      <dl className="space-y-1.5 border-t border-border p-3.5 text-xs">
+        {[["Equity", fmtUsd(realTimeEquity)], ["Free margin", fmtUsd(realTimeFreeMargin)], ["Margin level", marginText]].map(([l, v]) => (
+          <div key={l} className="flex items-center justify-between gap-3">
+            <dt className="text-muted-foreground">{l}</dt><dd className="num">{v}</dd>
+          </div>
+        ))}
+      </dl>
+    </PopoverContent>
+  );
+
   const topbar = (
     <div className="flex w-full items-center gap-4">
       <div className="hidden min-w-0 items-center gap-6 lg:flex">
-        {[
-          ["Balance", fmtUsd(realTimeBalance)],
-          ...(showCredit ? [["Credit", fmtUsd(credit)]] : []),
-          ["Equity", fmtUsd(realTimeEquity)],
-          ["Free margin", fmtUsd(realTimeFreeMargin)],
-          ["Margin level", marginLevel === null ? "—" : marginLevel > 9999 ? ">9999%" : `${marginLevel.toFixed(0)}%`],
-        ].map(([l, v]) => (
+        <Popover>
+          <PopoverTrigger className={topTrigger} aria-label="Balance details">
+            <div className={topLabel}>
+              Balance
+              {credit > 0 && <span className="num rounded-sm bg-primary/10 px-1 normal-case tracking-normal text-primary">incl. {fmtUsd(credit)} credit</span>}
+              <ChevronDown className="h-3 w-3" />
+            </div>
+            <div className="num truncate text-sm font-medium">{fmtUsd(totalBalance)}</div>
+          </PopoverTrigger>
+          {accountPanel}
+        </Popover>
+        {[["Equity", fmtUsd(realTimeEquity)], ["Free margin", fmtUsd(realTimeFreeMargin)], ["Margin level", marginText]].map(([l, v]) => (
           <div key={l} className="min-w-0">
-            <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{l}</div>
+            <div className={topLabel}>{l}</div>
             <div className="num truncate text-sm font-medium">{v}</div>
           </div>
         ))}
       </div>
-      <div className="min-w-0 lg:hidden">
-        <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Equity</div>
-        <div className="num truncate text-sm font-medium">{fmtUsd(realTimeEquity)}</div>
-      </div>
+      <Popover>
+        <PopoverTrigger className={cn(topTrigger, "lg:hidden")} aria-label="Account details">
+          <div className={topLabel}>Equity<ChevronDown className="h-3 w-3" /></div>
+          <div className="num truncate text-sm font-medium">{fmtUsd(realTimeEquity)}</div>
+        </PopoverTrigger>
+        {accountPanel}
+      </Popover>
       <div className="hidden min-w-0 sm:block lg:hidden">
-        <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Free margin</div>
+        <div className={topLabel}>Free margin</div>
         <div className="num truncate text-sm font-medium">{fmtUsd(realTimeFreeMargin)}</div>
       </div>
       <div className="ml-auto flex items-center gap-1 md:gap-2">
@@ -178,11 +213,10 @@ const Dashboard = () => {
             </div>
 
             <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-              <div className={cn("col-span-2 lg:col-span-3", showCredit ? "lg:row-span-3" : "lg:row-span-2")}>
+              <div className="col-span-2 lg:col-span-3 lg:row-span-2">
                 <EquityChart points={equityCurve} equity={realTimeEquity} change={monthChange} />
               </div>
-              <StatCard label="Balance" value={fmtUsd(realTimeBalance)} icon={<Coins className="h-4 w-4" />} hint={showCredit ? "Your own money" : "Settled cash"} />
-              {showCredit && <StatCard label="Credit" value={fmtUsd(credit)} hint="For trading only · cannot be withdrawn" />}
+              <BalanceCard balance={realTimeBalance} credit={credit} className="col-span-2 lg:col-span-1" />
               <StatCard label="Open P&L" value={fmtSigned(totalPnL || 0)} tone={(totalPnL || 0) >= 0 ? "up" : "down"}
                 icon={<Activity className="h-4 w-4" />} hint={`${openTrades.length} open position${openTrades.length === 1 ? "" : "s"}`} />
               <StatCard label="Free margin" value={fmtUsd(realTimeFreeMargin)} hint={`Used ${fmtUsd(totalUsedMargin)}`} />
@@ -193,7 +227,7 @@ const Dashboard = () => {
               </Bento>
               <StatCard label="Win rate" value={`${metrics.winRate.toFixed(1)}%`} hint={`${metrics.profitableTrades}W · ${metrics.losingTrades}L`} />
               <StatCard label="Profit factor" value={metrics.profitFactor.toFixed(2)} hint={`Max drawdown ${metrics.maximumDrawdownPercent.toFixed(1)}%`}
-                className={showCredit ? "col-span-2 lg:col-span-1" : undefined} />
+                className="col-span-2 lg:col-span-1" />
             </div>
 
             <div className="grid gap-3 lg:grid-cols-3">

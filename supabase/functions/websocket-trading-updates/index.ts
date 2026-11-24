@@ -496,19 +496,25 @@ async function getUserProfile(userId: string) {
   return data;
 }
 
+// Every open position plus the most recent history. Two reads, so an old position that is
+// still open is never cut off by the row limit (the client's own read does the same).
+const CLOSED_TRADES_LIMIT = 1000;
+
 async function getUserTrades(userId: string) {
-  const { data, error } = await supabase
-    .from('trades')
-    .select('*')
-    .eq('user_id', userId)
-    .order('opened_at', { ascending: false });
-  
-  if (error) {
-    console.error('Error fetching user trades:', error);
-    return [];
+  const [open, closed] = await Promise.all([
+    supabase.from('trades').select('*').eq('user_id', userId).eq('status', 'open'),
+    supabase.from('trades').select('*').eq('user_id', userId).neq('status', 'open')
+      .order('created_at', { ascending: false }).limit(CLOSED_TRADES_LIMIT),
+  ]);
+
+  if (open.error || closed.error) {
+    console.error('Error fetching user trades:', open.error || closed.error);
+    // null = "unknown": the client keeps its list and reads it itself, instead of showing no trades
+    return null;
   }
-  
-  return data || [];
+
+  return [...(open.data || []), ...(closed.data || [])]
+    .sort((a, b) => (a.created_at < b.created_at ? 1 : a.created_at > b.created_at ? -1 : 0));
 }
 
 // Broadcast updates to all connected clients

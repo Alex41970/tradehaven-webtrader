@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { computeAccountMetrics, settleFlatAccount } from './accountMetrics';
+import { computeAccountMetrics, settleFlatAccount, splitBalance } from './accountMetrics';
 
 describe('credit can be traded with', () => {
   it('counts credit in equity and free margin', () => {
@@ -58,5 +58,27 @@ describe('credit covers losses once all positions are closed', () => {
   it('does not touch credit while the balance is positive', () => {
     expect(settleFlatAccount({ balance: 300, credit: 5000, allowNegativeBalance: false }))
       .toEqual({ balance: 300, credit: 5000, creditUsed: 0, cleared: 0 });
+  });
+});
+
+describe('the balance a client sees: total, with own funds and credit told apart', () => {
+  it('$80,000 own funds + $20,000 credit shows as $100,000, of which $20,000 is credit', () => {
+    expect(splitBalance({ balance: 80_000, credit: 20_000 })).toEqual({ total: 100_000, own: 80_000, credit: 20_000, creditShare: 0.2 });
+  });
+
+  it('an account without credit is all own funds', () => {
+    expect(splitBalance({ balance: 691_210.24, credit: 0 })).toEqual({ total: 691_210.24, own: 691_210.24, credit: 0, creditShare: 0 });
+  });
+
+  it('a credit-only account is all credit', () => {
+    expect(splitBalance({ balance: 0, credit: 5_000 })).toEqual({ total: 5_000, own: 0, credit: 5_000, creditShare: 1 });
+  });
+});
+
+describe('equity with no open positions', () => {
+  it('is own funds + credit and does not depend on prices', () => {
+    const flat = computeAccountMetrics({ balance: 10_054.9, credit: 2_000, usedMargin: 0, openPnL: 0 });
+    expect(flat.equity).toBe(12_054.9);
+    expect(flat.marginLevel).toBeNull();
   });
 });

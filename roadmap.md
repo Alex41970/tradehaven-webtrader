@@ -16,7 +16,8 @@
 - [x] Lot-based P&L and margin everywhere
 - [x] Own charts replacing TradingView
 - [x] Trade-confirmation leak fix, account-switch fix, honest price badge, lazy pages
-- [ ] Later: merge duplicate data loading into one shared cache (larger refactor)
+- [x] One shared account state (balance, credit, trades) for every screen — fixes Equity moving after a close
+- [ ] Later: move the remaining separate loaders (deposits, withdrawals, bot status) into the same shared state
 
 - [x] Faster price passes (4/min, 70% provider budget) + ~395 markets
 
@@ -42,4 +43,6 @@
 - [ ] Later: enforce each market's own leverage limit (today every market allows up to 100x)
 - [ ] Later: credit history page for admins with filters and export (dialog shows the last 8 entries)
 - [x] Admins see what the client can withdraw next to each pending withdrawal request
+- [x] Balance shows the total with Own funds and Credit underneath (top bar, dashboard, withdraw)
+- [ ] Later: show losses as -$67.37 instead of $-67.37 on the Positions page and trade cards
 - [ ] Later: remove the unused `websocket-price-relay` function and old `calculate_pnl` database helpers

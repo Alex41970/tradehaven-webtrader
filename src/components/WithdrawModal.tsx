@@ -133,8 +133,20 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({ open, onOpenChange
           <div className="space-y-6">
             <div className="rounded-lg bg-muted p-4 text-sm">
               <dl className="space-y-1.5">
-                <div className="flex items-center justify-between gap-3">
-                  <dt className="text-muted-foreground">Balance</dt>
+                {credit > 0 && (
+                  <>
+                    <div className="flex items-center justify-between gap-3">
+                      <dt className="text-muted-foreground">Balance</dt>
+                      <dd className="num">{money(balance + credit)}</dd>
+                    </div>
+                    <div className="flex items-center justify-between gap-3">
+                      <dt className="text-muted-foreground">Credit (cannot be withdrawn)</dt>
+                      <dd className="num">−{money(credit)}</dd>
+                    </div>
+                  </>
+                )}
+                <div className={`flex items-center justify-between gap-3 ${credit > 0 ? 'border-t border-border pt-1.5' : ''}`}>
+                  <dt className="text-muted-foreground">{credit > 0 ? 'Own funds' : 'Balance'}</dt>
                   <dd className="num">{money(balance)}</dd>
                 </div>
                 {heldForTrades > 0 && (
@@ -157,7 +169,7 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({ open, onOpenChange
               {credit > 0 && (
                 <p className="mt-3 flex items-start gap-2 border-t border-border pt-3 text-xs text-muted-foreground">
                   <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                  <span>Your {money(credit)} credit is for trading only and cannot be withdrawn. Profit you make with it goes to your balance.</span>
+                  <span>Your {money(credit)} credit is for trading only and cannot be withdrawn. Profit you make with it is added to your own funds.</span>
                 </p>
               )}
             </div>

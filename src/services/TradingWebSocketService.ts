@@ -252,6 +252,8 @@ export class TradingWebSocketService {
         this.connecting = false;
         this.connectionState.quality = 'offline';
         this.stopKeepAlive();
+        // Lets the account store fall back to the database path until the link is back
+        this.handleMessage({ type: 'connection_closed' });
         
         if (event.code !== 1000) {
           this.handleReconnect();
@@ -313,7 +315,8 @@ export class TradingWebSocketService {
   }
 
   private handleMessage(message: TradingWebSocketMessage) {    
-    const handlers = this.eventHandlers.get(message.type) || [];
+    // Copy first: handlers may remove themselves while the message is being delivered
+    const handlers = [...(this.eventHandlers.get(message.type) || [])];
     handlers.forEach(handler => {
       try {
         handler(message);
@@ -438,6 +441,7 @@ export class TradingWebSocketService {
     this.isReconnecting = false;
     this.reconnectAttempts = 0;
     this.connectionState.quality = 'offline';
+    this.handleMessage({ type: 'connection_closed' });
   }
 
   isConnected(): boolean {

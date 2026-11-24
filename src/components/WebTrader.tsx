@@ -26,7 +26,6 @@ import { useTradeOrders } from "@/hooks/useTradeOrders";
 import { useNavigate } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { toast } from "@/hooks/use-toast";
-import { useEventDrivenUpdates } from "@/hooks/useEventDrivenUpdates";
 import { WebTraderSkeleton } from "./WebTraderSkeleton";
 import { MarketClosedBanner, useMarketSession } from "./market/MarketClosedBanner";
 import { isMarketOpen } from "@/utils/marketHours";
@@ -37,12 +36,11 @@ import { ResizeHandle } from "@/components/ResizeHandle";
 export const WebTrader = ({ initialSymbol }: { initialSymbol?: string } = {}) => {
   const { openTrade, closeTrade, openTrades } = useTrades();
   const { assets, loading: assetsLoading } = useAssets();
-  const { profile, loading: profileLoading, refetch: refetchProfile } = useSharedUserProfile(openTrades.length > 0);
+  const { profile, loading: profileLoading } = useSharedUserProfile();
   const { lists, createList, renameList, deleteList, toggleItem, inAnyList } = useWatchlists();
   const { serverPrices } = usePrices();
   const { getUpdatedAssets, isConnected, lastUpdate } = useRealTimePrices();
   const { createOrder } = useTradeOrders();
-  const { handleTradeAction } = useEventDrivenUpdates();
   const { canOpenTrade } = useRealtimeAccountMetrics();
   const isMobile = useIsMobile();
   const navigate = useNavigate();
@@ -192,15 +190,11 @@ export const WebTrader = ({ initialSymbol }: { initialSymbol?: string } = {}) =>
           title: "Trade Executed",
           description: `${tradeType} order for ${selectedAsset.symbol} executed successfully`,
         });
-        
-        // Trigger immediate profile refresh for fast UI feedback
-        handleTradeAction('open', { symbol: selectedAsset.symbol, tradeType });
       }
     } catch (error) {
-      console.error('Trade execution error:', error);
       toast({
         title: "Trade Failed",
-        description: "Failed to execute trade. Please try again.",
+        description: error instanceof Error && error.message ? error.message : "Failed to execute trade. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -253,8 +247,6 @@ export const WebTrader = ({ initialSymbol }: { initialSymbol?: string } = {}) =>
             title: "Market Order Executed",
             description: `${orderData.tradeType} order for ${selectedAsset.symbol} executed successfully`,
           });
-          // Trigger immediate profile refresh for fast UI feedback
-          handleTradeAction('open', { symbol: selectedAsset.symbol, tradeType: orderData.tradeType });
         }
       } else {
         // Create pending order
@@ -279,10 +271,9 @@ export const WebTrader = ({ initialSymbol }: { initialSymbol?: string } = {}) =>
         }
       }
     } catch (error) {
-      console.error('Order execution error:', error);
       toast({
         title: "Order Failed",
-        description: "Failed to create order. Please try again.",
+        description: error instanceof Error && error.message ? error.message : "Failed to create order. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -294,10 +285,12 @@ export const WebTrader = ({ initialSymbol }: { initialSymbol?: string } = {}) =>
     setIsExecuting(true);
     try {
       await closeTrade(tradeId, closePrice);
-      // Trigger immediate profile refresh for fast UI feedback
-      handleTradeAction('close', { tradeId });
     } catch (error) {
-      console.error('Error closing trade:', error);
+      toast({
+        title: "Could not close the trade",
+        description: error instanceof Error ? error.message : "Please try again.",
+        variant: "destructive",
+      });
     } finally {
       setIsExecuting(false);
     }

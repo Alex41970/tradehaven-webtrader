@@ -48,6 +48,29 @@ export const computeAccountMetrics = (a: AccountInputs): AccountMetrics => {
   return { equity, freeMargin, marginLevel, withdrawable };
 };
 
+export interface BalanceSplit {
+  /** Headline balance: own funds plus credit */
+  total: number;
+  /** The client's own money */
+  own: number;
+  /** Company money: trading only, never withdrawable */
+  credit: number;
+  /** Part of the total that is credit, 0 to 1 */
+  creditShare: number;
+}
+
+/**
+ * The balance a client sees is the total they can trade with (own funds + credit).
+ * The split tells them how much of it is their own money and how much is credit.
+ */
+export const splitBalance = (a: { balance: number; credit: number }): BalanceSplit => {
+  const own = num(a.balance);
+  const credit = Math.max(num(a.credit), 0);
+  const total = own + credit;
+  const creditShare = credit <= 0 ? 0 : own <= 0 ? 1 : credit / total;
+  return { total, own, credit, creditShare };
+};
+
 export interface SettleResult {
   balance: number;
   credit: number;

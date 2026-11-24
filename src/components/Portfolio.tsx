@@ -9,26 +9,18 @@ import { useMemo, useState, useCallback } from "react";
 import { useRealTimePrices } from "@/hooks/useRealTimePrices";
 import { useRealtimeAccountMetrics } from "@/hooks/useRealtimeAccountMetrics";
 import { TradeRow } from "@/components/TradeRow";
-import { useEventDrivenUpdates } from "@/hooks/useEventDrivenUpdates";
 import { PortfolioSkeleton } from "./PortfolioSkeleton";
 
 export const Portfolio = () => {
   // ALL HOOKS MUST BE CALLED FIRST - NO CONDITIONAL HOOK CALLS
   const { openTrades, closeTrade } = useTrades();
-  const { profile, loading: profileLoading } = useSharedUserProfile(openTrades.length > 0);
+  const { profile, loading: profileLoading } = useSharedUserProfile();
   const { assets, loading: assetsLoading } = useAssets();
   const { toast } = useToast();
   const { getUpdatedAssets } = useRealTimePrices();
-  const { 
-    openPnL,
-    lastUpdated,
-    excludeTradeFromPnL, 
-    includeTradeInPnL 
-  } = useRealtimeAccountMetrics();
-  const { handleTradeAction } = useEventDrivenUpdates();
+  const { openPnL, lastUpdated } = useRealtimeAccountMetrics();
   const [closingTrades, setClosingTrades] = useState<Set<string>>(new Set());
 
-  // ALL useMemo hooks must be called here, before any conditional logic
   const updatedAssets = useMemo(() => {
     if (!assets || assets.length === 0) {
       return [];
@@ -39,33 +31,6 @@ export const Portfolio = () => {
       return assets;
     }
   }, [assets, getUpdatedAssets]);
-
-  // SL/TP close handler for auto-execution
-  const handleSLTPClose = useCallback(async (tradeId: string, closePrice: number) => {
-    if (closingTrades.has(tradeId)) return;
-    
-    setClosingTrades(prev => new Set(prev).add(tradeId));
-    excludeTradeFromPnL(tradeId);
-
-    try {
-      const success = await closeTrade(tradeId, closePrice);
-      if (success) {
-        handleTradeAction('close', { tradeId });
-      } else {
-        includeTradeInPnL(tradeId);
-      }
-      return success;
-    } catch {
-      includeTradeInPnL(tradeId);
-      return false;
-    } finally {
-      setClosingTrades(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(tradeId);
-        return newSet;
-      });
-    }
-  }, [closeTrade, closingTrades, excludeTradeFromPnL, includeTradeInPnL, handleTradeAction]);
 
   // Stop-loss / take-profit are executed on the server at real market prices (price-feed)
   // Open profit and loss only (credit is part of equity, not of profit)
@@ -92,69 +57,34 @@ export const Portfolio = () => {
     return { marginUtilization, largestExposure, riskLevel };
   }, [profile, openTrades]);
 
-  // ALL useCallback hooks must be called here, before any conditional logic
+  // The trade keeps counting until the server confirms the close; balance and the trade
+  // list then change together, so equity never jumps in between.
   const handleCloseTrade = useCallback(async (tradeId: string, symbol: string) => {
-    // Prevent multiple close attempts
-    if (closingTrades.has(tradeId)) {
+    if (closingTrades.has(tradeId)) return;
+
+    const asset = updatedAssets.find(a => a.symbol === symbol);
+    if (!asset?.price || isNaN(asset.price)) {
+      toast({ title: "Error", description: "No current price for this market yet. Try again in a moment.", variant: "destructive" });
       return;
     }
 
     setClosingTrades(prev => new Set(prev).add(tradeId));
-    
-    // Immediately exclude trade from PnL calculation to prevent double counting
-    excludeTradeFromPnL(tradeId);
-
     try {
-      const asset = updatedAssets.find(a => a.symbol === symbol);
-      if (!asset) {
-        toast({
-          title: "Error",
-          description: "Asset not found for current price",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      if (!asset.price || isNaN(asset.price)) {
-        toast({
-          title: "Error",
-          description: "Invalid asset price",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      const success = await closeTrade(tradeId, asset.price);
-      
-      if (success) {
-        // Trigger immediate profile refresh for fast UI feedback
-        handleTradeAction('close', { tradeId, symbol });
-        // Trade will be removed from openTrades automatically via real-time updates
-      } else {
-        // Re-include trade in PnL if closing failed
-        includeTradeInPnL(tradeId);
-        toast({
-          title: "Error",
-          description: "Failed to close trade",
-          variant: "destructive",
-        });
-      }
-    } catch {
-      // Re-include trade in PnL if closing failed
-      includeTradeInPnL(tradeId);
+      await closeTrade(tradeId, asset.price);
+    } catch (error) {
       toast({
-        title: "Error",
-        description: "An error occurred while closing the trade",
+        title: "Could not close the trade",
+        description: error instanceof Error ? error.message : "Please try again.",
         variant: "destructive",
       });
     } finally {
       setClosingTrades(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(tradeId);
-        return newSet;
+        const next = new Set(prev);
+        next.delete(tradeId);
+        return next;
       });
     }
-  }, [updatedAssets, closeTrade, toast, excludeTradeFromPnL, includeTradeInPnL, handleTradeAction]);
+  }, [updatedAssets, closeTrade, toast, closingTrades]);
 
   // Real-time updates are now handled by the WebSocket system
 

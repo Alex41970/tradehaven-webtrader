@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import type { Trade } from "@/hooks/useTrades";
 import type { CreditTransaction, TransactionHistory } from "@/hooks/useTransactionHistory";
 import { ArrowDownLeft, ArrowUpRight, Gift, Inbox } from "lucide-react";
+import { splitBalance } from "@/utils/accountMetrics";
 
 export const fmtUsd = (n: number, digits = 2) =>
   new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: digits, maximumFractionDigits: digits }).format(Number.isFinite(n) ? n : 0);
@@ -58,6 +59,46 @@ export const StatCard = ({ label, value, hint, icon, tone, className }: { label:
     </div>
     <div className={cn("num truncate text-lg font-medium md:text-xl", tone === "up" && "text-success", tone === "down" && "text-destructive")}>{value}</div>
     {hint && <div className="text-xs text-muted-foreground">{hint}</div>}
+  </Bento>
+);
+
+/**
+ * How the balance is made up: own funds and credit, with a two-part bar.
+ * The headline balance is the total; credit is the company's money (trading only).
+ */
+export const BalanceBreakdown = ({ balance, credit, note = true, className }: { balance: number; credit: number; note?: boolean; className?: string }) => {
+  const s = splitBalance({ balance, credit });
+  const ownPct = Math.round((1 - s.creditShare) * 100);
+  return (
+    <div className={cn("space-y-2", className)}>
+      <div className="flex h-1 w-full gap-px overflow-hidden rounded-full bg-muted" role="img"
+        aria-label={`${ownPct}% own funds, ${100 - ownPct}% credit`}>
+        {s.creditShare < 1 && s.total > 0 && <div className="h-full bg-foreground/55" style={{ width: `${(1 - s.creditShare) * 100}%` }} />}
+        {s.creditShare > 0 && <div className="h-full bg-primary" style={{ width: `${s.creditShare * 100}%` }} />}
+      </div>
+      <dl className="space-y-1 text-xs">
+        <div className="flex items-center justify-between gap-3">
+          <dt className="flex min-w-0 items-center gap-1.5 text-muted-foreground"><span className="h-1.5 w-1.5 shrink-0 rounded-full bg-foreground/55" />Own funds</dt>
+          <dd className={cn("num", s.own < 0 && "text-destructive")}>{s.own < 0 ? "−" : ""}{fmtUsd(Math.abs(s.own))}</dd>
+        </div>
+        <div className="flex items-center justify-between gap-3">
+          <dt className="flex min-w-0 items-center gap-1.5 text-muted-foreground"><span className="h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />Credit</dt>
+          <dd className={cn("num", s.credit > 0 ? "text-primary" : "text-muted-foreground")}>{fmtUsd(s.credit)}</dd>
+        </div>
+      </dl>
+      {note && s.credit > 0 && (
+        <p className="text-[11px] leading-snug text-muted-foreground">Credit is for trading only and cannot be withdrawn.</p>
+      )}
+    </div>
+  );
+};
+
+/** Headline balance (own funds + credit) with the split right under it */
+export const BalanceCard = ({ balance, credit, className }: { balance: number; credit: number; className?: string }) => (
+  <Bento className={cn("flex flex-col justify-between gap-2.5 p-4", className)}>
+    <span className="label-caps">Balance</span>
+    <div className="num truncate text-lg font-medium md:text-xl">{fmtUsd(splitBalance({ balance, credit }).total)}</div>
+    <BalanceBreakdown balance={balance} credit={credit} />
   </Bento>
 );
 
