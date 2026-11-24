@@ -63,7 +63,7 @@ export const HeroChart = () => {
         </div>
       </div>
       
-      <div className="h-80 w-full bg-gradient-to-br from-trading-primary/10 to-trading-secondary/10 rounded-xl overflow-hidden border border-border/50">
+      <div className="h-80 w-full overflow-hidden rounded-md border border-border bg-background">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={data}>
             <XAxis hide />

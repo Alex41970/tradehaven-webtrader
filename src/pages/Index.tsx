@@ -107,9 +107,7 @@ const Index = () => {
         <div className="absolute inset-x-0 bottom-0 -z-10 h-40 bg-gradient-to-t from-background to-transparent" />
         <div className="container mx-auto px-4 pb-24 pt-20 lg:pb-36 lg:pt-32">
           <div className="max-w-2xl">
-            <span className="label-caps inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-primary">
-              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-primary" />Live markets
-            </span>
+            <p className="label-caps text-muted-foreground">Multi-asset CFD trading</p>
             <h1 className="mt-6 text-5xl font-semibold leading-[1.02] tracking-tight text-foreground md:text-7xl">
               Every market.<br /><span className="text-primary">One sharp screen.</span>
             </h1>
@@ -118,7 +116,7 @@ const Index = () => {
             </p>
             <div className="mt-10 flex flex-col gap-3 sm:flex-row">
               <Button size="lg" className="h-12 px-7" onClick={() => navigate("/auth")}>Open an account<ArrowRight className="ml-2 h-5 w-5" /></Button>
-              <Button size="lg" variant="outline" className="h-12 bg-background/40 px-7 backdrop-blur" onClick={() => navigate("/markets")}>Explore markets</Button>
+              <Button size="lg" variant="outline" className="h-12 bg-background/60 px-7" onClick={() => navigate("/markets")}>Explore markets</Button>
             </div>
             <div className="mt-10 flex flex-wrap gap-x-6 gap-y-2 text-sm text-muted-foreground">
               {["Leverage on every market", "Server-side SL/TP", "Web, tablet & mobile"].map((t) => (
@@ -176,13 +174,12 @@ const Index = () => {
             <p className="label-caps text-primary">Asset classes</p>
             <h2 className="mt-2 text-3xl font-semibold text-foreground md:text-5xl">Five markets. One account.</h2>
           </div>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+          <div className="grid border-t border-border sm:grid-cols-2 lg:grid-cols-5">
             {classes.map((c) => (
-              <Link key={c.key} to={`/markets/${c.key}`} className="bento group flex flex-col p-6 transition-all hover:-translate-y-1 hover:border-primary/50">
-                <div className="mb-6 flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary"><c.icon className="h-5 w-5" /></div>
-                <h3 className="text-lg font-semibold text-foreground">{c.title}</h3>
-                <p className="mt-2 min-h-[4rem] text-sm text-muted-foreground">{c.text}</p>
-                <div className="mt-auto pt-6"><ArrowRight className="h-4 w-4 text-primary transition-transform group-hover:translate-x-1" /></div>
+              <Link key={c.key} to={`/markets/${c.key}`} className="group flex flex-col border-b border-border py-6 transition-colors hover:bg-muted/30 sm:px-5 lg:border-b-0 lg:border-r lg:last:border-r-0 lg:first:pl-0">
+                <h3 className="text-base font-semibold text-foreground">{c.title}</h3>
+                <p className="mt-2 min-h-[3.5rem] text-sm text-muted-foreground">{c.text}</p>
+                <span className="mt-auto pt-4 text-sm text-primary group-hover:underline">View markets</span>
               </Link>
             ))}
           </div>
@@ -195,14 +192,13 @@ const Index = () => {
           <p className="label-caps text-primary">Platform</p>
           <h2 className="mt-2 text-3xl font-semibold text-foreground md:text-5xl">Built for focus, not noise.</h2>
         </div>
-        <div className="grid auto-rows-fr gap-4 md:grid-cols-4">
+        <div className="grid gap-px overflow-hidden rounded-md border border-border bg-border md:grid-cols-4">
           {features.map((f) => (
-            <div key={f.title} className={`bento relative flex flex-col overflow-hidden p-6 ${f.span ?? ""} ${f.text ? "" : "justify-center"}`}>
-              {!f.text && <f.icon className="pointer-events-none absolute -bottom-8 -right-8 h-36 w-36 text-primary/5" />}
-              <div className="mb-5 flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary"><f.icon className="h-5 w-5" /></div>
-              <h3 className={`${f.big ? "text-2xl" : "text-lg"} font-semibold text-foreground`}>{f.title}</h3>
+            <div key={f.title} className={`flex flex-col bg-card p-6 ${f.span ?? ""}`}>
+              <f.icon className="mb-4 h-4 w-4 text-muted-foreground" />
+              <h3 className={`${f.big ? "text-xl" : "text-base"} font-semibold text-foreground`}>{f.title}</h3>
               {f.text && <p className="mt-2 text-sm text-muted-foreground">{f.text}</p>}
-              {f.big && <div className="mt-auto pt-6 rounded-xl border border-border bg-background/50 p-3"><HeroChart /></div>}
+              {f.big && <div className="mt-auto pt-6"><HeroChart /></div>}
             </div>
           ))}
         </div>
@@ -221,7 +217,7 @@ const Index = () => {
                 [Lock, "Encrypted, secure sign-in"],
                 [Globe, "Prices around the clock"],
               ].map(([I, t]: any) => (
-                <li key={t} className="flex items-center gap-3 text-foreground"><span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary"><I className="h-4 w-4" /></span>{t}</li>
+                <li key={t} className="flex items-center gap-3 text-foreground"><I className="h-4 w-4 text-muted-foreground" />{t}</li>
               ))}
             </ul>
             <Button className="mt-10" size="lg" onClick={() => navigate("/auth")}>Launch web trader<ArrowRight className="ml-2 h-4 w-4" /></Button>
@@ -237,11 +233,11 @@ const Index = () => {
             <p className="label-caps text-primary">Get started</p>
             <h2 className="mt-2 text-3xl font-semibold text-foreground md:text-5xl">Live in three steps.</h2>
           </div>
-          <div className="grid gap-6 md:grid-cols-3">
+          <div className="grid gap-8 md:grid-cols-3">
             {steps.map((s, i) => (
-              <div key={s.t} className="bento relative p-8">
-                <div className="num text-5xl font-semibold text-primary/30">0{i + 1}</div>
-                <h3 className="mt-4 text-xl font-semibold text-foreground">{s.t}</h3>
+              <div key={s.t} className="border-t border-border pt-6">
+                <div className="num text-sm text-primary">Step {i + 1}</div>
+                <h3 className="mt-2 text-lg font-semibold text-foreground">{s.t}</h3>
                 <p className="mt-2 text-sm text-muted-foreground">{s.d}</p>
               </div>
             ))}
@@ -252,14 +248,12 @@ const Index = () => {
       {/* EDUCATION + SUPPORT */}
       <section className="container mx-auto grid gap-4 px-4 py-24 md:grid-cols-2">
         <Link to="/education" className="bento group p-8 transition-colors hover:border-primary/50">
-          <BarChart3 className="h-6 w-6 text-primary" />
-          <h3 className="mt-6 text-2xl font-semibold text-foreground">Learn to trade</h3>
+          <h3 className=" text-xl font-semibold text-foreground">Learn to trade</h3>
           <p className="mt-2 text-muted-foreground">Guides on leverage, margin, chart indicators and risk management.</p>
           <span className="mt-6 inline-flex items-center text-sm text-primary">Visit education <ArrowRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-1" /></span>
         </Link>
         <Link to="/support" className="bento group p-8 transition-colors hover:border-primary/50">
-          <Headphones className="h-6 w-6 text-primary" />
-          <h3 className="mt-6 text-2xl font-semibold text-foreground">Real people, real help</h3>
+          <h3 className=" text-xl font-semibold text-foreground">Real people, real help</h3>
           <p className="mt-2 text-muted-foreground">Questions about your account, deposits or a trade? Our team is here.</p>
           <span className="mt-6 inline-flex items-center text-sm text-primary">Get support <ArrowRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-1" /></span>
         </Link>
@@ -286,10 +280,8 @@ const Index = () => {
 
       {/* CTA */}
       <section className="container mx-auto px-4 pb-24">
-        <div className="relative isolate overflow-hidden rounded-3xl border border-primary/30 p-10 text-center md:p-20">
-          <img src={heroImg} alt="" loading="lazy" className="absolute inset-0 -z-20 h-full w-full object-cover opacity-50" />
-          <div className="absolute inset-0 -z-10 bg-background/70" />
-          <h2 className="text-3xl font-semibold text-foreground md:text-5xl">Ready when you are.</h2>
+        <div className="rounded-md border border-border bg-card p-10 text-center md:p-16">
+          <h2 className="text-3xl font-semibold text-foreground md:text-4xl">Ready when you are.</h2>
           <p className="mx-auto mt-4 max-w-xl text-muted-foreground">Open your account in a couple of minutes and trade every market from one screen.</p>
           <div className="mt-10 flex flex-col justify-center gap-3 sm:flex-row">
             <Button size="lg" className="h-12 px-7" onClick={() => navigate("/auth")}>Create account<ArrowRight className="ml-2 h-5 w-5" /></Button>
