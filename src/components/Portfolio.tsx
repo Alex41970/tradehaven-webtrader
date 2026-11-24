@@ -18,7 +18,7 @@ export const Portfolio = () => {
   const { assets, loading: assetsLoading } = useAssets();
   const { toast } = useToast();
   const { getUpdatedAssets } = useRealTimePrices();
-  const { openPnL, lastUpdated } = useRealtimeAccountMetrics();
+  const { openPnL, lastUpdated, realTimeEquity, totalUsedMargin } = useRealtimeAccountMetrics();
   const [closingTrades, setClosingTrades] = useState<Set<string>>(new Set());
 
   const updatedAssets = useMemo(() => {
@@ -42,8 +42,9 @@ export const Portfolio = () => {
       return { marginUtilization: 0, largestExposure: 0, riskLevel: 'Low' as const };
     }
 
-    const totalMargin = profile.available_margin + profile.used_margin;
-    const marginUtilization = totalMargin > 0 ? (profile.used_margin / totalMargin) * 100 : 0;
+    // Live figures, the same ones the top bar shows: margin in use as a share of equity
+    const marginUtilization = totalUsedMargin <= 0 ? 0
+      : realTimeEquity > 0 ? Math.min((totalUsedMargin / realTimeEquity) * 100, 100) : 100;
     
     const largestExposure = openTrades.reduce((max, trade) => {
       const exposure = trade.amount * (trade.leverage || 1);
@@ -55,7 +56,7 @@ export const Portfolio = () => {
     else if (marginUtilization > 40) riskLevel = 'Medium';
 
     return { marginUtilization, largestExposure, riskLevel };
-  }, [profile, openTrades]);
+  }, [profile, openTrades, realTimeEquity, totalUsedMargin]);
 
   // The trade keeps counting until the server confirms the close; balance and the trade
   // list then change together, so equity never jumps in between.

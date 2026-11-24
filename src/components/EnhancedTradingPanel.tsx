@@ -11,6 +11,7 @@ import { ChevronDown, ChevronUp, Calculator, Target, Shield, Clock, AlertTriangl
 import { Asset } from '@/hooks/useAssets';
 import { usePrices } from '@/contexts/PriceContext';
 import { useMarketSession } from '@/components/market/MarketClosedBanner';
+import { useRealtimeAccountMetrics } from '@/hooks/useRealtimeAccountMetrics';
 
 interface EnhancedTradingPanelProps {
   selectedAsset: Asset;
@@ -42,6 +43,8 @@ export const EnhancedTradingPanel: React.FC<EnhancedTradingPanelProps> = ({
 }) => {
   // Get market closed status from PriceContext
   const { isMarketClosed, canTrade } = usePrices();
+  // Same live free margin as the top bar, so the ticket never shows an older figure
+  const { realTimeFreeMargin } = useRealtimeAccountMetrics();
 
   const session = useMarketSession(selectedAsset.symbol, selectedAsset.category);
   const [orderType, setOrderType] = useState<'market' | 'limit' | 'stop'>('market');
@@ -74,7 +77,7 @@ export const EnhancedTradingPanel: React.FC<EnhancedTradingPanelProps> = ({
     const positionSize = units * selectedAsset.price;
     const marginRequired = positionSize / leverage;
 
-    const availableAfterTrade = userProfile ? userProfile.available_margin - marginRequired : 0;
+    const availableAfterTrade = userProfile ? realTimeFreeMargin - marginRequired : 0;
     
     const stopLossRisk = useStopLoss ? Math.abs((stopLoss - selectedAsset.price) / selectedAsset.price) * 100 : 0;
     const takeProfitReward = useTakeProfit ? Math.abs((takeProfit - selectedAsset.price) / selectedAsset.price) * 100 : 0;
@@ -89,7 +92,7 @@ export const EnhancedTradingPanel: React.FC<EnhancedTradingPanelProps> = ({
       takeProfitReward,
       riskRewardRatio,
     };
-  }, [selectedAsset, amount, leverage, useStopLoss, useTakeProfit, stopLoss, takeProfit, userProfile]);
+  }, [selectedAsset, amount, leverage, useStopLoss, useTakeProfit, stopLoss, takeProfit, userProfile, realTimeFreeMargin]);
 
   const handleQuickRiskSetup = (type: 'conservative' | 'balanced' | 'aggressive') => {
     const configs = {

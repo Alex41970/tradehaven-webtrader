@@ -45,4 +45,5 @@
 - [x] Admins see what the client can withdraw next to each pending withdrawal request
 - [x] Balance shows the total with Own funds and Credit underneath (top bar, dashboard, withdraw)
 - [ ] Later: show losses as -$67.37 instead of $-67.37 on the Positions page and trade cards
+- [ ] Later: Positions page "Max Exposure" shows lots x leverage as dollars — should be the real position value
 - [ ] Later: remove the unused `websocket-price-relay` function and old `calculate_pnl` database helpers
