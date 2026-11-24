@@ -1,25 +1,28 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { CreditCard, Wallet, AlertTriangle } from 'lucide-react';
+import { CreditCard, Wallet, AlertTriangle, Info } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import type { TablesInsert } from '@/integrations/supabase/types';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
-import { useSharedUserProfile } from '@/hooks/useSharedUserProfile';
 
 interface WithdrawModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** Live account figures. Credit is never part of what can be withdrawn. */
+  account: { balance: number; credit: number; withdrawable: number };
 }
 
-export const WithdrawModal: React.FC<WithdrawModalProps> = ({ open, onOpenChange }) => {
+const money = (n: number) =>
+  `$${(Number.isFinite(n) ? n : 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+export const WithdrawModal: React.FC<WithdrawModalProps> = ({ open, onOpenChange, account }) => {
   const { user } = useAuth();
-  const { profile } = useSharedUserProfile();
   const [step, setStep] = useState(1);
   const [withdrawalType, setWithdrawalType] = useState<'crypto' | 'wire'>('crypto');
   const [amount, setAmount] = useState('');
@@ -33,8 +36,33 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({ open, onOpenChange
     swiftCode: ''
   });
   const [isLoading, setIsLoading] = useState(false);
+  // The server's answer is the one that counts; the live figures are shown until it arrives
+  const [serverAvailable, setServerAvailable] = useState<number | null>(null);
+  const [pendingTotal, setPendingTotal] = useState(0);
 
-  const maxWithdrawable = profile?.available_margin || 0;
+  useEffect(() => {
+    if (!open || !user) return;
+    let cancelled = false;
+    setServerAvailable(null);
+    (async () => {
+      const [available, pending] = await Promise.all([
+        supabase.rpc('get_withdrawable_amount', { _user_id: user.id }),
+        supabase.from('withdrawal_requests').select('amount').eq('user_id', user.id).eq('status', 'pending'),
+      ]);
+      if (cancelled) return;
+      if (!pending.error) setPendingTotal((pending.data || []).reduce((sum, r) => sum + (Number(r.amount) || 0), 0));
+      if (!available.error && available.data !== null) setServerAvailable(Number(available.data) || 0);
+    })();
+    return () => { cancelled = true; };
+  }, [open, user]);
+
+  const balance = Number(account.balance) || 0;
+  const credit = Math.max(Number(account.credit) || 0, 0);
+  // Money kept back for open trades: margin in use plus open losses
+  const maxWithdrawable = serverAvailable ?? Math.max(account.withdrawable - pendingTotal, 0);
+  const heldForTrades = serverAvailable !== null
+    ? Math.max(Math.max(balance, 0) - pendingTotal - serverAvailable, 0)
+    : Math.max(Math.max(balance, 0) - account.withdrawable, 0);
 
   const handleSubmitRequest = async () => {
     if (!user || !amount || parseFloat(amount) <= 0) {
@@ -43,7 +71,7 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({ open, onOpenChange
     }
 
     if (parseFloat(amount) > maxWithdrawable) {
-      toast.error('Withdrawal amount exceeds available balance');
+      toast.error(`You can withdraw up to ${money(maxWithdrawable)}`);
       return;
     }
 
@@ -89,8 +117,10 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({ open, onOpenChange
         routingNumber: '',
         swiftCode: ''
       });
-    } catch {
-      toast.error('Failed to submit withdrawal request');
+    } catch (error: any) {
+      // The server re-checks the amount and explains a refusal in plain words
+      const reason = typeof error?.message === 'string' && error.message.startsWith('You can withdraw up to') ? error.message : null;
+      toast.error(reason || 'Failed to submit withdrawal request');
     } finally {
       setIsLoading(false);
     }
@@ -101,11 +131,35 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({ open, onOpenChange
       case 1:
         return (
           <div className="space-y-6">
-            <div className="rounded-lg bg-muted p-4">
-              <div className="flex items-center space-x-2 text-sm">
-                <span className="text-muted-foreground">Available Balance:</span>
-                <span className="font-bold text-primary">${maxWithdrawable.toLocaleString()}</span>
-              </div>
+            <div className="rounded-lg bg-muted p-4 text-sm">
+              <dl className="space-y-1.5">
+                <div className="flex items-center justify-between gap-3">
+                  <dt className="text-muted-foreground">Balance</dt>
+                  <dd className="num">{money(balance)}</dd>
+                </div>
+                {heldForTrades > 0 && (
+                  <div className="flex items-center justify-between gap-3">
+                    <dt className="text-muted-foreground">Held for open trades</dt>
+                    <dd className="num">−{money(heldForTrades)}</dd>
+                  </div>
+                )}
+                {pendingTotal > 0 && (
+                  <div className="flex items-center justify-between gap-3">
+                    <dt className="text-muted-foreground">Withdrawals already waiting</dt>
+                    <dd className="num">−{money(pendingTotal)}</dd>
+                  </div>
+                )}
+                <div className="flex items-center justify-between gap-3 border-t border-border pt-2">
+                  <dt className="font-medium">Available to withdraw</dt>
+                  <dd className="num font-bold text-primary">{money(maxWithdrawable)}</dd>
+                </div>
+              </dl>
+              {credit > 0 && (
+                <p className="mt-3 flex items-start gap-2 border-t border-border pt-3 text-xs text-muted-foreground">
+                  <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                  <span>Your {money(credit)} credit is for trading only and cannot be withdrawn. Profit you make with it goes to your balance.</span>
+                </p>
+              )}
             </div>
 
             <div>
@@ -137,8 +191,8 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({ open, onOpenChange
                 </div>
               </RadioGroup>
             </div>
-            <Button onClick={() => setStep(2)} className="w-full">
-              Continue
+            <Button onClick={() => setStep(2)} className="w-full" disabled={maxWithdrawable <= 0}>
+              {maxWithdrawable <= 0 ? 'Nothing to withdraw right now' : 'Continue'}
             </Button>
           </div>
         );
@@ -159,16 +213,19 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({ open, onOpenChange
                   max={maxWithdrawable}
                   step="0.01"
                 />
-                <p className="text-xs text-muted-foreground mt-1">
-                  Maximum: ${maxWithdrawable.toLocaleString()}
-                </p>
+                <div className="mt-1 flex items-center justify-between gap-3 text-xs text-muted-foreground">
+                  <span>Maximum: {money(maxWithdrawable)}{credit > 0 ? ' (credit not included)' : ''}</span>
+                  <button type="button" className="font-medium text-primary hover:underline" onClick={() => setAmount(maxWithdrawable.toFixed(2))}>
+                    Use maximum
+                  </button>
+                </div>
               </div>
             </div>
 
             {parseFloat(amount) > maxWithdrawable && (
               <div className="flex items-center space-x-2 text-destructive bg-destructive/10 p-3 rounded-lg">
                 <AlertTriangle className="h-4 w-4" />
-                <span className="text-sm">Amount exceeds available balance</span>
+                <span className="text-sm">That is more than you can withdraw right now</span>
               </div>
             )}
 
@@ -197,7 +254,7 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({ open, onOpenChange
                   <span>Withdrawal Details</span>
                 </CardTitle>
                 <CardDescription>
-                  Amount: ${parseFloat(amount).toLocaleString()}
+                  Amount: {money(parseFloat(amount))}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">

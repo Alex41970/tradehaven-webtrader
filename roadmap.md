@@ -27,15 +27,19 @@
 - [x] Replace AI-look hero background with professional financial-district photo
 
 ## Credit (company money: tradable, not withdrawable)
-- [ ] Database: credit pot, ledger, single source for equity / free margin / withdrawable
-- [ ] Rules: credit covers negative balance only when flat; negative-balance setting after that
-- [ ] Admin: add / remove / set credit with reason, margin-risk confirmation, history
-- [ ] Withdrawals: credit and margin in use excluded, checked on request and on approval
-- [ ] Money-integrity gaps found on the way (direct trade edits, double approval, leverage/size checks, duplicate order job)
-- [ ] Client screens: dashboard, trade ticket, positions, withdraw, wallet activity
-- [ ] Live-trading service: credit in updates, own-trade check on close
-- [ ] Tests: account maths (vitest) + database scenarios + browser check
+- [x] Database: credit pot, ledger, single source for equity / free margin / withdrawable
+- [x] Rules: credit covers negative balance only when flat; negative-balance setting after that
+- [x] Admin: add / remove / set credit with reason, margin-risk confirmation, history
+- [x] Withdrawals: credit and margin in use excluded, checked on request and on approval
+- [x] Money-integrity gaps found on the way (direct trade edits, double approval, leverage/size checks, duplicate order job)
+- [x] Client screens: dashboard, positions, withdraw, wallet activity
+- [x] Live-trading service: credit in updates, own-trade check on close
+- [x] Tests: account maths (vitest) + database scenarios
+- [ ] Browser check of client and admin credit screens
 - [ ] Later: credit expiry dates
 - [ ] Later: automatic credit on sign-up or deposit (bonus %), set per promo code
 - [ ] Later: option to remove credit automatically when a client withdraws
 - [ ] Later: enforce each market's own leverage limit (today every market allows up to 100x)
+- [ ] Later: credit history page for admins with filters and export (dialog shows the last 8 entries)
+- [ ] Later: let admins see a client's withdrawable amount next to each withdrawal request
+- [ ] Later: remove the unused `websocket-price-relay` function and old `calculate_pnl` database helpers

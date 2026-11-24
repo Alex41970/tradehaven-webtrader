@@ -138,6 +138,7 @@ async function handleAuth(socket: WebSocket, message: any) {
       data: {
         userId: user.id,
         balance: userProfile?.balance || 0,
+        credit: userProfile?.credit || 0,
         usedMargin: userProfile?.used_margin || 0,
         availableMargin: userProfile?.available_margin || 0,
         equity: userProfile?.equity || 0
@@ -246,8 +247,8 @@ async function handleOpenTrade(connection: ClientConnection, data: any) {
       throw new Error('Invalid trade amount');
     }
 
-    if (!data.leverage || data.leverage < 1 || data.leverage > 1000) {
-      throw new Error('Invalid leverage');
+    if (!data.leverage || data.leverage < 1 || data.leverage > 100) {
+      throw new Error('Leverage must be between 1 and 100');
     }
 
     if (!data.openPrice || data.openPrice <= 0) {
@@ -285,22 +286,8 @@ async function handleOpenTrade(connection: ClientConnection, data: any) {
     // Lots x contract size x price / leverage (the database re-checks price and margin on insert)
     const marginUsed = (data.amount * (Number(asset.contract_size) || 1) * data.openPrice) / data.leverage;
 
-    // ===== PHASE 1: BALANCE VALIDATION WITH LOCK =====
-    const { data: userProfile, error: profileError } = await supabase
-      .from('user_profiles')
-      .select('balance, equity, used_margin, available_margin')
-      .eq('user_id', connection.userId)
-      .single();
-
-    if (profileError || !userProfile) {
-      throw new Error('User profile not found');
-    }
-
-    if (userProfile.available_margin < marginUsed) {
-      throw new Error(
-        `Insufficient margin. Required: $${marginUsed.toFixed(2)}, Available: $${userProfile.available_margin.toFixed(2)}`
-      );
-    }
+    // Free margin (balance + credit + open P&L - margin in use) is checked by the database
+    // when the trade is inserted, with the account locked, so two orders cannot spend it twice.
 
     // Generate idempotency key if not provided
     const idempotencyKey = data.idempotencyKey || crypto.randomUUID();
@@ -321,7 +308,8 @@ async function handleOpenTrade(connection: ClientConnection, data: any) {
         status: 'open',
         stop_loss_price: data.stopLoss,
         take_profit_price: data.takeProfit,
-        parent_order_id: data.parentOrderId,
+        // Never taken from the client: only the server fills pending orders (it would skip the market-hours check)
+        parent_order_id: null,
         idempotency_key: idempotencyKey,
         price_age_ms: priceAge,
         trade_source: 'user'
@@ -334,7 +322,7 @@ async function handleOpenTrade(connection: ClientConnection, data: any) {
       if (tradeError.code === '23505') {
         throw new Error('Duplicate trade detected');
       }
-      throw tradeError;
+      throw new Error(tradeError.message || 'Failed to open trade');
     }
 
     // ===== PHASE 1: AUDIT LOGGING =====
@@ -343,7 +331,7 @@ async function handleOpenTrade(connection: ClientConnection, data: any) {
       user_id: connection.userId,
       action: 'open',
       requested_price: data.openPrice,
-      executed_price: data.openPrice,
+      executed_price: newTrade.open_price,
       execution_source: data.tradeSource || 'user',
       executed_at: new Date().toISOString(),
     });
@@ -394,6 +382,19 @@ async function handleCloseTrade(connection: ClientConnection, data: any) {
       }
     }
 
+    // This function runs with full database access, so it must check itself that the
+    // trade belongs to the person who is connected before closing it.
+    const { data: ownTrade } = await supabase
+      .from('trades')
+      .select('id')
+      .eq('id', data.tradeId)
+      .eq('user_id', connection.userId)
+      .maybeSingle();
+
+    if (!ownTrade) {
+      throw new Error('Trade not found or already closed');
+    }
+
     // Close the trade using RPC function
     const { data: result, error: closeError } = await supabase.rpc('close_trade_with_pnl', {
       p_trade_id: data.tradeId,
@@ -411,7 +412,8 @@ async function handleCloseTrade(connection: ClientConnection, data: any) {
       trade_id: data.tradeId,
       user_id: connection.userId,
       action: 'close',
-      executed_price: data.closePrice,
+      requested_price: data.closePrice,
+      executed_price: result.close_price ?? data.closePrice,
       execution_source: data.source || 'user',
       executed_at: new Date().toISOString(),
     });
@@ -446,110 +448,29 @@ async function handleCloseTrade(connection: ClientConnection, data: any) {
   }
 }
 
+// Account figures (margin in use, equity, free margin) are derived by the database:
+// equity = balance + credit + open P&L. This only asks the database to refresh them and
+// tells the connected user the result.
 async function recalculateUserMargins(userId: string) {
   try {
-    console.log('Recalculating margins for user:', userId);
-
-    // Get CURRENT balance (preserves admin deposits!)
-    const { data: profile } = await supabase
-      .from('user_profiles')
-      .select('balance')
-      .eq('user_id', userId)
-      .single();
-    
-    const currentBalance = profile?.balance || 0;
-    console.log('Current balance (preserved):', currentBalance);
-
-    // Calculate totals
-    let totalUsedMargin = 0;
-    let totalUnrealizedPnL = 0;
-
-    // Get open trades with full details for unrealized PnL calculation
-    const { data: openTrades, error: openError } = await supabase
-      .from('trades')
-      .select('margin_used, symbol, trade_type, amount, open_price, leverage')
-      .eq('user_id', userId)
-      .eq('status', 'open');
-
-    if (!openError && openTrades) {
-      totalUsedMargin = openTrades.reduce((sum, trade) => sum + (trade.margin_used || 0), 0);
-      
-      // Get current market prices for all symbols in open trades
-      if (openTrades.length > 0) {
-        const symbols = [...new Set(openTrades.map(trade => trade.symbol))];
-        const { data: assetPrices, error: priceError } = await supabase
-          .from('assets')
-          .select('symbol, price, contract_size')
-          .in('symbol', symbols);
-
-        if (!priceError && assetPrices) {
-          const priceMap = new Map(assetPrices.map(asset => [asset.symbol, asset.price]));
-          const sizeMap = new Map(assetPrices.map(asset => [asset.symbol, Number(asset.contract_size) || 1]));
-          
-          // Calculate unrealized PnL for each open trade
-          totalUnrealizedPnL = openTrades.reduce((sum, trade) => {
-            const currentPrice = priceMap.get(trade.symbol);
-            if (!currentPrice || isNaN(currentPrice) || !trade.open_price || isNaN(trade.open_price)) {
-              return sum;
-            }
-
-            const amount = Number(trade.amount);
-            const openPrice = Number(trade.open_price);
-            const contractSize = sizeMap.get(trade.symbol) || 1;
-
-            let pnl = 0;
-            if (trade.trade_type === 'BUY') {
-              pnl = amount * (currentPrice - openPrice) * contractSize;
-            } else {
-              pnl = amount * (openPrice - currentPrice) * contractSize;
-            }
-
-            return sum + pnl;
-          }, 0);
-        }
-      }
-    }
-
-    // Balance stays as-is (preserves admin deposits and accumulated P&L)
-    // Only update margins and equity
-    const realTimeEquity = currentBalance + totalUnrealizedPnL;
-    const availableMargin = Math.max(currentBalance - totalUsedMargin, 0);
-
-    // Update ONLY margins and equity (preserve balance!)
-    const { error: updateError } = await supabase
-      .from('user_profiles')
-      .update({
-        equity: realTimeEquity,
-        used_margin: totalUsedMargin,
-        available_margin: availableMargin,
-        updated_at: new Date().toISOString()
-      })
-      .eq('user_id', userId);
-
-    if (updateError) {
-      console.error('Error updating user profile:', updateError);
+    const { error: refreshError } = await supabase.rpc('auto_recalculate_user_margins', { _user_id: userId });
+    if (refreshError) {
+      console.error('Error refreshing account figures:', refreshError);
       return false;
     }
 
-    console.log('Margins updated:', {
-      userId,
-      balance: currentBalance, // Preserved!
-      equity: realTimeEquity,
-      usedMargin: totalUsedMargin,
-      availableMargin,
-      unrealizedPnL: totalUnrealizedPnL,
-      note: 'Balance preserved, only margins updated'
-    });
+    const profile = await getUserProfile(userId);
+    if (!profile) return false;
 
-    // Broadcast margin update to connected user immediately
     broadcastToUser(userId, {
       type: 'margin_update',
       data: {
         userId,
-        balance: currentBalance, // Preserved!
-        usedMargin: totalUsedMargin,
-        availableMargin,
-        equity: realTimeEquity
+        balance: profile.balance || 0,
+        credit: profile.credit || 0,
+        usedMargin: profile.used_margin || 0,
+        availableMargin: profile.available_margin || 0,
+        equity: profile.equity || 0
       }
     });
 

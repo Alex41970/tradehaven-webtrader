@@ -3,7 +3,8 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { TransactionHistory } from "@/hooks/useTransactionHistory";
-import { Calendar, CreditCard, Clock, MessageSquare, Building, Coins, ArrowUpRight, ArrowDownLeft } from "lucide-react";
+import { Calendar, CreditCard, Clock, MessageSquare, Building, Coins, ArrowUpRight, ArrowDownLeft, Gift, Info } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface TransactionHistoryPopupProps {
   transaction: TransactionHistory | null;
@@ -13,6 +14,9 @@ interface TransactionHistoryPopupProps {
 
 export const TransactionHistoryPopup = ({ transaction, isOpen, onClose }: TransactionHistoryPopupProps) => {
   if (!transaction) return null;
+
+  const isCredit = transaction.type === 'credit';
+  const isAdjustment = isCredit && transaction.method === 'adjustment';
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleString('en-US', {
@@ -27,39 +31,37 @@ export const TransactionHistoryPopup = ({ transaction, isOpen, onClose }: Transa
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'approved':
-        return 'bg-green-500/10 text-green-500 border-green-500/20';
+        return 'bg-success/10 text-success border-success/20';
       case 'rejected':
-        return 'bg-red-500/10 text-red-500 border-red-500/20';
+        return 'bg-destructive/10 text-destructive border-destructive/20';
       case 'pending':
       default:
-        return 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20';
+        return 'bg-warning/10 text-warning border-warning/20';
     }
   };
 
-  const getTransactionIcon = () => {
-    return transaction.type === 'deposit' ? (
-      <div className="p-3 bg-green-500/10 rounded-full">
-        <ArrowDownLeft className="h-6 w-6 text-green-500" />
-      </div>
-    ) : (
-      <div className="p-3 bg-blue-500/10 rounded-full">
-        <ArrowUpRight className="h-6 w-6 text-blue-500" />
-      </div>
-    );
-  };
+  const icon = isCredit
+    ? <Gift className="h-6 w-6 text-primary" />
+    : transaction.type === 'deposit'
+      ? <ArrowDownLeft className="h-6 w-6 text-success" />
+      : <ArrowUpRight className="h-6 w-6 text-chart-3" />;
+
+  const amountText = `$${transaction.amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center space-x-3">
-            {getTransactionIcon()}
-            <div>
-              <h3 className="text-lg font-semibold capitalize">
-                {transaction.type} Request
+            <div className={cn("rounded-full p-3", isCredit ? "bg-primary/10" : transaction.type === 'deposit' ? "bg-success/10" : "bg-chart-3/10")}>
+              {icon}
+            </div>
+            <div className="min-w-0 text-left">
+              <h3 className={cn("text-lg font-semibold", !isCredit && "capitalize")}>
+                {isCredit ? transaction.title : `${transaction.type} Request`}
               </h3>
-              <p className="text-sm text-muted-foreground">
-                Transaction Details
+              <p className="text-sm font-normal text-muted-foreground">
+                {isCredit ? (isAdjustment ? 'Account adjustment' : 'Credit activity') : 'Transaction Details'}
               </p>
             </div>
           </DialogTitle>
@@ -69,37 +71,50 @@ export const TransactionHistoryPopup = ({ transaction, isOpen, onClose }: Transa
           {/* Status and Amount */}
           <Card>
             <CardContent className="p-4">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-sm font-medium text-muted-foreground">Status</span>
-                <Badge className={getStatusColor(transaction.status)}>
-                  {transaction.status.charAt(0).toUpperCase() + transaction.status.slice(1)}
-                </Badge>
-              </div>
+              {!isCredit && (
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-sm font-medium text-muted-foreground">Status</span>
+                  <Badge className={getStatusColor(transaction.status)}>
+                    {transaction.status.charAt(0).toUpperCase() + transaction.status.slice(1)}
+                  </Badge>
+                </div>
+              )}
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium text-muted-foreground">Amount</span>
-                <span className="text-2xl font-bold text-foreground">
-                  ${transaction.amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                <span className="num text-2xl font-bold text-foreground">
+                  {isCredit ? `${transaction.direction === 'out' ? '−' : '+'}${amountText}` : amountText}
                 </span>
               </div>
             </CardContent>
           </Card>
 
+          {isCredit && !isAdjustment && (
+            <div className="flex items-start gap-2 rounded-md border border-border bg-muted/40 p-3 text-sm text-muted-foreground">
+              <Info className="mt-0.5 h-4 w-4 shrink-0" />
+              <span>Credit is money from the company. You can trade with it, but it cannot be withdrawn. Profit you make with it is yours.</span>
+            </div>
+          )}
+
           {/* Transaction Info */}
           <div className="space-y-3">
-            <div className="flex items-center space-x-3">
-              <CreditCard className="h-4 w-4 text-muted-foreground" />
-              <div className="flex-1">
-                <p className="text-sm font-medium">Payment Method</p>
-                <p className="text-sm text-muted-foreground capitalize">{transaction.method}</p>
-              </div>
-            </div>
+            {!isCredit && (
+              <>
+                <div className="flex items-center space-x-3">
+                  <CreditCard className="h-4 w-4 text-muted-foreground" />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium">Payment Method</p>
+                    <p className="text-sm text-muted-foreground capitalize">{transaction.method.replace('_', ' ')}</p>
+                  </div>
+                </div>
 
-            <Separator />
+                <Separator />
+              </>
+            )}
 
             <div className="flex items-center space-x-3">
               <Calendar className="h-4 w-4 text-muted-foreground" />
               <div className="flex-1">
-                <p className="text-sm font-medium">Request Date</p>
+                <p className="text-sm font-medium">{isCredit ? 'Date' : 'Request Date'}</p>
                 <p className="text-sm text-muted-foreground">{formatDate(transaction.created_at)}</p>
               </div>
             </div>
@@ -164,7 +179,7 @@ export const TransactionHistoryPopup = ({ transaction, isOpen, onClose }: Transa
                   <MessageSquare className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium mb-1">
-                      {transaction.status === 'rejected' ? 'Rejection Reason' : 'Admin Notes'}
+                      {isCredit ? 'Note' : transaction.status === 'rejected' ? 'Rejection Reason' : 'Admin Notes'}
                     </p>
                     <div className={`text-sm p-3 rounded-md ${
                       transaction.status === 'rejected' 
@@ -183,7 +198,7 @@ export const TransactionHistoryPopup = ({ transaction, isOpen, onClose }: Transa
           <Card>
             <CardContent className="p-3">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-medium text-muted-foreground">Request ID</span>
+                <span className="text-xs font-medium text-muted-foreground">{isCredit ? 'Reference' : 'Request ID'}</span>
                 <span className="text-xs font-mono text-muted-foreground">
                   {transaction.id.slice(-12).toUpperCase()}
                 </span>

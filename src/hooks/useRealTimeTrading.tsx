@@ -16,6 +16,7 @@ export interface RealTimeUserProfile {
   surname?: string;
   phone_number?: string;
   balance: number;
+  credit?: number;
   equity: number;
   used_margin: number;
   available_margin: number;
@@ -97,6 +98,7 @@ export const useRealTimeTrading = () => {
         setProfile(prev => prev ? {
           ...prev,
           balance: message.data.balance,
+          credit: message.data.credit ?? prev.credit,
           used_margin: message.data.usedMargin,
           available_margin: message.data.availableMargin,
           equity: message.data.equity

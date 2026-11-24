@@ -25,6 +25,7 @@ interface ResetAccountDialogProps {
     first_name?: string;
     surname?: string;
     balance: number;
+    credit?: number;
   } | null;
   openTradesCount: number;
   onSuccess: () => void;
@@ -63,14 +64,14 @@ export const ResetAccountDialog: React.FC<ResetAccountDialogProps> = ({
 
       if (error) throw error;
 
-      const result = data as { success: boolean; error?: string; trades_closed?: number; trades_deleted?: number; previous_balance?: number };
+      const result = data as { success: boolean; error?: string; trades_closed?: number; trades_deleted?: number; previous_balance?: number; previous_credit?: number };
 
       if (!result?.success) {
         toast.error(result?.error || 'Failed to reset account');
         return;
       }
 
-      toast.success(`Account reset successfully. ${result.trades_closed || 0} trades closed, previous balance: $${result.previous_balance?.toFixed(2) || '0.00'}`);
+      toast.success(`Account reset. ${result.trades_closed || 0} trades closed. Previous balance $${result.previous_balance?.toFixed(2) || '0.00'}, previous credit $${result.previous_credit?.toFixed(2) || '0.00'}.`);
       onOpenChange(false);
       onSuccess();
     } catch (error: any) {
@@ -105,6 +106,7 @@ export const ResetAccountDialog: React.FC<ResetAccountDialogProps> = ({
         <div className="space-y-4 py-4">
           <div className="p-3 bg-muted rounded-lg space-y-1">
             <p className="text-sm"><strong>Current Balance:</strong> ${user?.balance?.toFixed(2) || '0.00'}</p>
+            <p className="text-sm"><strong>Current Credit:</strong> ${user?.credit?.toFixed(2) || '0.00'}</p>
             <p className="text-sm"><strong>Open Trades:</strong> {openTradesCount}</p>
           </div>
 
@@ -116,7 +118,7 @@ export const ResetAccountDialog: React.FC<ResetAccountDialogProps> = ({
                 onCheckedChange={(checked) => setCloseTrades(checked === true)}
               />
               <Label htmlFor="closeTrades" className="cursor-pointer">
-                Close all open trades (releases margin, no P&L applied)
+                Close all open trades and cancel waiting orders (no P&L applied)
               </Label>
             </div>
 
@@ -138,7 +140,7 @@ export const ResetAccountDialog: React.FC<ResetAccountDialogProps> = ({
                 onCheckedChange={(checked) => setResetBalance(checked === true)}
               />
               <Label htmlFor="resetBalance" className="cursor-pointer">
-                Reset balance to $0
+                Reset balance and credit to $0
               </Label>
             </div>
           </div>

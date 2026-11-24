@@ -134,6 +134,13 @@
       "when": 1795539567684,
       "tag": "0018_credit_withdrawals_and_housekeeping",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1795539970072,
+      "tag": "0019_credit_trade_delete_refund_order",
+      "breakpoints": true
     }
   ]
 }

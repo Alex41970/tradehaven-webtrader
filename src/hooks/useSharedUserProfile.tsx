@@ -10,6 +10,8 @@ export interface UserProfile {
   surname?: string;
   phone_number?: string;
   balance: number;
+  /** Company money: usable for trading, never withdrawable */
+  credit: number;
   equity: number;
   used_margin: number;
   available_margin: number;

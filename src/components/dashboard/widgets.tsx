@@ -4,8 +4,8 @@ import {
 } from "recharts";
 import { cn } from "@/lib/utils";
 import type { Trade } from "@/hooks/useTrades";
-import type { TransactionHistory } from "@/hooks/useTransactionHistory";
-import { ArrowDownLeft, ArrowUpRight, Inbox } from "lucide-react";
+import type { CreditTransaction, TransactionHistory } from "@/hooks/useTransactionHistory";
+import { ArrowDownLeft, ArrowUpRight, Gift, Inbox } from "lucide-react";
 
 export const fmtUsd = (n: number, digits = 2) =>
   new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: digits, maximumFractionDigits: digits }).format(Number.isFinite(n) ? n : 0);
@@ -51,8 +51,8 @@ export const Pill = ({ value, suffix = "%" }: { value: number; suffix?: string }
   </span>
 );
 
-export const StatCard = ({ label, value, hint, icon, tone }: { label: string; value: string; hint?: ReactNode; icon?: ReactNode; tone?: "up" | "down" }) => (
-  <Bento className="flex flex-col justify-between gap-2 p-4">
+export const StatCard = ({ label, value, hint, icon, tone, className }: { label: string; value: string; hint?: ReactNode; icon?: ReactNode; tone?: "up" | "down"; className?: string }) => (
+  <Bento className={cn("flex flex-col justify-between gap-2 p-4", className)}>
     <div className="flex items-center justify-between">
       <span className="label-caps">{label}</span>
     </div>
@@ -76,13 +76,22 @@ const ChartTip = ({ active, payload, label, money = true }: any) => {
 type Range = "1W" | "1M" | "3M" | "ALL";
 const RANGE_MS: Record<Range, number> = { "1W": 7 * 864e5, "1M": 30 * 864e5, "3M": 90 * 864e5, ALL: Infinity };
 
-/** Rebuilds balance history backwards from the current balance using closed trades and approved cash moves. */
-export function useEquityCurve(balance: number, equity: number, trades: Trade[], txs: TransactionHistory[]) {
+/**
+ * Rebuilds the account's funds history (balance + credit) backwards from today,
+ * using closed trades, approved cash moves and the credit history.
+ */
+export function useEquityCurve(balance: number, equity: number, trades: Trade[], txs: TransactionHistory[], credit: CreditTransaction[] = []) {
   return useMemo(() => {
     const events: { t: number; delta: number }[] = [];
     trades.filter((t) => t.status === "closed" && t.closed_at).forEach((t) => events.push({ t: +new Date(t.closed_at!), delta: Number(t.pnl) || 0 }));
-    txs.filter((x) => x.status === "approved").forEach((x) =>
+    txs.filter((x) => x.status === "approved" && x.type !== "credit").forEach((x) =>
       events.push({ t: +new Date(x.processed_at || x.created_at), delta: x.type === "deposit" ? x.amount : -x.amount }));
+    // A credit entry moves funds by its credit change plus the balance change booked with it
+    // (credit that covers a loss nets to zero: it only moves money from credit to balance).
+    credit.forEach((c) => {
+      const delta = (Number(c.amount) || 0) + (Number(c.balance_change) || 0);
+      if (delta !== 0) events.push({ t: +new Date(c.created_at), delta });
+    });
     events.sort((a, b) => b.t - a.t);
     const pts: { t: number; v: number }[] = [{ t: Date.now(), v: equity || balance }];
     let running = balance;
@@ -93,7 +102,7 @@ export function useEquityCurve(balance: number, equity: number, trades: Trade[],
     }
     if (pts.length === 1) pts.push({ t: Date.now() - 30 * 864e5, v: balance });
     return pts.reverse();
-  }, [balance, equity, trades, txs]);
+  }, [balance, equity, trades, txs, credit]);
 }
 
 export const EquityChart = ({ points, equity, change }: { points: { t: number; v: number }[]; equity: number; change: number }) => {
@@ -226,24 +235,26 @@ export const MarginGauge = ({ level }: { level: number | null }) => {
 
 export const ActivityList = ({ items, onClick }: { items: TransactionHistory[]; onClick: (t: TransactionHistory) => void }) => (
   <Bento className="flex flex-col">
-    <BentoHeader title="Wallet activity" subtitle="Deposits and withdrawals" />
-    {items.length === 0 ? <EmptyState text="No deposits or withdrawals yet" /> : (
+    <BentoHeader title="Wallet activity" subtitle="Deposits, withdrawals and credit" />
+    {items.length === 0 ? <EmptyState text="No deposits, withdrawals or credit yet" /> : (
       <ul className="-mx-2 space-y-1">
         {items.slice(0, 6).map((t) => (
           <li key={t.id}>
             <button onClick={() => onClick(t)} className="flex w-full items-center gap-3 rounded-lg px-2 py-2 text-left transition-colors hover:bg-muted/60">
-              <span className={cn("flex h-7 w-7 items-center justify-center rounded",
-                t.type === "deposit" ? "bg-success/10 text-success" : "bg-chart-3/10 text-chart-3")}>
-                {t.type === "deposit" ? <ArrowDownLeft className="h-4 w-4" /> : <ArrowUpRight className="h-4 w-4" />}
+              <span className={cn("flex h-7 w-7 shrink-0 items-center justify-center rounded",
+                t.type === "credit" ? "bg-primary/10 text-primary" : t.type === "deposit" ? "bg-success/10 text-success" : "bg-chart-3/10 text-chart-3")}>
+                {t.type === "credit" ? <Gift className="h-4 w-4" /> : t.type === "deposit" ? <ArrowDownLeft className="h-4 w-4" /> : <ArrowUpRight className="h-4 w-4" />}
               </span>
               <span className="min-w-0 flex-1">
-                <span className="block text-sm capitalize">{t.type}</span>
+                <span className={cn("block truncate text-sm", t.type !== "credit" && "capitalize")}>{t.type === "credit" ? t.title : t.type}</span>
                 <span className="block text-[11px] text-muted-foreground">{new Date(t.created_at).toLocaleDateString()}</span>
               </span>
-              <span className="text-right">
-                <span className="num block text-sm">{fmtUsd(t.amount)}</span>
-                <span className={cn("text-[11px] capitalize",
-                  t.status === "approved" ? "text-success" : t.status === "rejected" ? "text-destructive" : "text-warning")}>{t.status}</span>
+              <span className="shrink-0 text-right">
+                <span className="num block text-sm">{t.type === "credit" ? `${t.direction === "out" ? "−" : "+"}${fmtUsd(t.amount)}` : fmtUsd(t.amount)}</span>
+                {t.type === "credit" ? <span className="text-[11px] text-muted-foreground">{t.method === "adjustment" ? "Adjustment" : "Credit"}</span> : (
+                  <span className={cn("text-[11px] capitalize",
+                    t.status === "approved" ? "text-success" : t.status === "rejected" ? "text-destructive" : "text-warning")}>{t.status}</span>
+                )}
               </span>
             </button>
           </li>

@@ -13,7 +13,8 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Users, Shield, UserCheck, Settings, Crown, LogOut, Trash2, Activity, Radio } from "lucide-react";
+import { Users, Shield, UserCheck, Settings, Crown, LogOut, Trash2, Activity, Radio, Gift } from "lucide-react";
+import { ModifyCreditDialog } from "@/components/admin/ModifyCreditDialog";
 import { Navigate } from "react-router-dom";
 import PriceFeedMonitor from "@/components/admin/PriceFeedMonitor";
 import SuperAdminTradingControls from "@/components/admin/SuperAdminTradingControls";
@@ -25,6 +26,8 @@ interface UserWithRole {
   surname?: string;
   phone_number?: string;
   balance: number;
+  credit: number;
+  used_margin?: number;
   equity: number;
   admin_id: string | null;
   admin_email: string | null;
@@ -84,6 +87,7 @@ const SuperAdminDashboard = () => {
   // Delete user states
   const [userToDelete, setUserToDelete] = useState<UserWithRole | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [creditUser, setCreditUser] = useState<UserWithRole | null>(null);
   const [deletingUser, setDeletingUser] = useState(false);
 
   useEffect(() => {
@@ -132,6 +136,8 @@ const SuperAdminDashboard = () => {
           surname,
           phone_number,
           balance,
+          credit,
+          used_margin,
           equity,
           admin_id,
           assignment_method,
@@ -168,6 +174,8 @@ const SuperAdminDashboard = () => {
         surname: user.surname,
         phone_number: user.phone_number,
         balance: user.balance,
+        credit: user.credit || 0,
+        used_margin: user.used_margin || 0,
         equity: user.equity,
         admin_id: user.admin_id,
         admin_email: user.admin_id ? emailMap.get(user.admin_id) || null : null,
@@ -561,6 +569,7 @@ const SuperAdminDashboard = () => {
                         <TableHead>Role</TableHead>
                         <TableHead>Admin</TableHead>
                         <TableHead>Balance</TableHead>
+                        <TableHead>Credit</TableHead>
                         <TableHead>Actions</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -581,7 +590,17 @@ const SuperAdminDashboard = () => {
                           </TableCell>
                           <TableCell>{user.admin_email || '-'}</TableCell>
                           <TableCell>${user.balance.toLocaleString()}</TableCell>
+                          <TableCell className={user.credit > 0 ? "text-primary" : "text-muted-foreground"}>${user.credit.toLocaleString()}</TableCell>
                           <TableCell>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setCreditUser(user)}
+                              aria-label={`Credit for ${user.email}`}
+                            >
+                              <Gift className="mr-1 h-4 w-4" />
+                              Credit
+                            </Button>
                             <Button
                               variant="ghost"
                               size="sm"
@@ -753,6 +772,13 @@ const SuperAdminDashboard = () => {
           </Tabs>
         )}
       </div>
+
+      <ModifyCreditDialog
+        open={!!creditUser}
+        onOpenChange={(o) => { if (!o) setCreditUser(null); }}
+        user={creditUser}
+        onSuccess={fetchSuperAdminData}
+      />
 
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>

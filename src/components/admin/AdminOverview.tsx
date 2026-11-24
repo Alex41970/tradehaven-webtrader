@@ -10,7 +10,7 @@ type T = { id: string; symbol: string; status: string; opened_at: string; pnl: n
 interface Props {
   users: U[];
   trades: T[];
-  stats: { totalBalance: number; totalUsers: number; totalTrades: number; activeTrades: number };
+  stats: { totalBalance: number; totalCredit?: number; totalUsers: number; totalTrades: number; activeTrades: number };
   tradeStats: { netClosedPnL: number; activeTradesPnL: number; grossProfit: number; grossLoss: number };
   pendingRequests: number;
   onNavigate: (id: string) => void;
@@ -62,7 +62,8 @@ export const AdminOverview = ({ users, trades, stats, tradeStats, pendingRequest
   return (
     <div className="grid grid-cols-2 gap-3 md:gap-4 lg:grid-cols-4">
       <StatCard label="Users" value={String(stats.totalUsers)} icon={<Users className="h-4 w-4" />} />
-      <StatCard label="Client balances" value={fmtCompact(stats.totalBalance)} icon={<DollarSign className="h-4 w-4" />} />
+      <StatCard label="Client balances" value={fmtCompact(stats.totalBalance)} icon={<DollarSign className="h-4 w-4" />}
+        hint={`Credit given ${fmtCompact(stats.totalCredit || 0)}`} />
       <StatCard label="Open trades" value={String(stats.activeTrades)} hint={`${stats.totalTrades} total`} icon={<Activity className="h-4 w-4" />} />
       <StatCard label="Client P&L" value={fmtSigned(net)} tone={net >= 0 ? "up" : "down"}
         hint={`Open ${fmtSigned(tradeStats.activeTradesPnL)}`} icon={<TrendingUp className="h-4 w-4" />} />

@@ -31,9 +31,30 @@ export interface WithdrawalRequest {
   created_at: string;
 }
 
+export type CreditTransactionType =
+  | 'credit_in' | 'credit_out' | 'loss_cover' | 'loss_cover_reversal'
+  | 'negative_balance_reset' | 'negative_balance_reset_reversal' | 'account_reset';
+
+/** One line of the credit history kept by the server */
+export interface CreditTransaction {
+  id: string;
+  user_id: string;
+  type: CreditTransactionType;
+  /** Signed change in credit */
+  amount: number;
+  /** Signed change in balance booked by the same entry */
+  balance_change: number;
+  credit_after: number;
+  balance_after: number;
+  reason?: string | null;
+  performed_by?: string | null;
+  trade_id?: string | null;
+  created_at: string;
+}
+
 export type TransactionHistory = {
   id: string;
-  type: 'deposit' | 'withdrawal';
+  type: 'deposit' | 'withdrawal' | 'credit';
   amount: number;
   method: string;
   status: 'pending' | 'approved' | 'rejected';
@@ -42,6 +63,23 @@ export type TransactionHistory = {
   admin_notes?: string;
   crypto_wallet_address?: string;
   bank_details?: any;
+  /** Credit entries only: what happened, and whether money came in or went out */
+  title?: string;
+  direction?: 'in' | 'out';
+};
+
+/** How a credit entry reads for the client. Entries without a line here are bookkeeping only. */
+export const describeCreditEntry = (c: CreditTransaction): { title: string; amount: number; direction: 'in' | 'out' } | null => {
+  const credit = Math.abs(Number(c.amount) || 0);
+  switch (c.type) {
+    case 'credit_in': return { title: 'Credit added', amount: credit, direction: 'in' };
+    case 'credit_out': return { title: 'Credit removed', amount: credit, direction: 'out' };
+    case 'loss_cover': return { title: 'Credit used to cover losses', amount: credit, direction: 'out' };
+    case 'loss_cover_reversal': return { title: 'Credit returned', amount: credit, direction: 'in' };
+    case 'negative_balance_reset': return { title: 'Negative balance cleared', amount: Math.abs(Number(c.balance_change) || 0), direction: 'in' };
+    case 'account_reset': return credit > 0 ? { title: 'Credit cleared (account reset)', amount: credit, direction: 'out' } : null;
+    default: return null;
+  }
 };
 
 const POLL_INTERVAL = 30000; // 30 seconds polling
@@ -50,6 +88,7 @@ export const useTransactionHistory = () => {
   const { user } = useAuth();
   const [deposits, setDeposits] = useState<DepositRequest[]>([]);
   const [withdrawals, setWithdrawals] = useState<WithdrawalRequest[]>([]);
+  const [creditHistory, setCreditHistory] = useState<CreditTransaction[]>([]);
   const [loading, setLoading] = useState(true);
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -90,6 +129,18 @@ export const useTransactionHistory = () => {
       } else {
         setWithdrawals(withdrawalsData as WithdrawalRequest[] || []);
       }
+
+      // Credit history (company money: added, removed, used to cover losses)
+      const { data: creditData, error: creditError } = await supabase
+        .from('credit_transactions')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(500);
+
+      if (!creditError) {
+        setCreditHistory((creditData || []) as CreditTransaction[]);
+      }
     } catch {
       // Silent fail
     } finally {
@@ -108,6 +159,7 @@ export const useTransactionHistory = () => {
     } else {
       setDeposits([]);
       setWithdrawals([]);
+      setCreditHistory([]);
       setLoading(false);
     }
 
@@ -144,12 +196,28 @@ export const useTransactionHistory = () => {
       admin_notes: withdrawal.admin_notes,
       crypto_wallet_address: withdrawal.crypto_wallet_address,
       bank_details: withdrawal.bank_details,
-    }))
+    })),
+    ...creditHistory.flatMap((entry): TransactionHistory[] => {
+      const line = describeCreditEntry(entry);
+      if (!line) return [];
+      return [{
+        id: entry.id,
+        type: 'credit' as const,
+        amount: line.amount,
+        method: entry.type === 'negative_balance_reset' ? 'adjustment' : 'credit',
+        status: 'approved' as const,
+        created_at: entry.created_at,
+        admin_notes: entry.reason || undefined,
+        title: line.title,
+        direction: line.direction,
+      }];
+    })
   ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
   return {
     deposits,
     withdrawals,
+    creditHistory,
     transactionHistory,
     loading,
     refetch: fetchTransactions,

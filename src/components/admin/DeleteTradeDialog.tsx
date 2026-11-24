@@ -52,20 +52,28 @@ export const DeleteTradeDialog: React.FC<DeleteTradeDialogProps> = ({
 
       if (error) throw error;
 
-      const result = data as { success: boolean; error?: string; margin_released?: number; pnl_reversed?: number };
+      const result = data as {
+        success: boolean; error?: string; margin_released?: number; pnl_reversed?: number;
+        balance_change?: number; credit_returned?: number; write_off_cancelled?: number; closed_before_reset?: boolean;
+      };
 
       if (!result?.success) {
         toast.error(result?.error || 'Failed to delete trade');
         return;
       }
 
-      let message = 'Trade deleted successfully.';
-      if (result.margin_released && result.margin_released > 0) {
-        message += ` Margin released: $${result.margin_released.toFixed(2)}`;
+      // Say exactly where the money went: credit that paid for a loss comes back as credit, never as cash
+      const usd = (n: number) => `$${Math.abs(n).toFixed(2)}`;
+      const parts: string[] = ['Trade deleted.'];
+      if (result.margin_released && result.margin_released > 0) parts.push(`Margin released: ${usd(result.margin_released)}.`);
+      if (result.closed_before_reset) {
+        parts.push('It was closed before the last account reset, so no money changed.');
+      } else {
+        if (result.balance_change) parts.push(`Balance ${result.balance_change > 0 ? '+' : '−'}${usd(result.balance_change)}.`);
+        if (result.credit_returned && result.credit_returned > 0) parts.push(`Credit returned: ${usd(result.credit_returned)}.`);
+        if (result.write_off_cancelled && result.write_off_cancelled > 0) parts.push(`${usd(result.write_off_cancelled)} of the loss had already been cleared by the company, so it is not paid back.`);
       }
-      if (result.pnl_reversed && result.pnl_reversed !== 0) {
-        message += ` P&L reversed: $${result.pnl_reversed.toFixed(2)}`;
-      }
+      const message = parts.join(' ');
 
       toast.success(message);
       onOpenChange(false);
@@ -124,7 +132,7 @@ export const DeleteTradeDialog: React.FC<DeleteTradeDialogProps> = ({
               )}
             </div>
 
-            <div className="p-3 border rounded-lg border-amber-500/50 bg-amber-500/10">
+            <div className="p-3 border rounded-lg border-warning/50 bg-warning/10">
               <p className="text-sm">
                 {isOpen ? (
                   <>
@@ -132,7 +140,7 @@ export const DeleteTradeDialog: React.FC<DeleteTradeDialogProps> = ({
                   </>
                 ) : (
                   <>
-                    <strong>Closed trade:</strong> P&L of ${trade.pnl?.toFixed(2) || '0.00'} will be reversed from the user's balance.
+                    <strong>Closed trade:</strong> P&L of ${trade.pnl?.toFixed(2) || '0.00'} will be reversed. A loss that was paid with credit comes back as credit, not as cash.
                   </>
                 )}
               </p>

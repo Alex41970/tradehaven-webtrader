@@ -20,7 +20,7 @@ export const Portfolio = () => {
   const { toast } = useToast();
   const { getUpdatedAssets } = useRealTimePrices();
   const { 
-    realTimeEquity, 
+    openPnL,
     lastUpdated,
     excludeTradeFromPnL, 
     includeTradeInPnL 
@@ -68,8 +68,8 @@ export const Portfolio = () => {
   }, [closeTrade, closingTrades, excludeTradeFromPnL, includeTradeInPnL, handleTradeAction]);
 
   // Stop-loss / take-profit are executed on the server at real market prices (price-feed)
-  // Use real-time account metrics for equity calculation
-  const totalPnL = realTimeEquity - (profile?.balance || 0);
+  // Open profit and loss only (credit is part of equity, not of profit)
+  const totalPnL = openPnL;
 
   // Calculate risk metrics
   const riskMetrics = useMemo(() => {

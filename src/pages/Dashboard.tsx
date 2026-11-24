@@ -55,13 +55,15 @@ const Dashboard = () => {
   const { assets, loading: assetsLoading } = useAssets();
   const { getUpdatedAssets } = useRealTimePrices();
   const { botStatus, activateLicense, pauseBot, resumeBot, disconnectBot } = useBotStatus();
-  const { realTimeBalance, realTimeEquity, realTimeFreeMargin, totalUsedMargin } = useRealtimeAccountMetrics();
+  const { realTimeBalance, realTimeEquity, realTimeFreeMargin, totalUsedMargin, credit, marginLevel, withdrawable } = useRealtimeAccountMetrics();
   const { metrics } = useProfessionalMetrics(trades, realTimeEquity);
-  const { transactionHistory } = useTransactionHistory();
+  const { transactionHistory, creditHistory } = useTransactionHistory();
+  // Credit is shown once the account has ever had any, so a used-up credit still reads $0.00
+  const showCredit = credit > 0 || creditHistory.length > 0;
 
   const updatedAssets = useMemo(() => getUpdatedAssets(assets), [assets, getUpdatedAssets]);
   const { tradePnL, totalPnL } = useRealtimePnL(trades, updatedAssets);
-  const equityCurve = useEquityCurve(realTimeBalance, realTimeEquity, trades, transactionHistory);
+  const equityCurve = useEquityCurve(realTimeBalance + credit, realTimeEquity, trades, transactionHistory, creditHistory);
 
   const [botModalOpen, setBotModalOpen] = useState(false);
   const [showPermissions, setShowPermissions] = useState(false);
@@ -71,7 +73,6 @@ const Dashboard = () => {
   const [selectedTx, setSelectedTx] = useState<TransactionHistory | null>(null);
   const [showSupport, setShowSupport] = useState(false);
 
-  const marginLevel = totalUsedMargin > 0 ? (realTimeEquity / totalUsedMargin) * 100 : null;
   const firstPoint = equityCurve.find((p) => p.t >= Date.now() - 30 * 864e5) ?? equityCurve[0];
   const monthChange = firstPoint && firstPoint.v > 0 ? ((realTimeEquity - firstPoint.v) / firstPoint.v) * 100 : 0;
 
@@ -111,6 +112,7 @@ const Dashboard = () => {
       <div className="hidden min-w-0 items-center gap-6 lg:flex">
         {[
           ["Balance", fmtUsd(realTimeBalance)],
+          ...(showCredit ? [["Credit", fmtUsd(credit)]] : []),
           ["Equity", fmtUsd(realTimeEquity)],
           ["Free margin", fmtUsd(realTimeFreeMargin)],
           ["Margin level", marginLevel === null ? "—" : marginLevel > 9999 ? ">9999%" : `${marginLevel.toFixed(0)}%`],
@@ -176,10 +178,11 @@ const Dashboard = () => {
             </div>
 
             <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-              <div className="col-span-2 lg:col-span-3 lg:row-span-2">
+              <div className={cn("col-span-2 lg:col-span-3", showCredit ? "lg:row-span-3" : "lg:row-span-2")}>
                 <EquityChart points={equityCurve} equity={realTimeEquity} change={monthChange} />
               </div>
-              <StatCard label="Balance" value={fmtUsd(realTimeBalance)} icon={<Coins className="h-4 w-4" />} hint="Settled cash" />
+              <StatCard label="Balance" value={fmtUsd(realTimeBalance)} icon={<Coins className="h-4 w-4" />} hint={showCredit ? "Your own money" : "Settled cash"} />
+              {showCredit && <StatCard label="Credit" value={fmtUsd(credit)} hint="For trading only · cannot be withdrawn" />}
               <StatCard label="Open P&L" value={fmtSigned(totalPnL || 0)} tone={(totalPnL || 0) >= 0 ? "up" : "down"}
                 icon={<Activity className="h-4 w-4" />} hint={`${openTrades.length} open position${openTrades.length === 1 ? "" : "s"}`} />
               <StatCard label="Free margin" value={fmtUsd(realTimeFreeMargin)} hint={`Used ${fmtUsd(totalUsedMargin)}`} />
@@ -189,7 +192,8 @@ const Dashboard = () => {
                 <MarginGauge level={marginLevel} />
               </Bento>
               <StatCard label="Win rate" value={`${metrics.winRate.toFixed(1)}%`} hint={`${metrics.profitableTrades}W · ${metrics.losingTrades}L`} />
-              <StatCard label="Profit factor" value={metrics.profitFactor.toFixed(2)} hint={`Max drawdown ${metrics.maximumDrawdownPercent.toFixed(1)}%`} />
+              <StatCard label="Profit factor" value={metrics.profitFactor.toFixed(2)} hint={`Max drawdown ${metrics.maximumDrawdownPercent.toFixed(1)}%`}
+                className={showCredit ? "col-span-2 lg:col-span-1" : undefined} />
             </div>
 
             <div className="grid gap-3 lg:grid-cols-3">
@@ -281,7 +285,7 @@ const Dashboard = () => {
         onActivate={async (k: string) => { const ok = await activateLicense(k); if (ok) { setBotModalOpen(false); setShowPermissions(true); } return ok; }}
         onAcceptPermissions={() => setShowPermissions(false)} showPermissions={showPermissions} />
       <DepositModal open={showDeposit} onOpenChange={setShowDeposit} />
-      <WithdrawModal open={showWithdraw} onOpenChange={setShowWithdraw} />
+      <WithdrawModal open={showWithdraw} onOpenChange={setShowWithdraw} account={{ balance: realTimeBalance, credit, withdrawable }} />
       <TransactionHistoryPopup transaction={selectedTx} isOpen={!!selectedTx} onClose={() => setSelectedTx(null)} />
       <ContactSupportModal isOpen={showSupport} onClose={() => setShowSupport(false)} />
     </AppShell>

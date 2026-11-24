@@ -16,6 +16,7 @@ import { AdminTradingSettings } from "@/components/AdminTradingSettings";
 import { ManagePaymentSettingsDialog } from "@/components/admin/ManagePaymentSettingsDialog";
 import { UserSearchSelect } from "@/components/admin/UserSearchSelect";
 import { ModifyBalanceDialog } from "@/components/admin/ModifyBalanceDialog";
+import { ModifyCreditDialog } from "@/components/admin/ModifyCreditDialog";
 import { CreateTradeDialog } from "@/components/admin/CreateTradeDialog";
 import { RejectRequestDialog } from "@/components/admin/RejectRequestDialog";
 import { ViewWithdrawalDetailsDialog } from "@/components/admin/ViewWithdrawalDetailsDialog";
@@ -24,7 +25,7 @@ import { DeleteTradeDialog } from "@/components/admin/DeleteTradeDialog";
 import { useAssets } from "@/hooks/useAssets";
 import { useRealTimePrices } from "@/hooks/useRealTimePrices";
 import { calculateRealTimePnL } from "@/utils/pnlCalculator";
-import { Users, DollarSign, Settings, LogOut, Search, Filter, Activity, Plus, CreditCard, Eye, TrendingUp, RotateCcw, Trash2, LayoutDashboard, Bot, Radio } from "lucide-react";
+import { Users, DollarSign, Settings, LogOut, Search, Filter, Activity, Plus, CreditCard, Eye, TrendingUp, RotateCcw, Trash2, LayoutDashboard, Bot, Radio, Gift } from "lucide-react";
 import { Navigate } from "react-router-dom";
 import { AppShell, type NavItem } from "@/components/layout/AppShell";
 import { AdminOverview } from "@/components/admin/AdminOverview";
@@ -36,6 +37,7 @@ interface UserProfile {
   surname?: string;
   phone_number?: string;
   balance: number;
+  credit: number;
   equity: number;
   available_margin: number;
   used_margin: number;
@@ -77,6 +79,7 @@ const AdminDashboard = () => {
   
   // Dialog states
   const [modifyBalanceDialogOpen, setModifyBalanceDialogOpen] = useState(false);
+  const [modifyCreditDialogOpen, setModifyCreditDialogOpen] = useState(false);
   const [paymentSettingsDialogOpen, setPaymentSettingsDialogOpen] = useState(false);
   const [createTradeDialogOpen, setCreateTradeDialogOpen] = useState(false);
   const [selectedUserForAction, setSelectedUserForAction] = useState<UserProfile | null>(null);
@@ -543,6 +546,7 @@ const AdminDashboard = () => {
   // MUST be before any conditional returns to maintain hook order
   const stats = useMemo(() => ({
     totalBalance: users.reduce((sum, user) => sum + (user.balance || 0), 0),
+    totalCredit: users.reduce((sum, user) => sum + (user.credit || 0), 0),
     totalUsers: users.length,
     totalTrades: trades.length,
     activeTrades: trades.filter(t => t.status === 'open').length
@@ -806,6 +810,7 @@ const AdminDashboard = () => {
                         <TableHead>Email</TableHead>
                         <TableHead>Phone</TableHead>
                         <TableHead>Balance</TableHead>
+                        <TableHead>Credit</TableHead>
                         <TableHead>Equity</TableHead>
                         <TableHead>Available Margin</TableHead>
                         <TableHead>Last Active</TableHead>
@@ -817,7 +822,7 @@ const AdminDashboard = () => {
                     <TableBody>
                       {filteredUsers.length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
+                          <TableCell colSpan={11} className="text-center text-muted-foreground py-8">
                             No users found
                           </TableCell>
                         </TableRow>
@@ -832,6 +837,7 @@ const AdminDashboard = () => {
                             <TableCell>{user.email}</TableCell>
                             <TableCell>{user.phone_number || 'Not provided'}</TableCell>
                             <TableCell className="font-medium">${user.balance?.toFixed(2) || '0.00'}</TableCell>
+                            <TableCell className={user.credit > 0 ? "text-primary" : "text-muted-foreground"}>${user.credit?.toFixed(2) || '0.00'}</TableCell>
                             <TableCell>${user.equity?.toFixed(2) || '0.00'}</TableCell>
                             <TableCell>${user.available_margin?.toFixed(2) || '0.00'}</TableCell>
                             <TableCell>
@@ -857,6 +863,17 @@ const AdminDashboard = () => {
                                 >
                                   <DollarSign className="h-4 w-4 mr-1" />
                                   Balance
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => {
+                                    setSelectedUserForAction(user);
+                                    setModifyCreditDialogOpen(true);
+                                  }}
+                                >
+                                  <Gift className="h-4 w-4 mr-1" />
+                                  Credit
                                 </Button>
                                 <Button
                                   size="sm"
@@ -1416,6 +1433,13 @@ const AdminDashboard = () => {
       </AppShell>
 
       {/* Dialogs */}
+      <ModifyCreditDialog
+        open={modifyCreditDialogOpen}
+        onOpenChange={setModifyCreditDialogOpen}
+        user={selectedUserForAction}
+        onSuccess={fetchAdminData}
+      />
+
       <ModifyBalanceDialog
         open={modifyBalanceDialogOpen}
         onOpenChange={setModifyBalanceDialogOpen}
