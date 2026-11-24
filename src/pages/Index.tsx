@@ -18,7 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
-import heroImg from "@/assets/hero-markets.jpg";
+import heroImg from "@/assets/hero-backdrop.jpg";
 import devicesImg from "@/assets/devices-trading.jpg";
 
 const demoRequestSchema = z.object({
@@ -102,7 +102,7 @@ const Index = () => {
 
       {/* HERO */}
       <section className="relative isolate overflow-hidden">
-        <img src={heroImg} alt="" width={1920} height={1088} className="absolute inset-0 -z-20 h-full w-full object-cover opacity-70" />
+        <img src={heroImg} alt="" width={1672} height={941} className="absolute inset-0 -z-20 h-full w-full object-cover opacity-70" />
         <div className="absolute inset-0 -z-10 bg-gradient-to-r from-background via-background/85 to-background/20" />
         <div className="absolute inset-x-0 bottom-0 -z-10 h-40 bg-gradient-to-t from-background to-transparent" />
         <div className="container mx-auto px-4 pb-24 pt-20 lg:pb-36 lg:pt-32">
