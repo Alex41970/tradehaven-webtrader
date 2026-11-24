@@ -139,8 +139,9 @@ export const useProfessionalMetrics = (trades: Trade[], balance: number) => {
     const totalProfit = profitableTrades.reduce((sum, trade) => sum + (trade.pnl || 0), 0);
     const totalLoss = Math.abs(losingTrades.reduce((sum, trade) => sum + (trade.pnl || 0), 0));
     
-    const largestWin = pnlValues.length > 0 ? Math.max(...pnlValues) : 0;
-    const largestLoss = pnlValues.length > 0 ? Math.min(...pnlValues) : 0;
+    // A win is never negative and a loss never positive, even when every trade went one way
+    const largestWin = pnlValues.length > 0 ? Math.max(0, ...pnlValues) : 0;
+    const largestLoss = pnlValues.length > 0 ? Math.min(0, ...pnlValues) : 0;
     
     const winRate = (profitableTrades.length / closedTrades.length) * 100;
     

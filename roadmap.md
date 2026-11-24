@@ -35,11 +35,11 @@
 - [x] Client screens: dashboard, positions, withdraw, wallet activity
 - [x] Live-trading service: credit in updates, own-trade check on close
 - [x] Tests: account maths (vitest) + database scenarios
-- [ ] Browser check of client and admin credit screens
+- [x] Browser check of client and admin credit screens (desktop and phone)
 - [ ] Later: credit expiry dates
 - [ ] Later: automatic credit on sign-up or deposit (bonus %), set per promo code
 - [ ] Later: option to remove credit automatically when a client withdraws
 - [ ] Later: enforce each market's own leverage limit (today every market allows up to 100x)
 - [ ] Later: credit history page for admins with filters and export (dialog shows the last 8 entries)
-- [ ] Later: let admins see a client's withdrawable amount next to each withdrawal request
+- [x] Admins see what the client can withdraw next to each pending withdrawal request
 - [ ] Later: remove the unused `websocket-price-relay` function and old `calculate_pnl` database helpers

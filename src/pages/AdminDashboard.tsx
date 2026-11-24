@@ -29,6 +29,7 @@ import { Users, DollarSign, Settings, LogOut, Search, Filter, Activity, Plus, Cr
 import { Navigate } from "react-router-dom";
 import { AppShell, type NavItem } from "@/components/layout/AppShell";
 import { AdminOverview } from "@/components/admin/AdminOverview";
+import { computeAccountMetrics } from "@/utils/accountMetrics";
 
 interface UserProfile {
   user_id: string;
@@ -745,6 +746,21 @@ const AdminDashboard = () => {
   const sectionTitle = adminNav.find((n) => n.id === section)?.label ?? "Overview";
   const pendingRequests = depositRequests.filter((r) => r.status === "pending").length + withdrawalRequests.filter((r) => r.status === "pending").length;
 
+  // What a client can take out right now: their own balance minus money held for open trades
+  // and open losses. Credit never counts. The server checks again when the request is approved.
+  const withdrawableFor = (userId: string): number | null => {
+    const u = users.find((x) => x.user_id === userId);
+    if (!u) return null;
+    const balance = Number(u.balance) || 0;
+    const credit = Number(u.credit) || 0;
+    return computeAccountMetrics({
+      balance,
+      credit,
+      usedMargin: Number(u.used_margin) || 0,
+      openPnL: (Number(u.equity) || 0) - balance - credit,
+    }).withdrawable;
+  };
+
   return (
     <>
     <AppShell
@@ -803,16 +819,14 @@ const AdminDashboard = () => {
                 {loading ? (
                   <div className="text-center py-8">Loading...</div>
                 ) : (
-                  <Table>
+                  <Table className="[&_td]:px-3 [&_th]:px-3">
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Name</TableHead>
-                        <TableHead>Email</TableHead>
-                        <TableHead>Phone</TableHead>
+                        <TableHead>Client</TableHead>
                         <TableHead>Balance</TableHead>
                         <TableHead>Credit</TableHead>
                         <TableHead>Equity</TableHead>
-                        <TableHead>Available Margin</TableHead>
+                        <TableHead>Free margin</TableHead>
                         <TableHead>Last Active</TableHead>
                         <TableHead>Promo Code</TableHead>
                         <TableHead>Joined</TableHead>
@@ -822,20 +836,21 @@ const AdminDashboard = () => {
                     <TableBody>
                       {filteredUsers.length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={11} className="text-center text-muted-foreground py-8">
+                          <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
                             No users found
                           </TableCell>
                         </TableRow>
                       ) : (
                         filteredUsers.map((user) => (
                           <TableRow key={user.user_id}>
-                            <TableCell>
-                              {user.first_name && user.surname 
-                                ? `${user.first_name} ${user.surname}` 
-                                : 'Not provided'}
+                            <TableCell className="max-w-[220px]">
+                              <div className="truncate font-medium">
+                                {user.first_name && user.surname ? `${user.first_name} ${user.surname}` : user.email}
+                              </div>
+                              <div className="truncate text-xs text-muted-foreground">
+                                {[user.first_name && user.surname ? user.email : null, user.phone_number || 'No phone'].filter(Boolean).join(' · ')}
+                              </div>
                             </TableCell>
-                            <TableCell>{user.email}</TableCell>
-                            <TableCell>{user.phone_number || 'Not provided'}</TableCell>
                             <TableCell className="font-medium">${user.balance?.toFixed(2) || '0.00'}</TableCell>
                             <TableCell className={user.credit > 0 ? "text-primary" : "text-muted-foreground"}>${user.credit?.toFixed(2) || '0.00'}</TableCell>
                             <TableCell>${user.equity?.toFixed(2) || '0.00'}</TableCell>
@@ -852,7 +867,7 @@ const AdminDashboard = () => {
                               {new Date(user.created_at).toLocaleDateString()}
                             </TableCell>
                             <TableCell>
-                              <div className="flex gap-2">
+                              <div className="grid w-max grid-cols-2 gap-1.5 [&>button]:h-8 [&>button]:justify-start [&>button]:px-2.5 [&>button]:text-xs">
                                 <Button
                                   size="sm"
                                   variant="outline"
@@ -1386,6 +1401,19 @@ const AdminDashboard = () => {
                               View Withdrawal Details
                             </Button>
                           </div>
+                          {request.status === 'pending' && (() => {
+                            const canWithdraw = withdrawableFor(request.user_id);
+                            if (canWithdraw === null) return null;
+                            const short = Number(request.amount) > canWithdraw;
+                            return (
+                              <p className={`rounded-md border px-3 py-2 text-xs ${short ? "border-destructive/40 text-destructive" : "border-border text-muted-foreground"}`}>
+                                Client can withdraw up to <span className="font-mono font-medium">${canWithdraw.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span> right now.
+                                {short
+                                  ? " This request is larger, so approving it will be refused. Credit and money held for open trades cannot be withdrawn."
+                                  : " Credit and money held for open trades are not included."}
+                              </p>
+                            );
+                          })()}
                           {request.status === 'pending' && (
                             <div className="flex space-x-2">
                               <Button 

@@ -243,11 +243,11 @@ export const ModifyCreditDialog = ({ open, onOpenChange, user, onSuccess }: Modi
                     <li key={h.id} className="flex items-start justify-between gap-3 px-3 py-2">
                       <div className="min-w-0">
                         <div className="text-foreground">{ENTRY_LABEL[h.type] ?? h.type}</div>
-                        <div className="truncate text-muted-foreground">
+                        <div className="text-muted-foreground">
                           {new Date(h.created_at).toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
                           {" · "}{h.performed_by ? (h.performed_by === admin?.id ? "You" : "Staff") : "Automatic"}
-                          {h.reason ? ` · ${h.reason}` : ""}
                         </div>
+                        {h.reason && h.performed_by && <div className="mt-0.5 break-words text-muted-foreground">“{h.reason}”</div>}
                       </div>
                       <div className="shrink-0 text-right">
                         <div className={cn("num font-medium", shown >= 0 ? "text-success" : "text-destructive")}>

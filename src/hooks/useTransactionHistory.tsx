@@ -74,7 +74,7 @@ export const describeCreditEntry = (c: CreditTransaction): { title: string; amou
   switch (c.type) {
     case 'credit_in': return { title: 'Credit added', amount: credit, direction: 'in' };
     case 'credit_out': return { title: 'Credit removed', amount: credit, direction: 'out' };
-    case 'loss_cover': return { title: 'Credit used to cover losses', amount: credit, direction: 'out' };
+    case 'loss_cover': return { title: 'Loss covered by credit', amount: credit, direction: 'out' };
     case 'loss_cover_reversal': return { title: 'Credit returned', amount: credit, direction: 'in' };
     case 'negative_balance_reset': return { title: 'Negative balance cleared', amount: Math.abs(Number(c.balance_change) || 0), direction: 'in' };
     case 'account_reset': return credit > 0 ? { title: 'Credit cleared (account reset)', amount: credit, direction: 'out' } : null;

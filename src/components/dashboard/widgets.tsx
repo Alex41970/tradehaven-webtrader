@@ -65,7 +65,9 @@ const ChartTip = ({ active, payload, label, money = true }: any) => {
   if (!active || !payload?.length) return null;
   return (
     <div className="rounded border border-border bg-popover px-2.5 py-1.5 text-[11px]">
-      <div className="mb-1 text-muted-foreground">{label}</div>
+      <div className="mb-1 text-muted-foreground">
+        {typeof label === "number" ? new Date(label).toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : label}
+      </div>
       {payload.map((p: any) => (
         <div key={p.dataKey} className="num font-medium text-foreground">{money ? fmtUsd(p.value) : p.value}</div>
       ))}
@@ -112,8 +114,13 @@ export const EquityChart = ({ points, equity, change }: { points: { t: number; v
     const inRange = points.filter((p) => p.t >= from);
     const before = points.filter((p) => p.t < from).pop();
     const list = before ? [{ t: from, v: before.v }, ...inRange] : inRange;
-    return list.map((p) => ({ label: new Date(p.t).toLocaleDateString(undefined, { month: "short", day: "numeric" }), v: Math.round(p.v * 100) / 100 }));
+    return list.map((p) => ({ t: p.t, v: Math.round(p.v * 100) / 100 }));
   }, [points, range]);
+  // A real time axis: every tick is a different moment, even when everything happened on one day
+  const span = data.length > 1 ? data[data.length - 1].t - data[0].t : 0;
+  const tick = (t: number) => span < 2 * 864e5
+    ? new Date(t).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })
+    : new Date(t).toLocaleDateString(undefined, { month: "short", day: "numeric" });
 
   return (
     <Bento className="flex flex-col">
@@ -143,7 +150,8 @@ export const EquityChart = ({ points, equity, change }: { points: { t: number; v
               </linearGradient>
             </defs>
             <CartesianGrid stroke={C.grid} strokeOpacity={0.6} vertical={false} />
-            <XAxis dataKey="label" tick={{ fill: C.muted, fontSize: 11 }} axisLine={false} tickLine={false} minTickGap={40} />
+            <XAxis dataKey="t" type="number" scale="time" domain={["dataMin", "dataMax"]} tickFormatter={tick} tickCount={6}
+              tick={{ fill: C.muted, fontSize: 11 }} axisLine={false} tickLine={false} minTickGap={40} />
             <YAxis tick={{ fill: C.muted, fontSize: 11 }} axisLine={false} tickLine={false} width={64} domain={["auto", "auto"]} tickFormatter={(v) => fmtCompact(v)} />
             <Tooltip content={<ChartTip />} cursor={{ stroke: C.muted, strokeDasharray: "3 3" }} />
             <Area type="stepAfter" dataKey="v" stroke={C.amber} strokeWidth={1.5} fill="url(#eqFill)" activeDot={{ r: 3, strokeWidth: 0 }} />

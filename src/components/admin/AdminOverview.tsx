@@ -99,7 +99,6 @@ export const AdminOverview = ({ users, trades, stats, tradeStats, pendingRequest
             <span className="num text-xl font-semibold text-primary">{pendingRequests}</span>
           </div>
           <Button variant="outline" className="w-full" onClick={() => onNavigate("financial-requests")}>Review requests</Button>
-          <Button variant="ghost" className="w-full" onClick={() => onNavigate("price-feed")}>Check price feed</Button>
         </div>
       </Bento>
 
