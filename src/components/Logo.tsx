@@ -41,7 +41,7 @@ export const Logo = ({ size = "md", className, iconOnly = false }: LogoProps) =>
           sizes.tracking,
           "bg-gradient-to-r from-accent via-accent to-primary bg-clip-text text-transparent"
         )}>
-          LC
+          EW
         </span>
       </div>
     );
@@ -55,24 +55,16 @@ export const Logo = ({ size = "md", className, iconOnly = false }: LogoProps) =>
           sizes.text,
           "text-foreground"
         )}>
-          LEXINGTON
+          EDGEWEALTH
         </span>
         <span className={cn(
           "font-montserrat font-semibold",
           sizes.text,
           "text-primary"
         )}>
-          CAPITAL
+          PRO
         </span>
       </div>
-      <span className={cn(
-        "font-montserrat font-medium",
-        sizes.primary,
-        sizes.tracking,
-        "text-muted-foreground -mt-1"
-      )}>
-        INVESTING
-      </span>
     </div>
   );
 };

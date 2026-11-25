@@ -17,7 +17,7 @@ const CookiePolicy = () => {
           <div className="prose prose-invert max-w-none space-y-8">
             <Card className="p-6 bg-primary/10 border-primary/20">
               <p className="text-foreground/90 leading-relaxed mb-0">
-                This Cookie Policy explains how Lexington Capital Investing ("we", "us", or "our") uses cookies and similar technologies when you visit our website and use our services.
+                This Cookie Policy explains how EdgeWealth Pro ("we", "us", or "our") uses cookies and similar technologies when you visit our website and use our services.
               </p>
             </Card>
 
@@ -118,7 +118,7 @@ const CookiePolicy = () => {
               </p>
               <Card className="p-6 mt-4 bg-card/50">
                 <p className="text-foreground/90">
-                  <strong>Email:</strong> privacy@lexingtoncapitalinvesting.com<br />
+                  <strong>Email:</strong> privacy@edgewealthpro.com<br />
                   <strong>Address:</strong> 585 Bicycle Path, 11776, Port Jefferson Station, United States<br />
                   <strong>Phone:</strong> +1 (343) 304-0557 | +44 20 8040 4627
                 </p>

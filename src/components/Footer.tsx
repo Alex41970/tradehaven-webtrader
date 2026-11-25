@@ -108,10 +108,10 @@ export const Footer = () => {
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <div className="text-sm text-muted-foreground text-center md:text-left">
               <p className="mb-2">
-                © {new Date().getFullYear()} Lexington Capital Investing. All rights reserved.
+                © {new Date().getFullYear()} EdgeWealth Pro. All rights reserved.
               </p>
               <p className="text-xs">
-                Lexington Capital Investing operates under strict regulatory compliance.
+                EdgeWealth Pro operates under strict regulatory compliance.
               </p>
             </div>
             <div className="flex items-center gap-4 text-muted-foreground">
@@ -127,8 +127,8 @@ export const Footer = () => {
               {/* Left: License Info */}
               <div className="text-sm text-muted-foreground text-center md:text-left">
                 <p className="mb-1">
-                  <strong className="text-foreground">Lexington Capital Investing</strong> is operated by{" "}
-                  <strong className="text-foreground">Lexington Capital Holdings</strong>
+                  <strong className="text-foreground">EdgeWealth Pro</strong> is operated by{" "}
+                  <strong className="text-foreground">EdgeWealth Pro Holdings</strong>
                 </p>
                 <p className="flex flex-wrap items-center justify-center md:justify-start gap-2 text-xs">
                   <span>FCA Reference Number: 600410</span>
@@ -146,7 +146,7 @@ export const Footer = () => {
               
               {/* Right: Trustpilot Button */}
               <a
-                href="https://www.trustpilot.com/review/lexingtoncapitalholdings.com"
+                href="https://www.trustpilot.com/review/edgewealthpro.com"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 hover:bg-primary/20 border border-primary/20 rounded-lg transition-colors group"

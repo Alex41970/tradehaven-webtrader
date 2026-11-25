@@ -39,7 +39,7 @@ const Contact = () => {
               <Mail className="w-12 h-12 text-accent mb-4" />
               <h3 className="text-xl font-bold mb-2">Email Support</h3>
               <p className="text-muted-foreground mb-2">
-                support@lexingtoncapitalinvesting.com
+                support@edgewealthpro.com
               </p>
               <p className="text-sm text-muted-foreground">
                 Response within 24 hours

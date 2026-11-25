@@ -26,7 +26,7 @@ const Terms = () => {
           <section>
             <h2 className="text-2xl font-semibold mb-4">1. Agreement to Terms</h2>
             <p className="text-muted-foreground leading-relaxed">
-              By accessing and using Lexington Capital Investing ("the Platform"), you accept and agree to be bound by these Terms and Conditions. 
+              By accessing and using EdgeWealth Pro ("the Platform"), you accept and agree to be bound by these Terms and Conditions. 
               If you do not agree to these terms, you may not access or use our services.
             </p>
           </section>
@@ -34,7 +34,7 @@ const Terms = () => {
           <section>
             <h2 className="text-2xl font-semibold mb-4">2. Services Description</h2>
             <p className="text-muted-foreground leading-relaxed mb-3">
-              Lexington Capital Investing provides an online trading platform that allows users to trade various financial instruments including:
+              EdgeWealth Pro provides an online trading platform that allows users to trade various financial instruments including:
             </p>
             <ul className="list-disc list-inside text-muted-foreground space-y-2 ml-4">
               <li>Foreign Exchange (Forex)</li>
@@ -94,7 +94,7 @@ const Terms = () => {
           <section>
             <h2 className="text-2xl font-semibold mb-4">7. Limitation of Liability</h2>
             <p className="text-muted-foreground leading-relaxed">
-              To the maximum extent permitted by law, Lexington Capital Investing shall not be liable for any indirect, incidental, 
+              To the maximum extent permitted by law, EdgeWealth Pro shall not be liable for any indirect, incidental, 
               special, consequential, or punitive damages arising from your use of our services. Our total liability shall not exceed 
               the fees paid by you in the 12 months preceding the claim.
             </p>
@@ -103,7 +103,7 @@ const Terms = () => {
           <section>
             <h2 className="text-2xl font-semibold mb-4">8. Intellectual Property</h2>
             <p className="text-muted-foreground leading-relaxed">
-              All content, trademarks, and intellectual property on the platform are owned by Lexington Capital Investing or our 
+              All content, trademarks, and intellectual property on the platform are owned by EdgeWealth Pro or our 
               licensors. You may not reproduce, distribute, or create derivative works without our express written permission.
             </p>
           </section>
@@ -139,7 +139,7 @@ const Terms = () => {
               If you have any questions about these Terms and Conditions, please contact us at:
             </p>
             <div className="mt-4 p-4 bg-muted/30 rounded-lg">
-              <p className="text-muted-foreground">Email: legal@lexingtoncapital.com</p>
+              <p className="text-muted-foreground">Email: legal@edgewealthpro.com</p>
               <p className="text-muted-foreground">Address: 585 Bicycle Path, 11776, Port Jefferson Station, United States</p>
             </div>
           </section>

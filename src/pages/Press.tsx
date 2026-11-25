@@ -16,7 +16,7 @@ const Press = () => {
             Press & Media
           </h1>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-            Latest news, press releases, and media coverage about Lexington Capital Investing.
+            Latest news, press releases, and media coverage about EdgeWealth Pro.
           </p>
         </div>
 
@@ -31,7 +31,7 @@ const Press = () => {
               </div>
             </div>
             <div className="text-center md:text-right">
-              <p className="font-semibold mb-1">press@lexingtoncapital.com</p>
+              <p className="font-semibold mb-1">press@edgewealthpro.com</p>
               <p className="text-sm text-muted-foreground">Response within 24 hours</p>
             </div>
           </div>
@@ -44,25 +44,25 @@ const Press = () => {
             {[
               {
                 date: "January 15, 2024",
-                title: "Lexington Capital Surpasses 2 Million Active Traders Milestone",
+                title: "EdgeWealth Pro Surpasses 2 Million Active Traders Milestone",
                 excerpt: "Leading trading platform celebrates significant growth with users across 120+ countries and $100B+ in monthly trading volume.",
                 category: "Company News"
               },
               {
                 date: "December 3, 2023",
-                title: "Lexington Capital Launches AI-Powered Trading Assistant",
+                title: "EdgeWealth Pro Launches AI-Powered Trading Assistant",
                 excerpt: "Revolutionary new feature uses advanced machine learning to provide personalized trading insights and strategy recommendations.",
                 category: "Product Launch"
               },
               {
                 date: "October 20, 2023",
-                title: "Lexington Capital Wins 'Best Trading Platform 2023' Award",
+                title: "EdgeWealth Pro Wins 'Best Trading Platform 2023' Award",
                 excerpt: "Industry recognition for innovation, user experience, and customer satisfaction from Global Finance Awards.",
                 category: "Awards"
               },
               {
                 date: "September 8, 2023",
-                title: "Lexington Capital Expands to Asian Markets with Singapore Office",
+                title: "EdgeWealth Pro Expands to Asian Markets with Singapore Office",
                 excerpt: "Strategic expansion includes new regional headquarters and 24/7 multilingual support for Asian traders.",
                 category: "Expansion"
               }

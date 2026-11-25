@@ -13,7 +13,7 @@ const AboutUs = () => {
         {/* Hero Section */}
         <div className="text-center mb-16 animate-fade-in">
           <h1 className="text-5xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent">
-            About Lexington Capital
+            About EdgeWealth Pro
           </h1>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
             Leading the future of digital trading with innovative technology, unmatched security, and a commitment to trader success since 2015.
@@ -61,7 +61,7 @@ const AboutUs = () => {
           <h2 className="text-3xl font-bold text-center mb-12">Our Journey</h2>
           <div className="space-y-8 relative before:absolute before:left-8 before:top-0 before:bottom-0 before:w-0.5 before:bg-primary/30">
             {[
-              { year: "2015", title: "Founded", desc: "Lexington Capital established with a vision to revolutionize online trading" },
+              { year: "2015", title: "Founded", desc: "EdgeWealth Pro established with a vision to revolutionize online trading" },
               { year: "2017", title: "100K Users", desc: "Reached 100,000 active traders across 50 countries" },
               { year: "2019", title: "Advanced Platform", desc: "Launched AI-powered trading analytics and automated strategies" },
               { year: "2021", title: "1M Users", desc: "Surpassed 1 million traders and $50B in monthly volume" },

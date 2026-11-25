@@ -26,7 +26,7 @@ const PrivacyPolicy = () => {
           <section>
             <h2 className="text-2xl font-semibold mb-4">1. Introduction</h2>
             <p className="text-muted-foreground leading-relaxed">
-              Lexington Capital Investing ("we", "our", or "us") is committed to protecting your privacy. This Privacy Policy 
+              EdgeWealth Pro ("we", "our", or "us") is committed to protecting your privacy. This Privacy Policy 
               explains how we collect, use, disclose, and safeguard your information when you use our trading platform and services. 
               By using our platform, you consent to the data practices described in this policy.
             </p>
@@ -146,7 +146,7 @@ const PrivacyPolicy = () => {
               <li><strong>Right to Withdraw Consent:</strong> Withdraw consent at any time</li>
             </ul>
             <p className="text-muted-foreground leading-relaxed mt-3">
-              To exercise any of these rights, please contact our Data Protection Officer at privacy@lexingtoncapitalinvesting.com
+              To exercise any of these rights, please contact our Data Protection Officer at privacy@edgewealthpro.com
             </p>
           </section>
 
@@ -199,7 +199,7 @@ const PrivacyPolicy = () => {
             </p>
             <div className="mt-4 p-4 bg-muted/30 rounded-lg space-y-2">
               <p className="text-muted-foreground"><strong>Data Protection Officer</strong></p>
-              <p className="text-muted-foreground">Email: privacy@lexingtoncapitalinvesting.com</p>
+              <p className="text-muted-foreground">Email: privacy@edgewealthpro.com</p>
               <p className="text-muted-foreground">Phone: +1 (343) 304-0557 | +44 20 8040 4627</p>
               <p className="text-muted-foreground">Address: 585 Bicycle Path, 11776, Port Jefferson Station, United States</p>
             </div>
@@ -207,7 +207,7 @@ const PrivacyPolicy = () => {
 
           <section className="border-t border-border pt-6">
             <p className="text-sm text-muted-foreground">
-              <strong>Regulatory Information:</strong> Lexington Capital Investing is authorized and regulated by the Financial 
+              <strong>Regulatory Information:</strong> EdgeWealth Pro is authorized and regulated by the Financial 
               Conduct Authority (FCA) under registration number FRN 600410. We are committed to maintaining the highest standards 
               of data protection and privacy in accordance with applicable data protection laws.
             </p>

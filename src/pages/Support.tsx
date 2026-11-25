@@ -18,7 +18,7 @@ const Support = () => {
             Help Center
           </h1>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto mb-8">
-            Find answers, tutorials, and resources to help you succeed on Lexington Capital.
+            Find answers, tutorials, and resources to help you succeed on EdgeWealth Pro.
           </p>
           
           {/* Search Bar */}
@@ -89,7 +89,7 @@ const Support = () => {
           <h2 className="text-3xl font-bold mb-8">Popular Articles</h2>
           <Card className="divide-y divide-border">
             {[
-              "How do I create an account on Lexington Capital?",
+              "How do I create an account on EdgeWealth Pro?",
               "What payment methods are supported?",
               "How to place my first trade?",
               "Understanding leverage and margin",
@@ -130,7 +130,7 @@ const Support = () => {
 
             <AccordionItem value="item-3" className="border rounded-lg px-6 bg-card">
               <AccordionTrigger className="text-left">
-                Is my money safe with Lexington Capital?
+                Is my money safe with EdgeWealth Pro?
               </AccordionTrigger>
               <AccordionContent className="text-muted-foreground">
                 Yes, your funds are protected through multiple layers of security. We use segregated accounts to keep client funds separate from company funds, employ bank-level encryption, and are fully regulated by major financial authorities. Client deposits are also covered by investor protection schemes up to applicable limits.
@@ -139,10 +139,10 @@ const Support = () => {
 
             <AccordionItem value="item-4" className="border rounded-lg px-6 bg-card">
               <AccordionTrigger className="text-left">
-                Can I use Lexington Capital on mobile devices?
+                Can I use EdgeWealth Pro on mobile devices?
               </AccordionTrigger>
               <AccordionContent className="text-muted-foreground">
-                Absolutely! Lexington Capital offers native mobile apps for both iOS and Android, as well as a fully responsive web platform. You can trade, manage your account, and access all features seamlessly across all your devices.
+                Absolutely! EdgeWealth Pro offers native mobile apps for both iOS and Android, as well as a fully responsive web platform. You can trade, manage your account, and access all features seamlessly across all your devices.
               </AccordionContent>
             </AccordionItem>
 
@@ -151,7 +151,7 @@ const Support = () => {
                 What trading instruments are available?
               </AccordionTrigger>
               <AccordionContent className="text-muted-foreground">
-                Lexington Capital offers a wide range of trading instruments including Forex (60+ currency pairs), Commodities (Gold, Silver, Oil, etc.), Indices (US500, UK100, etc.), Cryptocurrencies (Bitcoin, Ethereum, etc.), and Stocks (1000+ global stocks). Check our Markets page for the complete list.
+                EdgeWealth Pro offers a wide range of trading instruments including Forex (60+ currency pairs), Commodities (Gold, Silver, Oil, etc.), Indices (US500, UK100, etc.), Cryptocurrencies (Bitcoin, Ethereum, etc.), and Stocks (1000+ global stocks). Check our Markets page for the complete list.
               </AccordionContent>
             </AccordionItem>
 

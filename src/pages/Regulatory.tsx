@@ -16,7 +16,7 @@ const Regulatory = () => {
             Regulatory Information
           </h1>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-            Lexington Capital is fully authorized and regulated by leading financial authorities worldwide, ensuring the highest standards of security and compliance.
+            EdgeWealth Pro is fully authorized and regulated by leading financial authorities worldwide, ensuring the highest standards of security and compliance.
           </p>
         </div>
 
@@ -59,12 +59,12 @@ const Regulatory = () => {
                   <h3 className="text-2xl font-bold mb-2">United States - Headquarters</h3>
                   <p className="text-muted-foreground mb-4">Primary Business Location</p>
                   <div className="space-y-2 text-sm">
-                    <p><strong>Entity:</strong> Lexington Capital Holdings LLC</p>
+                    <p><strong>Entity:</strong> EdgeWealth Pro Holdings LLC</p>
                     <p><strong>Registration:</strong> Authorized and regulated by the FCA</p>
                     <p><strong>FCA Reference:</strong> 600410</p>
                     <p><strong>Address:</strong> 585 Bicycle Path, 11776, Port Jefferson Station, United States</p>
                     <p className="text-foreground/90 mt-4">
-                      Lexington Capital Holdings operates from our headquarters in Port Jefferson Station, providing professional trading services to clients worldwide.
+                      EdgeWealth Pro Holdings operates from our headquarters in Port Jefferson Station, providing professional trading services to clients worldwide.
                     </p>
                   </div>
                 </div>
@@ -80,7 +80,7 @@ const Regulatory = () => {
             <Card className="p-6">
               <h3 className="text-xl font-bold mb-4 text-primary">Segregated Client Funds</h3>
               <p className="text-muted-foreground mb-4">
-                All client funds are held in segregated accounts with tier-1 banks, completely separate from Lexington Capital's operational funds. This ensures your money is protected even in the unlikely event of company insolvency.
+                All client funds are held in segregated accounts with tier-1 banks, completely separate from EdgeWealth Pro's operational funds. This ensures your money is protected even in the unlikely event of company insolvency.
               </p>
               <ul className="list-disc list-inside space-y-2 text-sm text-foreground/90">
                 <li>Held with top-rated financial institutions</li>

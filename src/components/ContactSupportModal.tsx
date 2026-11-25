@@ -71,10 +71,10 @@ export const ContactSupportModal: React.FC<ContactSupportModalProps> = ({ isOpen
                 <Mail className="h-6 w-6 mx-auto mb-2 text-primary" />
                 <h4 className="font-semibold text-sm">Email Support</h4>
                 <a 
-                  href="mailto:support@lexingtoncapitalinvesting.com"
+                  href="mailto:support@edgewealthpro.com"
                   className="text-xs text-muted-foreground hover:text-primary transition-colors break-all underline"
                 >
-                  support@lexingtoncapitalinvesting.com
+                  support@edgewealthpro.com
                 </a>
               </CardContent>
             </Card>
