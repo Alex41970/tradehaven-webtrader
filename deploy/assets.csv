@@ -1,0 +1,426 @@
+symbol,name,category,price,change_24h,is_active,min_trade_size,max_leverage,spread,contract_size,base_currency,quote_currency,api_source,api_symbol,price_source
+CATTLE,Live Cattle,commodities,227.25000000,0.5976,t,0.0100,20,0.1105,400,,USX,yahoo,LE=F,yahoo
+COCOA,Cocoa,commodities,5387.00000000,-0.4803,t,0.0100,20,2.7270,10,,USD,yahoo,CC=F,yahoo
+COFFEE,Coffee,commodities,269.60000000,2.6657,t,0.0100,20,0.1436,375,,USX,yahoo,KC=F,yahoo
+COPPER,Copper,commodities,5.33900000,-2.0906,t,0.0100,20,0.0032,25000,,USD,yahoo,HG=F,yahoo
+CORN,Corn,commodities,452.75000000,0.5552,t,0.0100,20,0.2239,50,,USX,yahoo,ZC=F,yahoo
+COTTON,Cotton,commodities,81.97000000,-0.0975,t,0.0100,20,0.0391,500,,USX,yahoo,CT=F,yahoo
+GASOLINE,Gasoline,commodities,2.43300000,-0.3114,t,0.0100,20,0.0016,42000,,USD,yahoo,RB=F,yahoo
+HEATOIL,Heating Oil,commodities,3.66460000,0.1585,t,0.0100,20,0.0023,42000,,USD,yahoo,HO=F,yahoo
+HOGS,Lean Hogs,commodities,55.75000000,7.6255,t,0.0100,20,0.0294,400,,USX,yahoo,HE=F,yahoo
+LUMBER,Lumber,commodities,550.00000000,0.5484,t,0.0100,20,0.2575,27,,USD,yahoo,LBR=F,yahoo
+NATGAS,Natural Gas,commodities,3.65700000,-0.1638,t,0.0100,100,0.0200,10000,,,yahoo,NG=F,yahoo
+OATS,Oats,commodities,369.00000000,-2.3163,t,0.0100,20,0.1719,50,,USX,yahoo,ZO=F,yahoo
+OJUICE,Orange Juice,commodities,122.70000000,-6.6210,t,0.0100,20,0.0578,150,,USX,yahoo,OJ=F,yahoo
+SOYBEAN,Soybeans,commodities,1238.25000000,0.3444,t,0.0100,20,0.6171,50,,USX,yahoo,ZS=F,yahoo
+SUGAR,Sugar,commodities,18.27000000,3.4541,t,0.0100,20,0.0097,1120,,USX,yahoo,SB=F,yahoo
+UKOIL,Brent Crude Oil,commodities,89.84000000,1.1940,t,0.0100,100,0.0500,1000,,,yahoo,BZ=F,yahoo
+USOIL,WTI Crude Oil,commodities,83.25000000,1.4625,t,0.0100,100,0.0500,1000,,,yahoo,CL=F,yahoo
+WHEAT,Wheat,commodities,583.75000000,-0.9334,t,0.0100,20,0.3018,50,,USX,yahoo,ZW=F,yahoo
+XAGUSD,Silver,commodities,38.88500000,-5.7379,t,0.0100,100,0.0500,5000,,,yahoo,SI=F,yahoo
+XAUUSD,Gold,commodities,3477.60000000,-3.1606,t,0.0100,100,0.5000,100,,,yahoo,GC=F,yahoo
+XPDUSD,Palladium,commodities,822.00000000,-3.7809,t,0.0100,20,0.4939,100,,USD,yahoo,PA=F,yahoo
+XPTUSD,Platinum,commodities,1211.90000000,-3.6492,t,0.0100,100,2.0000,50,,,yahoo,PL=F,yahoo
+1INCHUSD,1inch,crypto,0.05670000,-2.2414,t,1.0000,20,0.0000,1,1INCH,USD,binance,1inchusdt,binance
+AAVEUSD,Aave,crypto,91.38000000,-2.4031,t,0.0010,100,0.0001,1,AAVE,USD,binance,aaveusdt,binance
+ACHUSD,Alchemy Pay,crypto,0.00352000,-1.1236,t,1.0000,20,0.0000,1,ACH,USD,binance,achusdt,binance
+ADAUSD,Cardano,crypto,0.14010000,-2.4373,t,1.0000,100,0.0001,1,,,binance,adausdt,binance
+ALGOUSD,Algorand,crypto,0.07550000,-3.6990,t,1.0000,100,0.0001,1,ALGO,USD,binance,algousdt,binance
+ANKRUSD,Ankr,crypto,0.00298000,1.0169,t,1.0000,20,0.0000,1,ANKR,USD,binance,ankrusdt,binance
+APEUSD,ApeCoin,crypto,0.06850000,-1.5805,t,1.0000,20,0.0001,1,APE,USD,binance,apeusdt,binance
+API3USD,API3,crypto,0.16640000,-2.2901,t,1.0000,20,0.0001,1,API3,USD,binance,api3usdt,binance
+APTUSD,Aptos,crypto,0.35890000,-2.6580,t,0.1000,100,0.0001,1,APT,USD,binance,aptusdt,binance
+ARBUSD,Arbitrum,crypto,0.16472900,1.7081,f,0.0100,100,0.0001,1,ARB,USD,binance,arbusdt,live_api
+ARUSD,Arweave,crypto,3.17000000,-1.1660,f,0.0100,100,0.0001,1,AR,USD,binance,arusdt,live_api
+ATOMUSD,Cosmos,crypto,1.22900000,-1.6013,t,0.1000,100,0.0001,1,ATOM,USD,binance,atomusdt,binance
+AUDIOUSD,Audius,crypto,0.01050000,0.6711,t,1.0000,20,0.0000,1,AUDIO,USD,binance,audiousdt,binance
+AVAXUSD,Avalanche,crypto,6.37000000,-2.1054,t,0.1000,100,0.0001,1,AVAX,USD,binance,avaxusdt,binance
+AXSUSD,Axie Infinity,crypto,0.86404700,-0.1259,f,0.0100,100,0.0001,1,AXS,USD,binance,axsusdt,live_api
+BANDUSD,Band Protocol,crypto,0.14520000,2.6874,t,1.0000,20,0.0001,1,BAND,USD,binance,bandusdt,binance
+BATUSD,Basic Attention Token,crypto,0.07450000,-2.3591,t,1.0000,20,0.0001,1,BAT,USD,binance,batusdt,binance
+BCHUSD,Bitcoin Cash,crypto,196.30000000,0.2042,t,0.0100,20,0.1414,1,BCH,USD,binance,bchusdt,binance
+BLURUSD,Blur,crypto,0.01043000,29.7264,t,1.0000,20,0.0000,1,BLUR,USD,binance,blurusdt,binance
+BNBUSD,Binance Coin,crypto,539.11000000,-1.0844,t,0.0100,100,1.2500,1,,,binance,bnbusdt,binance
+BOMEUSD,Book of Meme,crypto,0.00044400,-1.2236,t,1.0000,20,0.0000,1,BOME,USD,binance,bomeusdt,binance
+BONKUSD,Bonk,crypto,0.00000204,-2.8571,t,1.0000,20,0.0000,1,BONK,USD,binance,bonkusdt,binance
+BTCUSD,Bitcoin,crypto,58558.01000000,-1.5199,t,0.0010,100,0.0100,1,,,binance,btcusdt,binance
+CAKEUSD,PancakeSwap,crypto,1.50700000,-1.2451,t,0.0100,20,0.0010,1,CAKE,USD,binance,cakeusdt,binance
+CELOUSD,Celo,crypto,0.05385000,-0.3700,t,1.0000,20,0.0000,1,CELO,USD,binance,celousdt,binance
+CELRUSD,Celer Network,crypto,0.00179800,-2.9158,t,1.0000,20,0.0000,1,CELR,USD,binance,celrusdt,binance
+CFXUSD,Conflux,crypto,0.03166000,-0.7835,t,1.0000,20,0.0000,1,CFX,USD,binance,cfxusdt,binance
+CHZUSD,Chiliz,crypto,0.00869000,-0.1149,t,1.0000,20,0.0000,1,CHZ,USD,binance,chzusdt,binance
+CKBUSD,Nervos,crypto,0.00077900,2.7704,t,1.0000,20,0.0000,1,CKB,USD,binance,ckbusdt,binance
+COMPUSD,Compound,crypto,20.50000000,1.2023,f,0.0010,100,0.0001,1,COMP,USD,binance,compusdt,live_api
+COTIUSD,COTI,crypto,0.00796000,-0.8717,t,1.0000,20,0.0000,1,COTI,USD,binance,cotiusdt,binance
+CROUPD,Cronos,crypto,0.09500000,0.0000,f,1.0000,100,0.0001,1,CRO,USD,yahoo,,pending
+CRVUSD,Curve DAO,crypto,0.28476100,-0.8099,f,0.0100,100,0.0001,1,CRV,USD,binance,crvusdt,live_api
+DASHUSD,Dash,crypto,34.03000000,-0.5262,t,0.0100,20,0.0243,1,DASH,USD,binance,dashusdt,binance
+DOGEUSD,Dogecoin,crypto,0.05359000,-2.1366,t,1.0000,100,0.0001,1,DOGE,USD,binance,dogeusdt,binance
+DOGSUSD,DOGS,crypto,0.00002385,-0.5006,t,1.0000,20,0.0000,1,DOGS,USD,binance,dogsusdt,binance
+DOTUSD,Polkadot,crypto,0.63700000,-1.8490,t,0.1000,100,0.0010,1,,,binance,dotusdt,binance
+DYDXUSD,dYdX,crypto,0.06687000,-3.8533,t,1.0000,20,0.0001,1,DYDX,USD,binance,dydxusdt,binance
+EGLDUSD,MultiversX,crypto,2.18900000,1.3426,t,0.0100,20,0.0017,1,EGLD,USD,binance,egldusdt,binance
+EIGENUSD,EigenLayer,crypto,0.10560000,-3.4735,t,1.0000,20,0.0001,1,EIGEN,USD,binance,eigenusdt,binance
+ENAUSD,Ethena,crypto,0.09340000,-4.5965,t,1.0000,20,0.0001,1,ENA,USD,binance,enausdt,binance
+ENJUSD,Enjin Coin,crypto,0.02403937,0.0316,f,0.1000,100,0.0001,1,ENJ,USD,binance,enjusdt,live_api
+ETCUSD,Ethereum Classic,crypto,5.67000000,-0.8741,t,0.0100,20,0.0036,1,ETC,USD,binance,etcusdt,binance
+ETHFIUSD,ether.fi,crypto,0.43880000,-3.4543,t,1.0000,20,0.0003,1,ETHFI,USD,binance,ethfiusdt,binance
+ETHUSD,Ethereum,crypto,1644.89000000,-1.4546,t,0.0100,100,0.0100,1,,,binance,ethusdt,binance
+FETUSD,Artificial Superintelligence,crypto,0.10390000,-2.0735,t,1.0000,20,0.0001,1,FET,USD,binance,fetusdt,binance
+FILUSD,Filecoin,crypto,0.51760000,-3.6665,t,0.0100,100,0.0001,1,FIL,USD,binance,filusdt,binance
+FLOKIUSD,Floki Inu,crypto,0.00003200,0.0000,f,1000.0000,100,0.0001,1,FLOKI,USD,binance,flokiusdt,pending
+FLOWUSD,Flow,crypto,1.10000000,0.0000,f,0.0100,100,0.0001,1,FLOW,USD,binance,flowusdt,pending
+FTMUSD,Fantom,crypto,0.04696764,0.0000,f,1.0000,100,0.0001,1,FTM,USD,binance,ftmusdt,live_api
+GALAUSD,Gala,crypto,0.00170897,0.0480,f,1.0000,100,0.0001,1,GALA,USD,binance,galausdt,live_api
+GLMUSD,Golem,crypto,0.08780000,-4.0437,t,1.0000,20,0.0001,1,GLM,USD,binance,glmusdt,binance
+GMTUSD,STEPN,crypto,0.00496000,0.0000,t,1.0000,20,0.0000,1,GMT,USD,binance,gmtusdt,binance
+GMXUSD,GMX,crypto,7.74000000,0.3891,t,0.0100,20,0.0041,1,GMX,USD,binance,gmxusdt,binance
+GRTUSD,The Graph,crypto,0.01590000,-0.8728,t,0.1000,100,0.0001,1,GRT,USD,binance,grtusdt,binance
+HBARUSD,Hedera,crypto,0.04980000,-0.6385,t,1.0000,20,0.0000,1,HBAR,USD,binance,hbarusdt,binance
+HOTUSD,Holo,crypto,0.00030700,-4.3614,t,1.0000,20,0.0000,1,HOT,USD,binance,hotusdt,binance
+HYPEUSD,Hyperliquid,crypto,58.00000000,-4.6523,t,0.0100,20,0.0438,1,HYPE,USD,binance,hypeusdt,binance
+ICPUSD,Internet Computer,crypto,1.98300000,-0.9985,t,0.1000,100,0.0001,1,ICP,USD,binance,icpusdt,binance
+IMXUSD,Immutable,crypto,0.08720000,-0.4566,t,1.0000,20,0.0001,1,IMX,USD,binance,imxusdt,binance
+INJUSD,Injective,crypto,5.73600000,-2.9606,t,0.0100,20,0.0036,1,INJ,USD,binance,injusdt,binance
+IOSTUSD,IOST,crypto,0.00058700,-0.3396,t,1.0000,20,0.0000,1,IOST,USD,binance,iostusdt,binance
+IOTAUSD,IOTA,crypto,0.03030000,0.3311,t,1.0000,20,0.0000,1,IOTA,USD,binance,iotausdt,binance
+IOTXUSD,IoTeX,crypto,0.00233400,0.8207,t,1.0000,20,0.0000,1,IOTX,USD,binance,iotxusdt,binance
+JASMYUSD,JasmyCoin,crypto,0.00304000,-0.3279,t,1.0000,20,0.0000,1,JASMY,USD,binance,jasmyusdt,binance
+JTOUSD,Jito,crypto,0.22040000,-4.6300,t,1.0000,20,0.0002,1,JTO,USD,binance,jtousdt,binance
+JUPUSD,Jupiter,crypto,0.21500000,-3.8031,t,1.0000,20,0.0001,1,JUP,USD,binance,jupusdt,binance
+KAVAUSD,Kava,crypto,0.02409000,-0.1658,t,1.0000,20,0.0000,1,KAVA,USD,binance,kavausdt,binance
+KSMUSD,Kusama,crypto,35.00000000,0.0000,f,0.0010,100,0.0001,1,KSM,USD,binance,ksmusdt,pending
+LDOUSD,Lido DAO,crypto,0.33474500,-1.4818,f,0.0100,100,0.0001,1,LDO,USD,binance,ldousdt,live_api
+LINKUSD,Chainlink,crypto,8.69900000,-1.1477,t,0.0100,100,0.0500,1,,,binance,linkusdt,binance
+LPTUSD,Livepeer,crypto,1.02700000,0.7851,t,0.0100,20,0.0007,1,LPT,USD,binance,lptusdt,binance
+LTCUSD,Litecoin,crypto,40.92000000,1.8164,t,0.0100,100,0.1500,1,,,binance,ltcusdt,binance
+MANAUSD,Decentraland,crypto,0.05430000,-1.8083,t,0.1000,100,0.0001,1,MANA,USD,binance,manausdt,binance
+MASKUSD,Mask Network,crypto,0.26600000,-0.7463,t,1.0000,20,0.0002,1,MASK,USD,binance,maskusdt,binance
+MATICUSD,Polygon,crypto,0.37940000,-0.2891,f,0.0100,100,0.0050,1,,,binance,maticusdt,binance
+MEMEUSD,Memecoin,crypto,0.00028200,-0.7042,t,1.0000,20,0.0000,1,MEME,USD,binance,memeusdt,binance
+MINAUSD,Mina Protocol,crypto,0.95000000,0.0000,f,0.0100,100,0.0001,1,MINA,USD,binance,minausdt,pending
+MKRUSD,Maker,crypto,1450.00000000,0.0000,f,0.0001,100,0.0001,1,MKR,USD,binance,mkrusdt,pending
+MORPHOUSD,Morpho,crypto,1.52000000,-3.2463,t,0.0100,20,0.0011,1,MORPHO,USD,binance,morphousdt,binance
+NEARUSD,Near Protocol,crypto,2.74600000,-2.8996,t,0.1000,100,0.0001,1,NEAR,USD,binance,nearusdt,binance
+NEOUSD,Neo,crypto,1.49100000,-1.7787,t,0.0100,20,0.0010,1,NEO,USD,binance,neousdt,binance
+NOTUSD,Notcoin,crypto,0.00027700,-3.1469,t,1.0000,20,0.0000,1,NOT,USD,binance,notusdt,binance
+OKBUSD,OKB,crypto,48.00000000,0.0000,f,0.0100,100,0.0001,1,OKB,USD,binance,okbusdt,pending
+ONDOUSD,Ondo,crypto,0.27000000,-2.7728,t,1.0000,20,0.0002,1,ONDO,USD,binance,ondousdt,binance
+ONEUSD,Harmony,crypto,0.00091600,-2.6567,t,1.0000,20,0.0000,1,ONE,USD,binance,oneusdt,binance
+ONTUSD,Ontology,crypto,0.03302000,-2.1919,t,1.0000,20,0.0000,1,ONT,USD,binance,ontusdt,binance
+OPUSD,Optimism,crypto,0.11287400,-3.8430,f,0.0100,100,0.0001,1,OP,USD,binance,opusdt,live_api
+ORDIUSD,ORDI,crypto,2.50500000,-1.6490,t,0.0100,20,0.0018,1,ORDI,USD,binance,ordiusdt,binance
+PENDLEUSD,Pendle,crypto,1.18900000,-4.5746,t,0.0100,20,0.0009,1,PENDLE,USD,binance,pendleusdt,binance
+PENGUUSD,Pudgy Penguins,crypto,0.00413200,-1.0536,t,1.0000,20,0.0000,1,PENGU,USD,binance,penguusdt,binance
+PEOPLEUSD,ConstitutionDAO,crypto,0.00468000,-1.4737,t,1.0000,20,0.0000,1,PEOPLE,USD,binance,peopleusdt,binance
+PEPEUSD,Pepe,crypto,0.00000502,2.4208,f,1000.0000,100,0.0001,1,PEPE,USD,binance,pepeusdt,live_api
+POLUSD,Polygon (POL),crypto,0.07480000,-1.0451,t,1.0000,20,0.0000,1,POL,USD,binance,polusdt,binance
+PYTHUSD,Pyth Network,crypto,0.04684000,-3.3230,t,1.0000,20,0.0000,1,PYTH,USD,binance,pythusdt,binance
+QNTUSD,Quant,crypto,115.00000000,0.0000,f,0.0010,100,0.0001,1,QNT,USD,binance,qntusdt,pending
+QTUMUSD,Qtum,crypto,0.60800000,-3.1847,t,1.0000,20,0.0004,1,QTUM,USD,binance,qtumusdt,binance
+RAYUSD,Raydium,crypto,1.22780000,-1.3498,t,0.0100,20,0.0008,1,RAY,USD,binance,rayusdt,binance
+RENDERUSD,Render Token,crypto,7.20000000,0.0000,f,0.0100,100,0.0001,1,RENDER,USD,binance,renderusdt,pending
+ROSEUSD,Oasis,crypto,0.00409000,-2.8504,t,1.0000,20,0.0000,1,ROSE,USD,binance,roseusdt,binance
+RPLUSD,Rocket Pool,crypto,28.00000000,0.0000,f,0.0010,100,0.0001,1,RPL,USD,binance,rplusdt,pending
+RUNEUSD,THORChain,crypto,0.51300000,1.7857,t,1.0000,20,0.0003,1,RUNE,USD,binance,runeusdt,binance
+RVNUSD,Ravencoin,crypto,0.00082400,-1.5532,t,1.0000,20,0.0000,1,RVN,USD,binance,rvnusdt,binance
+SANDUSD,The Sandbox,crypto,0.03161000,-0.5349,t,0.1000,100,0.0001,1,SAND,USD,binance,sandusdt,binance
+SEIUSD,Sei,crypto,0.03199000,-2.9135,t,1.0000,20,0.0000,1,SEI,USD,binance,seiusdt,binance
+SHIBUSD,Shiba Inu,crypto,0.00000468,-2.1386,f,1000.0000,100,0.0001,1,SHIB,USD,binance,shibusdt,live_api
+SKLUSD,SKALE,crypto,0.00271000,-1.8116,t,1.0000,20,0.0000,1,SKL,USD,binance,sklusdt,binance
+SNXUSD,Synthetix,crypto,2.80000000,0.0000,f,0.0100,100,0.0001,1,SNX,USD,binance,snxusdt,pending
+SOLUSD,Solana,crypto,67.84000000,-1.8377,t,0.0100,100,0.2500,1,,,binance,solusdt,binance
+SSVUSD,SSV Network,crypto,1.99300000,29.0803,t,0.0100,20,0.0011,1,SSV,USD,binance,ssvusdt,binance
+STETHUSD,Lido Staked ETH,crypto,3200.00000000,0.0000,f,0.0001,100,0.0001,1,STETH,USD,binance,stethusdt,pending
+STRKUSD,Starknet,crypto,0.02965000,-0.7033,t,1.0000,20,0.0000,1,STRK,USD,binance,strkusdt,binance
+STXUSD,Stacks,crypto,0.25330000,-0.2756,t,1.0000,20,0.0002,1,STX,USD,binance,stxusdt,binance
+SUIUSD,Sui,crypto,0.63180000,-1.5428,t,1.0000,20,0.0005,1,SUI,USD,binance,suiusdt,binance
+SUSHIUSD,SushiSwap,crypto,1.20000000,0.0000,f,0.0100,100,0.0001,1,SUSHI,USD,binance,sushiusdt,pending
+TAOUSD,Bittensor,crypto,174.40000000,-3.7528,t,0.0100,20,0.1175,1,TAO,USD,binance,taousdt,binance
+THETAUSD,Theta Network,crypto,1.45000000,0.0000,f,0.0100,100,0.0001,1,THETA,USD,binance,thetausdt,pending
+TIAUSD,Celestia,crypto,0.31440000,-3.5287,t,1.0000,20,0.0002,1,TIA,USD,binance,tiausdt,binance
+TRUMPUSD,Official Trump,crypto,0.80600000,-1.4670,t,0.0100,20,0.0009,1,TRUMP,USD,binance,trumpusdt,binance
+TRXUSD,Tron,crypto,0.30360000,-1.3966,t,5.0000,100,0.0001,1,TRX,USD,binance,trxusdt,binance
+TURBOUSD,Turbo,crypto,0.00055200,0.7299,t,1.0000,20,0.0000,1,TURBO,USD,binance,turbousdt,binance
+TWTUSD,Trust Wallet Token,crypto,0.29620000,-1.2667,t,1.0000,20,0.0002,1,TWT,USD,binance,twtusdt,binance
+UMAUSD,UMA,crypto,0.23100000,-1.2821,t,1.0000,20,0.0002,1,UMA,USD,binance,umausdt,binance
+UNIUSD,Uniswap,crypto,4.49700000,-3.8897,t,0.1000,100,0.0001,1,UNI,USD,binance,uniusdt,binance
+VETUSD,VeChain,crypto,0.00585001,-1.1815,f,10.0000,100,0.0001,1,VET,USD,binance,vetusdt,live_api
+VIRTUALUSD,Virtuals Protocol,crypto,0.33910000,-4.2361,t,1.0000,20,0.0003,1,VIRTUAL,USD,binance,virtualusdt,binance
+WBTCUSD,Wrapped Bitcoin,crypto,65000.00000000,0.0000,f,0.0000,100,0.0001,1,WBTC,USD,binance,wbtcusdt,pending
+WIFUSD,dogwifhat,crypto,0.11840000,-0.9205,t,1.0000,20,0.0001,1,WIF,USD,binance,wifusdt,binance
+WLDUSD,Worldcoin,crypto,0.23160000,0.1297,t,1.0000,20,0.0002,1,WLD,USD,binance,wldusdt,binance
+XECUSD,eCash,crypto,0.00000497,0.6073,t,1.0000,20,0.0000,1,XEC,USD,binance,xecusdt,binance
+XLMUSD,Stellar,crypto,0.12290000,0.0000,t,1.0000,20,0.0001,1,XLM,USD,binance,xlmusdt,binance
+XMRUSD,Monero,crypto,155.00000000,0.0000,f,0.0010,100,0.0001,1,XMR,USD,binance,xmrusdt,pending
+XRPUSD,Ripple,crypto,0.90620000,-0.5706,t,1.0000,100,0.0001,1,,,binance,xrpusdt,binance
+XTZUSD,Tezos,crypto,0.20850000,0.6274,t,1.0000,20,0.0001,1,XTZ,USD,binance,xtzusdt,binance
+YFIUSD,yearn.finance,crypto,1539.00000000,-5.1756,t,0.0100,20,1.0150,1,YFI,USD,binance,yfiusdt,binance
+ZECUSD,Zcash,crypto,694.58000000,-2.5780,t,0.0100,20,0.6190,1,ZEC,USD,binance,zecusdt,binance
+ZILUSD,Zilliqa,crypto,0.00082300,1.8564,t,1.0000,20,0.0000,1,ZIL,USD,binance,zilusdt,binance
+ZROUSD,LayerZero,crypto,0.94700000,-8.1474,t,0.0100,20,0.0009,1,ZRO,USD,binance,zrousdt,binance
+ZRXUSD,0x,crypto,0.07560000,0.0000,t,1.0000,20,0.0000,1,ZRX,USD,binance,zrxusdt,binance
+AUDCAD,AUD / CAD,forex,0.93730000,-1.0556,t,0.0100,100,0.0001,100000,AUD,CAD,yahoo,AUDCAD=X,yahoo
+AUDCHF,AUD / CHF,forex,0.54740000,-1.3160,t,0.0100,100,0.0001,100000,AUD,CHF,yahoo,AUDCHF=X,yahoo
+AUDJPY,Australian Dollar / Japanese Yen,forex,104.69500000,-1.0266,t,0.0100,100,0.0100,100000,AUD,JPY,yahoo,AUDJPY=X,yahoo
+AUDNZD,Australian Dollar / New Zealand Dollar,forex,1.20540000,-0.5117,t,0.0100,100,0.0001,100000,AUD,NZD,yahoo,AUDNZD=X,yahoo
+AUDUSD,Australian Dollar / US Dollar,forex,0.65960000,-0.7374,t,0.0100,100,0.0001,100000,AUD,USD,yahoo,AUDUSD=X,yahoo
+CADJPY,CAD / JPY,forex,111.70200000,0.0914,t,0.0100,100,0.0100,100000,CAD,JPY,yahoo,CADJPY=X,yahoo
+CHFJPY,CHF / JPY,forex,191.24200000,0.3784,t,0.0100,100,0.0100,100000,CHF,JPY,yahoo,CHFJPY=X,yahoo
+EURAUD,Euro / Australian Dollar,forex,1.66370000,0.8242,t,0.0100,100,0.0002,100000,EUR,AUD,yahoo,EURAUD=X,yahoo
+EURCAD,EUR / CAD,forex,1.55940000,-0.3005,t,0.0100,100,0.0001,100000,EUR,CAD,yahoo,EURCAD=X,yahoo
+EURCHF,Euro / Swiss Franc,forex,0.91080000,-0.5568,t,0.0100,100,0.0001,100000,EUR,CHF,yahoo,EURCHF=X,yahoo
+EURGBP,Euro / British Pound,forex,0.83760000,0.2154,t,0.0100,100,0.0001,100000,EUR,GBP,yahoo,EURGBP=X,yahoo
+EURJPY,Euro / Japanese Yen,forex,174.20800000,-0.2411,t,0.0100,100,0.0100,100000,EUR,JPY,yahoo,EURJPY=X,yahoo
+EURNOK,EUR / NOK,forex,10.78010000,0.3556,t,0.0100,100,0.0005,100000,EUR,NOK,yahoo,EURNOK=X,yahoo
+EURNZD,Euro / New Zealand Dollar,forex,2.00570000,0.3051,t,0.0100,100,0.0002,100000,EUR,NZD,yahoo,EURNZD=X,yahoo
+EURPLN,EUR / PLN,forex,4.47800000,0.5208,t,0.0100,100,0.0002,100000,EUR,PLN,yahoo,EURPLN=X,yahoo
+EURSEK,EUR / SEK,forex,11.24270000,0.2023,t,0.0100,100,0.0005,100000,EUR,SEK,yahoo,EURSEK=X,yahoo
+EURTRY,EUR / TRY,forex,55.59890000,0.1331,t,0.0100,100,0.0028,100000,EUR,TRY,yahoo,EURTRY=X,yahoo
+EURUSD,Euro / US Dollar,forex,1.09760000,0.0821,t,0.0100,100,0.0001,100000,EUR,USD,yahoo,EURUSD=X,yahoo
+GBPAUD,British Pound / Australian Dollar,forex,1.98590000,0.6385,t,0.0100,100,0.0002,100000,GBP,AUD,yahoo,GBPAUD=X,yahoo
+GBPCAD,British Pound / Canadian Dollar,forex,1.86170000,-0.4545,t,0.0100,100,0.0002,100000,GBP,CAD,yahoo,GBPCAD=X,yahoo
+GBPCHF,GBP / CHF,forex,1.08740000,-0.7394,t,0.0100,100,0.0001,100000,GBP,CHF,yahoo,GBPCHF=X,yahoo
+GBPJPY,British Pound / Japanese Yen,forex,207.98100000,-0.4294,t,0.0100,100,0.0100,100000,GBP,JPY,yahoo,GBPJPY=X,yahoo
+GBPNZD,GBP / NZD,forex,2.39420000,0.0752,t,0.0100,100,0.0001,100000,GBP,NZD,yahoo,GBPNZD=X,yahoo
+GBPUSD,British Pound / US Dollar,forex,1.30980000,-0.1372,t,0.0100,100,0.0001,100000,GBP,USD,yahoo,GBPUSD=X,yahoo
+GBPZAR,GBP / ZAR,forex,23.08540000,0.5654,t,0.0100,100,0.0011,100000,GBP,ZAR,yahoo,GBPZAR=X,yahoo
+NZDCAD,NZD / CAD,forex,0.77750000,-0.5118,t,0.0100,100,0.0001,100000,NZD,CAD,yahoo,NZDCAD=X,yahoo
+NZDJPY,New Zealand Dollar / Japanese Yen,forex,86.86500000,-0.3682,t,0.0100,100,0.0100,100000,NZD,JPY,yahoo,NZDJPY=X,yahoo
+NZDUSD,New Zealand Dollar / US Dollar,forex,0.54720000,-0.1642,t,0.0100,100,0.0001,100000,NZD,USD,yahoo,NZDUSD=X,yahoo
+USDCAD,US Dollar / Canadian Dollar,forex,1.42130000,-0.3575,t,0.0100,100,0.0001,100000,USD,CAD,yahoo,CAD=X,yahoo
+USDCHF,US Dollar / Swiss Franc,forex,0.83010000,-0.5749,t,0.0100,100,0.0001,100000,USD,CHF,yahoo,CHF=X,yahoo
+USDCNH,USD / CNH,forex,6.66780000,0.0645,t,0.0100,100,0.0003,100000,USD,CNH,yahoo,CNH=X,yahoo
+USDCZK,USD / CZK,forex,22.26060000,0.1151,t,0.0100,100,0.0011,100000,USD,CZK,yahoo,CZK=X,yahoo
+USDDKK,USD / DKK,forex,6.81060000,-0.0514,t,0.0100,100,0.0003,100000,USD,DKK,yahoo,DKK=X,yahoo
+USDHKD,USD / HKD,forex,7.83690000,-0.0523,t,0.0100,100,0.0004,100000,USD,HKD,yahoo,HKD=X,yahoo
+USDHUF,USD / HUF,forex,340.21000000,0.9945,t,0.0100,100,0.0164,100000,USD,HUF,yahoo,HUF=X,yahoo
+USDINR,USD / INR,forex,92.22000000,-0.7320,t,0.0100,100,0.0047,100000,USD,INR,yahoo,INR=X,yahoo
+USDJPY,US Dollar / Japanese Yen,forex,158.76000000,-0.3027,t,0.0100,100,0.0100,100000,USD,JPY,yahoo,JPY=X,yahoo
+USDMXN,US Dollar / Mexican Peso,forex,19.67400000,1.3706,t,0.0100,100,0.0100,100000,USD,MXN,yahoo,MXN=X,yahoo
+USDNOK,USD / NOK,forex,9.82480000,0.4642,t,0.0100,100,0.0005,100000,USD,NOK,yahoo,NOK=X,yahoo
+USDPLN,USD / PLN,forex,4.08090000,0.4702,t,0.0100,100,0.0002,100000,USD,PLN,yahoo,PLN=X,yahoo
+USDSEK,USD / SEK,forex,10.24600000,0.2397,t,0.0100,100,0.0005,100000,USD,SEK,yahoo,SEK=X,yahoo
+USDSGD,USD / SGD,forex,1.29060000,0.1241,t,0.0100,100,0.0001,100000,USD,SGD,yahoo,SGD=X,yahoo
+USDTHB,USD / THB,forex,34.07000000,0.5015,t,0.0100,100,0.0017,100000,USD,THB,yahoo,THB=X,yahoo
+USDTRY,USD / TRY,forex,50.67460000,0.0675,t,0.0100,100,0.0025,100000,USD,TRY,yahoo,TRY=X,yahoo
+USDZAR,US Dollar / South African Rand,forex,17.62500000,0.6165,t,0.0100,100,0.0200,100000,USD,ZAR,yahoo,ZAR=X,yahoo
+AUS200,Australia 200 (ASX),indices,8692.40000000,1.4211,t,0.0100,100,1.5000,1,,,yahoo,^AXJO,yahoo
+BRA50,Bovespa,indices,164856.47000000,0.4672,t,0.0100,50,16.7922,1,,BRL,yahoo,^BVSP,yahoo
+CAN60,TSX Composite,indices,33563.75000000,-1.1735,t,0.0100,50,3.5620,1,,CAD,yahoo,^GSPTSE,yahoo
+CHINA50,Shanghai Composite,indices,3476.47000000,-1.7655,t,0.0100,50,0.3599,1,,CNY,yahoo,000001.SS,yahoo
+ESP35,IBEX 35,indices,18635.80000000,-1.9983,t,0.0100,50,1.8653,1,,EUR,yahoo,^IBEX,yahoo
+EU50,Euro Stoxx 50,indices,5894.46000000,-1.8205,t,0.0100,50,0.6131,1,,EUR,yahoo,^STOXX50E,yahoo
+FRA40,France 40 (CAC),indices,7980.57000000,-0.7452,t,0.0100,100,1.2000,1,,,yahoo,^FCHI,yahoo
+GER40,Germany 40 (DAX),indices,24702.13000000,-1.2618,t,0.0100,100,1.5000,1,,,yahoo,^GDAXI,yahoo
+HK50,Hang Seng,indices,21966.01000000,-1.8660,t,0.0100,50,2.3294,1,,HKD,yahoo,^HSI,yahoo
+IND50,Nifty 50,indices,25819.25000000,1.8525,t,0.0100,50,2.3053,1,,INR,yahoo,^NSEI,yahoo
+ITA40,FTSE MIB,indices,47249.15000000,-1.8122,t,0.0100,50,4.9501,1,,EUR,yahoo,FTSEMIB.MI,yahoo
+JPN225,Japan 225 (Nikkei),indices,57011.62000000,-2.7846,t,0.0100,100,4.0000,1,,,yahoo,^N225,yahoo
+KOR200,KOSPI,indices,4697.51000000,-6.1630,t,0.0100,50,0.5731,1,,KRW,yahoo,^KS11,yahoo
+NED25,AEX 25,indices,1063.44000000,-1.2966,t,0.0100,50,0.1134,1,,EUR,yahoo,^AEX,yahoo
+SUI20,SMI 20,indices,14664.92000000,-0.4681,t,0.0100,50,1.4811,1,,CHF,yahoo,^SSMI,yahoo
+UK100,UK 100 (FTSE),indices,10426.94000000,-0.3834,t,0.0100,100,1.2000,1,,,yahoo,^FTSE,yahoo
+US100,NASDAQ 100,indices,25181.09800000,-3.9409,t,0.0100,100,1.0000,1,,,yahoo,^NDX,yahoo
+US2000,Russell 2000,indices,2637.29400000,-1.7746,t,0.0100,50,0.2812,1,,USD,yahoo,^RUT,yahoo
+US30,Dow Jones 30,indices,49403.76000000,-1.2294,t,0.0100,100,2.0000,1,,,yahoo,^DJI,yahoo
+US500,S&P 500,indices,7030.15000000,-2.3738,t,0.0100,100,0.5000,1,,,yahoo,^GSPC,yahoo
+VIX,Volatility Index,indices,33.61000000,27.5038,t,0.0100,50,0.0019,1,,USD,yahoo,^VIX,yahoo
+AAPL,Apple Inc.,stocks,348.81000000,-1.4856,t,0.0100,100,0.0100,1,,,yahoo,AAPL,yahoo
+ABBV,AbbVie Inc.,stocks,296.55000000,-1.2422,t,0.0100,5,0.1474,1,,USD,yahoo,ABBV,yahoo
+ABNB,"Airbnb, Inc.",stocks,171.29500000,-1.2083,t,0.0100,5,0.0822,1,,USD,yahoo,ABNB,yahoo
+ABT,Abbott Laboratories,stocks,108.09800000,2.5695,t,0.0100,5,0.0531,1,,USD,yahoo,ABT,yahoo
+ACN,Accenture plc,stocks,240.85000000,3.6717,t,0.0100,5,0.1291,1,,USD,yahoo,ACN,yahoo
+ADBE,Adobe Inc.,stocks,233.60000000,0.6549,t,0.0100,5,0.1251,1,,USD,yahoo,ADBE,yahoo
+ADI,"Analog Devices, Inc.",stocks,313.93000000,0.3131,t,0.0100,5,0.2086,1,,USD,yahoo,ADI,yahoo
+ADP,"Automatic Data Processing, Inc.",stocks,316.03000000,1.6860,t,0.0100,5,0.1469,1,,USD,yahoo,ADP,yahoo
+ADS_DE,Adidas,stocks,170.45000000,1.3678,t,0.0100,5,0.1348,1,,EUR,yahoo,ADS.DE,yahoo
+ADYEN_AS,Adyen,stocks,831.90000000,-0.6331,t,0.0100,5,0.6615,1,,EUR,yahoo,ADYEN.AS,yahoo
+AI_PA,Air Liquide,stocks,188.46000000,0.1807,t,0.0100,5,0.1447,1,,EUR,yahoo,AI.PA,yahoo
+AIR_PA,Airbus,stocks,190.00000000,-1.8798,t,0.0100,5,0.1539,1,,EUR,yahoo,AIR.PA,yahoo
+ALV_DE,Allianz,stocks,453.50000000,-0.3953,t,0.0100,5,0.3510,1,,EUR,yahoo,ALV.DE,yahoo
+AMAT,"Applied Materials, Inc.",stocks,292.22000000,-9.7418,t,0.0100,5,0.1950,1,,USD,yahoo,AMAT,yahoo
+AMD,"Advanced Micro Devices, Inc.",stocks,375.95000000,-9.0304,t,0.0100,5,0.2524,1,,USD,yahoo,AMD,yahoo
+AMGN,Amgen Inc.,stocks,466.32000000,-1.6068,t,0.0100,5,0.2330,1,,USD,yahoo,AMGN,yahoo
+AMZN,Amazon.com Inc.,stocks,240.35000000,-4.7326,t,0.0100,100,0.0300,1,,,yahoo,AMZN,yahoo
+ARM,Arm Holdings plc,stocks,149.49000000,-7.4709,t,0.0100,5,0.1030,1,,USD,yahoo,ARM,yahoo
+ASML,ASML Holding N.V.,stocks,1244.72000000,-6.8365,t,0.0100,5,0.7830,1,,USD,yahoo,ASML,yahoo
+ASML_AS,ASML (Amsterdam),stocks,1131.60000000,-5.7942,t,0.0100,5,1.1302,1,,EUR,yahoo,ASML.AS,yahoo
+AVGO,Broadcom Inc.,stocks,283.15000000,-5.9552,t,0.0100,5,0.1630,1,,USD,yahoo,AVGO,yahoo
+BA,The Boeing Company,stocks,162.25000000,-0.8191,t,0.0100,5,0.0858,1,,USD,yahoo,BA,yahoo
+BABA,Alibaba Group Holding Limited,stocks,83.14000000,-2.0269,t,0.0100,5,0.0490,1,,USD,yahoo,BABA,yahoo
+BAC,Bank of America Corporation,stocks,47.61500000,-1.9460,t,0.0100,5,0.0250,1,,USD,yahoo,BAC,yahoo
+BAS_DE,BASF,stocks,49.20000000,0.1017,t,0.0100,5,0.0428,1,,EUR,yahoo,BAS.DE,yahoo
+BAYN_DE,Bayer,stocks,50.68000000,-2.6134,t,0.0100,5,0.0405,1,,EUR,yahoo,BAYN.DE,yahoo
+BKNG,Booking Holdings Inc.,stocks,147.11500000,0.3239,t,0.0100,5,0.0741,1,,USD,yahoo,BKNG,yahoo
+BLK,"BlackRock, Inc.",stocks,1113.24500000,-2.8607,t,0.0100,5,0.5738,1,,USD,yahoo,BLK,yahoo
+BMW_DE,BMW,stocks,55.24000000,3.7176,t,0.0100,5,0.0462,1,,EUR,yahoo,BMW.DE,yahoo
+BMY,Bristol-Myers Squibb Company,stocks,61.35000000,-1.0803,t,0.0100,5,0.0312,1,,USD,yahoo,BMY,yahoo
+BNP_PA,BNP Paribas,stocks,88.22000000,-2.2818,t,0.0100,5,0.0685,1,,EUR,yahoo,BNP.PA,yahoo
+BRK.B,Berkshire Hathaway Inc.,stocks,576.52500000,-0.1187,t,0.0100,5,0.2712,1,,USD,yahoo,BRK-B,yahoo
+C,Citigroup Inc.,stocks,111.07500000,-2.4374,t,0.0100,5,0.0613,1,,USD,yahoo,C,yahoo
+CAT,Caterpillar Inc.,stocks,520.59200000,-3.7064,t,0.0100,5,0.3114,1,,USD,yahoo,CAT,yahoo
+CB,Chubb Limited,stocks,381.68500000,1.6823,t,0.0100,5,0.1821,1,,USD,yahoo,CB,yahoo
+CI,The Cigna Group,stocks,272.83000000,-0.7891,t,0.0100,5,0.1491,1,,USD,yahoo,CI,yahoo
+CL,Colgate-Palmolive Company,stocks,100.03500000,0.8011,t,0.0100,5,0.0476,1,,USD,yahoo,CL,yahoo
+CMCSA,Comcast Corporation,stocks,25.82500000,1.7533,t,0.0100,5,0.0116,1,,USD,yahoo,CMCSA,yahoo
+CMG,"Chipotle Mexican Grill, Inc.",stocks,37.39000000,0.9177,t,0.0100,5,0.0159,1,,USD,yahoo,CMG,yahoo
+COIN,"Coinbase Global, Inc.",stocks,97.51000000,-4.7242,t,0.0100,5,0.0718,1,,USD,yahoo,COIN,yahoo
+COST,Costco Wholesale Corporation,stocks,1091.97000000,0.0238,t,0.0100,5,0.5061,1,,USD,yahoo,COST,yahoo
+CRM,"Salesforce, Inc.",stocks,194.60500000,0.6960,t,0.0100,5,0.1146,1,,USD,yahoo,CRM,yahoo
+CRWD,"CrowdStrike Holdings, Inc.",stocks,199.11300000,-5.5710,t,0.0100,5,0.1252,1,,USD,yahoo,CRWD,yahoo
+CS_PA,AXA,stocks,44.88000000,-0.9709,t,0.0100,5,0.0341,1,,EUR,yahoo,CS.PA,yahoo
+CSCO,"Cisco Systems, Inc.",stocks,92.05500000,-2.0587,t,0.0100,5,0.0523,1,,USD,yahoo,CSCO,yahoo
+CVS,CVS Health Corporation,stocks,81.94000000,1.5491,t,0.0100,5,0.0451,1,,USD,yahoo,CVS,yahoo
+CVX,Chevron Corporation,stocks,210.05500000,0.6348,t,0.0100,5,0.1178,1,,USD,yahoo,CVX,yahoo
+DBK_DE,Deutsche Bank,stocks,29.07000000,-2.7759,t,0.0100,5,0.0241,1,,EUR,yahoo,DBK.DE,yahoo
+DDOG,"Datadog, Inc.",stocks,151.90000000,-8.1509,t,0.0100,5,0.1176,1,,USD,yahoo,DDOG,yahoo
+DE,Deere & Company,stocks,627.05000000,2.1653,t,0.0100,5,0.3377,1,,USD,yahoo,DE,yahoo
+DELL,Dell Technologies Inc.,stocks,278.41000000,-5.7132,t,0.0100,5,0.2122,1,,USD,yahoo,DELL,yahoo
+DG,Dollar General Corporation,stocks,138.78000000,0.0938,t,0.0100,5,0.0662,1,,USD,yahoo,DG,yahoo
+DG_PA,Vinci,stocks,112.40000000,0.5817,t,0.0100,5,0.0869,1,,EUR,yahoo,DG.PA,yahoo
+DHL_DE,DHL Group,stocks,56.06000000,-0.4616,t,0.0100,5,0.0469,1,,EUR,yahoo,DHL.DE,yahoo
+DHR,Danaher Corporation,stocks,226.03500000,-1.3335,t,0.0100,5,0.1161,1,,USD,yahoo,DHR,yahoo
+DIS,The Walt Disney Company,stocks,122.98000000,0.3836,t,0.0100,5,0.0555,1,,USD,yahoo,DIS,yahoo
+DKNG,DraftKings Inc.,stocks,16.94600000,5.1893,t,0.0100,5,0.0105,1,,USD,yahoo,DKNG,yahoo
+DOCU,"DocuSign, Inc.",stocks,79.94000000,-0.1249,t,0.0100,5,0.0411,1,,USD,yahoo,DOCU,yahoo
+DPZ,"Domino's Pizza, Inc.",stocks,360.98000000,1.2510,t,0.0100,5,0.1569,1,,USD,yahoo,DPZ,yahoo
+DTE_DE,Deutsche Telekom,stocks,26.83000000,0.0373,t,0.0100,5,0.0209,1,,EUR,yahoo,DTE.DE,yahoo
+DUK,Duke Energy Corporation,stocks,132.21000000,0.9545,t,0.0100,5,0.0637,1,,USD,yahoo,DUK,yahoo
+EBAY,eBay Inc.,stocks,114.65000000,0.7735,t,0.0100,5,0.0608,1,,USD,yahoo,EBAY,yahoo
+EL_PA,EssilorLuxottica,stocks,173.00000000,-1.2275,t,0.0100,5,0.1474,1,,EUR,yahoo,EL.PA,yahoo
+ENEL_MI,Enel,stocks,9.40300000,-0.2228,t,0.0100,5,0.0075,1,,EUR,yahoo,ENEL.MI,yahoo
+EOAN_DE,E.ON,stocks,18.61000000,0.1076,t,0.0100,5,0.0151,1,,EUR,yahoo,EOAN.DE,yahoo
+ETSY,"Etsy, Inc.",stocks,79.27000000,-0.5395,t,0.0100,5,0.0445,1,,USD,yahoo,ETSY,yahoo
+F,Ford Motor Company,stocks,11.96000000,0.0837,t,0.0100,5,0.0061,1,,USD,yahoo,F,yahoo
+GE,GE Aerospace,stocks,311.73000000,-1.9809,t,0.0100,5,0.1509,1,,USD,yahoo,GE,yahoo
+GILD,"Gilead Sciences, Inc.",stocks,176.79000000,-0.8413,t,0.0100,5,0.0853,1,,USD,yahoo,GILD,yahoo
+GIS,"General Mills, Inc.",stocks,36.54000000,2.6693,t,0.0100,5,0.0171,1,,USD,yahoo,GIS,yahoo
+GLE_PA,Societe Generale,stocks,61.33000000,-2.9589,t,0.0100,5,0.0488,1,,EUR,yahoo,GLE.PA,yahoo
+GM,General Motors Company,stocks,82.76000000,0.5345,t,0.0100,5,0.0437,1,,USD,yahoo,GM,yahoo
+GOOGL,Alphabet Inc.,stocks,266.19000000,-4.6085,t,0.0100,100,0.0500,1,,,yahoo,GOOGL,yahoo
+GS,"The Goldman Sachs Group, Inc.",stocks,782.26000000,-2.9478,t,0.0100,5,0.4473,1,,USD,yahoo,GS,yahoo
+HD,"The Home Depot, Inc.",stocks,357.27500000,1.0136,t,0.0100,5,0.1646,1,,USD,yahoo,HD,yahoo
+HON,Honeywell International Inc.,stocks,221.60500000,-1.4300,t,0.0100,5,0.1092,1,,USD,yahoo,HON,yahoo
+HOOD,"Robinhood Markets, Inc.",stocks,62.16500000,-5.3085,t,0.0100,5,0.0425,1,,USD,yahoo,HOOD,yahoo
+HPQ,HP Inc.,stocks,31.01500000,11.0057,t,0.0100,5,0.0144,1,,USD,yahoo,HPQ,yahoo
+HSBC,HSBC Holdings plc,stocks,80.21000000,-2.2187,t,0.0100,5,0.0427,1,,USD,yahoo,HSBC,yahoo
+HSY,The Hershey Company,stocks,183.02000000,3.6588,t,0.0100,5,0.0828,1,,USD,yahoo,HSY,yahoo
+IBM,International Business Machines Corporation,stocks,241.30500000,2.4128,t,0.0100,5,0.1289,1,,USD,yahoo,IBM,yahoo
+IFX_DE,Infineon,stocks,40.89500000,-6.4937,t,0.0100,5,0.0404,1,,EUR,yahoo,IFX.DE,yahoo
+INGA_AS,ING Group,stocks,26.37500000,-3.0865,t,0.0100,5,0.0226,1,,EUR,yahoo,INGA.AS,yahoo
+INTC,Intel Corporation,stocks,49.98500000,-8.7865,t,0.0100,5,0.0329,1,,USD,yahoo,INTC,yahoo
+INTU,Intuit Inc.,stocks,275.69500000,-1.3331,t,0.0100,5,0.1705,1,,USD,yahoo,INTU,yahoo
+ISP_MI,Intesa Sanpaolo,stocks,5.49600000,-3.3415,t,0.0100,5,0.0047,1,,EUR,yahoo,ISP.MI,yahoo
+ISRG,"Intuitive Surgical, Inc.",stocks,420.45000000,-3.2247,t,0.0100,5,0.2160,1,,USD,yahoo,ISRG,yahoo
+ITX_MC,Inditex,stocks,57.46000000,-1.4408,t,0.0100,5,0.0449,1,,EUR,yahoo,ITX.MC,yahoo
+JD,"JD.com, Inc.",stocks,25.72500000,-0.0194,t,0.0100,5,0.0128,1,,USD,yahoo,JD,yahoo
+JNJ,Johnson & Johnson,stocks,273.86000000,-0.9405,t,0.0100,100,0.0300,1,,,yahoo,JNJ,yahoo
+JPM,JPMorgan Chase & Co.,stocks,311.72700000,-1.6944,t,0.0100,100,0.0300,1,,,yahoo,JPM,yahoo
+KER_PA,Kering,stocks,176.70000000,-1.8551,t,0.0100,5,0.1420,1,,EUR,yahoo,KER.PA,yahoo
+KHC,The Kraft Heinz Company,stocks,26.33500000,2.9918,t,0.0100,5,0.0122,1,,USD,yahoo,KHC,yahoo
+KMB,Kimberly-Clark Corporation,stocks,109.35900000,0.6063,t,0.0100,5,0.0540,1,,USD,yahoo,KMB,yahoo
+KO,The Coca-Cola Company,stocks,98.16500000,0.5583,t,0.0100,5,0.0470,1,,USD,yahoo,KO,yahoo
+LCID,"Lucid Group, Inc.",stocks,2.51500000,-4.7348,t,0.0100,5,0.0015,1,,USD,yahoo,LCID,yahoo
+LHA_DE,Lufthansa,stocks,8.69400000,-0.5946,t,0.0100,5,0.0057,1,,EUR,yahoo,LHA.DE,yahoo
+LIN,Linde plc,stocks,519.06500000,0.4324,t,0.0100,5,0.2571,1,,USD,yahoo,LIN,yahoo
+LLY,Eli Lilly and Company,stocks,1375.73000000,-2.2634,t,0.0100,5,0.7088,1,,USD,yahoo,LLY,yahoo
+LMT,Lockheed Martin Corporation,stocks,592.09500000,0.9316,t,0.0100,5,0.3185,1,,USD,yahoo,LMT,yahoo
+LOW,"Lowe's Companies, Inc.",stocks,232.82000000,0.7704,t,0.0100,5,0.1045,1,,USD,yahoo,LOW,yahoo
+LULU,lululemon athletica inc.,stocks,105.00000000,-0.9901,t,0.0100,5,0.0536,1,,USD,yahoo,LULU,yahoo
+MA,Mastercard Incorporated,stocks,649.80500000,0.3653,t,0.0100,5,0.3190,1,,USD,yahoo,MA,yahoo
+MARA,"MARA Holdings, Inc.",stocks,5.22500000,-3.4196,t,0.0100,5,0.0034,1,,USD,yahoo,MARA,yahoo
+MBG_DE,Mercedes-Benz,stocks,37.54000000,0.4818,t,0.0100,5,0.0325,1,,EUR,yahoo,MBG.DE,yahoo
+MC_PA,LVMH,stocks,391.00000000,-0.9374,t,0.0100,5,0.3096,1,,EUR,yahoo,MC.PA,yahoo
+MCD,McDonald's Corporation,stocks,285.42000000,1.6815,t,0.0100,5,0.1291,1,,USD,yahoo,MCD,yahoo
+MDB,"MongoDB, Inc.",stocks,302.35000000,-1.9935,t,0.0100,5,0.1765,1,,USD,yahoo,MDB,yahoo
+MDLZ,"Mondelez International, Inc.",stocks,67.88500000,1.3058,t,0.0100,5,0.0325,1,,USD,yahoo,MDLZ,yahoo
+MDT,Medtronic plc,stocks,95.77000000,-0.3745,t,0.0100,5,0.0483,1,,USD,yahoo,MDT,yahoo
+META,Meta Platforms Inc.,stocks,585.57500000,-0.7197,t,0.0100,100,0.0500,1,,,yahoo,META,yahoo
+MO,"Altria Group, Inc.",stocks,76.29500000,1.9714,t,0.0100,5,0.0390,1,,USD,yahoo,MO,yahoo
+MRK,"Merck & Co., Inc.",stocks,138.71000000,-2.0202,t,0.0100,5,0.0748,1,,USD,yahoo,MRK,yahoo
+MRVL,"Marvell Technology, Inc.",stocks,119.70500000,-9.0180,t,0.0100,5,0.0982,1,,USD,yahoo,MRVL,yahoo
+MS,Morgan Stanley,stocks,164.57000000,-2.5001,t,0.0100,5,0.0922,1,,USD,yahoo,MS,yahoo
+MSFT,Microsoft Corporation,stocks,482.76000000,-2.6949,t,0.0100,100,0.0200,1,,,yahoo,MSFT,yahoo
+MSTR,Strategy Inc,stocks,72.10000000,-7.0277,t,0.0100,5,0.0653,1,,USD,yahoo,MSTR,yahoo
+MU,"Micron Technology, Inc.",stocks,552.73000000,-12.2752,t,0.0100,5,0.4424,1,,USD,yahoo,MU,yahoo
+MUV2_DE,Munich Re,stocks,585.00000000,-0.3067,t,0.0100,5,0.4536,1,,EUR,yahoo,MUV2.DE,yahoo
+NEE,"NextEra Energy, Inc.",stocks,85.00000000,0.4966,t,0.0100,5,0.0419,1,,USD,yahoo,NEE,yahoo
+NESN_SW,Nestle,stocks,87.15000000,1.0083,t,0.0100,5,0.0678,1,,CHF,yahoo,NESN.SW,yahoo
+NET,"Cloudflare, Inc.",stocks,270.26000000,-5.9278,t,0.0100,5,0.1404,1,,USD,yahoo,NET,yahoo
+NFLX,Netflix Inc.,stocks,57.77500000,-1.8600,t,0.0100,100,0.1000,1,,,yahoo,NFLX,yahoo
+NIO,NIO Inc.,stocks,2.58500000,0.1938,t,0.0100,5,0.0016,1,,USD,yahoo,NIO,yahoo
+NKE,"NIKE, Inc.",stocks,36.05500000,0.8531,t,0.0100,5,0.0193,1,,USD,yahoo,NKE,yahoo
+NOVN_SW,Novartis,stocks,128.10000000,-0.3888,t,0.0100,5,0.1070,1,,CHF,yahoo,NOVN.SW,yahoo
+NOW,"ServiceNow, Inc.",stocks,90.44600000,-1.4105,t,0.0100,5,0.0526,1,,USD,yahoo,NOW,yahoo
+NVDA,NVIDIA Corporation,stocks,142.19500000,-8.4856,t,0.0100,100,0.2000,1,,,yahoo,NVDA,yahoo
+NVO,Novo Nordisk A/S,stocks,40.36000000,0.1240,t,0.0100,5,0.0200,1,,USD,yahoo,NVO,yahoo
+OR_PA,L'Oreal,stocks,442.00000000,0.2495,t,0.0100,5,0.3496,1,,EUR,yahoo,OR.PA,yahoo
+ORCL,Oracle Corporation,stocks,100.93000000,-7.8265,t,0.0100,5,0.0653,1,,USD,yahoo,ORCL,yahoo
+PAH3_DE,Porsche SE,stocks,22.97000000,1.6822,t,0.0100,5,0.0205,1,,EUR,yahoo,PAH3.DE,yahoo
+PANW,"Palo Alto Networks, Inc.",stocks,340.80000000,-3.4534,t,0.0100,5,0.1829,1,,USD,yahoo,PANW,yahoo
+PDD,PDD Holdings Inc.,stocks,86.47000000,-0.8599,t,0.0100,5,0.0393,1,,USD,yahoo,PDD,yahoo
+PEP,"PepsiCo, Inc.",stocks,144.60000000,1.3457,t,0.0100,5,0.0687,1,,USD,yahoo,PEP,yahoo
+PG,Procter & Gamble,stocks,173.65000000,0.6842,t,0.0100,100,0.0300,1,,,yahoo,PG,yahoo
+PGR,The Progressive Corporation,stocks,238.22500000,1.0799,t,0.0100,5,0.1156,1,,USD,yahoo,PGR,yahoo
+PINS,"Pinterest, Inc.",stocks,18.96000000,2.4865,t,0.0100,5,0.0097,1,,USD,yahoo,PINS,yahoo
+PLD,"Prologis, Inc.",stocks,126.44500000,-0.6872,t,0.0100,5,0.0640,1,,USD,yahoo,PLD,yahoo
+PLTR,Palantir Technologies Inc.,stocks,156.80000000,-2.7175,t,0.0100,5,0.0921,1,,USD,yahoo,PLTR,yahoo
+PM,Philip Morris International Inc.,stocks,184.47500000,0.2854,t,0.0100,5,0.1044,1,,USD,yahoo,PM,yahoo
+PYPL,"PayPal Holdings, Inc.",stocks,56.31000000,0.2492,t,0.0100,5,0.0285,1,,USD,yahoo,PYPL,yahoo
+QCOM,QUALCOMM Incorporated,stocks,159.51000000,-3.3038,t,0.0100,5,0.0824,1,,USD,yahoo,QCOM,yahoo
+RACE_MI,Ferrari,stocks,365.70000000,1.2458,t,0.0100,5,0.2841,1,,EUR,yahoo,RACE.MI,yahoo
+RBLX,Roblox Corporation,stocks,53.39000000,-0.1870,t,0.0100,5,0.0215,1,,USD,yahoo,RBLX,yahoo
+REGN,"Regeneron Pharmaceuticals, Inc.",stocks,974.44500000,-1.2810,t,0.0100,5,0.4639,1,,USD,yahoo,REGN,yahoo
+RHM_DE,Rheinmetall,stocks,735.80000000,0.1770,t,0.0100,5,0.8301,1,,EUR,yahoo,RHM.DE,yahoo
+RI_PA,Pernod Ricard,stocks,70.10000000,0.5162,t,0.0100,5,0.0541,1,,EUR,yahoo,RI.PA,yahoo
+RIOT,"Riot Platforms, Inc.",stocks,15.78500000,-3.3966,t,0.0100,5,0.0064,1,,USD,yahoo,RIOT,yahoo
+RIVN,"Rivian Automotive, Inc.",stocks,11.17500000,-1.5419,t,0.0100,5,0.0061,1,,USD,yahoo,RIVN,yahoo
+RMS_PA,Hermes,stocks,1252.00000000,0.0799,t,0.0100,5,1.0348,1,,EUR,yahoo,RMS.PA,yahoo
+RNO_PA,Renault,stocks,27.37000000,2.2795,t,0.0100,5,0.0221,1,,EUR,yahoo,RNO.PA,yahoo
+ROKU,"Roku, Inc.",stocks,160.52000000,0.0935,t,0.0100,5,0.0776,1,,USD,yahoo,ROKU,yahoo
+ROST,"Ross Stores, Inc.",stocks,222.94000000,-1.4325,t,0.0100,5,0.1141,1,,USD,yahoo,ROST,yahoo
+RTX,RTX Corporation,stocks,193.96100000,-0.7009,t,0.0100,5,0.0999,1,,USD,yahoo,RTX,yahoo
+SAN_MC,Banco Santander,stocks,10.02800000,-3.9648,t,0.0100,5,0.0081,1,,EUR,yahoo,SAN.MC,yahoo
+SAN_PA,Sanofi,stocks,98.16000000,4.8942,t,0.0100,5,0.0638,1,,EUR,yahoo,SAN.PA,yahoo
+SAP,SAP SE,stocks,209.65000000,0.4311,t,0.0100,5,0.1175,1,,USD,yahoo,SAP,yahoo
+SAP_DE,SAP SE (Frankfurt),stocks,189.82000000,-0.1368,t,0.0100,5,0.1690,1,,EUR,yahoo,SAP.DE,yahoo
+SBUX,Starbucks Corporation,stocks,106.56000000,0.1692,t,0.0100,5,0.0518,1,,USD,yahoo,SBUX,yahoo
+SCHW,The Charles Schwab Corporation,stocks,92.70000000,-1.2885,t,0.0100,5,0.0440,1,,USD,yahoo,SCHW,yahoo
+SHOP,Shopify Inc.,stocks,128.31000000,-3.0232,t,0.0100,5,0.0787,1,,USD,yahoo,SHOP,yahoo
+SIE_DE,Siemens,stocks,245.50000000,-3.5932,t,0.0100,5,0.2125,1,,EUR,yahoo,SIE.DE,yahoo
+SMCI,"Super Micro Computer, Inc.",stocks,21.57000000,-4.6419,t,0.0100,5,0.0165,1,,USD,yahoo,SMCI,yahoo
+SNAP,Snap Inc.,stocks,4.84000000,-1.0225,t,0.0100,5,0.0027,1,,USD,yahoo,SNAP,yahoo
+SNOW,Snowflake Inc.,stocks,257.76000000,-4.9172,t,0.0100,5,0.1530,1,,USD,yahoo,SNOW,yahoo
+SO,The Southern Company,stocks,95.02000000,0.9670,t,0.0100,5,0.0469,1,,USD,yahoo,SO,yahoo
+SOFI,"SoFi Technologies, Inc.",stocks,12.46000000,-3.1104,t,0.0100,5,0.0084,1,,USD,yahoo,SOFI,yahoo
+SONY,Sony Group Corporation,stocks,28.29500000,1.8172,t,0.0100,5,0.0127,1,,USD,yahoo,SONY,yahoo
+SPGI,S&P Global Inc.,stocks,456.01000000,0.3985,t,0.0100,5,0.2333,1,,USD,yahoo,SPGI,yahoo
+SPOT,Spotify Technology S.A.,stocks,605.73500000,0.9996,t,0.0100,5,0.2967,1,,USD,yahoo,SPOT,yahoo
+SU_PA,Schneider Electric,stocks,216.65000000,-4.1796,t,0.0100,5,0.1900,1,,EUR,yahoo,SU.PA,yahoo
+SYK,Stryker Corporation,stocks,329.06000000,1.5367,t,0.0100,5,0.1459,1,,USD,yahoo,SYK,yahoo
+T,AT&T Inc.,stocks,23.20100000,1.4030,t,0.0100,5,0.0107,1,,USD,yahoo,T,yahoo
+TGT,Target Corporation,stocks,172.40500000,-2.0760,t,0.0100,5,0.0772,1,,USD,yahoo,TGT,yahoo
+TJX,"The TJX Companies, Inc.",stocks,145.61500000,1.2199,t,0.0100,5,0.0702,1,,USD,yahoo,TJX,yahoo
+TM,Toyota Motor Corporation,stocks,213.53000000,1.6955,t,0.0100,5,0.0979,1,,USD,yahoo,TM,yahoo
+TMO,Thermo Fisher Scientific Inc.,stocks,675.36000000,-2.9125,t,0.0100,5,0.3485,1,,USD,yahoo,TMO,yahoo
+TSLA,Tesla Inc.,stocks,365.47000000,-4.9938,t,0.0100,100,0.1000,1,,,yahoo,TSLA,yahoo
+TSM,Taiwan Semiconductor Manufacturing,stocks,324.79500000,-6.9888,t,0.0100,5,0.2031,1,,USD,yahoo,TSM,yahoo
+TTD,"The Trade Desk, Inc.",stocks,14.24500000,1.2438,t,0.0100,5,0.0061,1,,USD,yahoo,TTD,yahoo
+TTE_PA,TotalEnergies,stocks,77.28000000,-0.5149,t,0.0100,5,0.0683,1,,EUR,yahoo,TTE.PA,yahoo
+TXN,Texas Instruments Incorporated,stocks,255.54500000,-1.1202,t,0.0100,5,0.1504,1,,USD,yahoo,TXN,yahoo
+UBER,"Uber Technologies, Inc.",stocks,65.04000000,0.5255,t,0.0100,5,0.0326,1,,USD,yahoo,UBER,yahoo
+UBSG_SW,UBS,stocks,36.80000000,-1.3934,t,0.0100,5,0.0314,1,,CHF,yahoo,UBSG.SW,yahoo
+UNH,UnitedHealth Group Incorporated,stocks,343.29500000,0.4139,t,0.0100,5,0.2035,1,,USD,yahoo,UNH,yahoo
+UPS,"United Parcel Service, Inc.",stocks,110.71000000,-0.1083,t,0.0100,5,0.0541,1,,USD,yahoo,UPS,yahoo
+V,Visa Inc.,stocks,418.85000000,0.4967,t,0.0100,100,0.0300,1,,,yahoo,V,yahoo
+VOW3_DE,Volkswagen,stocks,65.24000000,4.6183,t,0.0100,5,0.0557,1,,EUR,yahoo,VOW3.DE,yahoo
+VRTX,Vertex Pharmaceuticals Incorporated,stocks,556.67500000,-1.2848,t,0.0100,5,0.2794,1,,USD,yahoo,VRTX,yahoo
+VZ,Verizon Communications Inc.,stocks,47.60500000,0.9436,t,0.0100,5,0.0224,1,,USD,yahoo,VZ,yahoo
+WBD,Warner Bros. Discovery Inc,stocks,30.95000000,0.0000,t,0.0100,5,0.0155,1,,USD,yahoo,WBD,yahoo
+WFC,Wells Fargo & Company,stocks,79.67000000,-1.8722,t,0.0100,5,0.0417,1,,USD,yahoo,WFC,yahoo
+WMT,Walmart Inc.,stocks,132.07000000,-0.1814,t,0.0100,100,0.0200,1,,,yahoo,WMT,yahoo
+XOM,Exxon Mobil Corporation,stocks,158.23000000,0.0000,t,0.0100,5,0.0936,1,,USD,yahoo,XOM,yahoo
+YUM,"Yum! Brands, Inc.",stocks,166.45500000,0.0752,t,0.0100,5,0.0777,1,,USD,yahoo,YUM,yahoo
+ZM,"Zoom Communications, Inc.",stocks,88.51500000,0.1301,t,0.0100,5,0.0478,1,,USD,yahoo,ZM,yahoo
+ZTS,Zoetis Inc.,stocks,82.12000000,0.7978,t,0.0100,5,0.0399,1,,USD,yahoo,ZTS,yahoo
