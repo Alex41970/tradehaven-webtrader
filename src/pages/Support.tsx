@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { ArrowLeft, Search, BookOpen, Video, MessageSquare, FileText, HelpCircle } from "lucide-react";
+import { FCA_FRN, FcaRegisterLink } from "@/components/FcaRegisterLink";
 
 const Support = () => {
   return (
@@ -133,7 +134,7 @@ const Support = () => {
                 Is my money safe with EdgeWealth Pro?
               </AccordionTrigger>
               <AccordionContent className="text-muted-foreground">
-                Yes, your funds are protected through multiple layers of security. We use segregated accounts to keep client funds separate from company funds, employ bank-level encryption, and are fully regulated by major financial authorities. Client deposits are also covered by investor protection schemes up to applicable limits.
+                Yes, your funds are protected through multiple layers of security. We use segregated accounts to keep client funds separate from company funds, employ bank-level encryption, and are authorized and regulated by the Financial Conduct Authority (FCA), FRN {FCA_FRN} — you can <FcaRegisterLink label="verify our license" />. Client deposits are also covered by investor protection schemes up to applicable limits.
               </AccordionContent>
             </AccordionItem>
 

@@ -5,7 +5,8 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, Mail, Clock, MessageSquare, Phone, MapPin } from "lucide-react";
+import { ArrowLeft, Mail, Clock, MessageSquare, Phone, MapPin, ShieldCheck } from "lucide-react";
+import { FCA_FRN, FcaRegisterLink } from "@/components/FcaRegisterLink";
 
 const Contact = () => {
   return (
@@ -74,6 +75,15 @@ const Contact = () => {
               <p className="text-muted-foreground">
                 Our global support team is available around the clock to assist you with any questions or issues.
               </p>
+            </Card>
+
+            <Card className="p-6">
+              <ShieldCheck className="w-12 h-12 text-primary mb-4" />
+              <h3 className="text-xl font-bold mb-2">Regulated</h3>
+              <p className="text-muted-foreground mb-3">
+                Authorized and regulated by the Financial Conduct Authority (FCA), FRN {FCA_FRN}.
+              </p>
+              <FcaRegisterLink />
             </Card>
           </div>
 

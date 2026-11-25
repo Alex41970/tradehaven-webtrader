@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { Logo } from "@/components/Logo";
 import { ExternalLink, Star } from "lucide-react";
+import { FCA_REGISTER_URL } from "@/components/FcaRegisterLink";
 
 const PAYMENT_ICON_SOURCES: Record<string, string[]> = {
   visa: [
@@ -133,7 +134,7 @@ export const Footer = () => {
                 <p className="flex flex-wrap items-center justify-center md:justify-start gap-2 text-xs">
                   <span>FCA Reference Number: 600410</span>
                   <a 
-                    href="https://register.fca.org.uk/s/firm?id=001b000000NMcCMAA1" 
+                    href={FCA_REGISTER_URL} 
                     target="_blank" 
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-1 text-primary hover:underline"

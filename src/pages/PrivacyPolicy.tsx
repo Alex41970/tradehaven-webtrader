@@ -2,6 +2,7 @@ import { PublicHeader } from "@/components/PublicHeader";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
+import { FCA_FRN, FcaRegisterLink } from "@/components/FcaRegisterLink";
 
 const PrivacyPolicy = () => {
   const navigate = useNavigate();
@@ -208,7 +209,8 @@ const PrivacyPolicy = () => {
           <section className="border-t border-border pt-6">
             <p className="text-sm text-muted-foreground">
               <strong>Regulatory Information:</strong> EdgeWealth Pro is authorized and regulated by the Financial 
-              Conduct Authority (FCA) under registration number FRN 600410. We are committed to maintaining the highest standards 
+              Conduct Authority (FCA) under registration number FRN {FCA_FRN}. You can verify our license on the{" "}
+              <FcaRegisterLink label="FCA Register" />. We are committed to maintaining the highest standards 
               of data protection and privacy in accordance with applicable data protection laws.
             </p>
           </section>

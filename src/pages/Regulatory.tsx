@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ArrowLeft, Shield, FileCheck, Building, Scale } from "lucide-react";
+import { FCA_FRN, FcaRegisterLink } from "@/components/FcaRegisterLink";
 
 const Regulatory = () => {
   return (
@@ -61,7 +62,8 @@ const Regulatory = () => {
                   <div className="space-y-2 text-sm">
                     <p><strong>Entity:</strong> EdgeWealth Pro Holdings LLC</p>
                     <p><strong>Registration:</strong> Authorized and regulated by the FCA</p>
-                    <p><strong>FCA Reference:</strong> 600410</p>
+                    <p><strong>FCA Reference:</strong> {FCA_FRN}</p>
+                    <p className="pt-1"><FcaRegisterLink /></p>
                     <p><strong>Address:</strong> 585 Bicycle Path, 11776, Port Jefferson Station, United States</p>
                     <p className="text-foreground/90 mt-4">
                       EdgeWealth Pro Holdings operates from our headquarters in Port Jefferson Station, providing professional trading services to clients worldwide.

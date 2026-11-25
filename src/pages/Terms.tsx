@@ -2,6 +2,7 @@ import { PublicHeader } from "@/components/PublicHeader";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
+import { FCA_FRN, FcaRegisterLink } from "@/components/FcaRegisterLink";
 
 const Terms = () => {
   const navigate = useNavigate();
@@ -141,6 +142,10 @@ const Terms = () => {
             <div className="mt-4 p-4 bg-muted/30 rounded-lg">
               <p className="text-muted-foreground">Email: legal@edgewealthpro.com</p>
               <p className="text-muted-foreground">Address: 585 Bicycle Path, 11776, Port Jefferson Station, United States</p>
+              <p className="text-muted-foreground pt-2">
+                Authorized and regulated by the Financial Conduct Authority (FCA), FRN {FCA_FRN}.{" "}
+                <FcaRegisterLink label="Verify our license" />
+              </p>
             </div>
           </section>
         </div>
